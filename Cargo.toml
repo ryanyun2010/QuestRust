@@ -8,3 +8,4 @@ wgpu = "23.0.1"
 winit = "0.29"
 pollster = "0.3"
 log = "0.4.22"
+bytemuck = { version = "1.16", features = [ "derive" ] }
