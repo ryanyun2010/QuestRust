@@ -1,0 +1,10 @@
+[package]
+name = "QuestRust"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+wgpu = "23.0.1"
+winit = "0.29"
+pollster = "0.3"
+log = "0.4.22"
