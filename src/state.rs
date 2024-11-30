@@ -3,11 +3,23 @@ use winit::event::*;
 use wgpu::util::DeviceExt;
 use crate::vertex::Vertex;
 const TEST_INDICES: &[u16] = &[
-    0, 1, 4,
-    1, 2, 4,
-    2, 3, 4,
-    3, 5, 7,
-    2, 1, 9
+    1,3,0, // bottom
+    1,3,2,
+
+    4,1,0, // front
+    4,1,5,
+
+    6,1,2, // right
+    6,1,5,
+
+    2,7,3, // back
+    2,7,6,
+
+    4,3,0, // left
+    4,3,7,
+
+    4,6,7, //top
+    4,6,5
 ];
  
  
@@ -22,7 +34,7 @@ pub struct State<'a> {
     pub vertex_buffer: wgpu::Buffer,
     pub index_buffer: wgpu::Buffer,
     pub num_indicies: u32,
-    pub TEST_VERTICES: [Vertex; 8],
+    pub vertices: Vec<Vertex>,
     window: &'a Window,
 }
 impl<'a> State<'a> { 
@@ -121,20 +133,20 @@ impl<'a> State<'a> {
                 multiview: None,
                 cache: None,
             });
-        let mut TEST_VERTICES: [Vertex; 8] = [
-            Vertex { position: [-0.0868241, 0.49240386, 0.0], color: [0.5, 0.0, 0.0] }, // A
-            Vertex { position: [-0.49513406, 0.06958647, 0.0], color: [0.5, 0.0, 0.0] }, // B
-            Vertex { position: [-0.21918549, -0.44939706, 0.0], color: [0.5, 0.0, 0.0] }, // C
-            Vertex { position: [0.35966998, -0.3473291, 0.0], color: [0.5, 0.0, 0.0] }, // D
-            Vertex { position: [0.44147372, 0.2347359, 0.0], color: [0.5, 0.0, 0.0] }, // E
-            Vertex { position: [0.7, 0.3, 0.0], color: [0.5, 0.0, 0.0] }, // E
-            Vertex { position: [0.2, 0.6, 0.0], color: [0.5, 0.0, 0.0] }, // E
-            Vertex { position: [0.1, 0.9, 0.0], color: [0.5, 0.0, 0.0] }, // E
-        ];
+        let mut vertices: Vec<Vertex> = [
+            Vertex { position: [0.0, 0.0, 0.0], color: [0.5, 0.0, 0.0] }, // A
+            Vertex { position: [0.5, 0.0, 0.0], color: [0.5, 0.0, 0.0] }, // B
+            Vertex { position: [0.5, 0.0, 0.5], color: [0.5, 0.0, 0.0] }, // C
+            Vertex { position: [0.0, 0.0, 0.5], color: [0.5, 0.0, 0.0] }, // D
+            Vertex { position: [0.0, 0.5, 0.0], color: [0.5, 0.0, 0.5] }, // E
+            Vertex { position: [0.5, 0.5, 0.0], color: [0.5, 0.0, 0.5] }, // E
+            Vertex { position: [0.5, 0.5, 0.5], color: [0.5, 0.0, 0.5] }, // E
+            Vertex { position: [0.0, 0.5, 0.5], color: [0.5, 0.0, 0.5] }, // E
+        ].to_vec();
         let vertex_buffer = device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some("Vertex Buffer"),
-                contents: bytemuck::cast_slice(&mut TEST_VERTICES),
+                contents: bytemuck::cast_slice(&mut vertices),
                 usage: wgpu::BufferUsages::VERTEX,
             }
         );
@@ -160,7 +172,7 @@ impl<'a> State<'a> {
             vertex_buffer,
             index_buffer,
             num_indicies,
-            TEST_VERTICES
+            vertices
         }
  
     }
@@ -178,7 +190,7 @@ impl<'a> State<'a> {
         }
     }
 
-    pub fn input(&mut self, event: &WindowEvent) -> bool {
+    pub fn input(&mut self, _event: &WindowEvent) -> bool {
         false
     }
 
@@ -186,14 +198,28 @@ impl<'a> State<'a> {
     }
 
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
-        self.TEST_VERTICES[0].position[0] += 0.0005;
-        self.TEST_VERTICES[1].position[0] += 0.0004;
-        self.TEST_VERTICES[2].position[0] += 0.0003;
-        self.TEST_VERTICES[3].position[0] += 0.0002;
+        self.vertices[0].position[0] += 0.005;
+        self.vertices[0].position[1] += 0.0005;
+        self.vertices[0].position[2] += 0.0005;
+        if self.vertices[0].position[0] > 1.0 {
+            self.vertices[0].position[0] = -1.0;
+        }
+        self.vertices[1].position[0] += 0.005;
+        if self.vertices[1].position[0] > 1.0 {
+            self.vertices[1].position[0] = -1.0;
+        }
+        self.vertices[2].position[0] += 0.005;
+        if self.vertices[2].position[0] > 1.0 {
+            self.vertices[2].position[0] = -1.0;
+        }
+        self.vertices[3].position[0] += 0.005;
+        if self.vertices[3].position[0] > 1.0 {
+            self.vertices[3].position[0] = -1.0;
+        }
         self.vertex_buffer = self.device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some("Vertex Buffer"),
-                contents: bytemuck::cast_slice(&mut self.TEST_VERTICES),
+                contents: bytemuck::cast_slice(&mut self.vertices),
                 usage: wgpu::BufferUsages::VERTEX,
             }
         );
@@ -232,7 +258,7 @@ impl<'a> State<'a> {
     
         self.queue.submit(std::iter::once(encoder.finish()));
         output.present();
-    
         Ok(())
+        
     }
 }

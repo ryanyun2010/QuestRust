@@ -5,7 +5,7 @@ use winit::{
     keyboard::{KeyCode, PhysicalKey},
     window::{WindowBuilder},
 };
-use log;
+
 use crate::state::State;
 
 pub async fn run() {
