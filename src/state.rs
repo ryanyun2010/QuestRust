@@ -8,7 +8,7 @@ use std::num::NonZeroU32;
 
 const TEST_INDICES: &[u16] = &[
     0,1,2,
-    0,2,3,
+    4,5,3,
 ];
 
 const BACKGROUND_COLOR: wgpu::Color = wgpu::Color {
@@ -209,10 +209,12 @@ impl<'a> State<'a> {
                 cache: None,
             });
         let mut vertices: Vec<Vertex> = [
-            Vertex { position: [0.75, 0.75, 0.0], tex_coords: [1.0, 0.0], index: 1}, // A
-            Vertex { position: [-0.75, 0.75, 0.0], tex_coords: [0.0, 0.0], index: 1}, // B
-            Vertex { position: [-0.75, -0.75, 0.0], tex_coords: [0.0, 1.0], index: 1}, // C
+            Vertex { position: [0.75, 0.75, 0.0], tex_coords: [1.0, 0.0], index: 0}, // A
+            Vertex { position: [-0.75, 0.75, 0.0], tex_coords: [0.0, 0.0], index: 0}, // B
+            Vertex { position: [-0.75, -0.75, 0.0], tex_coords: [0.0, 1.0], index: 0}, // C
             Vertex { position: [0.75, -0.75, 0.0], tex_coords: [1.0, 1.0], index: 1}, // D
+            Vertex { position: [0.75, 0.75, 0.0], tex_coords: [1.0, 0.0], index: 1}, // A
+            Vertex { position: [-0.75, -0.75, 0.0], tex_coords: [0.0, 1.0], index: 1}, // C
         ].to_vec();
         
         let vertex_buffer = device.create_buffer_init(
@@ -277,10 +279,14 @@ impl<'a> State<'a> {
             self.vertices[1].position[0] -= 3.5;
             self.vertices[2].position[0] -= 3.5;
             self.vertices[3].position[0] -= 3.5;
+            self.vertices[4].position[0] -= 3.5;
+            self.vertices[5].position[0] -= 3.5;
         }
         self.vertices[1].position[0] += 0.02;
         self.vertices[2].position[0] += 0.02;
         self.vertices[3].position[0] += 0.02;
+        self.vertices[4].position[0] += 0.02;
+        self.vertices[5].position[0] += 0.02;
 
         self.queue.write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(&self.vertices));
         let output = self.surface.get_current_texture()?;
