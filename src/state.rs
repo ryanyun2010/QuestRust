@@ -112,7 +112,7 @@ impl<'a> State<'a> {
                         visibility: wgpu::ShaderStages::FRAGMENT,
         
                         ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                        count: NonZeroU32::new(2), // CHANGED!
+                        count: NonZeroU32::new(2),
                     },
                     wgpu::BindGroupLayoutEntry {
                         binding: 2,
@@ -134,11 +134,11 @@ impl<'a> State<'a> {
             entries: &[
                 wgpu::BindGroupEntry {
                 binding: 0,
-                resource: wgpu::BindingResource::TextureViewArray(&[&diffuse_texture.view, &diffuse_texture2.view]), // CHANGED!
+                resource: wgpu::BindingResource::TextureViewArray(&[&diffuse_texture.view, &diffuse_texture2.view]),
                 },
                 wgpu::BindGroupEntry {
                 binding: 1,
-                resource: wgpu::BindingResource::SamplerArray(&[&diffuse_texture.sampler,&diffuse_texture2.sampler]), // CHANGED!
+                resource: wgpu::BindingResource::SamplerArray(&[&diffuse_texture.sampler,&diffuse_texture2.sampler]),
                 },
                 wgpu::BindGroupEntry {
                 binding: 2,
@@ -209,12 +209,12 @@ impl<'a> State<'a> {
                 cache: None,
             });
         let mut vertices: Vec<Vertex> = [
-            Vertex { position: [0.75, 0.75, 0.0], tex_coords: [1.0, 0.0], index: 0}, // A
-            Vertex { position: [-0.75, 0.75, 0.0], tex_coords: [0.0, 0.0], index: 0}, // B
-            Vertex { position: [-0.75, -0.75, 0.0], tex_coords: [0.0, 1.0], index: 0}, // C
-            Vertex { position: [0.75, -0.75, 0.0], tex_coords: [1.0, 1.0], index: 1}, // D
-            Vertex { position: [0.75, 0.75, 0.0], tex_coords: [1.0, 0.0], index: 1}, // A
-            Vertex { position: [-0.75, -0.75, 0.0], tex_coords: [0.0, 1.0], index: 1}, // C
+            Vertex { position: [0.75, 0.75, 0.0], tex_coords: [1.0, 0.0], index: 0}, 
+            Vertex { position: [-0.75, 0.75, 0.0], tex_coords: [0.0, 0.0], index: 0},
+            Vertex { position: [-0.75, -0.75, 0.0], tex_coords: [0.0, 1.0], index: 0},
+            Vertex { position: [0.75, -0.75, 0.0], tex_coords: [1.0, 1.0], index: 1},
+            Vertex { position: [0.75, 0.75, 0.0], tex_coords: [1.0, 0.0], index: 1},
+            Vertex { position: [-0.75, -0.75, 0.0], tex_coords: [0.0, 1.0], index: 1},
         ].to_vec();
         
         let vertex_buffer = device.create_buffer_init(
