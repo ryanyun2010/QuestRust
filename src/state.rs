@@ -84,10 +84,10 @@ impl<'a> State<'a> {
         let diffuse_texture = texture::Texture::from_bytes(&device, &queue, diffuse_bytes, "panda.png").unwrap();
         let diffuse_bytes2 = include_bytes!("panda2.png");
         let diffuse_texture2 = texture::Texture::from_bytes(&device, &queue, diffuse_bytes2, "panda2.png").unwrap();
+        let diffuse_bytes3 = include_bytes!("panda3.jpeg");
+        let diffuse_texture3 = texture::Texture::from_bytes(&device, &queue, diffuse_bytes3, "panda3.jpeg").unwrap();
        
         let mut texture_index_buffer_contents = vec![0u32; 128];
-        texture_index_buffer_contents[0] = 0;
-        texture_index_buffer_contents[64] = 1;
         let texture_index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Index Buffer"),
             contents: bytemuck::cast_slice(&texture_index_buffer_contents),
@@ -105,14 +105,14 @@ impl<'a> State<'a> {
                             view_dimension: wgpu::TextureViewDimension::D2,
                             sample_type: wgpu::TextureSampleType::Float { filterable: true },
                         },
-                        count: NonZeroU32::new(2),
+                        count: NonZeroU32::new(3),
                     },
                     wgpu::BindGroupLayoutEntry {
                         binding: 1,
                         visibility: wgpu::ShaderStages::FRAGMENT,
         
                         ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                        count: NonZeroU32::new(2),
+                        count: NonZeroU32::new(3),
                     },
                     wgpu::BindGroupLayoutEntry {
                         binding: 2,
@@ -134,11 +134,11 @@ impl<'a> State<'a> {
             entries: &[
                 wgpu::BindGroupEntry {
                 binding: 0,
-                resource: wgpu::BindingResource::TextureViewArray(&[&diffuse_texture.view, &diffuse_texture2.view]),
+                resource: wgpu::BindingResource::TextureViewArray(&[&diffuse_texture.view, &diffuse_texture2.view, &diffuse_texture3.view]),
                 },
                 wgpu::BindGroupEntry {
                 binding: 1,
-                resource: wgpu::BindingResource::SamplerArray(&[&diffuse_texture.sampler,&diffuse_texture2.sampler]),
+                resource: wgpu::BindingResource::SamplerArray(&[&diffuse_texture.sampler,&diffuse_texture2.sampler, &diffuse_texture3.sampler]),
                 },
                 wgpu::BindGroupEntry {
                 binding: 2,
@@ -209,12 +209,12 @@ impl<'a> State<'a> {
                 cache: None,
             });
         let mut vertices: Vec<Vertex> = [
-            Vertex { position: [0.75, 0.75, 0.0], tex_coords: [1.0, 0.0], index: 0}, 
-            Vertex { position: [-0.75, 0.75, 0.0], tex_coords: [0.0, 0.0], index: 0},
-            Vertex { position: [-0.75, -0.75, 0.0], tex_coords: [0.0, 1.0], index: 0},
-            Vertex { position: [0.75, -0.75, 0.0], tex_coords: [1.0, 1.0], index: 1},
-            Vertex { position: [0.75, 0.75, 0.0], tex_coords: [1.0, 0.0], index: 1},
-            Vertex { position: [-0.75, -0.75, 0.0], tex_coords: [0.0, 1.0], index: 1},
+            Vertex { position: [0.75, 0.75, 0.0], tex_coords: [1.0, 0.0], index: 2}, 
+            Vertex { position: [-0.75, 0.75, 0.0], tex_coords: [0.0, 0.0], index: 2},
+            Vertex { position: [-0.75, -0.75, 0.0], tex_coords: [0.0, 1.0], index: 2},
+            Vertex { position: [0.75, -0.75, 0.0], tex_coords: [1.0, 1.0], index: 2},
+            Vertex { position: [0.75, 0.75, 0.0], tex_coords: [1.0, 0.0], index: 2},
+            Vertex { position: [-0.75, -0.75, 0.0], tex_coords: [0.0, 1.0], index: 2},
         ].to_vec();
         
         let vertex_buffer = device.create_buffer_init(
