@@ -139,15 +139,16 @@ impl<'a> State<'a> {
             Vertex { position: [0.5, 0.0, 0.5], color: [0.5, 0.0, 0.0] }, // C
             Vertex { position: [0.0, 0.0, 0.5], color: [0.5, 0.0, 0.0] }, // D
             Vertex { position: [0.0, 0.5, 0.0], color: [0.5, 0.0, 0.5] }, // E
-            Vertex { position: [0.5, 0.5, 0.0], color: [0.5, 0.0, 0.5] }, // E
-            Vertex { position: [0.5, 0.5, 0.5], color: [0.5, 0.0, 0.5] }, // E
-            Vertex { position: [0.0, 0.5, 0.5], color: [0.5, 0.0, 0.5] }, // E
+            Vertex { position: [0.5, 0.5, 0.0], color: [0.5, 0.0, 0.5] }, // F
+            Vertex { position: [0.5, 0.5, 0.5], color: [0.5, 0.0, 0.5] }, // G
+            Vertex { position: [0.0, 0.5, 0.5], color: [0.5, 0.0, 0.5] }, // H
         ].to_vec();
+        
         let vertex_buffer = device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some("Vertex Buffer"),
                 contents: bytemuck::cast_slice(&mut vertices),
-                usage: wgpu::BufferUsages::VERTEX,
+                usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST
             }
         );
         
@@ -160,7 +161,6 @@ impl<'a> State<'a> {
             }
         );
         let num_indicies = TEST_INDICES.len() as u32;
-
         Self {
             window,
             surface,
@@ -215,16 +215,28 @@ impl<'a> State<'a> {
         self.vertices[3].position[0] += 0.005;
         if self.vertices[3].position[0] > 1.0 {
             self.vertices[3].position[0] = -1.0;
-        }
-        self.vertex_buffer = self.device.create_buffer_init(
+        }      
+        let staging_buffer = self.device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
-                label: Some("Vertex Buffer"),
-                contents: bytemuck::cast_slice(&mut self.vertices),
-                usage: wgpu::BufferUsages::VERTEX,
+            label: Some("Staging Buffer"),
+            contents: bytemuck::cast_slice(&self.vertices),
+            usage: wgpu::BufferUsages::COPY_SRC,
             }
         );
         
-       
+        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: Some("Staging Encoder"),
+        });
+        
+        encoder.copy_buffer_to_buffer(
+            &staging_buffer,
+            0,
+            &self.vertex_buffer,
+            0,
+            (self.vertices.len() * std::mem::size_of::<Vertex>()) as wgpu::BufferAddress,
+        );
+        
+        self.queue.submit(std::iter::once(encoder.finish()));
         let output = self.surface.get_current_texture()?;
         let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
         let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
