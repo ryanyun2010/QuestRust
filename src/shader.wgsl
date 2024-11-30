@@ -1,33 +1,37 @@
-// Vertex shader
-
 struct VertexInput {
-    @location(0) position: vec3<f32>,
+    @location(0) position: vec4<f32>,
     @location(1) tex_coords: vec2<f32>,
+    @location(2) index: i32,
 }
 
 struct VertexOutput {
-    @builtin(position) clip_position: vec4<f32>,
+    @builtin(position) position: vec4<f32>,
     @location(0) tex_coords: vec2<f32>,
+    @location(1) index: i32,
 }
 
 @vertex
-fn vs_main(
-    model: VertexInput,
-) -> VertexOutput {
-    var out: VertexOutput;
-    out.tex_coords = model.tex_coords;
-    out.clip_position = vec4<f32>(model.position, 1.0);
-    return out;
+fn vert_main(vertex: VertexInput) -> VertexOutput {
+    var outval: VertexOutput;
+    outval.position = vec4<f32>(vertex.position.x, vertex.position.y, 0.0, 1.0);
+    outval.tex_coords = vertex.tex_coords;
+    outval.index = vertex.index;
+    return outval;
 }
- 
-// Fragment shader
+
+
+struct FragmentInput {
+    @location(0) tex_coords: vec2<f32>,
+    @location(1) index: i32,
+}
 
 @group(0) @binding(0)
-var t_diffuse: texture_2d<f32>;
+var texture_array: binding_array<texture_2d<f32>>;
 @group(0) @binding(1)
-var s_diffuse: sampler;
+var sampler_array: binding_array<sampler>;
 
 @fragment
-fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    return textureSample(t_diffuse, s_diffuse, in.tex_coords);
-}
+fn non_uniform_main(fragment: FragmentInput) -> @location(0) vec4<f32> {
+    return textureSample(texture_array[fragment.index], sampler_array[fragment.index], fragment.tex_coords);
+};
+

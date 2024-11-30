@@ -3,6 +3,9 @@ use winit::event::*;
 use wgpu::util::DeviceExt;
 use crate::vertex::Vertex;
 use crate::texture;
+use std::num::NonZeroU64;
+use std::num::NonZeroU32;
+
 const TEST_INDICES: &[u16] = &[
     0,1,2,
     0,2,3,
@@ -48,10 +51,11 @@ impl<'a> State<'a> {
                 force_fallback_adapter: false,
             },
         ).await.unwrap();
+        let vertex_size = size_of::<Vertex>();
 
         let (device, queue) = adapter.request_device(
             &wgpu::DeviceDescriptor {
-                required_features: wgpu::Features::empty(),
+                required_features: wgpu::Features::TEXTURE_BINDING_ARRAY |  wgpu::Features::SAMPLED_TEXTURE_AND_STORAGE_BUFFER_ARRAY_NON_UNIFORM_INDEXING,
                 required_limits: wgpu::Limits::default(),
                 label: None,
                 memory_hints: Default::default(),
@@ -78,7 +82,17 @@ impl<'a> State<'a> {
 
         let diffuse_bytes = include_bytes!("panda.png");
         let diffuse_texture = texture::Texture::from_bytes(&device, &queue, diffuse_bytes, "panda.png").unwrap();
+        let diffuse_bytes2 = include_bytes!("panda2.png");
+        let diffuse_texture2 = texture::Texture::from_bytes(&device, &queue, diffuse_bytes2, "panda2.png").unwrap();
        
+        let mut texture_index_buffer_contents = vec![0u32; 128];
+        texture_index_buffer_contents[0] = 0;
+        texture_index_buffer_contents[64] = 1;
+        let texture_index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Index Buffer"),
+            contents: bytemuck::cast_slice(&texture_index_buffer_contents),
+            usage: wgpu::BufferUsages::UNIFORM,
+        });
 
         let texture_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -91,34 +105,53 @@ impl<'a> State<'a> {
                             view_dimension: wgpu::TextureViewDimension::D2,
                             sample_type: wgpu::TextureSampleType::Float { filterable: true },
                         },
-                        count: None,
+                        count: NonZeroU32::new(2),
                     },
                     wgpu::BindGroupLayoutEntry {
                         binding: 1,
                         visibility: wgpu::ShaderStages::FRAGMENT,
-
+        
                         ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: NonZeroU32::new(2), // CHANGED!
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: true,
+                            min_binding_size: Some(NonZeroU64::new(4).unwrap()),
+                        },
                         count: None,
                     },
                 ],
+               
                 label: Some("texture_bind_group_layout"),
             });
-            let diffuse_bind_group = device.create_bind_group(
-                &wgpu::BindGroupDescriptor {
-                    layout: &texture_bind_group_layout,
-                    entries: &[
-                        wgpu::BindGroupEntry {
-                            binding: 0,
-                            resource: wgpu::BindingResource::TextureView(&diffuse_texture.view), // CHANGED!
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 1,
-                            resource: wgpu::BindingResource::Sampler(&diffuse_texture.sampler), // CHANGED!
-                        }
-                    ],
-                    label: Some("diffuse_bind_group"),
-                }
-            );
+        let diffuse_bind_group = device.create_bind_group(
+            &wgpu::BindGroupDescriptor {
+            layout: &texture_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                binding: 0,
+                resource: wgpu::BindingResource::TextureViewArray(&[&diffuse_texture.view, &diffuse_texture2.view]), // CHANGED!
+                },
+                wgpu::BindGroupEntry {
+                binding: 1,
+                resource: wgpu::BindingResource::SamplerArray(&[&diffuse_texture.sampler,&diffuse_texture2.sampler]), // CHANGED!
+                },
+                wgpu::BindGroupEntry {
+                binding: 2,
+                resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                    buffer: &texture_index_buffer,
+                    offset: 0,
+                    size: Some(NonZeroU64::new(4).unwrap()),
+                }),
+                },
+            ],
+            label: Some("diffuse_bind_group"),
+            }
+        );
              
         
             
@@ -139,15 +172,17 @@ impl<'a> State<'a> {
                 layout: Some(&render_pipeline_layout),
                 vertex: wgpu::VertexState {
                     module: &shader,
-                    entry_point: Some("vs_main"),
-                    buffers: &[
-                        Vertex::desc(),
-                    ],
+                    entry_point: Some("vert_main"),
+                    buffers: &[wgpu::VertexBufferLayout {
+                        array_stride: vertex_size as wgpu::BufferAddress,
+                        step_mode: wgpu::VertexStepMode::Vertex,
+                        attributes: &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x2, 2 => Sint32],
+                    }],
                     compilation_options: wgpu::PipelineCompilationOptions::default(),
                 },
                 fragment: Some(wgpu::FragmentState {
                     module: &shader,
-                    entry_point: Some("fs_main"),
+                    entry_point: Some("non_uniform_main"),
                     targets: &[Some(wgpu::ColorTargetState {
                         format: config.format,
                         blend: Some(wgpu::BlendState::ALPHA_BLENDING),
@@ -174,10 +209,10 @@ impl<'a> State<'a> {
                 cache: None,
             });
         let mut vertices: Vec<Vertex> = [
-            Vertex { position: [0.75, 0.75, 0.0], tex_coords: [1.0, 0.0], }, // A
-            Vertex { position: [-0.75, 0.75, 0.0], tex_coords: [0.0, 0.0], }, // B
-            Vertex { position: [-0.75, -0.75, 0.0], tex_coords: [0.0, 1.0], }, // C
-            Vertex { position: [0.75, -0.75, 0.0], tex_coords: [1.0, 1.0], }, // D
+            Vertex { position: [0.75, 0.75, 0.0], tex_coords: [1.0, 0.0], index: 1}, // A
+            Vertex { position: [-0.75, 0.75, 0.0], tex_coords: [0.0, 0.0], index: 1}, // B
+            Vertex { position: [-0.75, -0.75, 0.0], tex_coords: [0.0, 1.0], index: 1}, // C
+            Vertex { position: [0.75, -0.75, 0.0], tex_coords: [1.0, 1.0], index: 1}, // D
         ].to_vec();
         
         let vertex_buffer = device.create_buffer_init(
@@ -269,7 +304,7 @@ impl<'a> State<'a> {
                 timestamp_writes: None,
             });
             render_pass.set_pipeline(&self.render_pipeline);
-            render_pass.set_bind_group(0, &self.diffuse_bind_group, &[]);
+            render_pass.set_bind_group(0, &self.diffuse_bind_group, &[0]);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
             render_pass.draw_indexed(0..self.num_indicies, 0,0..1);
