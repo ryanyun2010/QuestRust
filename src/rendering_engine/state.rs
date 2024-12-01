@@ -4,8 +4,10 @@ use wgpu::util::DeviceExt;
 use crate::vertex::Vertex;
 use crate::texture;
 use crate::world::World;
+use crate::camera::Camera;
 use std::num::NonZeroU64;
 use std::num::NonZeroU32;
+use std::time::Instant;
 
 
 
@@ -17,6 +19,7 @@ const BACKGROUND_COLOR: wgpu::Color = wgpu::Color {
 };
  
 
+
 pub struct State<'a> {
     pub surface: wgpu::Surface<'a>,
     pub device: wgpu::Device,
@@ -25,14 +28,16 @@ pub struct State<'a> {
     pub size: winit::dpi::PhysicalSize<u32>,
     pub render_pipeline: wgpu::RenderPipeline,
     pub diffuse_bind_group: wgpu::BindGroup,
-    RETINA_SCALE: f64,
+    pub test: bool,
+    pub instant: Instant,
     window: &'a Window,
     diffuse_texture: texture::Texture,
 }
 impl<'a> State<'a> { 
     pub async fn new(window: &'a Window) -> State<'a> {
+        let instant = Instant::now();
+        let test = true;
         let size = window.inner_size();
-        let RETINA_SCALE: f64 = window.scale_factor();
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,
             ..Default::default()
@@ -214,7 +219,8 @@ impl<'a> State<'a> {
             render_pipeline: render_pipeline,
             diffuse_bind_group: diffuse_bind_group,
             diffuse_texture: diffuse_texture,
-            RETINA_SCALE: RETINA_SCALE,
+            instant: instant,
+            test: test,
         }
  
     }
@@ -241,9 +247,22 @@ impl<'a> State<'a> {
     }
 
    
-    pub fn render(&mut self, world: &World) -> Result<(), wgpu::SurfaceError> {
-        let world_render_data = &world.get_render_data(self.size, self.RETINA_SCALE);
-        let vertices = &world_render_data.vertex;
+    pub fn render(&mut self, world: &World, camera: &mut Camera) -> Result<(), wgpu::SurfaceError> {
+        if self.test == false{
+            let elapsed_time = self.instant.elapsed();
+            if(elapsed_time.as_nanos() > 0){
+                println!("Rendering at {} fps",1.0/(elapsed_time.as_nanos() as f64/1000000000.0));
+            }
+        }
+        self.instant = Instant::now();
+        self.test = false;
+        camera.camera_x += 1;
+        
+        
+        
+
+        let render_data = &camera.render(world);
+        let vertices = &render_data.vertex;
         if vertices.len() < 1 {
             return Ok(());
         }
@@ -255,7 +274,7 @@ impl<'a> State<'a> {
             }
         );
 
-        let indicies = &world_render_data.index;
+        let indicies = &render_data.index;
         let num_indicies = indicies.len() as u32;
 
         let index_buffer = self.device.create_buffer_init(

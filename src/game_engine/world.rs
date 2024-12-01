@@ -3,13 +3,13 @@ use crate::vertex::Vertex;
 use winit::dpi::PhysicalSize;
 #[derive(Debug)]
 pub struct Chunk{  // 32x32 blocks of 32x32 = chunks are 1024x1024 pixels but 1024 * RETINA SCALE accounting for retina, so a chunk with x =0, y =0, is pixels 0-1023, 0-1023
-    chunk_id: usize,
+    pub chunk_id: usize,
     x: usize,
     y: usize,
-    terrain_ids: Vec<usize>,
-    entities_ids: Vec<usize>,
-    terrain: Vec<Terrain>,
-    entities: Vec<Entity>
+    pub terrain_ids: Vec<usize>,
+    pub entities_ids: Vec<usize>,
+    pub terrain: Vec<Terrain>,
+    pub entities: Vec<Entity>
 }
 
 impl Chunk{
@@ -19,7 +19,7 @@ pub struct World{
     pub chunks: Vec<Chunk>,
     player: Player,
     element_id: usize,
-    sprites: Vec<Sprite>,
+    pub sprites: Vec<Sprite>,
     pub sprite_lookup: HashMap<usize,usize> // corresponds element_ids to sprite_ids ie. to get the sprite for element_id x, just do sprite_lookup[x]
 }
 
@@ -53,10 +53,10 @@ impl World{ // World will render chunks within 4 of the player, ie. a circle of 
             });
         new_chunk_id
     }
-    fn coord_to_chunk_coord(coord: usize) -> usize{
+    pub fn coord_to_chunk_coord(coord: usize) -> usize{
         (coord as f32 / 1024.0).floor() as usize
     }
-    fn get_chunk_from_xy(&self, x: usize, y: usize) -> Option<usize>{
+    pub fn get_chunk_from_xy(&self, x: usize, y: usize) -> Option<usize>{
         let chunk_x = World::coord_to_chunk_coord(x);
         let chunk_y = World::coord_to_chunk_coord(y);
 
@@ -85,33 +85,6 @@ impl World{ // World will render chunks within 4 of the player, ie. a circle of 
         self.element_id - 1
     }
 
-    pub fn get_render_data(&self, window_size: PhysicalSize<u32>, RETINA_SCALE: f64) -> RenderData{
-        let mut render_data = RenderData::new();
-        let player_chunk_x = World::coord_to_chunk_coord(self.player.x);
-        let player_chunk_y = World::coord_to_chunk_coord(self.player.y);
-
-        for chunk in self.chunks.iter(){
-            if (usize::pow(chunk.x,2) + usize::pow(chunk.y,2)) <= 16{
-                for terrain in chunk.terrain_ids.iter(){
-                    
-                    let potentially_sprite_id = self.get_sprite(*terrain);
-                    if potentially_sprite_id.is_none(){
-                        continue;
-                    }
-                    let sprite_id = potentially_sprite_id.unwrap();
-                    let sprite = &self.sprites[sprite_id];
-
-                    let index_offset = render_data.vertex.len() as u16;
-                    let draw_data = sprite.draw_data(chunk.terrain[*terrain].x, chunk.terrain[*terrain].y, 32, 32, window_size, RETINA_SCALE, index_offset);
-                    
-                    render_data.vertex.extend(draw_data.vertex);
-                    render_data.index.extend(draw_data.index);
-                }
-            }
-        }
-        render_data
-    }
-
     pub fn add_sprite(&mut self, texture_index: i32) -> usize{
         self.sprites.push(Sprite{ texture_index: texture_index });
         self.sprites.len() - 1
@@ -126,34 +99,34 @@ impl World{ // World will render chunks within 4 of the player, ie. a circle of 
     }
 }
 #[derive(Copy, Clone, Debug)]
-struct Terrain{ // terrain is always 32x32 pixels
-    element_id: usize,
-    x: usize,
-    y: usize
+pub struct Terrain{ // terrain is always 32x32 pixels
+    pub element_id: usize,
+    pub x: usize,
+    pub y: usize
 }
 
 #[derive(Copy, Clone, Debug)]
-struct Entity{
-    element_id: usize,
-    x: usize,
-    y: usize,
+pub struct Entity{
+    pub element_id: usize,
+    pub x: usize,
+    pub y: usize,
 }
 
 #[derive(Copy, Clone, Debug)]
-struct Sprite{
-    texture_index: i32,
+pub struct Sprite{
+    pub texture_index: i32,
 }
 
 impl Sprite{
-    fn draw_data(&self, screen_x: usize, screen_y: usize, screen_w: usize, screen_h: usize, window_size: PhysicalSize<u32>, RETINA_SCALE: f64, index_offset:u16) -> RenderData{
-        let screen_to_render_ratio_x = 2.0 / window_size.width as f32 * RETINA_SCALE as f32;
-        let screen_to_render_ratio_y = 2.0 / window_size.height as f32 * RETINA_SCALE as f32;
+    pub fn draw_data(&self, screen_x: usize, screen_y: usize, screen_w: usize, screen_h: usize, window_size_width: usize, window_size_height: usize, index_offset:u16, vertex_offset_x: i32, vertex_offset_y: i32) -> RenderData{
+        let screen_to_render_ratio_x = 2.0 / window_size_width as f32;
+        let screen_to_render_ratio_y = 2.0 / window_size_height as f32;
         
         let w = screen_w as f32 * screen_to_render_ratio_x;
         let h = screen_h as f32 * screen_to_render_ratio_y;
 
-        let x = screen_x as f32 * screen_to_render_ratio_x - 1.0;
-        let y = -1.0 * (screen_y as f32 * screen_to_render_ratio_y - 1.0) - h;
+        let x = ((screen_x as f32) + (vertex_offset_x as f32)) * screen_to_render_ratio_x - 1.0;
+        let y = -1.0 * (((screen_y as f32) + (vertex_offset_y as f32)) * screen_to_render_ratio_y - 1.0) - h;
 
 
         let vertex = vec![
@@ -176,12 +149,12 @@ pub struct RenderData{
 }
 
 impl RenderData{
-    fn new() -> Self{
+    pub fn new() -> Self{
         Self{ vertex: Vec::new(), index: Vec::new() }
     }
 }
 
-struct Player {
+pub struct Player {
     x: usize,
     y: usize,
 }
@@ -194,18 +167,3 @@ impl Player {
         }
     }
 }
-
-
-
-/*
-RenderData { 
-vertex: [
-Vertex { position: [-1.0, -1.0, 0.0], tex_coords: [0.0, 1.0], index: 0 },
-Vertex { position: [-0.92, -1.0, 0.0], tex_coords: [1.0, 1.0], index: 0 },
-Vertex { position: [-0.92, -0.8933333, 0.0], tex_coords: [1.0, 0.0], index: 0 },
-Vertex { position: [-1.0, -0.8933333, 0.0], tex_coords: [0.0, 0.0], index: 0 },
- Vertex { position: [-0.92, -1.0, 0.0], tex_coords: [0.0, 1.0], index: 0 },
- Vertex { position: [-0.84000003, -1.0, 0.0], tex_coords: [1.0, 1.0], index: 0 },
- Vertex { position: [-0.84000003, -0.8933333, 0.0], tex_coords: [1.0, 0.0], index: 0 }, 
- ertex { position: [-0.92, -0.8933333, 0.0], tex_coords: [0.0, 0.0], index: 0 }],
- index: [0, 1, 2, 0, 2, 3, 0, 1, 2, 0, 2, 3] }*/
