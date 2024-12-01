@@ -32,6 +32,6 @@ var sampler_array: binding_array<sampler>;
 
 @fragment
 fn non_uniform_main(fragment: FragmentInput) -> @location(0) vec4<f32> {
-    return textureSample(texture_array[fragment.index], sampler_array[fragment.index], fragment.tex_coords);
+   return textureSample(texture_array[fragment.index], sampler_array[fragment.index], fragment.tex_coords);
 };
 

@@ -7,8 +7,9 @@ use winit::{
 };
 
 use crate::state::State;
+use crate::world::World;
 
-pub async fn run() {
+pub async fn run(world: &World) {
     let event_loop = EventLoop::new().unwrap();
     let window = WindowBuilder::new().with_title("RustTest").build(&event_loop).unwrap();
     let mut state = State::new(&window).await;
@@ -35,7 +36,7 @@ pub async fn run() {
                 WindowEvent::RedrawRequested => {
                     state.window().request_redraw();
                     state.update();
-                    match state.render() {
+                    match state.render(world) {
                         Ok(_) => {}
                         Err(
                             wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated,

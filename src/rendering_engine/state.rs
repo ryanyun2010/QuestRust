@@ -3,13 +3,14 @@ use winit::event::*;
 use wgpu::util::DeviceExt;
 use crate::vertex::Vertex;
 use crate::texture;
+use crate::world::World;
 use std::num::NonZeroU64;
 use std::num::NonZeroU32;
 
-const TEST_INDICES: &[u16] = &[
-    0,1,2,
-    4,5,3,
-];
+// const TEST_INDICES: &[u16] = &[
+    // 0,1,2,
+    // 4,5,3,
+// ];
 
 const BACKGROUND_COLOR: wgpu::Color = wgpu::Color {
     r: 1.0,
@@ -26,10 +27,6 @@ pub struct State<'a> {
     pub config: wgpu::SurfaceConfiguration,
     pub size: winit::dpi::PhysicalSize<u32>,
     pub render_pipeline: wgpu::RenderPipeline,
-    pub vertex_buffer: wgpu::Buffer,
-    pub index_buffer: wgpu::Buffer,
-    pub num_indicies: u32,
-    pub vertices: Vec<Vertex>,
     pub diffuse_bind_group: wgpu::BindGroup,
     window: &'a Window,
     diffuse_texture: texture::Texture,
@@ -208,46 +205,16 @@ impl<'a> State<'a> {
                 multiview: None,
                 cache: None,
             });
-        let mut vertices: Vec<Vertex> = [
-            Vertex { position: [0.75, 0.75, 0.0], tex_coords: [1.0, 0.0], index: 2}, 
-            Vertex { position: [-0.75, 0.75, 0.0], tex_coords: [0.0, 0.0], index: 2},
-            Vertex { position: [-0.75, -0.75, 0.0], tex_coords: [0.0, 1.0], index: 2},
-            Vertex { position: [0.75, -0.75, 0.0], tex_coords: [1.0, 1.0], index: 2},
-            Vertex { position: [0.75, 0.75, 0.0], tex_coords: [1.0, 0.0], index: 2},
-            Vertex { position: [-0.75, -0.75, 0.0], tex_coords: [0.0, 1.0], index: 2},
-        ].to_vec();
-        
-        let vertex_buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Vertex Buffer"),
-                contents: bytemuck::cast_slice(&mut vertices),
-                usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST
-            }
-        );
-        
-
-        let index_buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Index Buffer"),
-                contents: bytemuck::cast_slice(TEST_INDICES),
-                usage: wgpu::BufferUsages::INDEX,
-            }
-        );
-        let num_indicies = TEST_INDICES.len() as u32;
         Self {
-            window,
-            surface,
-            device,
-            queue,
-            config,
-            size,
-            render_pipeline,
-            vertex_buffer,
-            index_buffer,
-            num_indicies,
-            vertices,
-            diffuse_bind_group,
-            diffuse_texture
+            window: window,
+            surface: surface,
+            device: device,
+            queue: queue,
+            config: config,
+            size: size,
+            render_pipeline: render_pipeline,
+            diffuse_bind_group: diffuse_bind_group,
+            diffuse_texture: diffuse_texture
         }
  
     }
@@ -272,28 +239,39 @@ impl<'a> State<'a> {
     pub fn update(&mut self) {
     }
 
-    pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
-        self.vertices[0].position[0] += 0.02;
-        if self.vertices[0].position[0] > 2.5 {
-            self.vertices[0].position[0] -= 3.5;
-            self.vertices[1].position[0] -= 3.5;
-            self.vertices[2].position[0] -= 3.5;
-            self.vertices[3].position[0] -= 3.5;
-            self.vertices[4].position[0] -= 3.5;
-            self.vertices[5].position[0] -= 3.5;
+   
+    pub fn render(&mut self, world: &World) -> Result<(), wgpu::SurfaceError> {
+        let world_render_data = &world.get_render_data(self.size);
+        let vertices = &world_render_data.vertex;
+        if vertices.len() < 1 {
+            return Ok(());
         }
-        self.vertices[1].position[0] += 0.02;
-        self.vertices[2].position[0] += 0.02;
-        self.vertices[3].position[0] += 0.02;
-        self.vertices[4].position[0] += 0.02;
-        self.vertices[5].position[0] += 0.02;
+        let vertex_buffer = self.device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Vertex Buffer"),
+                contents: bytemuck::cast_slice(&vertices),
+                usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+            }
+        );
 
-        self.queue.write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(&self.vertices));
+        let indicies = &world_render_data.index;
+        let num_indicies = indicies.len() as u32;
+
+        let index_buffer = self.device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Index Buffer"),
+                contents: bytemuck::cast_slice(&indicies),
+                usage: wgpu::BufferUsages::INDEX,
+            }
+        );
+
         let output = self.surface.get_current_texture()?;
         let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
+
         let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("Render Encoder"),
         });
+
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
@@ -306,16 +284,17 @@ impl<'a> State<'a> {
                     },
                 })],
                 depth_stencil_attachment: None,
-                occlusion_query_set: None,
-                timestamp_writes: None,
+                        occlusion_query_set: None,
+                        timestamp_writes: None,
             });
+
             render_pass.set_pipeline(&self.render_pipeline);
             render_pass.set_bind_group(0, &self.diffuse_bind_group, &[0]);
-            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-            render_pass.draw_indexed(0..self.num_indicies, 0,0..1);
+            render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
+            render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+            render_pass.draw_indexed(0..num_indicies,0, 0..1);
         }
-    
+
         self.queue.submit(std::iter::once(encoder.finish()));
         output.present();
         Ok(())

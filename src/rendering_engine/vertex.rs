@@ -3,5 +3,5 @@
 pub struct Vertex {
     pub position: [f32; 3],
     pub tex_coords: [f32; 2],
-    pub index: u32,
+    pub index: i32,
 }
