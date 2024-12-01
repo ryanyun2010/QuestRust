@@ -7,10 +7,7 @@ use crate::world::World;
 use std::num::NonZeroU64;
 use std::num::NonZeroU32;
 
-// const TEST_INDICES: &[u16] = &[
-    // 0,1,2,
-    // 4,5,3,
-// ];
+
 
 const BACKGROUND_COLOR: wgpu::Color = wgpu::Color {
     r: 1.0,
@@ -28,12 +25,14 @@ pub struct State<'a> {
     pub size: winit::dpi::PhysicalSize<u32>,
     pub render_pipeline: wgpu::RenderPipeline,
     pub diffuse_bind_group: wgpu::BindGroup,
+    RETINA_SCALE: f64,
     window: &'a Window,
     diffuse_texture: texture::Texture,
 }
 impl<'a> State<'a> { 
     pub async fn new(window: &'a Window) -> State<'a> {
         let size = window.inner_size();
+        let RETINA_SCALE: f64 = window.scale_factor();
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,
             ..Default::default()
@@ -214,7 +213,8 @@ impl<'a> State<'a> {
             size: size,
             render_pipeline: render_pipeline,
             diffuse_bind_group: diffuse_bind_group,
-            diffuse_texture: diffuse_texture
+            diffuse_texture: diffuse_texture,
+            RETINA_SCALE: RETINA_SCALE,
         }
  
     }
@@ -226,6 +226,7 @@ impl<'a> State<'a> {
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
             self.size = new_size;
+            println!("Resizing to {:?}", new_size);
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
@@ -241,7 +242,7 @@ impl<'a> State<'a> {
 
    
     pub fn render(&mut self, world: &World) -> Result<(), wgpu::SurfaceError> {
-        let world_render_data = &world.get_render_data(self.size);
+        let world_render_data = &world.get_render_data(self.size, self.RETINA_SCALE);
         let vertices = &world_render_data.vertex;
         if vertices.len() < 1 {
             return Ok(());

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use crate::vertex::Vertex;
 use winit::dpi::PhysicalSize;
 #[derive(Debug)]
-struct Chunk{  // 16x16 blocks of 16x16 = chunks are 256x256 pixels, so a chunk with x =0, y =0, is pixels 0-255, 0-255
+struct Chunk{  // 16x16 blocks of 16x16 = chunks are 256x256 pixels but 256 * RETINA SCALE accounting for retina, so a chunk with x =0, y =0, is pixels 0-255, 0-255
     chunk_id: usize,
     x: usize,
     y: usize,
@@ -23,7 +23,7 @@ pub struct World{
     sprite_lookup: HashMap<usize,usize> // corresponds element_ids to sprite_ids ie. to get the sprite for element_id x, just do sprite_lookup[x]
 }
 
-impl World{ // World will render chunks within 8 of the player, ie. a circle of 2048 pixels radius
+impl World{ // World will render chunks within 8 of the player, ie. a circle of 2048 * RETINA SCALE pixels radius
     pub fn new() -> Self{
         let mut chunks = Vec::new();
         let mut player = Player::new();
@@ -85,7 +85,7 @@ impl World{ // World will render chunks within 8 of the player, ie. a circle of 
         self.element_id - 1
     }
 
-    pub fn get_render_data(&self, window_size: PhysicalSize<u32>) -> RenderData{
+    pub fn get_render_data(&self, window_size: PhysicalSize<u32>, RETINA_SCALE: f64) -> RenderData{
         let mut render_data = RenderData::new();
         let player_chunk_x = World::coord_to_chunk_coord(self.player.x);
         let player_chunk_y = World::coord_to_chunk_coord(self.player.y);
@@ -100,8 +100,8 @@ impl World{ // World will render chunks within 8 of the player, ie. a circle of 
                     let sprite_id = potentially_sprite_id.unwrap();
                     let sprite = &self.sprites[sprite_id];
                     
-                    render_data.vertex.extend(sprite.draw_data(chunk.terrain[*terrain].x, chunk.terrain[*terrain].y, 64, 64, window_size).vertex);
-                    render_data.index.extend(sprite.draw_data(chunk.terrain[*terrain].x, chunk.terrain[*terrain].y, 64, 64, window_size).index);
+                    render_data.vertex.extend(sprite.draw_data(chunk.terrain[*terrain].x, chunk.terrain[*terrain].y, 16, 16, window_size, RETINA_SCALE).vertex);
+                    render_data.index.extend(sprite.draw_data(chunk.terrain[*terrain].x, chunk.terrain[*terrain].y, 16, 16, window_size, RETINA_SCALE).index);
                 }
             }
         }
@@ -141,9 +141,9 @@ struct Sprite{
 }
 
 impl Sprite{
-    fn draw_data(&self, screen_x: usize, screen_y: usize, screen_w: usize, screen_h: usize, window_size: PhysicalSize<u32>) -> RenderData{
-        let screen_to_render_ratio_x = 2.0 / window_size.width as f32;
-        let screen_to_render_ratio_y = 2.0 / window_size.height as f32;
+    fn draw_data(&self, screen_x: usize, screen_y: usize, screen_w: usize, screen_h: usize, window_size: PhysicalSize<u32>, RETINA_SCALE: f64) -> RenderData{
+        let screen_to_render_ratio_x = 2.0 / window_size.width as f32 * RETINA_SCALE as f32;
+        let screen_to_render_ratio_y = 2.0 / window_size.height as f32 * RETINA_SCALE as f32;
         
         let x = screen_x as f32 * screen_to_render_ratio_x - 1.0;
         let y = screen_y as f32 * screen_to_render_ratio_y - 1.0;
