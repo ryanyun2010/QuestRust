@@ -76,8 +76,8 @@ impl<'a> State<'a> {
         };
         surface.configure(&device, &config);
 
-        let diffuse_bytes = include_bytes!("panda.png");
-        let diffuse_texture = texture::Texture::from_bytes(&device, &queue, diffuse_bytes, "panda.png").unwrap();
+        let diffuse_bytes = include_bytes!("grass.png");
+        let diffuse_texture = texture::Texture::from_bytes(&device, &queue, diffuse_bytes, "grass.png").unwrap();
         let diffuse_bytes2 = include_bytes!("panda2.png");
         let diffuse_texture2 = texture::Texture::from_bytes(&device, &queue, diffuse_bytes2, "panda2.png").unwrap();
         let diffuse_bytes3 = include_bytes!("panda3.jpeg");

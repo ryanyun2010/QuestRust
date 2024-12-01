@@ -149,11 +149,12 @@ impl Sprite{
         let screen_to_render_ratio_x = 2.0 / window_size.width as f32 * RETINA_SCALE as f32;
         let screen_to_render_ratio_y = 2.0 / window_size.height as f32 * RETINA_SCALE as f32;
         
-        let x = screen_x as f32 * screen_to_render_ratio_x - 1.0;
-        let y = screen_y as f32 * screen_to_render_ratio_y - 1.0;
-
         let w = screen_w as f32 * screen_to_render_ratio_x;
         let h = screen_h as f32 * screen_to_render_ratio_y;
+
+        let x = screen_x as f32 * screen_to_render_ratio_x - 1.0;
+        let y = -1.0 * (screen_y as f32 * screen_to_render_ratio_y - 1.0) - h;
+
 
         let vertex = vec![
             Vertex { position: [x, y, 0.0], tex_coords: [0.0, 1.0], index: self.texture_index },
