@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use crate::vertex::Vertex;
 use winit::dpi::PhysicalSize;
 #[derive(Debug)]
-struct Chunk{  // 16x16 blocks of 16x16 = chunks are 256x256 pixels but 256 * RETINA SCALE accounting for retina, so a chunk with x =0, y =0, is pixels 0-255, 0-255
+pub struct Chunk{  // 32x32 blocks of 32x32 = chunks are 1024x1024 pixels but 1024 * RETINA SCALE accounting for retina, so a chunk with x =0, y =0, is pixels 0-1023, 0-1023
     chunk_id: usize,
     x: usize,
     y: usize,
@@ -16,14 +16,14 @@ impl Chunk{
 }
 
 pub struct World{
-    chunks: Vec<Chunk>,
+    pub chunks: Vec<Chunk>,
     player: Player,
     element_id: usize,
     sprites: Vec<Sprite>,
-    sprite_lookup: HashMap<usize,usize> // corresponds element_ids to sprite_ids ie. to get the sprite for element_id x, just do sprite_lookup[x]
+    pub sprite_lookup: HashMap<usize,usize> // corresponds element_ids to sprite_ids ie. to get the sprite for element_id x, just do sprite_lookup[x]
 }
 
-impl World{ // World will render chunks within 8 of the player, ie. a circle of 2048 * RETINA SCALE pixels radius
+impl World{ // World will render chunks within 4 of the player, ie. a circle of 4096 * RETINA SCALE pixels radius
     pub fn new() -> Self{
         let mut chunks = Vec::new();
         let mut player = Player::new();
@@ -54,7 +54,7 @@ impl World{ // World will render chunks within 8 of the player, ie. a circle of 
         new_chunk_id
     }
     fn coord_to_chunk_coord(coord: usize) -> usize{
-        (coord as f32 / 256.0).floor() as usize
+        (coord as f32 / 1024.0).floor() as usize
     }
     fn get_chunk_from_xy(&self, x: usize, y: usize) -> Option<usize>{
         let chunk_x = World::coord_to_chunk_coord(x);
@@ -91,17 +91,21 @@ impl World{ // World will render chunks within 8 of the player, ie. a circle of 
         let player_chunk_y = World::coord_to_chunk_coord(self.player.y);
 
         for chunk in self.chunks.iter(){
-            if (usize::pow(chunk.x,2) + usize::pow(chunk.y,2)) <= 64{
+            if (usize::pow(chunk.x,2) + usize::pow(chunk.y,2)) <= 16{
                 for terrain in chunk.terrain_ids.iter(){
+                    
                     let potentially_sprite_id = self.get_sprite(*terrain);
                     if potentially_sprite_id.is_none(){
                         continue;
                     }
                     let sprite_id = potentially_sprite_id.unwrap();
                     let sprite = &self.sprites[sprite_id];
+
+                    let index_offset = render_data.vertex.len() as u16;
+                    let draw_data = sprite.draw_data(chunk.terrain[*terrain].x, chunk.terrain[*terrain].y, 32, 32, window_size, RETINA_SCALE, index_offset);
                     
-                    render_data.vertex.extend(sprite.draw_data(chunk.terrain[*terrain].x, chunk.terrain[*terrain].y, 16, 16, window_size, RETINA_SCALE).vertex);
-                    render_data.index.extend(sprite.draw_data(chunk.terrain[*terrain].x, chunk.terrain[*terrain].y, 16, 16, window_size, RETINA_SCALE).index);
+                    render_data.vertex.extend(draw_data.vertex);
+                    render_data.index.extend(draw_data.index);
                 }
             }
         }
@@ -122,7 +126,7 @@ impl World{ // World will render chunks within 8 of the player, ie. a circle of 
     }
 }
 #[derive(Copy, Clone, Debug)]
-struct Terrain{
+struct Terrain{ // terrain is always 32x32 pixels
     element_id: usize,
     x: usize,
     y: usize
@@ -141,7 +145,7 @@ struct Sprite{
 }
 
 impl Sprite{
-    fn draw_data(&self, screen_x: usize, screen_y: usize, screen_w: usize, screen_h: usize, window_size: PhysicalSize<u32>, RETINA_SCALE: f64) -> RenderData{
+    fn draw_data(&self, screen_x: usize, screen_y: usize, screen_w: usize, screen_h: usize, window_size: PhysicalSize<u32>, RETINA_SCALE: f64, index_offset:u16) -> RenderData{
         let screen_to_render_ratio_x = 2.0 / window_size.width as f32 * RETINA_SCALE as f32;
         let screen_to_render_ratio_y = 2.0 / window_size.height as f32 * RETINA_SCALE as f32;
         
@@ -158,7 +162,7 @@ impl Sprite{
             Vertex { position: [x, y + h, 0.0], tex_coords: [0.0, 0.0], index: self.texture_index },
         ];
 
-        let index = vec![0, 1, 2, 0, 2, 3];
+        let index = vec![0 + index_offset, 1 + index_offset, 2 + index_offset, 0 + index_offset, 2 + index_offset, 3 + index_offset];
 
         RenderData { vertex, index }
     }
@@ -189,3 +193,18 @@ impl Player {
         }
     }
 }
+
+
+
+/*
+RenderData { 
+vertex: [
+Vertex { position: [-1.0, -1.0, 0.0], tex_coords: [0.0, 1.0], index: 0 },
+Vertex { position: [-0.92, -1.0, 0.0], tex_coords: [1.0, 1.0], index: 0 },
+Vertex { position: [-0.92, -0.8933333, 0.0], tex_coords: [1.0, 0.0], index: 0 },
+Vertex { position: [-1.0, -0.8933333, 0.0], tex_coords: [0.0, 0.0], index: 0 },
+ Vertex { position: [-0.92, -1.0, 0.0], tex_coords: [0.0, 1.0], index: 0 },
+ Vertex { position: [-0.84000003, -1.0, 0.0], tex_coords: [1.0, 1.0], index: 0 },
+ Vertex { position: [-0.84000003, -0.8933333, 0.0], tex_coords: [1.0, 0.0], index: 0 }, 
+ ertex { position: [-0.92, -0.8933333, 0.0], tex_coords: [0.0, 0.0], index: 0 }],
+ index: [0, 1, 2, 0, 2, 3, 0, 1, 2, 0, 2, 3] }*/
