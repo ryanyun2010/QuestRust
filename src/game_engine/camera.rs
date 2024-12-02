@@ -1,5 +1,6 @@
 use crate::world::World;
 use crate::world::RenderData;
+
 pub struct Camera{
     pub viewpoint_width: usize,
     pub viewpoint_height: usize,

@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use crate::vertex::Vertex;
 use winit::dpi::PhysicalSize;
+use crate::entities::EntityTags;
+
 #[derive(Debug)]
 pub struct Chunk{  // 32x32 blocks of 32x32 = chunks are 1024x1024 pixels but 1024 * RETINA SCALE accounting for retina, so a chunk with x =0, y =0, is pixels 0-1023, 0-1023
     pub chunk_id: usize,
@@ -31,9 +33,9 @@ pub struct World{
     pub sprites: Vec<Sprite>,
     pub sprite_lookup: HashMap<usize,usize>, // corresponds element_ids to sprite_ids ie. to get the sprite for element_id x, just do sprite_lookup[x]
     pub chunk_lookup: HashMap<[usize; 2],usize>, // corresponds chunk x,y to id
-    pub terrain_lookup: HashMap<usize,usize>, // corresponds element_ids of terrain to chunk_ids
-    pub entity_lookup: HashMap<usize,usize>, // corresponds element_ids of entities to chunk_ids
-    pub entity_tags_lookup: HashMap<usize,EntityTags>, // corresponds element_ids of entities to the entity's tags
+    /* TODO: MAKE THIS ACTUALLY WORK */ pub terrain_lookup: HashMap<usize,usize>, // corresponds element_ids of terrain to chunk_ids
+    /* TODO: MAKE THIS ACTUALLY WORK */ pub entity_lookup: HashMap<usize,usize>, // corresponds element_ids of entities to chunk_ids
+    /* TODO: MAKE THIS ACTUALLY WORK */ pub entity_tags_lookup: HashMap<usize,EntityTags>, // corresponds element_ids of entities to the entity's tags
 }
 
 impl World{ 
@@ -44,13 +46,19 @@ impl World{
         let mut sprites = Vec::new();
         let mut sprite_lookup = HashMap::new();
         let mut chunk_lookup = HashMap::new();
+        let mut terrain_lookup = HashMap::new();
+        let mut entity_lookup = HashMap::new();
+        let mut entity_tags_lookup = HashMap::new();
         Self{
             chunks: chunks,
             player: player,
             element_id: element_id,
             sprites: sprites,
             sprite_lookup: sprite_lookup,
-            chunk_lookup: chunk_lookup
+            chunk_lookup: chunk_lookup,
+            terrain_lookup: terrain_lookup,
+            entity_lookup: entity_lookup,
+            entity_tags_lookup: entity_tags_lookup,
         }
     }
     
