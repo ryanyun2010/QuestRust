@@ -1,3 +1,4 @@
+use crate::loot::Loot;
 #[derive(Copy, Clone, Debug)]
 pub enum AttackType {
     Melee,
@@ -13,7 +14,10 @@ pub enum MonsterType {
     Parasite,
     Beast,
     Demon,
-    Dragon
+    Dragon,
+    Item,
+    Ambient,
+    Structure
 }
 #[derive(Clone, Debug)]
 pub struct EntityTags {
@@ -24,11 +28,14 @@ pub struct EntityTags {
     aggro_range: usize,
     attack_type: AttackType,
     attacks: EntityAttackPattern,
-    movement_speed: usize
+    movement_speed: usize,
+    is_item: bool,
+    contained_item: Option<Item>,
+    drops: Option<Loot>
 }
 
 impl EntityTags{
-    pub fn new(aggressive: bool, monster_type: MonsterType, follows_player: bool, range: usize, aggro_range: usize, attack_type: AttackType, attacks: EntityAttackPattern, movement_speed: usize) -> Self{
+    pub fn new(aggressive: bool, monster_type: MonsterType, follows_player: bool, range: usize, aggro_range: usize, attack_type: AttackType, attacks: EntityAttackPattern, movement_speed: usize, is_item: bool, drops: Option<Loot>,  contained_item: Option<Item>) -> Self{
         Self{
             aggressive: aggressive,
             monster_type: monster_type,
@@ -37,7 +44,10 @@ impl EntityTags{
             aggro_range: aggro_range,
             attack_type: attack_type,
             attacks: attacks,
-            movement_speed: movement_speed
+            movement_speed: movement_speed,
+            is_item: is_item,
+            drops: drops,
+            contained_item: contained_item
         }
     }
 }
@@ -49,6 +59,11 @@ pub struct EntityAttackPattern {
 }
 
 #[derive(Copy, Clone, Debug)]
-struct EntityAttack{
+pub struct EntityAttack{
     // TODO
+}
+
+#[derive(Clone, Debug)]
+pub struct Item {
+    name: String
 }
