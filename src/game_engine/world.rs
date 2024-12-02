@@ -60,7 +60,7 @@ impl World{ // World will render chunks within 4 of the player, ie. a circle of 
         let chunk_x = World::coord_to_chunk_coord(x);
         let chunk_y = World::coord_to_chunk_coord(y);
 
-        for chunk in self.chunks.iter(){
+        for chunk in self.chunks.iter(){ // TOO FUCKING SLOW.
             if chunk.x == chunk_x && chunk.y == chunk_y{
                 return Some(chunk.chunk_id);
             }
