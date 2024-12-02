@@ -18,7 +18,17 @@ impl Camera{
             camera_y: 0,
         }
     }
-    pub fn render(&self, world: &World) -> RenderData{
+    pub fn render(&mut self, world: &World) -> RenderData{
+        if world.player.x > self.viewpoint_width / 2{
+            self.camera_x = world.player.x - self.viewpoint_width / 2;
+        }else{
+            self.camera_x = 0;
+        }
+        if world.player.y > self.viewpoint_height / 2{
+            self.camera_y = world.player.y - self.viewpoint_height / 2;
+        }else{
+            self.camera_y = 0;
+        }
         let mut render_data = RenderData::new();
         let camera_left_chunk_x = World::coord_to_chunk_coord(self.camera_x);
         let camera_right_chunk_x = World::coord_to_chunk_coord(self.camera_x + self.viewpoint_width);

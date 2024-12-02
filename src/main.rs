@@ -30,5 +30,6 @@ fn main() {
         }
     }
     println!("{:?}",world.chunks[0]);
-    pollster::block_on(window::run(&world, &mut camera));
+    
+    pollster::block_on(window::run(&mut world, &mut camera));
 }

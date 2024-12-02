@@ -1,3 +1,4 @@
+use winit::keyboard::Key;
 use winit::window::Window;
 use winit::event::*;
 use wgpu::util::DeviceExt;
@@ -240,8 +241,28 @@ impl<'a> State<'a> {
         }
     }
 
-    pub fn input(&mut self, _event: &WindowEvent) -> bool {
-        false
+    pub fn input(&mut self, key: winit::keyboard::Key<&str> ) -> bool {
+        match key {
+            Key::Character("w") => {
+                println!("W");
+                return true;
+            },
+            Key::Character("a") => {
+                println!("A");
+                return true;
+            },
+            Key::Character("s") => {
+                println!("S");
+                return true;
+            },
+            Key::Character("d") => {
+                println!("D");
+                return true;
+            },
+            _ => {
+                return false;
+            }
+        }
     }
 
     pub fn update(&mut self) {
@@ -251,21 +272,21 @@ impl<'a> State<'a> {
     pub fn render(&mut self, world: &World, camera: &mut Camera) -> Result<(), wgpu::SurfaceError> {
         if self.test > 70{
             let elapsed_time = self.instant.elapsed();
-            if(elapsed_time.as_nanos() > 0){
+            if elapsed_time.as_nanos() > 0{
                 self.fpsarray.push(1.0/(elapsed_time.as_nanos() as f64/1000000000.0))
             }
-            if(self.fpsarray.len() > 100){
+            if self.fpsarray.len() > 100{
                 let mut sum = 0.0;
                 for i in 0..100{
                     sum += self.fpsarray[i];
                 }
-                println!("FPS: {}", sum/100.0);
+                // println!("FPS: {}", sum/100.0);
                 self.fpsarray.remove(0);
             }
         }
+        // println!("{:?}",world.player.x);
         self.instant = Instant::now();
         self.test += 1;
-        camera.camera_x += 1;
         
         
         

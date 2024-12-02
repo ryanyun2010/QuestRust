@@ -1,9 +1,6 @@
 
 use winit::{
-    event::*,
-    event_loop::EventLoop,
-    keyboard::{KeyCode, PhysicalKey},
-    window::{WindowBuilder},
+    event::*, event_loop::EventLoop, keyboard::{Key, KeyCode, PhysicalKey}, platform::modifier_supplement::KeyEventExtModifierSupplement, window::WindowBuilder
 };
 
 use crate::state::State;
@@ -19,8 +16,11 @@ pub async fn run(world: &World, camera: &mut Camera) {
         Event::WindowEvent {
             ref event,
             window_id,
-        } if window_id == state.window().id() => if !state.input(event){
+        } if window_id == state.window().id() =>{
             match event {
+                WindowEvent::KeyboardInput { event: keyboard_input_event, .. } => { 
+                    state.input(keyboard_input_event.key_without_modifiers().as_ref());
+                },
                 WindowEvent::CloseRequested
                 | WindowEvent::KeyboardInput {
                     event:

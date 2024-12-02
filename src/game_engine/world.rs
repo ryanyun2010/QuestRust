@@ -18,7 +18,7 @@ impl Chunk{
 
 pub struct World{
     pub chunks: Vec<Chunk>,
-    player: Player,
+    pub player: Player,
     element_id: usize,
     pub sprites: Vec<Sprite>,
     pub sprite_lookup: HashMap<usize,usize>, // corresponds element_ids to sprite_ids ie. to get the sprite for element_id x, just do sprite_lookup[x]
@@ -162,8 +162,8 @@ impl RenderData{
 }
 
 pub struct Player {
-    x: usize,
-    y: usize,
+    pub x: usize,
+    pub y: usize,
 }
 
 impl Player {
