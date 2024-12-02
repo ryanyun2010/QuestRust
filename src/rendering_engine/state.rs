@@ -241,30 +241,6 @@ impl<'a> State<'a> {
         }
     }
 
-    pub fn input(&mut self, key: winit::keyboard::Key<&str> ) -> bool {
-        match key {
-            Key::Character("w") => {
-                println!("W");
-                return true;
-            },
-            Key::Character("a") => {
-                println!("A");
-                return true;
-            },
-            Key::Character("s") => {
-                println!("S");
-                return true;
-            },
-            Key::Character("d") => {
-                println!("D");
-                return true;
-            },
-            _ => {
-                return false;
-            }
-        }
-    }
-
     pub fn update(&mut self) {
     }
 

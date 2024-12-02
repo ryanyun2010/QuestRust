@@ -7,7 +7,7 @@ use crate::state::State;
 use crate::world::World;
 use crate::camera::Camera;
 
-pub async fn run(world: &World, camera: &mut Camera) {
+pub async fn run(world: &mut World, camera: &mut Camera) {
     let event_loop = EventLoop::new().unwrap();
     let window = WindowBuilder::new().with_title("RustTest").build(&event_loop).unwrap();
     let mut state = State::new(&window).await;
@@ -19,7 +19,7 @@ pub async fn run(world: &World, camera: &mut Camera) {
         } if window_id == state.window().id() =>{
             match event {
                 WindowEvent::KeyboardInput { event: keyboard_input_event, .. } => { 
-                    state.input(keyboard_input_event.key_without_modifiers().as_ref());
+                    world.input(keyboard_input_event.key_without_modifiers().as_ref());
                 },
                 WindowEvent::CloseRequested
                 | WindowEvent::KeyboardInput {

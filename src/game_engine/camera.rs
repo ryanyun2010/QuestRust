@@ -23,7 +23,9 @@ impl Camera{
             self.camera_x = world.player.x - self.viewpoint_width / 2;
         }else{
             self.camera_x = 0;
-        }
+        }   
+        println!("{:?} {:?}", world.player.y, self.viewpoint_height / 2);
+
         if world.player.y > self.viewpoint_height / 2{
             self.camera_y = world.player.y - self.viewpoint_height / 2;
         }else{

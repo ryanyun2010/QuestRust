@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use crate::vertex::Vertex;
 use crate::entities::EntityTags;
+use winit::keyboard::Key;
 
 #[derive(Debug)]
 pub struct Chunk{  // 32x32 blocks of 32x32 = chunks are 1024x1024 pixels but 1024 * RETINA SCALE accounting for retina, so a chunk with x =0, y =0, is pixels 0-1023, 0-1023
@@ -104,6 +105,21 @@ impl World{
     pub fn get_sprite(&self, element_id: usize) -> Option<usize>{
         self.sprite_lookup.get(&element_id).copied()
     }
+    pub fn input(&mut self, key: winit::keyboard::Key<&str>){
+        match key{
+            Key::Character("w") => self.player.y -= 32,
+            Key::Character("a") => self.player.x -= 32,
+            Key::Character("s") => self.player.y += 32,
+            Key::Character("d") => self.player.x += 32,
+            _ => {}
+        }
+        if self.player.x < 1000{
+            self.player.x = 1000;
+        }
+        if self.player.y < 700{
+            self.player.y = 700;
+        }
+    }
 }
 #[derive(Copy, Clone, Debug)]
 pub struct Terrain{ // terrain is always 32x32 pixels
@@ -169,8 +185,8 @@ pub struct Player {
 impl Player {
     fn new() -> Self {
         Self {
-            x: 0,
-            y: 0,
+            x: 1000,
+            y: 700,
         }
     }
 }
