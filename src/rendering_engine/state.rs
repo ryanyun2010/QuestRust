@@ -32,7 +32,6 @@ pub struct State<'a> {
     pub instant: Instant,
     pub fpsarray: Vec<f64>,
     window: &'a Window,
-    diffuse_texture: texture::Texture,
 }
 impl<'a> State<'a> { 
     pub async fn new(window: &'a Window) -> State<'a> {
@@ -220,7 +219,6 @@ impl<'a> State<'a> {
             size: size,
             render_pipeline: render_pipeline,
             diffuse_bind_group: diffuse_bind_group,
-            diffuse_texture: diffuse_texture,
             instant: instant,
             test: test,
             fpsarray: fpsarray,
