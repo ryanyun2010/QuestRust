@@ -33,6 +33,7 @@ pub struct World{
     pub chunk_lookup: HashMap<[usize; 2],usize>, // corresponds chunk x,y to id
     pub terrain_lookup: HashMap<usize,usize>, // corresponds element_ids of terrain to chunk_ids
     pub entity_lookup: HashMap<usize,usize>, // corresponds element_ids of entities to chunk_ids
+    pub entity_tags_lookup: HashMap<usize,EntityTags>, // corresponds element_ids of entities to the entity's tags
 }
 
 impl World{ 

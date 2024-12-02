@@ -5,7 +5,7 @@ enum AttackType {
     Magic
 }
 #[derive(Clone, Debug)]
-struct EntityTag {
+struct EntityTags {
     aggressive: bool,
     undead: bool,
     uruk: bool,
