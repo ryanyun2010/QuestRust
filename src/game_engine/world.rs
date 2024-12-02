@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use crate::vertex::Vertex;
-use winit::dpi::PhysicalSize;
 use crate::entities::EntityTags;
 
 #[derive(Debug)]
@@ -16,15 +15,6 @@ pub struct Chunk{  // 32x32 blocks of 32x32 = chunks are 1024x1024 pixels but 10
 
 impl Chunk{
 }
-
-struct Health{
-    health: i32,
-}
-
-struct Damage{
-    damage: i32,
-}
-
 
 pub struct World{
     pub chunks: Vec<Chunk>,
