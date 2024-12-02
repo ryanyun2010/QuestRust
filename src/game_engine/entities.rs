@@ -1,5 +1,5 @@
 #[derive(Copy, Clone, Debug)]
-enum AttackType {
+pub enum AttackType {
     Melee,
     Range,
     Magic
@@ -7,7 +7,7 @@ enum AttackType {
 
 
 #[derive(Copy, Clone, Debug)]
-enum MonsterType {
+pub enum MonsterType {
     Undead,
     Uruk,
     Parasite,
@@ -43,12 +43,12 @@ impl EntityTags{
 }
 
 #[derive(Clone, Debug)]
-struct EntityAttackPattern {
+pub struct EntityAttackPattern {
     attacks: Vec<EntityAttack>,
-    // BLAH BLAH BLAH PEE PEE POO POO
+    // TODO
 }
 
 #[derive(Copy, Clone, Debug)]
 struct EntityAttack{
-    // BLAH BLAH BLAH PEE PEE POO POO
+    // TODO
 }
