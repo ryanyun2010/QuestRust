@@ -64,12 +64,6 @@ impl World{
         let chunk_x = World::coord_to_chunk_coord(x);
         let chunk_y = World::coord_to_chunk_coord(y);
         self.chunk_lookup.get(&[chunk_x, chunk_y]).copied()
-        // for chunk in self.chunks.iter(){ // TOO FUCKING SLOW.
-        //     if chunk.x == chunk_x && chunk.y == chunk_y{
-        //         return Some(chunk.chunk_id);
-        //     }
-        // }
-        // None
     }
 
     pub fn add_terrain(&mut self, x: usize, y: usize) -> usize{
