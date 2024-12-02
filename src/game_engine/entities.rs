@@ -20,17 +20,7 @@ struct EntityTag {
     attacks: Vec<EntityAttack>,
     movement_speed: usize
 }
-// #[derive(Clone, Debug)]
-// struct EntityRangeTag {
-// }
-// #[derive(Clone, Debug)]
-// struct EntityMeleeTag {
 
-// }
-// #[derive(Clone, Debug)]
-// struct EntityMagicTag {
-
-// }
 #[derive(Clone, Debug)]
 struct EntityAttack {
     // BLAH BLAH BLAH PEE PEE POO POO

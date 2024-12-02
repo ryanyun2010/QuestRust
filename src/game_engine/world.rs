@@ -15,13 +15,22 @@ pub struct Chunk{  // 32x32 blocks of 32x32 = chunks are 1024x1024 pixels but 10
 impl Chunk{
 }
 
+struct Health{
+    health: i32,
+}
+
+struct Damage{
+    damage: i32,
+}
+
+
 pub struct World{
     pub chunks: Vec<Chunk>,
     player: Player,
     element_id: usize,
     pub sprites: Vec<Sprite>,
     pub sprite_lookup: HashMap<usize,usize>, // corresponds element_ids to sprite_ids ie. to get the sprite for element_id x, just do sprite_lookup[x]
-    pub chunk_lookup: HashMap<[usize; 2],usize>,
+    pub chunk_lookup: HashMap<[usize; 2],usize>, // corresponds chunk x,y to id
     pub terrain_lookup: HashMap<usize,usize>, // corresponds element_ids of terrain to chunk_ids
     pub entity_lookup: HashMap<usize,usize>, // corresponds element_ids of entities to chunk_ids
 }
