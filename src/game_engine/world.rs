@@ -23,7 +23,7 @@ pub struct World{
     pub sprite_lookup: HashMap<usize,usize> // corresponds element_ids to sprite_ids ie. to get the sprite for element_id x, just do sprite_lookup[x]
 }
 
-impl World{ // World will render chunks within 4 of the player, ie. a circle of 4096 * RETINA SCALE pixels radius
+impl World{ 
     pub fn new() -> Self{
         let mut chunks = Vec::new();
         let mut player = Player::new();
