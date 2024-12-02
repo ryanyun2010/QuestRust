@@ -20,7 +20,8 @@ pub struct World{
     player: Player,
     element_id: usize,
     pub sprites: Vec<Sprite>,
-    pub sprite_lookup: HashMap<usize,usize> // corresponds element_ids to sprite_ids ie. to get the sprite for element_id x, just do sprite_lookup[x]
+    pub sprite_lookup: HashMap<usize,usize>, // corresponds element_ids to sprite_ids ie. to get the sprite for element_id x, just do sprite_lookup[x]
+    pub chunk_lookup: HashMap<[usize; 2],usize>
 }
 
 impl World{ 
@@ -30,12 +31,14 @@ impl World{
         let mut element_id = 0;
         let mut sprites = Vec::new();
         let mut sprite_lookup = HashMap::new();
+        let mut chunk_lookup = HashMap::new();
         Self{
             chunks: chunks,
             player: player,
             element_id: element_id,
             sprites: sprites,
-            sprite_lookup: sprite_lookup
+            sprite_lookup: sprite_lookup,
+            chunk_lookup: chunk_lookup
         }
     }
     
@@ -51,6 +54,7 @@ impl World{
                 terrain_ids: Vec::new(),
                 entities_ids: Vec::new(),
             });
+        self.chunk_lookup.insert([chunk_x, chunk_y], new_chunk_id);
         new_chunk_id
     }
     pub fn coord_to_chunk_coord(coord: usize) -> usize{
@@ -59,14 +63,13 @@ impl World{
     pub fn get_chunk_from_xy(&self, x: usize, y: usize) -> Option<usize>{
         let chunk_x = World::coord_to_chunk_coord(x);
         let chunk_y = World::coord_to_chunk_coord(y);
-
-        for chunk in self.chunks.iter(){
-            if chunk.x == chunk_x && chunk.y == chunk_y{
-                return Some(chunk.chunk_id);
-            }
-        }
-
-        None
+        self.chunk_lookup.get(&[chunk_x, chunk_y]).copied()
+        // for chunk in self.chunks.iter(){ // TOO FUCKING SLOW.
+        //     if chunk.x == chunk_x && chunk.y == chunk_y{
+        //         return Some(chunk.chunk_id);
+        //     }
+        // }
+        // None
     }
 
     pub fn add_terrain(&mut self, x: usize, y: usize) -> usize{
