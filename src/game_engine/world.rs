@@ -29,7 +29,7 @@ pub struct World{
     pub terrain: HashMap<usize, Terrain>, // corresponds element id to Terrain element
     pub entities: RefCell<HashMap<usize, Entity>>, // corresponds element id to Entity element
     pub entity_lookup: HashMap<usize,usize>, // corresponds element_ids of entities to chunk_ids
-    pub entity_tags_lookup: HashMap<usize,EntityTags>, // corresponds element_ids of entities to the entity's tags
+    pub entity_tags_lookup: HashMap<usize,Vec<EntityTags>>, // corresponds element_ids of entities to the entity's tags
     pub loaded_chunks: Vec<usize>, // chunk ids that are currently loaded
 }
 
@@ -105,7 +105,7 @@ impl World{
             return Some(&self.chunks[chunk_id]);
         }
     }
-    pub fn get_entity_tags(&self, element_id: usize) -> Option<&EntityTags>{
+    pub fn get_entity_tags(&self, element_id: usize) -> Option<&Vec<EntityTags>>{
         self.entity_tags_lookup.get(&element_id)
     }
     pub fn add_terrain(&mut self, x: usize, y: usize) -> usize{
@@ -125,7 +125,7 @@ impl World{
         self.element_id - 1
     }
 
-    pub fn add_entity(&mut self, x: f32, y: f32, tags: EntityTags) -> usize{
+    pub fn add_entity(&mut self, x: f32, y: f32, tags: Vec<EntityTags>) -> usize{
         let new_entity: Entity = Entity::new(self.element_id,x,y);
         let chunk_id_potentially = self.get_chunk_from_xy(World::coord_to_chunk_coord(new_entity.x.floor() as usize), World::coord_to_chunk_coord(new_entity.y.floor() as usize));
         let chunk_id: usize;
@@ -189,27 +189,40 @@ impl World{
     }
     
     pub fn update_entity(&self, entity_id: &usize, player_x: &f32, player_y: &f32) {
-        let entity_tags = {
-            self.get_entity_tags(*entity_id).unwrap()
-        };
+        let entity_tags = self.get_entity_tags(*entity_id).unwrap();
+        // };
     
         let mut entity_mut_hash = self.entities.borrow_mut();
         let mut entity = entity_mut_hash.get_mut(entity_id).unwrap();
-        if entity.aggroed_to_player {
+        let mut distance: f64 = f64::MAX;
+        let mut follows_player = false;
+        let mut aggroed_to_player = false;
+        let mut aggro_range = f64
+        for tag_id in 0..entity_tags.len()-1 {
+            match entity_tags[tag_id] {
+                EntityTags::FollowsPlayer => {
+                    folows_player = true;
+                },
+                EntityTags::Range(range) => {
+                    aggro_range = range as f64;
+                }
+                _ => println!("Other!")
+            }
+        }
+        if follows_player {
+            distance = f64::sqrt(
+                (entity.y as f64 - (*player_y) as f64).powf(2.0) + (entity.x as f64 - (*player_x) as f64).powf(2.0),
+            );
+            if distance < aggro_range {
+                aggroed_to_player = true;
+            }
+        }
+        if aggroed_to_player {
             let direction = [*player_x - entity.x, *player_y - entity.y];
             if(direction[0] + direction[1] > 0.0){
                 let normalized_direction = [(direction[0]) / (direction[0] + direction[1]), (direction[1]) / (direction[0] + direction[1])];
                 entity.x += normalized_direction[0];
                 entity.y += normalized_direction[1];
-            }
-        }
-
-        if entity_tags.follows_player {
-            let distance = f64::sqrt(
-                (entity.y as f64 - (*player_y) as f64).powf(2.0) + (entity.x as f64 - (*player_x) as f64).powf(2.0),
-            );
-            if distance < entity_tags.aggro_range as f64 {
-                entity.aggroed_to_player = true;
             }
         }
     }

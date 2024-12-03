@@ -20,38 +20,38 @@ pub enum MonsterType {
     Structure
 }
 #[derive(Clone, Debug)]
-pub struct EntityTags {
-    pub aggressive: bool,
-    pub monster_type: MonsterType,
-    pub follows_player: bool,
-    pub range: usize,
-    pub aggro_range: usize,
-    pub attack_type: AttackType,
-    pub attacks: EntityAttackPattern,
-    pub movement_speed: usize,
-    pub is_item: bool,
-    pub contained_item: Option<Item>,
-    pub drops: Option<Loot>,
-    pub max_health: usize,
+pub enum EntityTags {
+    Aggressive(bool),
+    MonsterType(MonsterType),
+    FollowsPlayer,
+    Range(usize),
+    AggroRange(usize),
+    AttackType(AttackType),
+    Attacks(EntityAttackPattern),
+    MovementSpeed(usize),
+    Item(Item),
+    Drops(Loot),
+    BaseHealth(usize),
 }
 
 impl EntityTags{
-    pub fn new(aggressive: bool, monster_type: MonsterType, follows_player: bool, range: usize, aggro_range: usize, attack_type: AttackType, attacks: EntityAttackPattern, movement_speed: usize, is_item: bool, drops: Option<Loot>,  contained_item: Option<Item>, max_health: usize) -> Self{
-        Self{
-            aggressive: aggressive,
-            monster_type: monster_type,
-            follows_player: follows_player,
-            range: range,
-            aggro_range: aggro_range,
-            attack_type: attack_type,
-            attacks: attacks,
-            movement_speed: movement_speed,
-            is_item: is_item,
-            drops: drops,
-            contained_item: contained_item,
-            max_health: max_health
-        }
-    }
+    // pub fn new(aggressive: bool, monster_type: MonsterType, follows_player: bool, range: usize, aggro_range: usize, attack_type: AttackType, attacks: EntityAttackPattern, movement_speed: usize, is_item: bool, drops: Option<Loot>,  contained_item: Option<Item>, max_health: usize) -> Self{
+    //     Self{
+    //         aggressive: aggressive,
+    //         monster_type: monster_type,
+    //         follows_player: follows_player,
+    //         range: range,
+    //         aggro_range: aggro_range,
+    //         attack_type: attack_type,
+    //         attacks: attacks,
+    //         movement_speed: movement_speed,
+    //         is_item: is_item,
+    //         drops: drops,
+    //         contained_item: contained_item,
+    //         max_health: max_health
+    //     }
+    // }
+
 }
 
 #[derive(Clone, Debug)]
