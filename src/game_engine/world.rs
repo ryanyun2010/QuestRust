@@ -125,7 +125,7 @@ impl World{
         self.element_id - 1
     }
 
-    pub fn add_entity(&mut self, x: f32, y: f32, tags: Vec<EntityTags>) -> usize{
+    pub fn add_entity(&mut self, x: f32, y: f32) -> usize{
         let new_entity: Entity = Entity::new(self.element_id,x,y);
         let chunk_id_potentially = self.get_chunk_from_xy(World::coord_to_chunk_coord(new_entity.x.floor() as usize), World::coord_to_chunk_coord(new_entity.y.floor() as usize));
         let chunk_id: usize;
@@ -138,8 +138,14 @@ impl World{
         self.chunks[chunk_id].entities_ids.push(self.element_id - 1);
         self.entities.borrow_mut().insert(self.element_id - 1, new_entity);
         self.entity_lookup.insert(self.element_id - 1, chunk_id);
-        self.entity_tags_lookup.insert(self.element_id - 1, tags);
+        // self.entity_tags_lookup.insert(self.element_id - 1, tags);
         self.element_id - 1
+    }
+
+    pub fn add_tag(&mut self, element_id: usize, tag: EntityTags){
+        let mut tags = self.entity_tags_lookup.get(&element_id).unwrap_or(&Vec::new()).clone();
+        tags.push(tag);
+        self.entity_tags_lookup.insert(element_id, tags);
     }
 
     pub fn lookup_terrain_chunk(&self, element_id: usize) -> Option<usize>{
@@ -190,21 +196,19 @@ impl World{
     
     pub fn update_entity(&self, entity_id: &usize, player_x: &f32, player_y: &f32) {
         let entity_tags = self.get_entity_tags(*entity_id).unwrap();
-        // };
-    
         let mut entity_mut_hash = self.entities.borrow_mut();
         let mut entity = entity_mut_hash.get_mut(entity_id).unwrap();
         let mut distance: f64 = f64::MAX;
         let mut follows_player = false;
         let mut aggroed_to_player = false;
-        let mut aggro_range = f64
+        let mut aggro_range = 0;
         for tag_id in 0..entity_tags.len()-1 {
             match entity_tags[tag_id] {
                 EntityTags::FollowsPlayer => {
-                    folows_player = true;
+                    follows_player = true;
                 },
-                EntityTags::Range(range) => {
-                    aggro_range = range as f64;
+                EntityTags::AggroRange(range) => {
+                    aggro_range = range as usize;
                 }
                 _ => println!("Other!")
             }
@@ -213,7 +217,7 @@ impl World{
             distance = f64::sqrt(
                 (entity.y as f64 - (*player_y) as f64).powf(2.0) + (entity.x as f64 - (*player_x) as f64).powf(2.0),
             );
-            if distance < aggro_range {
+            if distance < (aggro_range as f64){
                 aggroed_to_player = true;
             }
         }
@@ -221,7 +225,7 @@ impl World{
             let direction = [*player_x - entity.x, *player_y - entity.y];
             if((direction[0].abs() + direction[1].abs()) > 0.0){
                 let magnitude = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
-                entity.x += direction[0] / magnitude ;
+                entity.x += direction[0] / magnitude;
                 entity.y += direction[1] / magnitude;
             }
         }

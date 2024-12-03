@@ -21,7 +21,7 @@ pub enum MonsterType {
 }
 #[derive(Clone, Debug)]
 pub enum EntityTags {
-    Aggressive(bool),
+    Aggressive,
     MonsterType(MonsterType),
     FollowsPlayer,
     Range(usize),
