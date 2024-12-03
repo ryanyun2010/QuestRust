@@ -31,11 +31,12 @@ pub struct EntityTags {
     movement_speed: usize,
     is_item: bool,
     contained_item: Option<Item>,
-    drops: Option<Loot>
+    drops: Option<Loot>,
+    health: usize,
 }
 
 impl EntityTags{
-    pub fn new(aggressive: bool, monster_type: MonsterType, follows_player: bool, range: usize, aggro_range: usize, attack_type: AttackType, attacks: EntityAttackPattern, movement_speed: usize, is_item: bool, drops: Option<Loot>,  contained_item: Option<Item>) -> Self{
+    pub fn new(aggressive: bool, monster_type: MonsterType, follows_player: bool, range: usize, aggro_range: usize, attack_type: AttackType, attacks: EntityAttackPattern, movement_speed: usize, is_item: bool, drops: Option<Loot>,  contained_item: Option<Item>, health: usize) -> Self{
         Self{
             aggressive: aggressive,
             monster_type: monster_type,
@@ -47,7 +48,8 @@ impl EntityTags{
             movement_speed: movement_speed,
             is_item: is_item,
             drops: drops,
-            contained_item: contained_item
+            contained_item: contained_item,
+            health: health
         }
     }
 }
