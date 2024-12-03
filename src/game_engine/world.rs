@@ -165,18 +165,27 @@ impl World{
         self.sprite_lookup.get(&element_id).copied()
     }
     pub fn process_input(&mut self, keys: HashMap<String,bool>){
+        let mut direction: [f32; 2] = [0.0,0.0];
         if *keys.get("w").unwrap_or(&false) || *keys.get("ArrowUp").unwrap_or(&false){
-            self.player.y -= 2.0;
+            direction[1] -= 2.0;
         }
         if *keys.get("a").unwrap_or(&false) || *keys.get("ArrowLeft").unwrap_or(&false){
-            self.player.x -= 2.0;
+            direction[0] -= 2.0;
         }
         if *keys.get("s").unwrap_or(&false) || *keys.get("ArrowDown").unwrap_or(&false){
-            self.player.y += 2.0;
+            direction[1] += 2.0;
         }
         if *keys.get("d").unwrap_or(&false) || *keys.get("ArrowRight").unwrap_or(&false){
-            self.player.x += 2.0;
+            direction[0] += 2.0;
         }
+
+        let magnitude = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
+        
+        if magnitude > 0.0{
+            self.player.y += direction[1] / magnitude * self.player.movement_speed;
+            self.player.x += direction[0] / magnitude * self.player.movement_speed;
+        }
+
         if self.player.y < 3.0 {
             self.player.y = 3.0;
         }
@@ -310,6 +319,7 @@ pub struct Player {
     pub x: f32,
     pub y: f32,
     pub texture_index: i32,
+    pub movement_speed: f32
 }
 
 impl Player {
@@ -318,6 +328,7 @@ impl Player {
             x: 576.0,
             y: 360.0,
             texture_index: 3,
+            movement_speed: 3.0,
         }
     }
     pub fn draw_data(&self, window_size_width: usize, window_size_height: usize, index_offset:u16, vertex_offset_x: i32, vertex_offset_y: i32) -> RenderData{
