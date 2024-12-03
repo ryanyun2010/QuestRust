@@ -32,7 +32,7 @@ pub struct EntityTags {
     is_item: bool,
     contained_item: Option<Item>,
     drops: Option<Loot>,
-    health: usize,
+    base_health: usize,
 }
 
 impl EntityTags{
