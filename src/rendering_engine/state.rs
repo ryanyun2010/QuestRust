@@ -1,13 +1,19 @@
+use winit::event;
+use winit::keyboard::Key;
+use winit::keyboard::NamedKey;
 use winit::window::Window;
 use winit::event::*;
+use std::collections::HashMap;
 use wgpu::util::DeviceExt;
 use crate::vertex::Vertex;
 use crate::texture;
+use crate::world;
 use crate::world::World;
 use crate::camera::Camera;
 use std::num::NonZeroU64;
 use std::num::NonZeroU32;
 use std::time::Instant;
+use winit::event::WindowEvent::KeyboardInput;
 
 
 
@@ -17,6 +23,89 @@ const BACKGROUND_COLOR: wgpu::Color = wgpu::Color {
     b: 1.0,
     a: 1.0,
 };
+
+macro_rules! create_texture_bind_group {
+    ($device:expr, $queue:expr, $($texture_path:expr),*) => {{
+        let mut textures = Vec::new();
+        let mut samplers = Vec::new();
+        
+        $(
+            let texture_bytes = include_bytes!($texture_path);
+            let texture = texture::Texture::from_bytes($device, $queue, texture_bytes, $texture_path).unwrap();
+            textures.push(&texture.view);
+            samplers.push(&texture.sampler); 
+        )*
+
+        let mut texture_index_buffer_contents = vec![0u32; textures.len()];
+        let texture_index_buffer = $device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Index Buffer"),
+            contents: bytemuck::cast_slice(&texture_index_buffer_contents),
+            usage: wgpu::BufferUsages::UNIFORM,
+        });
+
+        let texture_bind_group_layout = $device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        multisampled: false,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                    },
+                    count: NonZeroU32::new(textures.len() as u32),
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: NonZeroU32::new(samplers.len() as u32),
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: true,
+                        min_binding_size: Some(NonZeroU64::new(4).unwrap()),
+                    },
+                    count: None,
+                },
+            ],
+            label: Some("texture_bind_group_layout"),
+        });
+
+        let diffuse_bind_group = $device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &texture_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureViewArray(&textures),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::SamplerArray(&samplers),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                        buffer: &texture_index_buffer,
+                        offset: 0,
+                        size: Some(NonZeroU64::new(4).unwrap()),
+                    }),
+                },
+            ],
+            label: Some("diffuse_bind_group"),
+        });
+
+        (texture_bind_group_layout, diffuse_bind_group)
+    }};
+}
+
+
+
+
+
  
 
 
@@ -31,6 +120,7 @@ pub struct State<'a> {
     pub test: i32,
     pub instant: Instant,
     pub fpsarray: Vec<f64>,
+    pub keys_down: HashMap<String, bool>,
     window: &'a Window,
 }
 impl<'a> State<'a> { 
@@ -39,6 +129,7 @@ impl<'a> State<'a> {
         let fpsarray = Vec::new();
         let test = 0;
         let size = window.inner_size();
+        let keys_down = HashMap::new();
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,
             ..Default::default()
@@ -81,82 +172,19 @@ impl<'a> State<'a> {
             desired_maximum_frame_latency: 2,
         };
         surface.configure(&device, &config);
-
-        let diffuse_bytes = include_bytes!("grass.png");
-        let diffuse_texture = texture::Texture::from_bytes(&device, &queue, diffuse_bytes, "grass.png").unwrap();
-        let diffuse_bytes2 = include_bytes!("panda2.png");
-        let diffuse_texture2 = texture::Texture::from_bytes(&device, &queue, diffuse_bytes2, "panda2.png").unwrap();
-        let diffuse_bytes3 = include_bytes!("panda3.jpeg");
-        let diffuse_texture3 = texture::Texture::from_bytes(&device, &queue, diffuse_bytes3, "panda3.jpeg").unwrap();
-       
-        let mut texture_index_buffer_contents = vec![0u32; 128];
-        let texture_index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Index Buffer"),
-            contents: bytemuck::cast_slice(&texture_index_buffer_contents),
-            usage: wgpu::BufferUsages::UNIFORM,
-        });
-
-        let texture_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Texture {
-                            multisampled: false,
-                            view_dimension: wgpu::TextureViewDimension::D2,
-                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        },
-                        count: NonZeroU32::new(3),
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-        
-                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                        count: NonZeroU32::new(3),
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 2,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: true,
-                            min_binding_size: Some(NonZeroU64::new(4).unwrap()),
-                        },
-                        count: None,
-                    },
-                ],
-               
-                label: Some("texture_bind_group_layout"),
-            });
-        let diffuse_bind_group = device.create_bind_group(
-            &wgpu::BindGroupDescriptor {
-            layout: &texture_bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                binding: 0,
-                resource: wgpu::BindingResource::TextureViewArray(&[&diffuse_texture.view, &diffuse_texture2.view, &diffuse_texture3.view]),
-                },
-                wgpu::BindGroupEntry {
-                binding: 1,
-                resource: wgpu::BindingResource::SamplerArray(&[&diffuse_texture.sampler,&diffuse_texture2.sampler, &diffuse_texture3.sampler]),
-                },
-                wgpu::BindGroupEntry {
-                binding: 2,
-                resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                    buffer: &texture_index_buffer,
-                    offset: 0,
-                    size: Some(NonZeroU64::new(4).unwrap()),
-                }),
-                },
-            ],
-            label: Some("diffuse_bind_group"),
-            }
+        let (texture_bind_group_layout, diffuse_bind_group): (wgpu::BindGroupLayout, wgpu::BindGroup) = create_texture_bind_group!(
+            &device,
+            &queue,
+            "img/grass.png",
+            "img/panda2.png",
+            "img/panda3.jpeg",
+            "img/player.png",
+            "img/dirt.png",
+            "img/dirt2.png",
+            "img/outside.png",
+            "img/wall.png",
+            "img/ghost.png"
         );
-             
-        
-            
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
@@ -222,6 +250,7 @@ impl<'a> State<'a> {
             instant: instant,
             test: test,
             fpsarray: fpsarray,
+            keys_down: keys_down,
         }
  
     }
@@ -240,36 +269,58 @@ impl<'a> State<'a> {
         }
     }
 
-    pub fn input(&mut self, _event: &WindowEvent) -> bool {
-        false
+    pub fn update(&self, world: &mut World) {
+        world.process_input(self.keys_down.clone());
+        world.update_entities();
     }
 
-    pub fn update(&mut self) {
+    pub fn input(&mut self, event: winit::event::KeyEvent) {
+        match event.logical_key {
+            Key::Named(NamedKey::ArrowLeft) => {
+                self.keys_down.insert("ArrowLeft".to_string(), event.state == event::ElementState::Pressed);
+            },
+            Key::Named(NamedKey::ArrowRight) => {
+                self.keys_down.insert("ArrowRight".to_string(), event.state == event::ElementState::Pressed);
+            },
+            Key::Named(NamedKey::ArrowUp) => {
+                self.keys_down.insert("ArrowUp".to_string(), event.state == event::ElementState::Pressed);
+            },
+            Key::Named(NamedKey::ArrowDown) => {
+                self.keys_down.insert("ArrowDown".to_string(), event.state == event::ElementState::Pressed);
+            }
+            _ => {}
+        }
+        let key = event.logical_key.to_text();
+        if key.is_none(){
+            return;
+        }
+        let string_key = key.unwrap().to_string().to_lowercase();
+        let press = match event.state {
+            event::ElementState::Pressed => true,
+            event::ElementState::Released => false,
+        };
+        
+        self.keys_down.insert(string_key, press);
     }
 
-   
-    pub fn render(&mut self, world: &World, camera: &mut Camera) -> Result<(), wgpu::SurfaceError> {
+    pub fn render(&mut self, world: &mut World, camera: &mut Camera) -> Result<(), wgpu::SurfaceError> {
         if self.test > 70{
             let elapsed_time = self.instant.elapsed();
-            if(elapsed_time.as_nanos() > 0){
+            if elapsed_time.as_nanos() > 0{
                 self.fpsarray.push(1.0/(elapsed_time.as_nanos() as f64/1000000000.0))
             }
-            if(self.fpsarray.len() > 100){
+            if self.fpsarray.len() > 100{
                 let mut sum = 0.0;
                 for i in 0..100{
                     sum += self.fpsarray[i];
                 }
-                println!("FPS: {}", sum/100.0);
+                // println!("FPS: {}", sum/100.0);
                 self.fpsarray.remove(0);
             }
         }
+        // println!("{:?}",world.player.x);
         self.instant = Instant::now();
         self.test += 1;
-        camera.camera_x += 1;
-        
-        
-        
-
         let render_data = &camera.render(world);
         let vertices = &render_data.vertex;
         if vertices.len() < 1 {

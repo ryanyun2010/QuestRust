@@ -1,7 +1,24 @@
+// i think realistically
+// it should be LootTable contains a vector of loot table entrys
+// each entry has an Item + a Rarity just as a number between 0 and 1
+// Then the loot table goes through each entry and checks if you got it
+// LootTableRarity seems overengineered
+
+
+
+
+
 use crate::entities::Item;
 #[derive(Clone, Debug)]
 pub struct Loot {
     tables: Vec<LootTable>,
+}
+impl Loot{
+    pub fn new(tables: Vec<LootTable>) -> Self {
+        Self {
+            tables: tables,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
