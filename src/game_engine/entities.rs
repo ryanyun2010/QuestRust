@@ -71,8 +71,3 @@ impl EntityAttackPattern{
 pub struct EntityAttack{
     // TODO
 }
-
-#[derive(Clone, Debug)]
-pub struct Item {
-    name: String
-}
