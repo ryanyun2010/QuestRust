@@ -106,16 +106,16 @@ impl World{
         self.sprite_lookup.get(&element_id).copied()
     }
     pub fn process_input(&mut self, keys: HashMap<String,bool>){
-        if *keys.get("w").unwrap_or(&false){
+        if *keys.get("w").unwrap_or(&false) || *keys.get("ArrowUp").unwrap_or(&false){
             self.player.y -= 2;
         }
-        if *keys.get("a").unwrap_or(&false){
+        if *keys.get("a").unwrap_or(&false) || *keys.get("ArrowLeft").unwrap_or(&false){
             self.player.x -= 2;
         }
-        if *keys.get("s").unwrap_or(&false){
+        if *keys.get("s").unwrap_or(&false) || *keys.get("ArrowDown").unwrap_or(&false){
             self.player.y += 2;
         }
-        if *keys.get("d").unwrap_or(&false){
+        if *keys.get("d").unwrap_or(&false) || *keys.get("ArrowRight").unwrap_or(&false){
             self.player.x += 2;
         }
         if self.player.y < 3 {

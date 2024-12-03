@@ -1,5 +1,6 @@
 use winit::event;
 use winit::keyboard::Key;
+use winit::keyboard::NamedKey;
 use winit::window::Window;
 use winit::event::*;
 use std::collections::HashMap;
@@ -263,6 +264,21 @@ impl<'a> State<'a> {
     }
 
     pub fn input(&mut self, event: winit::event::KeyEvent) {
+        match event.logical_key {
+            Key::Named(NamedKey::ArrowLeft) => {
+                self.keys_down.insert("ArrowLeft".to_string(), event.state == event::ElementState::Pressed);
+            },
+            Key::Named(NamedKey::ArrowRight) => {
+                self.keys_down.insert("ArrowRight".to_string(), event.state == event::ElementState::Pressed);
+            },
+            Key::Named(NamedKey::ArrowUp) => {
+                self.keys_down.insert("ArrowUp".to_string(), event.state == event::ElementState::Pressed);
+            },
+            Key::Named(NamedKey::ArrowDown) => {
+                self.keys_down.insert("ArrowDown".to_string(), event.state == event::ElementState::Pressed);
+            }
+            _ => {}
+        }
         let key = event.logical_key.to_text();
         if key.is_none(){
             return;
@@ -272,6 +288,7 @@ impl<'a> State<'a> {
             event::ElementState::Pressed => true,
             event::ElementState::Released => false,
         };
+        
         self.keys_down.insert(string_key, press);
     }
 
