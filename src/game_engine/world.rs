@@ -202,6 +202,7 @@ impl World{
         let mut follows_player = false;
         let mut aggroed_to_player = false;
         let mut aggro_range = 0;
+        let mut movement_speed = 1.0;
         for tag_id in 0..entity_tags.len()-1 {
             match entity_tags[tag_id] {
                 EntityTags::FollowsPlayer => {
@@ -210,7 +211,10 @@ impl World{
                 EntityTags::AggroRange(range) => {
                     aggro_range = range as usize;
                 }
-                _ => println!("Other!")
+                EntityTags::MovementSpeed(speed) => {
+                    movement_speed = speed;
+                }
+                _ => ()
             }
         }
         if follows_player {
@@ -225,8 +229,8 @@ impl World{
             let direction = [*player_x - entity.x, *player_y - entity.y];
             if((direction[0].abs() + direction[1].abs()) > 0.0){
                 let magnitude = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
-                entity.x += direction[0] / magnitude;
-                entity.y += direction[1] / magnitude;
+                entity.x += direction[0] / magnitude * movement_speed as f32;
+                entity.y += direction[1] / magnitude * movement_speed as f32;
             }
         }
     }

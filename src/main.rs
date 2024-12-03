@@ -47,12 +47,13 @@ fn main() {
 
     let ghost = world.add_entity(160.0,160.0);
     world.add_tag(ghost, EntityTags::Aggressive);
+    world.add_tag(ghost, EntityTags::MovementSpeed(1.5));
     world.add_tag(ghost, EntityTags::MonsterType(entities::MonsterType::Undead));
     world.add_tag(ghost, EntityTags::FollowsPlayer);
     world.add_tag(ghost, EntityTags::Range(0));
     world.add_tag(ghost, EntityTags::AggroRange(1000));
     world.add_tag(ghost, EntityTags::AttackType(entities::AttackType::Melee));
-    world.add_tag(ghost, EntityTags::MovementSpeed(3));
+    
 
 
     //   game_engine::entities::EntityTags::new(true, game_engine::entities::MonsterType::Undead, true, 0, 1500, game_engine::entities::AttackType::Melee, game_engine::entities::EntityAttackPattern::new(), 3, false, Some(game_engine::loot::Loot::new(Vec::new())), None, 10)

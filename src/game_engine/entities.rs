@@ -28,7 +28,7 @@ pub enum EntityTags {
     AggroRange(usize),
     AttackType(AttackType),
     Attacks(EntityAttackPattern),
-    MovementSpeed(usize),
+    MovementSpeed(f32),
     Item(Item),
     Drops(Loot),
     BaseHealth(usize),
