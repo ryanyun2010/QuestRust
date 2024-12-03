@@ -219,10 +219,10 @@ impl World{
         }
         if aggroed_to_player {
             let direction = [*player_x - entity.x, *player_y - entity.y];
-            if(direction[0] + direction[1] > 0.0){
-                let normalized_direction = [(direction[0]) / (direction[0] + direction[1]), (direction[1]) / (direction[0] + direction[1])];
-                entity.x += normalized_direction[0];
-                entity.y += normalized_direction[1];
+            if((direction[0].abs() + direction[1].abs()) > 0.0){
+                let magnitude = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
+                entity.x += direction[0] / magnitude ;
+                entity.y += direction[1] / magnitude;
             }
         }
     }
