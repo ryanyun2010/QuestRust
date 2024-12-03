@@ -262,7 +262,8 @@ impl<'a> State<'a> {
     }
 
     pub fn update(&self, world: &mut World) {
-        world.process_input(self.keys_down.clone())
+        world.process_input(self.keys_down.clone());
+        world.update_entities();
     }
 
     pub fn input(&mut self, event: winit::event::KeyEvent) {
@@ -294,7 +295,7 @@ impl<'a> State<'a> {
         self.keys_down.insert(string_key, press);
     }
 
-    pub fn render(&mut self, world: &World, camera: &mut Camera) -> Result<(), wgpu::SurfaceError> {
+    pub fn render(&mut self, world: &mut World, camera: &mut Camera) -> Result<(), wgpu::SurfaceError> {
         if self.test > 70{
             let elapsed_time = self.instant.elapsed();
             if elapsed_time.as_nanos() > 0{

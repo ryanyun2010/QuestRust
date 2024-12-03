@@ -21,22 +21,22 @@ pub enum MonsterType {
 }
 #[derive(Clone, Debug)]
 pub struct EntityTags {
-    aggressive: bool,
-    monster_type: MonsterType,
-    follows_player: bool,
-    range: usize,
-    aggro_range: usize,
-    attack_type: AttackType,
-    attacks: EntityAttackPattern,
-    movement_speed: usize,
-    is_item: bool,
-    contained_item: Option<Item>,
-    drops: Option<Loot>,
-    health: usize,
+    pub aggressive: bool,
+    pub monster_type: MonsterType,
+    pub follows_player: bool,
+    pub range: usize,
+    pub aggro_range: usize,
+    pub attack_type: AttackType,
+    pub attacks: EntityAttackPattern,
+    pub movement_speed: usize,
+    pub is_item: bool,
+    pub contained_item: Option<Item>,
+    pub drops: Option<Loot>,
+    pub max_health: usize,
 }
 
 impl EntityTags{
-    pub fn new(aggressive: bool, monster_type: MonsterType, follows_player: bool, range: usize, aggro_range: usize, attack_type: AttackType, attacks: EntityAttackPattern, movement_speed: usize, is_item: bool, drops: Option<Loot>,  contained_item: Option<Item>, health: usize) -> Self{
+    pub fn new(aggressive: bool, monster_type: MonsterType, follows_player: bool, range: usize, aggro_range: usize, attack_type: AttackType, attacks: EntityAttackPattern, movement_speed: usize, is_item: bool, drops: Option<Loot>,  contained_item: Option<Item>, max_health: usize) -> Self{
         Self{
             aggressive: aggressive,
             monster_type: monster_type,
@@ -49,7 +49,7 @@ impl EntityTags{
             is_item: is_item,
             drops: drops,
             contained_item: contained_item,
-            health: health
+            max_health: max_health
         }
     }
 }
@@ -58,6 +58,13 @@ impl EntityTags{
 pub struct EntityAttackPattern {
     attacks: Vec<EntityAttack>,
     // TODO
+}
+impl EntityAttackPattern{
+    pub fn new() -> Self{
+        Self{
+            attacks: Vec::new()
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug)]

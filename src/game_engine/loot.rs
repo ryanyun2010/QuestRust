@@ -13,6 +13,13 @@ use crate::entities::Item;
 pub struct Loot {
     tables: Vec<LootTable>,
 }
+impl Loot{
+    pub fn new(tables: Vec<LootTable>) -> Self {
+        Self {
+            tables: tables,
+        }
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct LootTable {

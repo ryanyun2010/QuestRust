@@ -43,7 +43,7 @@ fn main() {
     }
 
 
-    let ghost = world.add_entity(160,160);
+    let ghost = world.add_entity(160.0,160.0,  game_engine::entities::EntityTags::new(true, game_engine::entities::MonsterType::Undead, true, 0, 1500, game_engine::entities::AttackType::Melee, game_engine::entities::EntityAttackPattern::new(), 3, false, Some(game_engine::loot::Loot::new(Vec::new())), None, 10));
     world.set_sprite(ghost,ghost_sprite);
     // println!("{:?}",world.chunks[0]);
     
