@@ -1,5 +1,8 @@
 use crate::loot::Loot;
 use crate::game_engine::item::Item;
+use std::cell::RefCell;
+
+use super::world::Player;
 #[derive(Copy, Clone, Debug)]
 pub enum AttackType {
     Melee,
@@ -57,18 +60,43 @@ impl EntityTags{
 
 #[derive(Clone, Debug)]
 pub struct EntityAttackPattern {
-    attacks: Vec<EntityAttack>,
-    // TODO
+    pub attacks: Vec<EntityAttack>,
+    pub attack_cooldowns: Vec<f32>,  
 }
 impl EntityAttackPattern{
-    pub fn new() -> Self{
+    pub fn new(attacks: Vec<EntityAttack>, attack_cooldowns: Vec<f32>) -> Self{
         Self{
-            attacks: Vec::new()
+            attacks: attacks,
+            attack_cooldowns: attack_cooldowns,
         }
     }
+    // pub fn in_range_to_attack(&mut self) -> Option<EntityAttack>{
+    //     if self.cur_attack_cooldown <= 0.0{
+    //         self.cur_attack += 1;
+    //         if self.cur_attack >= self.attacks.len(){
+    //             self.cur_attack = 0;
+    //         }
+    //         self.cur_attack_cooldown = self.attack_cooldowns[self.cur_attack];
+    //         return Some(self.attacks[self.cur_attack]);
+    //     }
+    //     self.cur_attack_cooldown -= 1.0/60.0;
+    //     None
+    // }
 }
 
 #[derive(Copy, Clone, Debug)]
 pub struct EntityAttack{
-    // TODO
+    damage: usize
+}
+
+impl EntityAttack{
+    pub fn new(damage: usize) -> Self{
+        Self{
+            damage: damage
+        }
+    }
+
+    pub fn attack(&self) -> i32{
+        self.damage as i32
+    }
 }

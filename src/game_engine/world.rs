@@ -5,6 +5,8 @@ use crate::entities::EntityTags;
 use winit::keyboard::Key;
 use std::cell::RefCell;
 
+use super::entities::EntityAttackPattern;
+
 #[derive(Debug)]
 pub struct Chunk{  // 32x32 blocks of 32x32 = chunks are 1024x1024 pixels but 1024 * RETINA SCALE accounting for retina, so a chunk with x =0, y =0, is pixels 0-1023, 0-1023
     pub chunk_id: usize,
@@ -20,7 +22,7 @@ impl Chunk{
 
 pub struct World{
     pub chunks: Vec<Chunk>,
-    pub player: Player,
+    pub player: RefCell<Player>,
     element_id: usize,
     pub sprites: Vec<Sprite>,
     pub sprite_lookup: HashMap<usize,usize>, // corresponds element_ids to sprite_ids ie. to get the sprite for element_id x, just do sprite_lookup[x]
@@ -36,7 +38,7 @@ pub struct World{
 impl World{ 
     pub fn new() -> Self{
         let mut chunks = Vec::new();
-        let mut player = Player::new();
+        let mut player = RefCell::new(Player::new());
         let mut element_id = 0;
         let mut sprites = Vec::new();
         let mut sprite_lookup = HashMap::new();
@@ -166,6 +168,7 @@ impl World{
     }
     pub fn process_input(&mut self, keys: HashMap<String,bool>){
         let mut direction: [f32; 2] = [0.0,0.0];
+        let mut player = self.player.borrow_mut();
         if *keys.get("w").unwrap_or(&false) || *keys.get("ArrowUp").unwrap_or(&false){
             direction[1] -= 2.0;
         }
@@ -182,28 +185,28 @@ impl World{
         let magnitude = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
         
         if magnitude > 0.0{
-            self.player.y += direction[1] / magnitude * self.player.movement_speed;
-            self.player.x += direction[0] / magnitude * self.player.movement_speed;
+            player.y += direction[1] / magnitude * player.movement_speed;
+            player.x += direction[0] / magnitude * player.movement_speed;
         }
 
-        if self.player.y < 3.0 {
-            self.player.y = 3.0;
+        if player.y < 3.0 {
+            player.y = 3.0;
         }
-        if self.player.x < 3.0 {
-            self.player.x = 3.0;
+        if player.x < 3.0 {
+            player.x = 3.0;
         }
     }
     pub fn update_entities(&self) {
-        
+        let player = self.player.borrow().clone();
         for chunk in self.loaded_chunks.iter() {
             let chunkref = self.get_chunk_from_id(*chunk).unwrap();
             for entity_id in chunkref.entities_ids.iter() {
-                self.update_entity(entity_id, &self.player.x, &self.player.y);
+                self.update_entity(entity_id, player.x, player.y);
             }
         }
     }
     
-    pub fn update_entity(&self, entity_id: &usize, player_x: &f32, player_y: &f32) {
+    pub fn update_entity(&self, entity_id: &usize, player_x: f32, player_y: f32) {
         let entity_tags = self.get_entity_tags(*entity_id).unwrap();
         let mut entity_mut_hash = self.entities.borrow_mut();
         let mut entity = entity_mut_hash.get_mut(entity_id).unwrap();
@@ -211,31 +214,66 @@ impl World{
         let mut follows_player = false;
         let mut aggroed_to_player = false;
         let mut aggro_range = 0;
+        let mut attack_range = 0;
         let mut movement_speed = 1.0;
-        for tag_id in 0..entity_tags.len()-1 {
-            match entity_tags[tag_id] {
+        let mut aggressive = false;
+        let mut attacks= None; 
+        let mut can_attack_player = false;
+        for tag_id in 0..entity_tags.len() {
+            // println!("{:?}", entity_tags[tag_id]);
+            match entity_tags[tag_id].clone() {
                 EntityTags::FollowsPlayer => {
                     follows_player = true;
                 },
                 EntityTags::AggroRange(range) => {
                     aggro_range = range as usize;
-                }
+                },
+                EntityTags::Range(range) => {
+                    attack_range = range as usize;
+                },
                 EntityTags::MovementSpeed(speed) => {
                     movement_speed = speed;
-                }
+                },
+                EntityTags::Aggressive => {
+                    aggressive = true;
+                },
+                EntityTags::Attacks(att) => {
+                    attacks = Some(att);
+                },
                 _ => ()
             }
         }
+        
         if follows_player {
             distance = f64::sqrt(
-                (entity.y as f64 - (*player_y) as f64).powf(2.0) + (entity.x as f64 - (*player_x) as f64).powf(2.0),
+                (entity.y as f64 - (player_y) as f64).powf(2.0) + (entity.x as f64 - (player_x) as f64).powf(2.0),
             );
-            if distance < (aggro_range as f64){
-                aggroed_to_player = true;
+            if aggressive && distance <= (attack_range as f64) {
+                can_attack_player = true;
+            }else{
+                if distance < (aggro_range as f64){
+                    aggroed_to_player = true;
+                }
             }
         }
+        if can_attack_player && aggressive {
+            let attack_pattern = attacks.unwrap();
+            if entity.cur_attack_cooldown <= 0.0 {
+                self.player.borrow_mut().health -= attack_pattern.attacks[entity.cur_attack].attack();
+                entity.cur_attack += 1;
+                if entity.cur_attack >= attack_pattern.attacks.len(){
+                    entity.cur_attack = 0;
+                }
+                entity.cur_attack_cooldown = attack_pattern.attack_cooldowns[entity.cur_attack];                
+                println!("Attacking player {:?}", self.player.borrow().health);
+            }else{
+                entity.cur_attack_cooldown -= 1.0/60.0;
+            }
+
+            
+        }
         if aggroed_to_player {
-            let direction = [*player_x - entity.x, *player_y - entity.y];
+            let direction = [player_x - entity.x, player_y - entity.y];
             if((direction[0].abs() + direction[1].abs()) > 0.0){
                 let magnitude = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
                 entity.x += direction[0] / magnitude * movement_speed as f32;
@@ -260,6 +298,8 @@ pub struct Entity{
     pub x: f32,
     pub y: f32,
     pub aggroed_to_player: bool,
+    pub cur_attack: usize,
+    pub cur_attack_cooldown: f32,
 }
 
 impl Entity{
@@ -269,6 +309,8 @@ impl Entity{
             x: x,
             y: y,
             aggroed_to_player: false,
+            cur_attack: 0,
+            cur_attack_cooldown: 0.15,
         }
     }
 }
@@ -319,6 +361,7 @@ pub struct Player {
     pub x: f32,
     pub y: f32,
     pub texture_index: i32,
+    pub health: i32,
     pub movement_speed: f32
 }
 
@@ -327,6 +370,7 @@ impl Player {
         Self {
             x: 576.0,
             y: 360.0,
+            health: 100,
             texture_index: 3,
             movement_speed: 3.0,
         }

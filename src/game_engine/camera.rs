@@ -20,13 +20,15 @@ impl Camera{
         }
     }
     pub fn render(&mut self, world: &mut World) -> RenderData{
-        if world.player.x > (self.viewpoint_width / 2) as f32{
-            self.camera_x = world.player.x - (self.viewpoint_width / 2) as f32;
+
+        let player = world.player.borrow().clone();
+        if player.x > (self.viewpoint_width / 2) as f32{
+            self.camera_x = player.x - (self.viewpoint_width / 2) as f32;
         }else{
             self.camera_x = 0.0;
         }   
-        if world.player.y > (self.viewpoint_height / 2) as f32{
-            self.camera_y = world.player.y - (self.viewpoint_height / 2) as f32;
+        if player.y > (self.viewpoint_height / 2) as f32{
+            self.camera_y = player.y - (self.viewpoint_height / 2) as f32;
         }else{
             self.camera_y = 0.0;
         }
@@ -94,7 +96,7 @@ impl Camera{
             }
         }
 
-        let player_draw_data = world.player.draw_data(self.viewpoint_width, self.viewpoint_height, render_data.vertex.len() as u16, -1 * self.camera_x as i32, -1 * self.camera_y as i32);
+        let player_draw_data = player.draw_data(self.viewpoint_width, self.viewpoint_height, render_data.vertex.len() as u16, -1 * self.camera_x as i32, -1 * self.camera_y as i32);
         render_data.vertex.extend(player_draw_data.vertex);
         render_data.index.extend(player_draw_data.index);
         world.set_loaded_chunks(chunks_loaded);
