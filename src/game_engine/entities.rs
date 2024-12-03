@@ -1,4 +1,5 @@
 use crate::loot::Loot;
+use crate::game_engine::item::Item;
 #[derive(Copy, Clone, Debug)]
 pub enum AttackType {
     Melee,

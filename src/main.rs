@@ -12,6 +12,7 @@ use game_engine::camera;
 use game_engine::loot;
 use game_engine::entities;
 use game_engine::entities::EntityTags;
+use game_engine::item::Item;
 
 fn main() {
     let mut world = world::World::new(); // 36 x 22.5 blocks

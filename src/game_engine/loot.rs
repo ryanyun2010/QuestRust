@@ -6,9 +6,7 @@
 
 
 
-
-
-use crate::entities::Item;
+use crate::game_engine::item::Item;
 #[derive(Clone, Debug)]
 pub struct Loot {
     tables: Vec<LootTable>,
