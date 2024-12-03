@@ -106,6 +106,8 @@ impl<'a> State<'a> {
         let diffuse_texture7 = texture::Texture::from_bytes(&device, &queue, diffuse_bytes7, "outside.png").unwrap();
         let diffuse_bytes8 = include_bytes!("wall.png");
         let diffuse_texture8 = texture::Texture::from_bytes(&device, &queue, diffuse_bytes8, "wall.png").unwrap();
+        let diffuse_bytes9 = include_bytes!("ghost.png");
+        let diffuse_texture9 = texture::Texture::from_bytes(&device, &queue, diffuse_bytes9, "ghost.png").unwrap();
        
         let mut texture_index_buffer_contents = vec![0u32; 128];
         let texture_index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -125,14 +127,14 @@ impl<'a> State<'a> {
                             view_dimension: wgpu::TextureViewDimension::D2,
                             sample_type: wgpu::TextureSampleType::Float { filterable: true },
                         },
-                        count: NonZeroU32::new(8),
+                        count: NonZeroU32::new(9),
                     },
                     wgpu::BindGroupLayoutEntry {
                         binding: 1,
                         visibility: wgpu::ShaderStages::FRAGMENT,
         
                         ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                        count: NonZeroU32::new(8),
+                        count: NonZeroU32::new(9),
                     },
                     wgpu::BindGroupLayoutEntry {
                         binding: 2,
@@ -154,11 +156,11 @@ impl<'a> State<'a> {
             entries: &[
                 wgpu::BindGroupEntry {
                 binding: 0,
-                resource: wgpu::BindingResource::TextureViewArray(&[&diffuse_texture.view, &diffuse_texture2.view, &diffuse_texture3.view, &diffuse_texture4.view, &diffuse_texture5.view, &diffuse_texture6.view, &diffuse_texture7.view, &diffuse_texture8.view]),
+                resource: wgpu::BindingResource::TextureViewArray(&[&diffuse_texture.view, &diffuse_texture2.view, &diffuse_texture3.view, &diffuse_texture4.view, &diffuse_texture5.view, &diffuse_texture6.view, &diffuse_texture7.view, &diffuse_texture8.view, &diffuse_texture9.view]),
                 },
                 wgpu::BindGroupEntry {
                 binding: 1,
-                resource: wgpu::BindingResource::SamplerArray(&[&diffuse_texture.sampler,&diffuse_texture2.sampler, &diffuse_texture3.sampler, &diffuse_texture4.sampler, &diffuse_texture5.sampler, &diffuse_texture6.sampler, &diffuse_texture7.sampler, &diffuse_texture8.sampler]),
+                resource: wgpu::BindingResource::SamplerArray(&[&diffuse_texture.sampler,&diffuse_texture2.sampler, &diffuse_texture3.sampler, &diffuse_texture4.sampler, &diffuse_texture5.sampler, &diffuse_texture6.sampler, &diffuse_texture7.sampler, &diffuse_texture8.sampler, &diffuse_texture9.sampler]),
                 },
                 wgpu::BindGroupEntry {
                 binding: 2,

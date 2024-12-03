@@ -19,6 +19,7 @@ fn main() {
     let dirt_sprite = world.add_sprite(5);
     let dirt2_sprite = world.add_sprite(4);
     let wall_sprite = world.add_sprite(7);
+    let ghost_sprite = world.add_sprite(8);
     for n in 0..17 {
         for m in 0..70 {
             let new_terrain = world.add_terrain(n*32,m*32);
@@ -40,6 +41,10 @@ fn main() {
             }
         }
     }
+
+
+    let ghost = world.add_entity(160,160);
+    world.set_sprite(ghost,ghost_sprite);
     // println!("{:?}",world.chunks[0]);
     
     pollster::block_on(window::run(&mut world, &mut camera));

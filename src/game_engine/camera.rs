@@ -52,7 +52,25 @@ impl Camera{
                 }
                 let chunk = &world.chunks[chunk_id.unwrap()];
                 for terrain_id in chunk.terrain_ids.iter(){
-                    let potentially_sprite_id = world.get_sprite(chunk.terrain[*terrain_id].element_id);
+                    let potentially_sprite_id = world.get_sprite(*terrain_id);
+                    if potentially_sprite_id.is_none(){
+                        continue;
+                    }
+                    let sprite_id = potentially_sprite_id.unwrap();
+                    let sprite = &world.sprites[sprite_id];
+
+                    let index_offset = render_data.vertex.len() as u16;
+                    let vertex_offset_x = -1 * self.camera_x as i32;
+                    let vertex_offset_y = -1 * self.camera_y as i32;
+                    let terrain = world.get_terrain(*terrain_id).unwrap();
+                    let draw_data = sprite.draw_data(terrain.x, terrain.y, 32, 32, self.viewpoint_width, self.viewpoint_height, index_offset, vertex_offset_x, vertex_offset_y);
+                    
+                    render_data.vertex.extend(draw_data.vertex);
+                    render_data.index.extend(draw_data.index);
+                }
+
+                for entity_id in chunk.entities_ids.iter(){
+                    let potentially_sprite_id = world.get_sprite(*entity_id);
                     if potentially_sprite_id.is_none(){
                         continue;
                     }
@@ -63,7 +81,9 @@ impl Camera{
                     let vertex_offset_x = -1 * self.camera_x as i32;
                     let vertex_offset_y = -1 * self.camera_y as i32;
 
-                    let draw_data = sprite.draw_data(chunk.terrain[*terrain_id].x, chunk.terrain[*terrain_id].y, 32, 32, self.viewpoint_width, self.viewpoint_height, index_offset, vertex_offset_x, vertex_offset_y);
+                    let entity = world.get_entity(*entity_id).unwrap();
+
+                    let draw_data = sprite.draw_data(entity.x, entity.y, 32, 32, self.viewpoint_width, self.viewpoint_height, index_offset, vertex_offset_x, vertex_offset_y);
                     
                     render_data.vertex.extend(draw_data.vertex);
                     render_data.index.extend(draw_data.index);

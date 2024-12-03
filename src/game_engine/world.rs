@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::hash::Hash;
 use crate::vertex::Vertex;
 use crate::entities::EntityTags;
 use winit::keyboard::Key;
@@ -10,8 +11,7 @@ pub struct Chunk{  // 32x32 blocks of 32x32 = chunks are 1024x1024 pixels but 10
     y: usize,
     pub terrain_ids: Vec<usize>,
     pub entities_ids: Vec<usize>,
-    pub terrain: Vec<Terrain>,
-    pub entities: Vec<Entity>
+    
 }
 
 impl Chunk{
@@ -24,7 +24,9 @@ pub struct World{
     pub sprites: Vec<Sprite>,
     pub sprite_lookup: HashMap<usize,usize>, // corresponds element_ids to sprite_ids ie. to get the sprite for element_id x, just do sprite_lookup[x]
     pub chunk_lookup: HashMap<[usize; 2],usize>, // corresponds chunk x,y to id
-    /* TODO: MAKE THIS ACTUALLY WORK */ pub terrain_lookup: HashMap<usize,usize>, // corresponds element_ids of terrain to chunk_ids
+    pub terrain_lookup: HashMap<usize,usize>, // corresponds element_ids of terrain to chunk_ids
+    pub terrain: HashMap<usize, Terrain>, // corresponds element id to Terrain element
+    pub entities: HashMap<usize, Entity>, // corresponds element id to Entity element
     /* TODO: MAKE THIS ACTUALLY WORK */ pub entity_lookup: HashMap<usize,usize>, // corresponds element_ids of entities to chunk_ids
     /* TODO: MAKE THIS ACTUALLY WORK */ pub entity_tags_lookup: HashMap<usize,EntityTags>, // corresponds element_ids of entities to the entity's tags
 }
@@ -40,6 +42,8 @@ impl World{
         let mut terrain_lookup = HashMap::new();
         let mut entity_lookup = HashMap::new();
         let mut entity_tags_lookup = HashMap::new();
+        let mut terrain = HashMap::new();
+        let mut entities = HashMap::new();
         Self{
             chunks: chunks,
             player: player,
@@ -50,6 +54,8 @@ impl World{
             terrain_lookup: terrain_lookup,
             entity_lookup: entity_lookup,
             entity_tags_lookup: entity_tags_lookup,
+            terrain: terrain,
+            entities: entities,
         }
     }
     
@@ -60,13 +66,18 @@ impl World{
                 chunk_id: new_chunk_id,
                 x: chunk_x,
                 y: chunk_y,
-                terrain: Vec::new(),
-                entities: Vec::new(),
                 terrain_ids: Vec::new(),
                 entities_ids: Vec::new(),
             });
         self.chunk_lookup.insert([chunk_x, chunk_y], new_chunk_id);
         new_chunk_id
+    }
+    pub fn get_entity(&self, element_id: usize) -> Option<&Entity>{
+        self.entities.get(&element_id)
+    }
+
+    pub fn get_terrain(&self, element_id: usize) -> Option<&Terrain>{
+        self.terrain.get(&element_id)
     }
     pub fn coord_to_chunk_coord(coord: usize) -> usize{
         (coord as f32 / 1024.0).floor() as usize
@@ -89,8 +100,30 @@ impl World{
 
         self.element_id += 1;
         self.chunks[chunk_id].terrain_ids.push(self.element_id - 1);
-        self.chunks[chunk_id].terrain.push(new_terrain);
+        self.terrain.insert(self.element_id - 1, new_terrain);
+        self.terrain_lookup.insert(self.element_id - 1, chunk_id);
         self.element_id - 1
+    }
+
+    pub fn add_entity(&mut self, x: usize, y: usize) -> usize{
+        let new_entity: Entity = Entity {element_id: self.element_id, x: x, y: y};
+        let chunk_id_potentially = self.get_chunk_from_xy(World::coord_to_chunk_coord(new_entity.x), World::coord_to_chunk_coord(new_entity.y));
+        let chunk_id: usize;
+        if chunk_id_potentially.is_none() {
+            chunk_id = self.new_chunk(World::coord_to_chunk_coord(new_entity.x), World::coord_to_chunk_coord(new_entity.y));
+        } else{
+            chunk_id = chunk_id_potentially.unwrap();
+        }
+
+        self.element_id += 1;
+        self.chunks[chunk_id].entities_ids.push(self.element_id - 1);
+        self.entities.insert(self.element_id - 1, new_entity);
+        self.entity_lookup.insert(self.element_id - 1, chunk_id);
+        self.element_id - 1
+    }
+
+    pub fn lookup_terrain_chunk(&self, element_id: usize) -> Option<usize>{
+        self.terrain_lookup.get(&element_id).copied()
     }
 
     pub fn add_sprite(&mut self, texture_index: i32) -> usize{
