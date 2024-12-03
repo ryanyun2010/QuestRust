@@ -1,3 +1,4 @@
+use crate::camera;
 use crate::world::World;
 use crate::world::RenderData;
 
@@ -24,8 +25,6 @@ impl Camera{
         }else{
             self.camera_x = 0;
         }   
-        println!("{:?} {:?}", world.player.y, self.viewpoint_height / 2);
-
         if world.player.y > self.viewpoint_height / 2{
             self.camera_y = world.player.y - self.viewpoint_height / 2;
         }else{
@@ -33,11 +32,18 @@ impl Camera{
         }
         let mut render_data = RenderData::new();
         let camera_left_chunk_x = World::coord_to_chunk_coord(self.camera_x);
-        let camera_right_chunk_x = World::coord_to_chunk_coord(self.camera_x + self.viewpoint_width);
+        let mut camera_right_chunk_x = World::coord_to_chunk_coord(self.camera_x + self.viewpoint_width);
 
         let camera_top_chunk_y = World::coord_to_chunk_coord(self.camera_y);
-        let camera_bot_chunk_y = World::coord_to_chunk_coord(self.camera_y + self.viewpoint_height); 
-
+        let mut camera_bot_chunk_y = World::coord_to_chunk_coord(self.camera_y + self.viewpoint_height); 
+       
+        if camera_right_chunk_x - camera_left_chunk_x < 1{
+            camera_right_chunk_x += 1;
+        }
+        if camera_bot_chunk_y - camera_top_chunk_y < 1{
+            camera_bot_chunk_y += 1;
+        }
+        
         for x in camera_left_chunk_x..camera_right_chunk_x{
             for y in camera_top_chunk_y..camera_bot_chunk_y{
                 let chunk_id = world.get_chunk_from_xy(x,y);
@@ -64,6 +70,10 @@ impl Camera{
                 }
             }
         }
+
+        let player_draw_data = world.player.draw_data(self.viewpoint_width, self.viewpoint_height, render_data.vertex.len() as u16, -1 * self.camera_x as i32, -1 * self.camera_y as i32);
+        render_data.vertex.extend(player_draw_data.vertex);
+        render_data.index.extend(player_draw_data.index);
         render_data
     }
 }

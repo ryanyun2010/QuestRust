@@ -105,19 +105,24 @@ impl World{
     pub fn get_sprite(&self, element_id: usize) -> Option<usize>{
         self.sprite_lookup.get(&element_id).copied()
     }
-    pub fn input(&mut self, key: winit::keyboard::Key<&str>){
-        match key{
-            Key::Character("w") => self.player.y -= 32,
-            Key::Character("a") => self.player.x -= 32,
-            Key::Character("s") => self.player.y += 32,
-            Key::Character("d") => self.player.x += 32,
-            _ => {}
+    pub fn process_input(&mut self, keys: HashMap<String,bool>){
+        if *keys.get("w").unwrap_or(&false){
+            self.player.y -= 2;
         }
-        if self.player.x < 1000{
-            self.player.x = 1000;
+        if *keys.get("a").unwrap_or(&false){
+            self.player.x -= 2;
         }
-        if self.player.y < 700{
-            self.player.y = 700;
+        if *keys.get("s").unwrap_or(&false){
+            self.player.y += 2;
+        }
+        if *keys.get("d").unwrap_or(&false){
+            self.player.x += 2;
+        }
+        if self.player.y < 3 {
+            self.player.y = 3;
+        }
+        if self.player.x < 3 {
+            self.player.x = 3;
         }
     }
 }
@@ -180,13 +185,37 @@ impl RenderData{
 pub struct Player {
     pub x: usize,
     pub y: usize,
+    pub texture_index: i32,
 }
 
 impl Player {
     fn new() -> Self {
         Self {
-            x: 1000,
-            y: 700,
+            x: 576,
+            y: 360,
+            texture_index: 3,
         }
+    }
+    pub fn draw_data(&self, window_size_width: usize, window_size_height: usize, index_offset:u16, vertex_offset_x: i32, vertex_offset_y: i32) -> RenderData{
+        let screen_to_render_ratio_x = 2.0 / window_size_width as f32;
+        let screen_to_render_ratio_y = 2.0 / window_size_height as f32;
+        
+        let w = 32 as f32 * screen_to_render_ratio_x;
+        let h = 32 as f32 * screen_to_render_ratio_y;
+
+        let x = ((self.x as f32) + (vertex_offset_x as f32)) * screen_to_render_ratio_x - 1.0;
+        let y = -1.0 * (((self.y as f32) + (vertex_offset_y as f32)) * screen_to_render_ratio_y - 1.0) - h;
+
+
+        let vertex = vec![
+            Vertex { position: [x, y, 0.0], tex_coords: [0.0, 1.0], index: self.texture_index },
+            Vertex { position: [x + w, y, 0.0], tex_coords: [1.0, 1.0], index: self.texture_index },
+            Vertex { position: [x + w, y + h, 0.0], tex_coords: [1.0, 0.0], index: self.texture_index },
+            Vertex { position: [x, y + h, 0.0], tex_coords: [0.0, 0.0], index: self.texture_index },
+        ];
+
+        let index = vec![0 + index_offset, 1 + index_offset, 2 + index_offset, 0 + index_offset, 2 + index_offset, 3 + index_offset];
+
+        RenderData { vertex, index }
     }
 }

@@ -1,14 +1,18 @@
+use winit::event;
 use winit::keyboard::Key;
 use winit::window::Window;
 use winit::event::*;
+use std::collections::HashMap;
 use wgpu::util::DeviceExt;
 use crate::vertex::Vertex;
 use crate::texture;
+use crate::world;
 use crate::world::World;
 use crate::camera::Camera;
 use std::num::NonZeroU64;
 use std::num::NonZeroU32;
 use std::time::Instant;
+use winit::event::WindowEvent::KeyboardInput;
 
 
 
@@ -32,6 +36,7 @@ pub struct State<'a> {
     pub test: i32,
     pub instant: Instant,
     pub fpsarray: Vec<f64>,
+    pub keys_down: HashMap<String, bool>,
     window: &'a Window,
 }
 impl<'a> State<'a> { 
@@ -40,6 +45,7 @@ impl<'a> State<'a> {
         let fpsarray = Vec::new();
         let test = 0;
         let size = window.inner_size();
+        let keys_down = HashMap::new();
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,
             ..Default::default()
@@ -89,6 +95,16 @@ impl<'a> State<'a> {
         let diffuse_texture2 = texture::Texture::from_bytes(&device, &queue, diffuse_bytes2, "panda2.png").unwrap();
         let diffuse_bytes3 = include_bytes!("panda3.jpeg");
         let diffuse_texture3 = texture::Texture::from_bytes(&device, &queue, diffuse_bytes3, "panda3.jpeg").unwrap();
+        let diffuse_bytes4 = include_bytes!("player.png");
+        let diffuse_texture4 = texture::Texture::from_bytes(&device, &queue, diffuse_bytes4, "player.png").unwrap();
+        let diffuse_bytes5 = include_bytes!("dirt.png");
+        let diffuse_texture5 = texture::Texture::from_bytes(&device, &queue, diffuse_bytes5, "dirt.png").unwrap();
+        let diffuse_bytes6 = include_bytes!("dirt2.png");
+        let diffuse_texture6 = texture::Texture::from_bytes(&device, &queue, diffuse_bytes6, "dirt2.png").unwrap();
+        let diffuse_bytes7 = include_bytes!("outside.png");
+        let diffuse_texture7 = texture::Texture::from_bytes(&device, &queue, diffuse_bytes7, "outside.png").unwrap();
+        let diffuse_bytes8 = include_bytes!("wall.png");
+        let diffuse_texture8 = texture::Texture::from_bytes(&device, &queue, diffuse_bytes8, "wall.png").unwrap();
        
         let mut texture_index_buffer_contents = vec![0u32; 128];
         let texture_index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -108,14 +124,14 @@ impl<'a> State<'a> {
                             view_dimension: wgpu::TextureViewDimension::D2,
                             sample_type: wgpu::TextureSampleType::Float { filterable: true },
                         },
-                        count: NonZeroU32::new(3),
+                        count: NonZeroU32::new(8),
                     },
                     wgpu::BindGroupLayoutEntry {
                         binding: 1,
                         visibility: wgpu::ShaderStages::FRAGMENT,
         
                         ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                        count: NonZeroU32::new(3),
+                        count: NonZeroU32::new(8),
                     },
                     wgpu::BindGroupLayoutEntry {
                         binding: 2,
@@ -137,11 +153,11 @@ impl<'a> State<'a> {
             entries: &[
                 wgpu::BindGroupEntry {
                 binding: 0,
-                resource: wgpu::BindingResource::TextureViewArray(&[&diffuse_texture.view, &diffuse_texture2.view, &diffuse_texture3.view]),
+                resource: wgpu::BindingResource::TextureViewArray(&[&diffuse_texture.view, &diffuse_texture2.view, &diffuse_texture3.view, &diffuse_texture4.view, &diffuse_texture5.view, &diffuse_texture6.view, &diffuse_texture7.view, &diffuse_texture8.view]),
                 },
                 wgpu::BindGroupEntry {
                 binding: 1,
-                resource: wgpu::BindingResource::SamplerArray(&[&diffuse_texture.sampler,&diffuse_texture2.sampler, &diffuse_texture3.sampler]),
+                resource: wgpu::BindingResource::SamplerArray(&[&diffuse_texture.sampler,&diffuse_texture2.sampler, &diffuse_texture3.sampler, &diffuse_texture4.sampler, &diffuse_texture5.sampler, &diffuse_texture6.sampler, &diffuse_texture7.sampler, &diffuse_texture8.sampler]),
                 },
                 wgpu::BindGroupEntry {
                 binding: 2,
@@ -223,6 +239,7 @@ impl<'a> State<'a> {
             instant: instant,
             test: test,
             fpsarray: fpsarray,
+            keys_down: keys_down,
         }
  
     }
@@ -241,10 +258,23 @@ impl<'a> State<'a> {
         }
     }
 
-    pub fn update(&mut self) {
+    pub fn update(&self, world: &mut World) {
+        world.process_input(self.keys_down.clone())
     }
 
-   
+    pub fn input(&mut self, event: winit::event::KeyEvent) {
+        let key = event.logical_key.to_text();
+        if key.is_none(){
+            return;
+        }
+        let string_key = key.unwrap().to_string().to_lowercase();
+        let press = match event.state {
+            event::ElementState::Pressed => true,
+            event::ElementState::Released => false,
+        };
+        self.keys_down.insert(string_key, press);
+    }
+
     pub fn render(&mut self, world: &World, camera: &mut Camera) -> Result<(), wgpu::SurfaceError> {
         if self.test > 70{
             let elapsed_time = self.instant.elapsed();
@@ -263,10 +293,6 @@ impl<'a> State<'a> {
         // println!("{:?}",world.player.x);
         self.instant = Instant::now();
         self.test += 1;
-        
-        
-        
-
         let render_data = &camera.render(world);
         let vertices = &render_data.vertex;
         if vertices.len() < 1 {
