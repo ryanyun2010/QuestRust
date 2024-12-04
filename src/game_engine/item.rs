@@ -13,19 +13,51 @@ pub enum Item {
 }
 #[derive(Clone, Debug)]
 pub enum UseItem {
-    Mining(MiningTool),
+    Mining(ChoppingTool),
+    Eat(Food)
 }
 #[derive(Clone, Debug)]
-pub struct MiningTool {
-    can_mine: MiningToolType,
-    mining_speed: f64,
+pub struct Food {
+    hunger: usize,
+    eating_time: f64,
+    effects: Option<Vec<StatusEffect>>
 }
 #[derive(Clone, Debug)]
-pub enum MiningToolType {
-    Pickaxe,
-    Axe,
-    Shovel,
-    Paxel
+pub struct StatusEffect {
+    duration: Option<f64>,
+    start: usize, //What type is time measured in?
+    effects: StatusEffectType
+}
+impl StatusEffect {
+    pub fn new(duration: Option<f64>, effects:StatusEffectType, start: usize) -> Self {
+        Self {
+            duration: duration,
+            effects: effects,
+            start: start
+            //Change this to start tick, but I'm not sure of the tick system
+        }
+    }
+    pub fn tick(&mut self) {
+        match self.duration {
+            Some(time) => {
+                self.duration = Some(time-1.0);
+            },
+            None => {}
+        };
+    }
+}
+#[derive(Clone, Debug)]
+pub enum StatusEffectType {
+    Slowness,
+    Weakness,
+    Poison,
+    Plague
+    //We'll do this much later.
+}
+#[derive(Clone, Debug)]
+pub struct ChoppingTool {
+    chopping_speed: f64,
+    chopping_power: u8,
 }
 #[derive(Clone, Debug)]
 pub enum PlaceTerrain {
