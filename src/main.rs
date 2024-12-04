@@ -66,7 +66,7 @@ fn main() {
 
     let ghost = world.add_entity(160.0,160.0);
     world.add_tag(ghost, EntityTags::Aggressive);
-    world.add_tag(ghost, EntityTags::MovementSpeed(1.5));
+    world.add_tag(ghost, EntityTags::MovementSpeed(1.1));
     world.add_tag(ghost, EntityTags::MonsterType(entities::MonsterType::Undead));
     world.add_tag(ghost, EntityTags::FollowsPlayer);
     world.add_tag(ghost, EntityTags::Range(32));
