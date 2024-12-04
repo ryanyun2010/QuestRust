@@ -170,16 +170,16 @@ impl World{
         let mut direction: [f32; 2] = [0.0,0.0];
         let mut player = self.player.borrow_mut();
         if *keys.get("w").unwrap_or(&false) || *keys.get("ArrowUp").unwrap_or(&false){
-            direction[1] -= 2.0;
+            direction[1] -= 1.0;
         }
         if *keys.get("a").unwrap_or(&false) || *keys.get("ArrowLeft").unwrap_or(&false){
-            direction[0] -= 2.0;
+            direction[0] -= 1.0;
         }
         if *keys.get("s").unwrap_or(&false) || *keys.get("ArrowDown").unwrap_or(&false){
-            direction[1] += 2.0;
+            direction[1] += 1.0;
         }
         if *keys.get("d").unwrap_or(&false) || *keys.get("ArrowRight").unwrap_or(&false){
-            direction[0] += 2.0;
+            direction[0] += 1.0;
         }
 
         let magnitude = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
@@ -274,8 +274,10 @@ impl World{
         }
         if aggroed_to_player {
             let direction = [player_x - entity.x, player_y - entity.y];
-            if((direction[0].abs() + direction[1].abs()) > 0.0){
+            if (direction[0].abs() + direction[1].abs()) > 0.0 {
                 let magnitude = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
+                println!("{:?}",direction[0] / magnitude * movement_speed as f32);
+                println!("{:?}",direction[1] / magnitude * movement_speed as f32);
                 entity.x += direction[0] / magnitude * movement_speed as f32;
                 entity.y += direction[1] / magnitude * movement_speed as f32;
             }
