@@ -13,6 +13,8 @@ pub async fn run(world: &mut World, camera: &mut Camera) {
     let window = WindowBuilder::new().with_title("RustTest").with_inner_size(winit::dpi::LogicalSize::new(1152, 720)).build(&event_loop).unwrap();
     let mut state = State::new(&window).await;
 
+    let mut focused: bool = false;
+
     
 
     event_loop.run(move |event, control_flow| match event {
@@ -29,10 +31,19 @@ pub async fn run(world: &mut World, camera: &mut Camera) {
                 WindowEvent::CloseRequested => control_flow.exit(),
                 WindowEvent::Resized(physical_size) => {
                     state.resize(physical_size);
-                }
+                },
+                WindowEvent::Focused(bool) => {
+                    focused = bool;
+
+                    if focused {
+                        state.window().request_redraw();
+                    }
+                },
                 WindowEvent::RedrawRequested => {
-                    state.window().request_redraw();
-                    state.update(world);
+                    if focused{
+                        state.window().request_redraw();
+                    }
+                    camera.update_ui(world);
                     match state.render(world, camera) {
                         Ok(_) => {}
                         Err(
@@ -46,6 +57,7 @@ pub async fn run(world: &mut World, camera: &mut Camera) {
                             log::warn!("Surface timeout")
                         }
                     }
+                    state.update(world);
                 }
                 _ => {}
             }   
