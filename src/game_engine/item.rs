@@ -13,44 +13,36 @@ pub enum Item {
 }
 #[derive(Clone, Debug)]
 pub enum UseItem {
-    Mining(ChoppingTool),
     Eat(Food)
 }
 #[derive(Clone, Debug)]
 pub struct Food {
-    hunger: usize,
     eating_time: f64,
     effects: Option<Vec<StatusEffect>>
 }
 #[derive(Clone, Debug)]
 pub struct StatusEffect {
     duration: Option<f64>,
-    effects: StatusEffectType,
-    expired: bool
+    start: usize, //What type is time measured in?
+    effects: StatusEffectType
 }
 impl StatusEffect {
-    pub fn new(duration: Option<f64>, effects:StatusEffectType) -> Self {
+    pub fn new(duration: Option<f64>, effects:StatusEffectType, start: usize) -> Self {
         Self {
             duration: duration,
             effects: effects,
-            expired: false,
+            start: start
+            //Change this to start tick, but I'm not sure of the tick system
         }
     }
     pub fn tick(&mut self) {
         match self.duration {
             Some(time) => {
                 self.duration = Some(time-1.0);
-                if time-1.0 <= 0.0 {
-                    self.expired = true
-                }
             },
             None => {}
         };
     }
-    pub fn kill(&mut self) {
-        self.expired = true;
-    }
-
 }
 #[derive(Clone, Debug)]
 pub enum StatusEffectType {
@@ -59,11 +51,6 @@ pub enum StatusEffectType {
     Poison,
     Plague
     //We'll do this much later.
-}
-#[derive(Clone, Debug)]
-pub struct ChoppingTool {
-    chopping_speed: f64,
-    chopping_power: u8,
 }
 #[derive(Clone, Debug)]
 pub enum PlaceTerrain {

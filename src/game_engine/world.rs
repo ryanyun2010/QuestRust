@@ -67,6 +67,7 @@ impl World{
     
     pub fn new_chunk(&mut self, chunk_x: usize, chunk_y: usize) -> usize{
         let new_chunk_id: usize = self.chunks.len() as usize;
+        
         self.chunks.push(
             Chunk{
                 chunk_id: new_chunk_id,
@@ -75,6 +76,7 @@ impl World{
                 terrain_ids: Vec::new(),
                 entities_ids: Vec::new(),
             });
+        println!("d:: {:?}", new_chunk_id);
         self.chunk_lookup.insert([chunk_x, chunk_y], new_chunk_id);
         new_chunk_id
     }
@@ -99,6 +101,9 @@ impl World{
         let chunk_y: usize = World::coord_to_chunk_coord(y);
         self.chunk_lookup.get(&[chunk_x, chunk_y]).copied()
     }
+    pub fn get_chunk_from_chunk_xy(&self, x: usize, y: usize) -> Option<usize>{
+        self.chunk_lookup.get(&[x, y]).copied()
+    }
     
     pub fn get_chunk_from_id(&self, chunk_id: usize) -> Option<&Chunk>{
         if chunk_id >= self.chunks.len(){
@@ -111,8 +116,11 @@ impl World{
         self.entity_tags_lookup.get(&element_id)
     }
     pub fn add_terrain(&mut self, x: usize, y: usize) -> usize{
+        
         let new_terrain: Terrain = Terrain{ element_id: self.element_id, x: x, y: y };
-        let chunk_id_potentially: Option<usize> = self.get_chunk_from_xy(World::coord_to_chunk_coord(new_terrain.x), World::coord_to_chunk_coord(new_terrain.y));
+        
+        let chunk_id_potentially: Option<usize> = self.get_chunk_from_chunk_xy(World::coord_to_chunk_coord(new_terrain.x), World::coord_to_chunk_coord(new_terrain.y));
+        
         let chunk_id: usize;
         if chunk_id_potentially.is_none() {
             chunk_id = self.new_chunk(World::coord_to_chunk_coord(new_terrain.x), World::coord_to_chunk_coord(new_terrain.y));
@@ -170,16 +178,16 @@ impl World{
         let mut direction: [f32; 2] = [0.0,0.0];
         let mut player: std::cell::RefMut<'_, Player> = self.player.borrow_mut();
         if *keys.get("w").unwrap_or(&false) || *keys.get("ArrowUp").unwrap_or(&false){
-            direction[1] -= 2.0;
+            direction[1] -= 1.0;
         }
         if *keys.get("a").unwrap_or(&false) || *keys.get("ArrowLeft").unwrap_or(&false){
-            direction[0] -= 2.0;
+            direction[0] -= 1.0;
         }
         if *keys.get("s").unwrap_or(&false) || *keys.get("ArrowDown").unwrap_or(&false){
-            direction[1] += 2.0;
+            direction[1] += 1.0;
         }
         if *keys.get("d").unwrap_or(&false) || *keys.get("ArrowRight").unwrap_or(&false){
-            direction[0] += 2.0;
+            direction[0] += 1.0;
         }
 
         let magnitude: f32 = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
@@ -274,10 +282,11 @@ impl World{
         }
         if aggroed_to_player {
             let direction: [f32; 2] = [player_x - entity.x, player_y - entity.y];
-            if((direction[0].abs() + direction[1].abs()) > 0.0){
-                let magnitude: f32 = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
-                entity.x += direction[0] / magnitude * movement_speed as f32;
-                entity.y += direction[1] / magnitude * movement_speed as f32;
+            if (direction[0].abs() + direction[1].abs()) > 0.0 {
+                let magnitude = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
+                let movement = [direction[0] / magnitude * movement_speed, direction[1] / magnitude * movement_speed];
+                entity.move_(movement);
+
             }
         }
     }
@@ -312,6 +321,13 @@ impl Entity{
             cur_attack: 0,
             cur_attack_cooldown: 0.15,
         }
+    }
+}
+
+impl Entity{
+    pub fn move_(&mut self, movement: [f32; 2]){
+        self.x += movement[0];
+        self.y += movement[1];
     }
 }
 
