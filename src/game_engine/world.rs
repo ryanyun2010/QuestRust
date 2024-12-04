@@ -364,6 +364,8 @@ pub struct Player {
     pub health: i32,
     pub max_health: i32,
     pub movement_speed: f32,
+    pub hunger: usize,
+    pub max_hunger: usize,
 }
 
 impl Player {
@@ -375,6 +377,8 @@ impl Player {
             max_health: 100,
             texture_index: 3,
             movement_speed: 3.0,
+            hunger: 100,
+            max_hunger: 100,
         }
     }
     pub fn draw_data(&self, window_size_width: usize, window_size_height: usize, index_offset:u16, vertex_offset_x: i32, vertex_offset_y: i32) -> RenderData{

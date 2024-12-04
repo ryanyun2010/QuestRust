@@ -25,26 +25,32 @@ pub struct Food {
 #[derive(Clone, Debug)]
 pub struct StatusEffect {
     duration: Option<f64>,
-    start: usize, //What type is time measured in?
-    effects: StatusEffectType
+    effects: StatusEffectType,
+    expired: bool
 }
 impl StatusEffect {
-    pub fn new(duration: Option<f64>, effects:StatusEffectType, start: usize) -> Self {
+    pub fn new(duration: Option<f64>, effects:StatusEffectType) -> Self {
         Self {
             duration: duration,
             effects: effects,
-            start: start
-            //Change this to start tick, but I'm not sure of the tick system
+            expired: false,
         }
     }
     pub fn tick(&mut self) {
         match self.duration {
             Some(time) => {
                 self.duration = Some(time-1.0);
+                if time-1.0 <= 0.0 {
+                    self.expired = true
+                }
             },
             None => {}
         };
     }
+    pub fn kill(&mut self) {
+        self.expired = true;
+    }
+
 }
 #[derive(Clone, Debug)]
 pub enum StatusEffectType {
