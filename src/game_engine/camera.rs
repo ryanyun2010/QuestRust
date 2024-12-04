@@ -60,17 +60,10 @@ impl Camera{
         }
         let mut render_data = RenderData::new();
         let camera_left_chunk_x = World::coord_to_chunk_coord(self.camera_x.floor() as usize);
-        let mut camera_right_chunk_x = World::coord_to_chunk_coord((self.camera_x + self.viewpoint_width as f32).floor() as usize);
+        let mut camera_right_chunk_x = World::coord_to_chunk_coord((self.camera_x + self.viewpoint_width as f32).floor() as usize) + 1;
 
         let camera_top_chunk_y = World::coord_to_chunk_coord(self.camera_y.floor() as usize);
-        let mut camera_bot_chunk_y = World::coord_to_chunk_coord((self.camera_y + self.viewpoint_height as f32).floor() as usize); 
-       
-        if camera_right_chunk_x - camera_left_chunk_x < 1{
-            camera_right_chunk_x += 1;
-        }
-        if camera_bot_chunk_y - camera_top_chunk_y < 1{
-            camera_bot_chunk_y += 1;
-        }
+        let mut camera_bot_chunk_y = World::coord_to_chunk_coord((self.camera_y + self.viewpoint_height as f32).floor() as usize) + 1; 
 
         let mut chunks_loaded = Vec::new();
         
