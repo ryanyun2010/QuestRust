@@ -37,18 +37,18 @@ pub struct World{
 
 impl World{ 
     pub fn new() -> Self{
-        let mut chunks = Vec::new();
-        let mut player = RefCell::new(Player::new());
-        let mut element_id = 0;
-        let mut sprites = Vec::new();
-        let mut sprite_lookup = HashMap::new();
-        let mut chunk_lookup = HashMap::new();
-        let mut terrain_lookup = HashMap::new();
-        let mut entity_lookup = HashMap::new();
-        let mut entity_tags_lookup = HashMap::new();
-        let mut terrain = HashMap::new();
-        let mut entities = RefCell::new(HashMap::new());
-        let mut loaded_chunks = Vec::new(); 
+        let mut chunks: Vec<Chunk> = Vec::new();
+        let mut player: RefCell<Player> = RefCell::new(Player::new());
+        let mut element_id: usize = 0;
+        let mut sprites: Vec<Sprite> = Vec::new();
+        let mut sprite_lookup: HashMap<usize, usize> = HashMap::new();
+        let mut chunk_lookup: HashMap<[usize; 2], usize> = HashMap::new();
+        let mut terrain_lookup: HashMap<usize, usize> = HashMap::new();
+        let mut entity_lookup: HashMap<usize, usize> = HashMap::new();
+        let mut entity_tags_lookup: HashMap<usize, Vec<EntityTags>> = HashMap::new();
+        let mut terrain: HashMap<usize, Terrain> = HashMap::new();
+        let mut entities: RefCell<HashMap<usize, Entity>> = RefCell::new(HashMap::new());
+        let mut loaded_chunks: Vec<usize> = Vec::new(); 
         Self{
             chunks: chunks,
             player: player,
@@ -66,7 +66,7 @@ impl World{
     }
     
     pub fn new_chunk(&mut self, chunk_x: usize, chunk_y: usize) -> usize{
-        let new_chunk_id = self.chunks.len() as usize;
+        let new_chunk_id: usize = self.chunks.len() as usize;
         self.chunks.push(
             Chunk{
                 chunk_id: new_chunk_id,
@@ -79,8 +79,8 @@ impl World{
         new_chunk_id
     }
     pub fn get_entity(&self, element_id: usize) -> Option<Entity>{
-        let k = &element_id;
-        let borrow = self.entities.borrow();
+        let k: &usize = &element_id;
+        let borrow: std::cell::Ref<'_, HashMap<usize, Entity>> = self.entities.borrow();
         borrow.get(k).cloned()
     }
 
@@ -95,8 +95,8 @@ impl World{
         (coord as f32 / 1024.0).floor() as usize
     }
     pub fn get_chunk_from_xy(&self, x: usize, y: usize) -> Option<usize>{
-        let chunk_x = World::coord_to_chunk_coord(x);
-        let chunk_y = World::coord_to_chunk_coord(y);
+        let chunk_x: usize = World::coord_to_chunk_coord(x);
+        let chunk_y: usize = World::coord_to_chunk_coord(y);
         self.chunk_lookup.get(&[chunk_x, chunk_y]).copied()
     }
     
@@ -111,8 +111,8 @@ impl World{
         self.entity_tags_lookup.get(&element_id)
     }
     pub fn add_terrain(&mut self, x: usize, y: usize) -> usize{
-        let new_terrain = Terrain{ element_id: self.element_id, x: x, y: y };
-        let chunk_id_potentially = self.get_chunk_from_xy(World::coord_to_chunk_coord(new_terrain.x), World::coord_to_chunk_coord(new_terrain.y));
+        let new_terrain: Terrain = Terrain{ element_id: self.element_id, x: x, y: y };
+        let chunk_id_potentially: Option<usize> = self.get_chunk_from_xy(World::coord_to_chunk_coord(new_terrain.x), World::coord_to_chunk_coord(new_terrain.y));
         let chunk_id: usize;
         if chunk_id_potentially.is_none() {
             chunk_id = self.new_chunk(World::coord_to_chunk_coord(new_terrain.x), World::coord_to_chunk_coord(new_terrain.y));
@@ -129,7 +129,7 @@ impl World{
 
     pub fn add_entity(&mut self, x: f32, y: f32) -> usize{
         let new_entity: Entity = Entity::new(self.element_id,x,y);
-        let chunk_id_potentially = self.get_chunk_from_xy(World::coord_to_chunk_coord(new_entity.x.floor() as usize), World::coord_to_chunk_coord(new_entity.y.floor() as usize));
+        let chunk_id_potentially: Option<usize> = self.get_chunk_from_xy(World::coord_to_chunk_coord(new_entity.x.floor() as usize), World::coord_to_chunk_coord(new_entity.y.floor() as usize));
         let chunk_id: usize;
         if chunk_id_potentially.is_none() {
             chunk_id = self.new_chunk(World::coord_to_chunk_coord(new_entity.x.floor() as usize), World::coord_to_chunk_coord(new_entity.y.floor() as usize));
@@ -145,7 +145,7 @@ impl World{
     }
 
     pub fn add_tag(&mut self, element_id: usize, tag: EntityTags){
-        let mut tags = self.entity_tags_lookup.get(&element_id).unwrap_or(&Vec::new()).clone();
+        let mut tags: Vec<EntityTags> = self.entity_tags_lookup.get(&element_id).unwrap_or(&Vec::new()).clone();
         tags.push(tag);
         self.entity_tags_lookup.insert(element_id, tags);
     }
@@ -168,7 +168,7 @@ impl World{
     }
     pub fn process_input(&mut self, keys: HashMap<String,bool>){
         let mut direction: [f32; 2] = [0.0,0.0];
-        let mut player = self.player.borrow_mut();
+        let mut player: std::cell::RefMut<'_, Player> = self.player.borrow_mut();
         if *keys.get("w").unwrap_or(&false) || *keys.get("ArrowUp").unwrap_or(&false){
             direction[1] -= 1.0;
         }
@@ -182,7 +182,7 @@ impl World{
             direction[0] += 1.0;
         }
 
-        let magnitude = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
+        let magnitude: f32 = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
         
         if magnitude > 0.0{
             player.y += direction[1] / magnitude * player.movement_speed;
@@ -197,9 +197,9 @@ impl World{
         }
     }
     pub fn update_entities(&self) {
-        let player = self.player.borrow().clone();
+        let player: Player = self.player.borrow().clone();
         for chunk in self.loaded_chunks.iter() {
-            let chunkref = self.get_chunk_from_id(*chunk).unwrap();
+            let chunkref: &Chunk = self.get_chunk_from_id(*chunk).unwrap();
             for entity_id in chunkref.entities_ids.iter() {
                 self.update_entity(entity_id, player.x, player.y);
             }
@@ -207,18 +207,18 @@ impl World{
     }
     
     pub fn update_entity(&self, entity_id: &usize, player_x: f32, player_y: f32) {
-        let entity_tags = self.get_entity_tags(*entity_id).unwrap();
-        let mut entity_mut_hash = self.entities.borrow_mut();
-        let mut entity = entity_mut_hash.get_mut(entity_id).unwrap();
+        let entity_tags: &Vec<EntityTags> = self.get_entity_tags(*entity_id).unwrap();
+        let mut entity_mut_hash: std::cell::RefMut<'_, HashMap<usize, Entity>> = self.entities.borrow_mut();
+        let mut entity: &mut Entity = entity_mut_hash.get_mut(entity_id).unwrap();
         let mut distance: f64 = f64::MAX;
-        let mut follows_player = false;
-        let mut aggroed_to_player = false;
-        let mut aggro_range = 0;
-        let mut attack_range = 0;
-        let mut movement_speed = 1.0;
-        let mut aggressive = false;
-        let mut attacks= None; 
-        let mut can_attack_player = false;
+        let mut follows_player: bool = false;
+        let mut aggroed_to_player: bool = false;
+        let mut aggro_range: usize = 0;
+        let mut attack_range: usize = 0;
+        let mut movement_speed: f32 = 1.0;
+        let mut aggressive: bool = false;
+        let mut attacks: Option<EntityAttackPattern>= None; 
+        let mut can_attack_player: bool = false;
         for tag_id in 0..entity_tags.len() {
             // println!("{:?}", entity_tags[tag_id]);
             match entity_tags[tag_id].clone() {
@@ -257,7 +257,7 @@ impl World{
             }
         }
         if can_attack_player && aggressive {
-            let attack_pattern = attacks.unwrap();
+            let attack_pattern: EntityAttackPattern = attacks.unwrap();
             if entity.cur_attack_cooldown <= 0.0 {
                 self.player.borrow_mut().health -= attack_pattern.attacks[entity.cur_attack].attack();
                 entity.cur_attack += 1;
@@ -324,24 +324,24 @@ pub struct Sprite{
 
 impl Sprite{
     pub fn draw_data(&self, screen_x: f32, screen_y: f32, screen_w: usize, screen_h: usize, window_size_width: usize, window_size_height: usize, index_offset:u16, vertex_offset_x: i32, vertex_offset_y: i32) -> RenderData{
-        let screen_to_render_ratio_x = 2.0 / window_size_width as f32;
-        let screen_to_render_ratio_y = 2.0 / window_size_height as f32;
+        let screen_to_render_ratio_x: f32 = 2.0 / window_size_width as f32;
+        let screen_to_render_ratio_y: f32 = 2.0 / window_size_height as f32;
         
-        let w = (screen_w as f32) * screen_to_render_ratio_x;
-        let h = (screen_h as f32) * screen_to_render_ratio_y;
+        let w: f32 = (screen_w as f32) * screen_to_render_ratio_x;
+        let h: f32 = (screen_h as f32) * screen_to_render_ratio_y;
 
-        let x = (screen_x + (vertex_offset_x as f32)) * screen_to_render_ratio_x - 1.0;
-        let y = -1.0 * ((screen_y + (vertex_offset_y as f32)) * screen_to_render_ratio_y - 1.0) - h;
+        let x: f32 = (screen_x + (vertex_offset_x as f32)) * screen_to_render_ratio_x - 1.0;
+        let y: f32 = -1.0 * ((screen_y + (vertex_offset_y as f32)) * screen_to_render_ratio_y - 1.0) - h;
 
 
-        let vertex = vec![
+        let vertex: Vec<Vertex> = vec![
             Vertex { position: [x, y, 0.0], tex_coords: [0.0, 1.0], index: self.texture_index },
             Vertex { position: [x + w, y, 0.0], tex_coords: [1.0, 1.0], index: self.texture_index },
             Vertex { position: [x + w, y + h, 0.0], tex_coords: [1.0, 0.0], index: self.texture_index },
             Vertex { position: [x, y + h, 0.0], tex_coords: [0.0, 0.0], index: self.texture_index },
         ];
 
-        let index = vec![0 + index_offset, 1 + index_offset, 2 + index_offset, 0 + index_offset, 2 + index_offset, 3 + index_offset];
+        let index: Vec<u16> = vec![0 + index_offset, 1 + index_offset, 2 + index_offset, 0 + index_offset, 2 + index_offset, 3 + index_offset];
 
         RenderData { vertex, index }
     }
@@ -366,6 +366,8 @@ pub struct Player {
     pub health: i32,
     pub max_health: i32,
     pub movement_speed: f32,
+    pub hunger: usize,
+    pub max_hunger: usize,
 }
 
 impl Player {
@@ -377,27 +379,29 @@ impl Player {
             max_health: 100,
             texture_index: 3,
             movement_speed: 3.0,
+            hunger: 100,
+            max_hunger: 100,
         }
     }
     pub fn draw_data(&self, window_size_width: usize, window_size_height: usize, index_offset:u16, vertex_offset_x: i32, vertex_offset_y: i32) -> RenderData{
-        let screen_to_render_ratio_x = 2.0 / window_size_width as f32;
-        let screen_to_render_ratio_y = 2.0 / window_size_height as f32;
+        let screen_to_render_ratio_x: f32 = 2.0 / window_size_width as f32;
+        let screen_to_render_ratio_y: f32 = 2.0 / window_size_height as f32;
         
-        let w = 32 as f32 * screen_to_render_ratio_x;
-        let h = 32 as f32 * screen_to_render_ratio_y;
+        let w: f32 = 32 as f32 * screen_to_render_ratio_x;
+        let h: f32 = 32 as f32 * screen_to_render_ratio_y;
 
-        let x = ((self.x as f32) + (vertex_offset_x as f32)) * screen_to_render_ratio_x - 1.0;
-        let y = -1.0 * (((self.y as f32) + (vertex_offset_y as f32)) * screen_to_render_ratio_y - 1.0) - h;
+        let x: f32 = ((self.x as f32) + (vertex_offset_x as f32)) * screen_to_render_ratio_x - 1.0;
+        let y: f32 = -1.0 * (((self.y as f32) + (vertex_offset_y as f32)) * screen_to_render_ratio_y - 1.0) - h;
 
 
-        let vertex = vec![
+        let vertex: Vec<Vertex> = vec![
             Vertex { position: [x, y, 0.0], tex_coords: [0.0, 1.0], index: self.texture_index },
             Vertex { position: [x + w, y, 0.0], tex_coords: [1.0, 1.0], index: self.texture_index },
             Vertex { position: [x + w, y + h, 0.0], tex_coords: [1.0, 0.0], index: self.texture_index },
             Vertex { position: [x, y + h, 0.0], tex_coords: [0.0, 0.0], index: self.texture_index },
         ];
 
-        let index = vec![0 + index_offset, 1 + index_offset, 2 + index_offset, 0 + index_offset, 2 + index_offset, 3 + index_offset];
+        let index: Vec<u16> = vec![0 + index_offset, 1 + index_offset, 2 + index_offset, 0 + index_offset, 2 + index_offset, 3 + index_offset];
 
         RenderData { vertex, index }
     }
