@@ -66,10 +66,11 @@ impl Camera{
         let mut camera_bot_chunk_y = World::coord_to_chunk_coord((self.camera_y + self.viewpoint_height as f32).floor() as usize) + 1; 
 
         let mut chunks_loaded = Vec::new();
-        
         for x in camera_left_chunk_x..camera_right_chunk_x{
             for y in camera_top_chunk_y..camera_bot_chunk_y{
-                let chunk_id = world.get_chunk_from_xy(x,y);
+                
+                let chunk_id = world.get_chunk_from_chunk_xy(x,y);
+                
                 if chunk_id.is_none(){
                     continue;
                 }
@@ -129,6 +130,7 @@ impl Camera{
             render_data.vertex.extend(draw_data.vertex);
             render_data.index.extend(draw_data.index);
         }
+        
         render_data
     }
 }
