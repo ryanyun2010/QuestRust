@@ -28,7 +28,7 @@ pub struct LootTable {
 
 impl LootTable {
     pub fn new(&mut self, entries: Vec<LootTableEntry>, rarity: LootTableRarity) -> Self {
-        let mut total_weight = 0;
+        let mut total_weight: usize = 0;
         for entry in 0..self.entries.len()-1 {
             total_weight += self.entries[entry].weight;
             self.entries[entry].initialize_range(total_weight);
