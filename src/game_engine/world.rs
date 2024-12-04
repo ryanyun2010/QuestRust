@@ -362,7 +362,8 @@ pub struct Player {
     pub y: f32,
     pub texture_index: i32,
     pub health: i32,
-    pub movement_speed: f32
+    pub max_health: i32,
+    pub movement_speed: f32,
 }
 
 impl Player {
@@ -371,6 +372,7 @@ impl Player {
             x: 576.0,
             y: 360.0,
             health: 100,
+            max_health: 100,
             texture_index: 3,
             movement_speed: 3.0,
         }

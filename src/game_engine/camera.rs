@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+use std::hash::Hash;
+
 use crate::camera;
 use crate::world::World;
 use crate::world::RenderData;
@@ -7,8 +10,10 @@ pub struct Camera{
     pub viewpoint_height: usize,
     pub camera_x: f32, // top left corner of the camera in world/element coordinates
     pub camera_y: f32,
+    ui_elements: Vec<crate::game_engine::ui::UIElement>, // vec element i should be element with id i
+    ui_element_names: HashMap<String, usize>, // map names to ids
+    ui_element_id: usize
 }
-
 
 impl Camera{
     pub fn new(viewpoint_width:usize, viewpoint_height:usize) -> Self{
@@ -17,7 +22,28 @@ impl Camera{
             viewpoint_height: viewpoint_height,
             camera_x: 0.0,
             camera_y: 0.0,
+            ui_elements: Vec::new(),
+            ui_element_names: HashMap::new(),
+            ui_element_id: 0
         }
+    }
+    pub fn update_ui(&mut self, world: &mut World){
+        let player = world.player.borrow().clone();
+        let health_bar = self.get_ui_element_mut(self.get_element_by_name(String::from("health_bar_inside")).unwrap());
+        let health_bar_width = f32::max(0.0, (player.health as f32 / player.max_health as f32) * 250.0);
+        health_bar.width = health_bar_width;
+    }
+    pub fn add_ui_element(&mut self, name: String,  element: crate::game_engine::ui::UIElement) -> usize{
+        self.ui_elements.insert(self.ui_element_id, element);
+        self.ui_element_names.insert(name, self.ui_element_id);
+        self.ui_element_id += 1;
+        self.ui_element_id - 1
+    }
+    pub fn get_element_by_name(&self, name: String) -> Option<usize>{
+        self.ui_element_names.get(&name).copied()
+    }
+    pub fn get_ui_element_mut(&mut self, id: usize) -> &mut crate::game_engine::ui::UIElement{
+        &mut self.ui_elements[id]
     }
     pub fn render(&mut self, world: &mut World) -> RenderData{
 
@@ -100,6 +126,16 @@ impl Camera{
         render_data.vertex.extend(player_draw_data.vertex);
         render_data.index.extend(player_draw_data.index);
         world.set_loaded_chunks(chunks_loaded);
+        for i in 0..self.ui_elements.len(){
+            let element = &self.ui_elements[i];
+            if !element.visible{
+                continue;
+            }
+            let index_offset = render_data.vertex.len() as u16;
+            let draw_data = element.draw_data(self.viewpoint_width, self.viewpoint_height, index_offset);
+            render_data.vertex.extend(draw_data.vertex);
+            render_data.index.extend(draw_data.index);
+        }
         render_data
     }
 }

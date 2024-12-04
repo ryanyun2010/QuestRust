@@ -183,7 +183,9 @@ impl<'a> State<'a> {
             "img/dirt2.png",
             "img/outside.png",
             "img/wall.png",
-            "img/ghost.png"
+            "img/ghost.png",
+            "img/health_bar_back.png",
+            "img/health.png"
         );
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {

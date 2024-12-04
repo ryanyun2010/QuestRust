@@ -13,10 +13,28 @@ use game_engine::loot;
 use game_engine::entities;
 use game_engine::entities::EntityTags;
 use game_engine::item::Item;
+use game_engine::ui::UIElement;
 
 fn main() {
     let mut world = world::World::new(); // 36 x 22.5 blocks
     let mut camera = camera::Camera::new(1152,720);
+    camera.add_ui_element(String::from("health_bar_background"), UIElement {
+        x: 32.0,
+        y: 32.0,
+        width: 256.0,
+        height: 32.0,
+        texture_id: 9,
+        visible: true
+    });
+    camera.add_ui_element(String::from("health_bar_inside"), UIElement {
+        x: 35.0,
+        y: 35.0,
+        width: 250.0,
+        height: 26.0,
+        texture_id: 10,
+        visible: true
+    });
+
     
     let outside_sprite = world.add_sprite(6);
     let dirt_sprite = world.add_sprite(5);
@@ -55,7 +73,7 @@ fn main() {
     world.add_tag(ghost, EntityTags::AggroRange(1000));
     world.add_tag(ghost, EntityTags::AttackType(entities::AttackType::Melee));
     let mut attacks_tests = Vec::new();
-    attacks_tests.push(entities::EntityAttack::new(5));
+    attacks_tests.push(entities::EntityAttack::new(3));
     world.add_tag(ghost, EntityTags::Attacks(entities::EntityAttackPattern::new(attacks_tests, vec![0.1])));
     
 ;
