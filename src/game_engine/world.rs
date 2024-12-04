@@ -7,7 +7,7 @@ use std::cell::RefCell;
 
 use super::entities::EntityAttackPattern;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Chunk{  // 32x32 blocks of 32x32 = chunks are 1024x1024 pixels but 1024 * RETINA SCALE accounting for retina, so a chunk with x =0, y =0, is pixels 0-1023, 0-1023
     pub chunk_id: usize,
     x: usize,
@@ -21,7 +21,7 @@ impl Chunk{
 }
 
 pub struct World{
-    pub chunks: Vec<Chunk>,
+    pub chunks: RefCell<Vec<Chunk>>,
     pub player: RefCell<Player>,
     element_id: usize,
     pub sprites: Vec<Sprite>,
@@ -30,21 +30,21 @@ pub struct World{
     pub terrain_lookup: HashMap<usize,usize>, // corresponds element_ids of terrain to chunk_ids
     pub terrain: HashMap<usize, Terrain>, // corresponds element id to Terrain element
     pub entities: RefCell<HashMap<usize, Entity>>, // corresponds element id to Entity element
-    pub entity_lookup: HashMap<usize,usize>, // corresponds element_ids of entities to chunk_ids
+    pub entity_lookup: RefCell<HashMap<usize,usize>>, // corresponds element_ids of entities to chunk_ids
     pub entity_tags_lookup: HashMap<usize,Vec<EntityTags>>, // corresponds element_ids of entities to the entity's tags
     pub loaded_chunks: Vec<usize>, // chunk ids that are currently loaded
 }
 
 impl World{ 
     pub fn new() -> Self{
-        let mut chunks: Vec<Chunk> = Vec::new();
+        let mut chunks: RefCell<Vec<Chunk>> = RefCell::new(Vec::new());
         let mut player: RefCell<Player> = RefCell::new(Player::new());
         let mut element_id: usize = 0;
         let mut sprites: Vec<Sprite> = Vec::new();
         let mut sprite_lookup: HashMap<usize, usize> = HashMap::new();
         let mut chunk_lookup: HashMap<[usize; 2], usize> = HashMap::new();
         let mut terrain_lookup: HashMap<usize, usize> = HashMap::new();
-        let mut entity_lookup: HashMap<usize, usize> = HashMap::new();
+        let mut entity_lookup: RefCell<HashMap<usize, usize>> = RefCell::new(HashMap::new());
         let mut entity_tags_lookup: HashMap<usize, Vec<EntityTags>> = HashMap::new();
         let mut terrain: HashMap<usize, Terrain> = HashMap::new();
         let mut entities: RefCell<HashMap<usize, Entity>> = RefCell::new(HashMap::new());
@@ -66,9 +66,9 @@ impl World{
     }
     
     pub fn new_chunk(&mut self, chunk_x: usize, chunk_y: usize) -> usize{
-        let new_chunk_id: usize = self.chunks.len() as usize;
+        let new_chunk_id: usize = self.chunks.borrow().len() as usize;
         
-        self.chunks.push(
+        self.chunks.borrow_mut().push(
             Chunk{
                 chunk_id: new_chunk_id,
                 x: chunk_x,
@@ -104,14 +104,7 @@ impl World{
     pub fn get_chunk_from_chunk_xy(&self, x: usize, y: usize) -> Option<usize>{
         self.chunk_lookup.get(&[x, y]).copied()
     }
-    
-    pub fn get_chunk_from_id(&self, chunk_id: usize) -> Option<&Chunk>{
-        if chunk_id >= self.chunks.len(){
-            return None
-        }else{
-            return Some(&self.chunks[chunk_id]);
-        }
-    }
+
     pub fn get_entity_tags(&self, element_id: usize) -> Option<&Vec<EntityTags>>{
         self.entity_tags_lookup.get(&element_id)
     }
@@ -129,7 +122,7 @@ impl World{
         }
 
         self.element_id += 1;
-        self.chunks[chunk_id].terrain_ids.push(self.element_id - 1);
+        self.chunks.borrow_mut()[chunk_id].terrain_ids.push(self.element_id - 1);
         self.terrain.insert(self.element_id - 1, new_terrain);
         self.terrain_lookup.insert(self.element_id - 1, chunk_id);
         self.element_id - 1
@@ -145,9 +138,9 @@ impl World{
             chunk_id = chunk_id_potentially.unwrap();
         }
         self.element_id += 1;
-        self.chunks[chunk_id].entities_ids.push(self.element_id - 1);
+        self.chunks.borrow_mut()[chunk_id].entities_ids.push(self.element_id - 1);
         self.entities.borrow_mut().insert(self.element_id - 1, new_entity);
-        self.entity_lookup.insert(self.element_id - 1, chunk_id);
+        self.entity_lookup.borrow_mut().insert(self.element_id - 1, chunk_id);
         // self.entity_tags_lookup.insert(self.element_id - 1, tags);
         self.element_id - 1
     }
@@ -204,17 +197,31 @@ impl World{
             player.x = 3.0;
         }
     }
-    pub fn update_entities(&self) {
+    pub fn update_entities(&mut self) {
         let player: Player = self.player.borrow().clone();
         for chunk in self.loaded_chunks.iter() {
-            let chunkref: &Chunk = self.get_chunk_from_id(*chunk).unwrap();
-            for entity_id in chunkref.entities_ids.iter() {
-                self.update_entity(entity_id, player.x, player.y);
+            let mut chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>> = &mut self.chunks.borrow_mut();
+            for entity_id in chunkref[*chunk].clone().entities_ids.iter() {
+                self.update_entity(entity_id, player.x, player.y, chunkref);
             }
         }
     }
-    
-    pub fn update_entity(&self, entity_id: &usize, player_x: f32, player_y: f32) {
+
+    pub fn move_entity(&self, entity: &mut Entity, entity_id: &usize, movement: [f32; 2], chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>){
+        let prev_chunk = self.get_chunk_from_xy(entity.x as usize, entity.y as usize).unwrap();
+        entity.x += movement[0];
+        entity.y += movement[1];
+        let new_chunk = self.get_chunk_from_xy(entity.x as usize, entity.y as usize).unwrap();
+
+        if new_chunk != prev_chunk {
+            chunkref[prev_chunk].entities_ids.retain(|x| *x != *entity_id);
+            chunkref[new_chunk].entities_ids.push(*entity_id);
+            self.entity_lookup.borrow_mut().insert(new_chunk, *entity_id);
+        } 
+        // entity.move_(movement);
+    }
+
+    pub fn update_entity(&self, entity_id: &usize, player_x: f32, player_y: f32, chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>) {
         let entity_tags: &Vec<EntityTags> = self.get_entity_tags(*entity_id).unwrap();
         let mut entity_mut_hash: std::cell::RefMut<'_, HashMap<usize, Entity>> = self.entities.borrow_mut();
         let mut entity: &mut Entity = entity_mut_hash.get_mut(entity_id).unwrap();
@@ -285,7 +292,7 @@ impl World{
             if (direction[0].abs() + direction[1].abs()) > 0.0 {
                 let magnitude = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
                 let movement = [direction[0] / magnitude * movement_speed, direction[1] / magnitude * movement_speed];
-                entity.move_(movement);
+                self.move_entity(entity, entity_id,  movement, chunkref);
 
             }
         }
@@ -321,13 +328,6 @@ impl Entity{
             cur_attack: 0,
             cur_attack_cooldown: 0.15,
         }
-    }
-}
-
-impl Entity{
-    pub fn move_(&mut self, movement: [f32; 2]){
-        self.x += movement[0];
-        self.y += movement[1];
     }
 }
 

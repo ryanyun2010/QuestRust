@@ -74,7 +74,8 @@ impl Camera{
                 if chunk_id.is_none(){
                     continue;
                 }
-                let chunk = world.get_chunk_from_id(chunk_id.unwrap()).unwrap();
+                let chunk = &world.chunks.borrow()[chunk_id.unwrap()];
+
                 chunks_loaded.push(chunk_id.unwrap());
                 for terrain_id in chunk.terrain_ids.iter(){
                     let potentially_sprite_id = world.get_sprite(*terrain_id);

@@ -78,5 +78,4 @@ pub struct RangedWeapon {
 }
 #[derive(Clone, Debug)]
 pub struct MagicWeapon {
-    
 }
