@@ -81,14 +81,20 @@ pub enum WeaponTag {
 #[derive(Clone, Debug)]
 
 pub enum Stat {
-    Damage(i32),
+    //Armor
     Health(i32),
-    SwingRange(f32),
-    CritLuck(f32),
-    CritDamage(i32),
     Defense(i32),
     Toughness(i32),
-    Vitality(i32)
+    Vitality(i32),
+    Luck(i32),
+    //Weapons
+    Damage(i32), //Global
+    CritLuck(f32), //Melee, Ranged
+    CritDamage(i32), //Melee, Ranged
+    SwingRange(f32),//Melee
+    Accuracy(i32), //Ranged, Magic, (Degrees of width of cone).
+    Mana(i32),
+    ManaRegen(i32)
 }
 pub fn crit_chance_roll(crit_chance: f32) -> bool {
     if crit_chance >= 500.0 {
@@ -104,12 +110,19 @@ pub fn percent_damage_blocked(defense: i32, toughness: i32, damage: i32) -> f32 
     (defense as f32/(100.0+defense as f32))*2.0*(1.0-(1.0/1.0+2.71828_f32.powf(-(damage as f32/((toughness as f32).powf(0.8))))))
 }
 pub fn healing_with_vitality(incoming_healing: i32, vitality: i32) -> i32 {
-    (((vitality as f32 + 100.0)/100.0)).max((vitality as f32).powf(0.5)/(incoming_healing as f32).powf(0.5)).ceil() as i32
+    (((vitality as f32 + 100.0)/100.0)).min((vitality as f32).powf(0.5)/(incoming_healing as f32).powf(0.5)).ceil() as i32
+}
+pub fn mana_regen_with_regen(incoming_mana: i32, mana_regen: i32) -> i32 {
+    (((mana_regen as f32 + 100.0)/100.0)).min((mana_regen as f32).powf(0.5)/(incoming_mana as f32).powf(0.5)).ceil() as i32
 }
 //healing_tick_with_vitality is run on an entity when a healing tick is triggered.
 //Healing ticks can be triggered once every 60 frames (1 second) or on ability procs.
+//Mana ticks work the same way.
 pub fn healing_tick_with_vitality(max_health: i32, current_health: i32, vitality: i32) -> i32 {
     healing_with_vitality((0.05*(max_health-current_health) as f32).ceil() as i32, vitality)
+}
+pub fn mana_regen_tick_with_regen(max_mana: i32, current_mana: i32, mana_regen: i32) -> i32 {
+    healing_with_vitality((0.05*(max_mana-current_mana) as f32).ceil() as i32, mana_regen)
 }
 #[derive(Clone, Debug)]
 pub struct GearStat {
