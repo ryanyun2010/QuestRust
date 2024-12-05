@@ -59,6 +59,12 @@ impl Camera{
             self.camera_y = 0.0;
         }
         let mut render_data = RenderData::new();
+        let mut terrain_data: RenderData = RenderData::new();
+        let mut entity_data: RenderData = RenderData::new();
+        let mut index_offset: u16 = 0;
+        
+
+
         let camera_left_chunk_x = World::coord_to_chunk_coord(self.camera_x.floor() as usize);
         let mut camera_right_chunk_x = World::coord_to_chunk_coord((self.camera_x + self.viewpoint_width as f32).floor() as usize) + 1;
 
@@ -85,14 +91,14 @@ impl Camera{
                     let sprite_id = potentially_sprite_id.unwrap();
                     let sprite = &world.sprites[sprite_id];
 
-                    let index_offset = render_data.vertex.len() as u16;
+                    
                     let vertex_offset_x = -1 * self.camera_x as i32;
                     let vertex_offset_y = -1 * self.camera_y as i32;
                     let terrain = world.get_terrain(*terrain_id).unwrap();
                     let draw_data = sprite.draw_data(terrain.x as f32, terrain.y as f32, 32, 32, self.viewpoint_width, self.viewpoint_height, index_offset, vertex_offset_x, vertex_offset_y);
-                    
-                    render_data.vertex.extend(draw_data.vertex);
-                    render_data.index.extend(draw_data.index);
+                    index_offset += 4;
+                    terrain_data.vertex.extend(draw_data.vertex);
+                    terrain_data.index.extend(draw_data.index);
                 }
 
                 for entity_id in chunk.entities_ids.iter(){
@@ -102,20 +108,23 @@ impl Camera{
                     }
                     let sprite_id = potentially_sprite_id.unwrap();
                     let sprite = &world.sprites[sprite_id];
-
-                    let index_offset = render_data.vertex.len() as u16;
+                    
                     let vertex_offset_x = -1 * self.camera_x as i32;
                     let vertex_offset_y = -1 * self.camera_y as i32;
 
                     let entity = world.get_entity(*entity_id).unwrap();
 
                     let draw_data = sprite.draw_data(entity.x, entity.y, 32, 32, self.viewpoint_width, self.viewpoint_height, index_offset, vertex_offset_x, vertex_offset_y);
-                    
-                    render_data.vertex.extend(draw_data.vertex);
-                    render_data.index.extend(draw_data.index);
+                    index_offset += 4;
+                    entity_data.vertex.extend(draw_data.vertex);
+                    entity_data.index.extend(draw_data.index);
                 }
             }
         }
+        render_data.vertex.extend(terrain_data.vertex);
+        render_data.vertex.extend(entity_data.vertex);
+        render_data.index.extend(terrain_data.index);
+        render_data.index.extend(entity_data.index);
 
         let player_draw_data = player.draw_data(self.viewpoint_width, self.viewpoint_height, render_data.vertex.len() as u16, -1 * self.camera_x as i32, -1 * self.camera_y as i32);
         render_data.vertex.extend(player_draw_data.vertex);
