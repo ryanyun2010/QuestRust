@@ -82,9 +82,12 @@ pub enum WeaponTag {
 
 pub enum Stat {
     Damage(i32),
-    Health(i32),
+    MaxHealth(i32),
     SwingRange(f32),
     CritLuck(f32),
+    CritDamage(i32),
+    Defense(i32),
+    Toughness(i32)
 }
 pub fn crit_chance_roll(crit_chance: f32) -> bool {
     if crit_chance >= 500.0 {
@@ -94,6 +97,13 @@ pub fn crit_chance_roll(crit_chance: f32) -> bool {
         return true;
     }
     false
+}
+//Returns f32: [0, 1)
+pub fn percent_damage_blocked(defense: i32, toughness: i32, damage: i32) -> f32 {
+    let d: f32 = defense as f32;
+    let t: f32 = toughness as f32;
+    let x: f32 = damage as f32;
+    (d/(100.0+d))*2.0*(1.0-(1.0/1.0+2.71828_f32.powf(-(x/(t.powf(0.8))))))
 }
 #[derive(Clone, Debug)]
 pub struct GearStat {
