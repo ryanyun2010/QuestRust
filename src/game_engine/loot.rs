@@ -3,6 +3,7 @@
 // each entry has an Item + a Rarity just as a number between 0 and 1
 // Then the loot table goes through each entry and checks if you got it
 // LootTableRarity seems overengineered
+// No.
 
 
 
@@ -23,11 +24,11 @@ impl Loot{
 pub struct LootTable {
     entries: Vec<LootTableEntry>,
     total_weight: usize,
-    rarity: LootTableRarity
+    rarity: Rarity
 }
 
 impl LootTable {
-    pub fn new(&mut self, entries: Vec<LootTableEntry>, rarity: LootTableRarity) -> Self {
+    pub fn new(&mut self, entries: Vec<LootTableEntry>, rarity: Rarity) -> Self {
         let mut total_weight: usize = 0;
         for entry in 0..self.entries.len()-1 {
             total_weight += self.entries[entry].weight;
@@ -52,12 +53,13 @@ impl LootTable {
 }
 
 #[derive(Clone, Debug)]
-pub enum LootTableRarity {
-    Common, //Over 20%
-    Uncommon, //Over 5%
-    Rare, //Over 1%
-    Epic, //Over 0.1%
-    Legendary, //Less than 0.1%
+pub enum Rarity {
+    Common,
+    Rare,
+    Epic,
+    Mythical,
+    Legendary,
+    SUPREME
 }
 
 #[derive(Clone, Debug)]

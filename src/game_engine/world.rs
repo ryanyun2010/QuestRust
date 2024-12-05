@@ -290,8 +290,8 @@ impl World{
         if aggroed_to_player {
             let direction: [f32; 2] = [player_x - entity.x, player_y - entity.y];
             if (direction[0].abs() + direction[1].abs()) > 0.0 {
-                let magnitude = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
-                let movement = [direction[0] / magnitude * movement_speed, direction[1] / magnitude * movement_speed];
+                let magnitude: f32 = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
+                let movement: [f32; 2] = [direction[0] / magnitude * movement_speed, direction[1] / magnitude * movement_speed];
                 self.move_entity(entity, entity_id,  movement, chunkref);
 
             }
