@@ -122,7 +122,7 @@ pub fn healing_tick_with_vitality(max_health: i32, current_health: i32, vitality
     healing_with_vitality((0.05*(max_health-current_health) as f32).ceil() as i32, vitality)
 }
 pub fn mana_regen_tick_with_regen(max_mana: i32, current_mana: i32, mana_regen: i32) -> i32 {
-    healing_with_vitality((0.05*(max_mana-current_mana) as f32).ceil() as i32, mana_regen)
+    mana_regen_with_regen((0.05*(max_mana-current_mana) as f32).ceil() as i32, mana_regen)
 }
 #[derive(Clone, Debug)]
 pub struct GearStat {
