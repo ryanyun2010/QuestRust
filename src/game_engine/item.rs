@@ -87,7 +87,8 @@ pub enum Stat {
     CritLuck(f32),
     CritDamage(i32),
     Defense(i32),
-    Toughness(i32)
+    Toughness(i32),
+    Vitality(i32)
 }
 pub fn crit_chance_roll(crit_chance: f32) -> bool {
     if crit_chance >= 500.0 {
@@ -100,10 +101,15 @@ pub fn crit_chance_roll(crit_chance: f32) -> bool {
 }
 //Returns f32: [0, 1)
 pub fn percent_damage_blocked(defense: i32, toughness: i32, damage: i32) -> f32 {
-    let d: f32 = defense as f32;
-    let t: f32 = toughness as f32;
-    let x: f32 = damage as f32;
-    (d/(100.0+d))*2.0*(1.0-(1.0/1.0+2.71828_f32.powf(-(x/(t.powf(0.8))))))
+    (defense as f32/(100.0+defense as f32))*2.0*(1.0-(1.0/1.0+2.71828_f32.powf(-(damage as f32/((toughness as f32).powf(0.8))))))
+}
+pub fn healing_with_vitality(incoming_healing: i32, vitality: i32) -> i32 {
+    (((vitality as f32 + 100.0)/100.0)).max((vitality as f32).powf(0.5)/(incoming_healing as f32).powf(0.5)).ceil() as i32
+}
+//healing_tick_with_vitality is run on an entity when a healing tick is triggered.
+//Healing ticks can be triggered once every 60 frames (1 second) or on ability procs.
+pub fn healing_tick_with_vitality(max_health: i32, current_health: i32, vitality: i32) -> i32 {
+    healing_with_vitality((0.05*(max_health-current_health) as f32).ceil() as i32, vitality)
 }
 #[derive(Clone, Debug)]
 pub struct GearStat {
