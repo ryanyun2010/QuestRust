@@ -221,6 +221,12 @@ impl World{
         // entity.move_(movement);
     }
 
+    pub fn add_tags(&mut self, element_id: usize, tags: Vec<EntityTags>){
+        let mut d = self.entity_tags_lookup.get(&element_id).unwrap_or(&Vec::new()).clone(); 
+        d.extend(tags);
+        self.entity_tags_lookup.insert(element_id, d);
+    }
+
     pub fn update_entity(&self, entity_id: &usize, player_x: f32, player_y: f32, chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>) {
         let entity_tags: &Vec<EntityTags> = self.get_entity_tags(*entity_id).unwrap();
         let mut entity_mut_hash: std::cell::RefMut<'_, HashMap<usize, Entity>> = self.entities.borrow_mut();
