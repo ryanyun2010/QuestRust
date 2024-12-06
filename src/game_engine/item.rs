@@ -1,3 +1,5 @@
+use std::os::macos::raw::stat;
+
 use crate::game_engine::entities::AttackType;
 use super::{loot::Rarity, world::{Sprite, Terrain}};
 #[derive(Clone, Debug)]
@@ -137,6 +139,76 @@ pub struct GearStat {
     base: Stat,
     variation: Stat,
     max: Stat
+}
+impl GearStat {
+    pub fn new(base: Stat, variation: Stat, max: Stat) -> Self {
+        Self {
+            base,
+            variation,
+            max
+        }
+    }
+}
+pub struct StatList {
+    health: Option<i32>,
+    defense: Option<i32>,
+    toughness: Option<i32>,
+    vitality: Option<i32>,
+    luck: Option<i32>,
+    damage: Option<i32>,
+    crit_luck: Option<f32>,
+    crit_damage: Option<i32>,
+    swing_range: Option<f32>,
+    accuracy: Option<i32>,
+    mana: Option<i32>,
+    mana_regen: Option<i32>,
+}
+impl StatList {
+    pub fn new(stat_list: Vec<Stat>) -> Self {
+        let mut health: Option<i32> = None;
+        let mut defense: Option<i32> = None;
+        let mut toughness: Option<i32> = None;
+        let mut vitality: Option<i32> = None;
+        let mut luck: Option<i32> = None;
+        let mut damage: Option<i32> = None;
+        let mut crit_luck: Option<f32> = None;
+        let mut crit_damage: Option<i32> = None;
+        let mut swing_range: Option<f32> = None;
+        let mut accuracy: Option<i32> = None;
+        let mut mana: Option<i32> = None;
+        let mut mana_regen: Option<i32> = None;
+        for i in 0..stat_list.len() {
+            match stat_list[i] {
+                Stat::Health(t_health) => health = Some(t_health),
+                Stat::Defense(t_defense) => defense = Some(t_defense),
+                Stat::Toughness(t_toughness) => toughness = Some(t_toughness),
+                Stat::Vitality(t_vitality) => vitality = Some(t_vitality),
+                Stat::Luck(t_luck) => luck = Some(t_luck),
+                Stat::Damage(t_damage) => damage = Some(t_damage),
+                Stat::CritLuck(t_crit_luck) => crit_luck = Some(t_crit_luck),
+                Stat::CritDamage(t_crit_damage) => crit_damage = Some(t_crit_damage),
+                Stat::SwingRange(t_swing_range) => swing_range = Some(t_swing_range),
+                Stat::Accuracy(t_accuracy) => accuracy = Some(t_accuracy),
+                Stat::Mana(t_mana) => mana = Some(t_mana),
+                Stat::ManaRegen(t_mana_regen) => mana_regen = Some(t_mana_regen),
+                _ => {}
+            }
+        }
+        Self {
+            health,
+            defense,
+            toughness,
+            vitality,
+            luck,
+            damage,
+            crit_luck,
+            crit_damage,
+            swing_range,
+            accuracy,
+            mana,
+            mana_regen
+        }
+    }
 }
 #[derive(Clone, Debug)]
 pub struct MeleeWeaponTag {
