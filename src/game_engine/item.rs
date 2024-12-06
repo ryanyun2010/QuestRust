@@ -82,12 +82,13 @@ pub enum WeaponTag {
 
 pub enum Stat {
     Damage(i32),
-    MaxHealth(i32),
+    Health(i32),
     SwingRange(f32),
     CritLuck(f32),
     CritDamage(i32),
     Defense(i32),
-    Toughness(i32)
+    Toughness(i32),
+    Vitality(i32)
 }
 pub fn crit_chance_roll(crit_chance: f32) -> bool {
     if crit_chance >= 500.0 {
