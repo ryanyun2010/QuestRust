@@ -80,8 +80,7 @@ pub enum WeaponTag {
     Magic(MagicWeaponTag)
 }
 //Damage is the same as Health basically.
-#[derive(Clone, Debug)]
-
+#[derive(Clone, Copy, Debug)]
 pub enum Stat {
 <<<<<<< HEAD
     Damage(i32),
@@ -141,7 +140,8 @@ pub struct GearStat {
     max: Stat
 }
 impl GearStat {
-    pub fn new(base: Stat, variation: Stat, max: Stat) -> Self {
+    pub fn new(base: Stat, variation: Stat) -> Self {
+        let max: Stat = StatList::new(vec![base,  variation]).get_stat_from_enum_as_stat(base).unwrap();
         Self {
             base,
             variation,
@@ -179,20 +179,20 @@ impl StatList {
         let mut mana_regen: Option<i32> = None;
         for i in 0..stat_list.len() {
             match stat_list[i] {
-                Stat::Health(t_health) => health = Some(t_health),
-                Stat::Defense(t_defense) => defense = Some(t_defense),
-                Stat::Toughness(t_toughness) => toughness = Some(t_toughness),
-                Stat::Vitality(t_vitality) => vitality = Some(t_vitality),
-                Stat::Luck(t_luck) => luck = Some(t_luck),
-                Stat::Damage(t_damage) => damage = Some(t_damage),
-                Stat::CritLuck(t_crit_luck) => crit_luck = Some(t_crit_luck),
-                Stat::CritDamage(t_crit_damage) => crit_damage = Some(t_crit_damage),
-                Stat::SwingRange(t_swing_range) => swing_range = Some(t_swing_range),
-                Stat::Accuracy(t_accuracy) => accuracy = Some(t_accuracy),
-                Stat::Mana(t_mana) => mana = Some(t_mana),
-                Stat::ManaRegen(t_mana_regen) => mana_regen = Some(t_mana_regen),
+                Stat::Health(t_health) => {if health.is_some(){health=Some(t_health)}else{health=Some(t_health+health.unwrap())}},
+                Stat::Defense(t_defense) => {if defense.is_some(){defense=Some(t_defense)}else{defense=Some(t_defense+defense.unwrap())}},
+                Stat::Toughness(t_toughness) => {if toughness.is_some(){toughness=Some(t_toughness)}else{toughness=Some(t_toughness+toughness.unwrap())}},
+                Stat::Vitality(t_vitality) => {if vitality.is_some(){vitality=Some(t_vitality)}else{vitality=Some(t_vitality+vitality.unwrap())}},
+                Stat::Luck(t_luck) => {if luck.is_some(){luck=Some(t_luck)}else{luck=Some(t_luck+luck.unwrap())}},
+                Stat::Damage(t_damage) => {if damage.is_some(){damage=Some(t_damage)}else{damage=Some(t_damage+damage.unwrap())}},
+                Stat::CritLuck(t_crit_luck) => {if crit_luck.is_some(){crit_luck=Some(t_crit_luck)}else{crit_luck=Some(t_crit_luck+crit_luck.unwrap())}},
+                Stat::CritDamage(t_crit_damage) => {if crit_damage.is_some(){crit_damage=Some(t_crit_damage)}else{crit_damage=Some(t_crit_damage+crit_damage.unwrap())}},
+                Stat::SwingRange(t_swing_range) => {if swing_range.is_some(){swing_range=Some(t_swing_range)}else{swing_range=Some(t_swing_range+swing_range.unwrap())}},
+                Stat::Accuracy(t_accuracy) => {if accuracy.is_some(){accuracy=Some(t_accuracy)}else{accuracy=Some(t_accuracy+accuracy.unwrap())}},
+                Stat::Mana(t_mana) => {if mana.is_some(){mana=Some(t_mana)}else{mana=Some(t_mana+mana.unwrap())}},
+                Stat::ManaRegen(t_mana_regen) => {if mana_regen.is_some(){mana_regen=Some(t_mana_regen)}else{mana_regen=Some(t_mana_regen+mana_regen.unwrap())}},
                 _ => {}
-            }
+            } 
         }
         Self {
             health,
@@ -208,6 +208,24 @@ impl StatList {
             mana,
             mana_regen
         }
+    }
+    pub fn get_stat_from_enum_as_stat(&self, stat: Stat) -> Option<Stat>{
+        match stat {
+            Stat::Health(_) => {if self.health.is_none() {return None} else {return Some(Stat::Health(self.health.unwrap()))}},
+            Stat::Defense(_) => {if self.defense.is_none() {return None} else {return Some(Stat::Defense(self.defense.unwrap()))}},
+            Stat::Toughness(_) => {if self.toughness.is_none() {return None} else {return Some(Stat::Toughness(self.toughness.unwrap()))}},
+            Stat::Vitality(_) => {if self.vitality.is_none() {return None} else {return Some(Stat::Vitality(self.vitality.unwrap()))}},
+            Stat::Luck(_) => {if self.luck.is_none() {return None} else {return Some(Stat::Luck(self.luck.unwrap()))}},
+            Stat::Damage(_) => {if self.damage.is_none() {return None} else {return Some(Stat::Damage(self.damage.unwrap()))}},
+            Stat::CritLuck(_) => {if self.crit_luck.is_none() {return None} else {return Some(Stat::CritLuck(self.crit_luck.unwrap()))}},
+            Stat::CritDamage(_) => {if self.crit_damage.is_none() {return None} else {return Some(Stat::CritDamage(self.crit_damage.unwrap()))}},
+            Stat::SwingRange(_) => {if self.swing_range.is_none() {return None} else {return Some(Stat::SwingRange(self.swing_range.unwrap()))}},
+            Stat::Accuracy(_) => {if self.accuracy.is_none() {return None} else {return Some(Stat::Accuracy(self.accuracy.unwrap()))}},
+            Stat::Mana(_) => {if self.mana.is_none() {return None} else {return Some(Stat::Mana(self.mana.unwrap()))}},
+            Stat::ManaRegen(_) => {if self.mana_regen.is_none() {return None} else {return Some(Stat::ManaRegen(self.mana_regen.unwrap()))}},
+            _ => {panic!("Nonexistent type you fucking idiot.");}
+        }
+        None
     }
 }
 #[derive(Clone, Debug)]
