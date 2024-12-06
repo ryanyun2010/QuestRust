@@ -79,24 +79,6 @@ pub enum WeaponTag {
     Ranged(RangedWeaponTag),
     Magic(MagicWeaponTag)
 }
-//Damage is the same as Health basically.
-#[derive(Clone, Copy, Debug)]
-pub enum Stat {
-    //Armor
-    Health(i32),
-    Defense(i32),
-    Toughness(i32),
-    Vitality(i32),
-    Luck(i32),
-    //Weapons
-    Damage(i32), //Global
-    CritLuck(f32), //Melee, Ranged
-    CritDamage(i32), //Melee, Ranged
-    SwingRange(f32),//Melee
-    Accuracy(i32), //Ranged, Magic, (Degrees of width of cone).
-    Mana(i32),
-    ManaRegen(i32)
-}
 pub fn crit_chance_roll(crit_chance: f32) -> bool {
     if crit_chance >= 500.0 {
         return true;
@@ -141,6 +123,30 @@ impl GearStat {
         }
     }
 }
+//Damage is the same as Health basically.
+#[derive(Clone, Copy, Debug)]
+pub enum Stat {
+    //Armor
+    Health(i32),
+    Defense(i32),
+    Toughness(i32),
+    Vitality(i32),
+    Luck(i32),
+    //Weapons
+    Damage(i32), //Global
+    CritLuck(f32), //Melee, Ranged
+    CritDamage(i32), //Melee, Ranged
+    SwingRange(f32),//Melee
+    Accuracy(i32), //Ranged, Magic, (Degrees of width of cone).
+    Mana(i32),
+    ManaRegen(i32),
+    CooldownRegen(i32), //Magic
+    Sweep(i32), //Melee, (Degrees of width of cone)
+    LoadSpeed(i32), //Ranged, (In ticks).
+    Range(f32), //Ranged
+    AbilityDamage(i32), //Magic
+}
+#[derive(Clone, Debug)]
 pub struct StatList {
     health: Option<i32>,
     defense: Option<i32>,
@@ -154,6 +160,11 @@ pub struct StatList {
     accuracy: Option<i32>,
     mana: Option<i32>,
     mana_regen: Option<i32>,
+    cooldown_regen: Option<i32>,
+    sweep: Option<i32>,
+    load_speed: Option<i32>,
+    range: Option<f32>,
+    ability_damage: Option<i32>,
 }
 impl StatList {
     pub fn new(stat_list: Vec<Stat>) -> Self {
@@ -169,6 +180,11 @@ impl StatList {
         let mut accuracy: Option<i32> = None;
         let mut mana: Option<i32> = None;
         let mut mana_regen: Option<i32> = None;
+        let mut cooldown_regen: Option<i32> = None;
+        let mut sweep: Option<i32> = None;
+        let mut load_speed: Option<i32> = None;
+        let mut range: Option<f32> = None;
+        let mut ability_damage: Option<i32> = None;
         for i in 0..stat_list.len() {
             match stat_list[i] {
                 Stat::Health(t_health) => {if health.is_some(){health=Some(t_health)}else{health=Some(t_health+health.unwrap())}},
@@ -183,7 +199,11 @@ impl StatList {
                 Stat::Accuracy(t_accuracy) => {if accuracy.is_some(){accuracy=Some(t_accuracy)}else{accuracy=Some(t_accuracy+accuracy.unwrap())}},
                 Stat::Mana(t_mana) => {if mana.is_some(){mana=Some(t_mana)}else{mana=Some(t_mana+mana.unwrap())}},
                 Stat::ManaRegen(t_mana_regen) => {if mana_regen.is_some(){mana_regen=Some(t_mana_regen)}else{mana_regen=Some(t_mana_regen+mana_regen.unwrap())}},
-                _ => {}
+                Stat::CooldownRegen(t_cooldown_regen) => {if cooldown_regen.is_some(){cooldown_regen=Some(t_cooldown_regen)}else{cooldown_regen=Some(t_cooldown_regen+cooldown_regen.unwrap())}},
+                Stat::Sweep(t_sweep) => {if sweep.is_some(){sweep=Some(t_sweep)}else{sweep=Some(t_sweep+sweep.unwrap())}},
+                Stat::LoadSpeed(t_load_speed) => {if load_speed.is_some(){load_speed=Some(t_load_speed)}else{load_speed=Some(t_load_speed+load_speed.unwrap())}},
+                Stat::Range(t_range) => {if range.is_some(){range=Some(t_range)}else{range=Some(t_range+range.unwrap())}},
+                Stat::AbilityDamage(t_ability_damage) => {if ability_damage.is_some(){ability_damage=Some(t_ability_damage)}else{ability_damage=Some(t_ability_damage+ability_damage.unwrap())}},
             } 
         }
         Self {
@@ -198,7 +218,12 @@ impl StatList {
             swing_range,
             accuracy,
             mana,
-            mana_regen
+            mana_regen,
+            cooldown_regen,
+            sweep,
+            load_speed,
+            range,
+            ability_damage
         }
     }
     pub fn get_stat_from_enum_as_stat(&self, stat: Stat) -> Option<Stat>{
@@ -215,9 +240,13 @@ impl StatList {
             Stat::Accuracy(_) => {if self.accuracy.is_none() {return None} else {return Some(Stat::Accuracy(self.accuracy.unwrap()))}},
             Stat::Mana(_) => {if self.mana.is_none() {return None} else {return Some(Stat::Mana(self.mana.unwrap()))}},
             Stat::ManaRegen(_) => {if self.mana_regen.is_none() {return None} else {return Some(Stat::ManaRegen(self.mana_regen.unwrap()))}},
+            Stat::CooldownRegen(_) => {if self.cooldown_regen.is_none() {return None} else {return Some(Stat::CooldownRegen(self.cooldown_regen.unwrap()))}},
+            Stat::Sweep(_) => {if self.sweep.is_none() {return None} else {return Some(Stat::Sweep(self.sweep.unwrap()))}},
+            Stat::LoadSpeed(_) => {if self.load_speed.is_none() {return None} else {return Some(Stat::LoadSpeed(self.load_speed.unwrap()))}},
+            Stat::Range(_) => {if self.range.is_none() {return None} else {return Some(Stat::Range(self.range.unwrap()))}},
+            Stat::AbilityDamage(_) => {if self.ability_damage.is_none() {return None} else {return Some(Stat::AbilityDamage(self.ability_damage.unwrap()))}},
             _ => {panic!("Nonexistent type you fucking idiot.");}
         }
-        None
     }
 }
 #[derive(Clone, Debug)]
@@ -238,9 +267,6 @@ pub struct MeleeWeaponTag {
     damage: GearStat,
     attack_speed: GearStat,
     swing_range: GearStat,
-    quality: u64,
-    rarity: Rarity,
-
 }
 #[derive(Clone, Debug)]
 pub struct RangedWeaponTag {
@@ -250,10 +276,16 @@ pub struct RangedWeaponTag {
 pub struct MagicWeaponTag {
 }
 #[derive(Clone, Debug)]
-pub enum WeaponComponent {
+pub enum WeaponComponentType {
     Melee(MeleeWeaponComponent),
     Ranged(RangedWeaponComponent),
-    Magic(MagicWeaponComponent)
+    Magic(MagicWeaponComponent),
+}
+#[derive(Clone, Debug)]
+pub struct WeaponComponent {
+    weapon_type: WeaponComponentType,
+    quality: u64,
+    rarity: Rarity,
 }
 #[derive(Clone, Debug)]
 pub struct MeleeWeaponComponent {
@@ -265,4 +297,5 @@ pub struct RangedWeaponComponent {
 }
 #[derive(Clone, Debug)]
 pub struct MagicWeaponComponent {
+
 }
