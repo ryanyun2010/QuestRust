@@ -6,7 +6,7 @@ use winit::event::*;
 use std::collections::HashMap;
 use wgpu::util::DeviceExt;
 use crate::vertex::Vertex;
-use crate::texture;
+use crate::texture::create_texture_bind_group;
 use crate::world;
 use crate::world::World;
 use crate::camera::Camera;
@@ -17,96 +17,15 @@ use winit::event::WindowEvent::KeyboardInput;
 
 
 
+
+
+
 const BACKGROUND_COLOR: wgpu::Color = wgpu::Color {
     r: 1.0,
     g: 1.0,
     b: 1.0,
     a: 1.0,
 };
-
-macro_rules! create_texture_bind_group {
-    ($device:expr, $queue:expr, $($texture_path:expr),*) => {{
-        let mut textures = Vec::new();
-        let mut samplers = Vec::new();
-        
-        $(
-            let texture_bytes = include_bytes!($texture_path);
-            let texture = texture::Texture::from_bytes($device, $queue, texture_bytes, $texture_path).unwrap();
-            textures.push(&texture.view);
-            samplers.push(&texture.sampler); 
-        )*
-
-        let mut texture_index_buffer_contents = vec![0u32; textures.len()];
-        let texture_index_buffer = $device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Index Buffer"),
-            contents: bytemuck::cast_slice(&texture_index_buffer_contents),
-            usage: wgpu::BufferUsages::UNIFORM,
-        });
-
-        let texture_bind_group_layout = $device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Texture {
-                        multisampled: false,
-                        view_dimension: wgpu::TextureViewDimension::D2,
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                    },
-                    count: NonZeroU32::new(textures.len() as u32),
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                    count: NonZeroU32::new(samplers.len() as u32),
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 2,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: true,
-                        min_binding_size: Some(NonZeroU64::new(4).unwrap()),
-                    },
-                    count: None,
-                },
-            ],
-            label: Some("texture_bind_group_layout"),
-        });
-
-        let diffuse_bind_group = $device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &texture_bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: wgpu::BindingResource::TextureViewArray(&textures),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::SamplerArray(&samplers),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 2,
-                    resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                        buffer: &texture_index_buffer,
-                        offset: 0,
-                        size: Some(NonZeroU64::new(4).unwrap()),
-                    }),
-                },
-            ],
-            label: Some("diffuse_bind_group"),
-        });
-
-        (texture_bind_group_layout, diffuse_bind_group)
-    }};
-}
-
-
-
-
-
- 
 
 
 pub struct State<'a> {
