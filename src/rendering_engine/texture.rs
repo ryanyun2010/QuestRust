@@ -158,12 +158,4 @@ macro_rules! create_texture_bind_group {
     }};
 }
 
-
-
-
-
- 
-
-
-
 pub(crate) use create_texture_bind_group;
