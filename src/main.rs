@@ -1,3 +1,5 @@
+use core::arch;
+
 use game_engine::world::Entity;
 use rand::prelude::*;
 pub mod rendering_engine;
@@ -65,15 +67,25 @@ fn main() {
 
 
     let ghost = world.add_entity(160.0,160.0);
-    world.add_tag(ghost, EntityTags::Aggressive);
-    world.add_tag(ghost, EntityTags::MovementSpeed(2.0));
-    world.add_tag(ghost, EntityTags::MonsterType(entities::MonsterType::Undead));
-    world.add_tag(ghost, EntityTags::FollowsPlayer);
-    world.add_tag(ghost, EntityTags::Range(32));
-    world.add_tag(ghost, EntityTags::AggroRange(1000));
-    world.add_tag(ghost, EntityTags::AttackType(entities::AttackType::Melee));
+    let mut archetype: Vec<EntityTags> = Vec::new();
+    archetype.push(EntityTags::Aggressive);
+    archetype.push(EntityTags::MovementSpeed(2.0));
+    archetype.push(EntityTags::MonsterType(entities::MonsterType::Undead));
+    archetype.push(EntityTags::FollowsPlayer);
+    archetype.push(EntityTags::Range(32));
+    archetype.push(EntityTags::AggroRange(1000));
+    archetype.push(EntityTags::AttackType(entities::AttackType::Melee));
+
+    // world.add_tag(ghost, EntityTags::Aggressive);
+    // world.add_tag(ghost, EntityTags::MovementSpeed(2.0));
+    // world.add_tag(ghost, EntityTags::MonsterType(entities::MonsterType::Undead));
+    // world.add_tag(ghost, EntityTags::FollowsPlayer);
+    // world.add_tag(ghost, EntityTags::Range(32));
+    // world.add_tag(ghost, EntityTags::AggroRange(1000));
+    // world.add_tag(ghost, EntityTags::AttackType(entities::AttackType::Melee));
     let mut attacks_tests = Vec::new();
     attacks_tests.push(entities::EntityAttack::new(3));
+    world.add_tags(ghost, archetype);
     world.add_tag(ghost, EntityTags::Attacks(entities::EntityAttackPattern::new(attacks_tests, vec![0.1])));
 
 
