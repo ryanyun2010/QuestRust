@@ -144,7 +144,7 @@ pub struct GearStat {
 }
 impl GearStat {
     pub fn new(base: Stat, variation: Stat) -> Self {
-        let max: Stat = StatList::extract_from_list(vec![base,  variation]).extract_to_stat(base).unwrap();
+        let max: Stat = StatList::extract_from_stat_vec(vec![base,  variation]).extract_to_stat(base).unwrap();
         Self {
             base,
             variation,
@@ -153,7 +153,7 @@ impl GearStat {
     }
 }
 //Damage is the same as Health basically.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Stat {
     //Armor
     Health(i32),
@@ -196,29 +196,9 @@ pub struct StatList {
     ability_damage: Option<i32>,
 }
 #[macro_export]
-macro_rules! extract_stat_to_under {
-    ($output:ident, $name:expr; $( $stat_expr_list: ident, $stat_ty_list: ty, $stat_enum_list: ident),*) => {
-        $(
-            let mut $stat_expr_list: Option<$stat_ty_list> = None;
-        )*
-        for i in 0..$name.len() {
-            match $name[i] {
-                $(
-                Stat::$stat_enum_list(adding) => {if $stat_expr_list.is_none(){$stat_expr_list=Some(adding)}else{$stat_expr_list=Some(adding+$stat_expr_list.unwrap())}},
-                )*
-            }
-        }
-        $output = StatList::new(
-            $(
-                $stat_expr_list,
-            )*
-        )
-    }
-}
-#[macro_export]
-macro_rules! extract_stat_to {
+macro_rules! extract_stat_vec_to {
     ($output:ident, $name:expr) => {
-        extract_stat_to_under! [
+        extract_stat_vec_to_under! [
             $output, $name;
             health, i32, Health,
             defense, i32, Defense,
@@ -238,14 +218,116 @@ macro_rules! extract_stat_to {
             range, f32, Range,
             ability_damage, i32, AbilityDamage
         ];
-
     }
 }
 #[macro_export]
-macro_rules! extract_to_stat {
-    ($name:expr, $enum:expr) => {
-        if $name.is_none() {return None}
-        else {return Some($enum($name.unwrap()))}}
+macro_rules! extract_stat_vec_to_under {
+    ($output:ident, $name:expr; $( $stat_expr_list: ident, $stat_ty_list: ty, $stat_enum_list: ident),*) => {
+        $(
+            let mut $stat_expr_list: Option<$stat_ty_list> = None;
+        )*
+        for i in 0..$name.len() {
+            match $name[i] {
+                $(
+                Stat::$stat_enum_list(adding) => {if $stat_expr_list.is_none(){$stat_expr_list=Some(adding)}else{$stat_expr_list=Some(adding+$stat_expr_list.unwrap())}},
+                )*
+            }
+        }
+        $output = StatList::new(
+            $(
+                $stat_expr_list,
+            )*
+        )
+    }
+}
+#[macro_export]
+macro_rules! extract_to_stat_vec {
+    ($output:ident, $name:expr) => {
+        extract_to_stat_vec_under! [
+            $output, $name;
+            health, i32, Health,
+            defense, i32, Defense,
+            toughness, i32, Toughness,
+            vitality, i32, Vitality,
+            luck, i32, Luck,
+            damage, i32, Damage,
+            crit_luck, f32, CritLuck,
+            crit_damage, i32, CritDamage,
+            swing_range, f32, SwingRange,
+            accuracy, i32, Accuracy,
+            mana, i32, Mana,
+            mana_regen, i32, ManaRegen,
+            cooldown_regen, i32, CooldownRegen,
+            sweep, i32, Sweep,
+            load_speed, i32, LoadSpeed,
+            range, f32, Range,
+            ability_damage, i32, AbilityDamage
+        ];
+    }
+}
+#[macro_export]
+macro_rules! extract_to_stat_vec_under {
+    ($output:expr, $name:expr; $( $stat_expr_list: ident, $stat_ty_list: ty, $stat_enum_list: ident),*) => {
+        $(
+            if $name.$stat_expr_list.is_some() {$output.push(Stat::$stat_enum_list($name.$stat_expr_list.unwrap()))}
+        )*
+    }
+}
+#[macro_export]
+macro_rules! extract_stat_vec_to_stat_macro {
+    ($output:expr, $name:expr, $stat_type:expr) => {
+        extract_stat_vec_to_stat_under![
+            $output, $name, $stat_type;
+            health, i32, Health,
+            defense, i32, Defense,
+            toughness, i32, Toughness,
+            vitality, i32, Vitality,
+            luck, i32, Luck,
+            damage, i32, Damage,
+            crit_luck, f32, CritLuck,
+            crit_damage, i32, CritDamage,
+            swing_range, f32, SwingRange,
+            accuracy, i32, Accuracy,
+            mana, i32, Mana,
+            mana_regen, i32, ManaRegen,
+            cooldown_regen, i32, CooldownRegen,
+            sweep, i32, Sweep,
+            load_speed, i32, LoadSpeed,
+            range, f32, Range,
+            ability_damage, i32, AbilityDamage
+        ];
+    }
+}
+#[macro_export]
+macro_rules! extract_stat_vec_to_stat_under {
+    ($output:expr, $name:expr, $stat_type:expr; $( $stat_expr_list: ident, $stat_ty_list: ty, $stat_enum_list: ident),*) => {
+        let mut matching1: Stat;
+        let mut matching2: Stat;
+
+        match $stat_type {
+            $(
+                Stat::$stat_enum_list(_) => {matching1 = Stat::$stat_enum_list(0 as $stat_ty_list);},
+            )*
+        }
+        'match_extract_stat_vec_to_stat_under: for i in 0..$name.len() {
+            match $name[i] {
+                $(
+                    Stat::$stat_enum_list(_) => {
+                        matching2 = Stat::$stat_enum_list(0 as $stat_ty_list);
+                        if matching1 == matching2 {
+                            $output = Some($name[i]);
+                            break 'match_extract_stat_vec_to_stat_under
+                        }
+                    },
+                )*
+            }
+        }
+    }
+}
+pub fn extract_stat_vec_to_stat(vector: Vec<Stat>, goal: Stat) -> Option<Stat> {
+    let mut output: Option<Stat> = None;
+    extract_stat_vec_to_stat_macro!(output, vector, goal);
+    output
 }
 impl StatList {
     pub fn new(
@@ -287,31 +369,20 @@ impl StatList {
             ability_damage,
         }
     }
-    pub fn extract_from_list(stat_list: Vec<Stat>) -> Self {
-        let out: StatList;
-        extract_stat_to!(out, stat_list);
-        out
+    pub fn extract_from_stat_vec(stat_list: Vec<Stat>) -> Self {
+        let output: StatList;
+        extract_stat_vec_to!(output, stat_list);
+        output
     }
-    pub fn extract_to_stat(&self, stat: Stat) -> Option<Stat>{
-        match stat {
-            Stat::Health(_) => extract_to_stat!(self.health, Stat::Health),
-            Stat::Defense(_) => {extract_to_stat!(self.defense, Stat::Defense)},
-            Stat::Toughness(_) => {extract_to_stat!(self.toughness, Stat::Toughness)},
-            Stat::Vitality(_) => {extract_to_stat!(self.vitality, Stat::Vitality)},
-            Stat::Luck(_) => {extract_to_stat!(self.luck, Stat::Luck)},
-            Stat::Damage(_) => {extract_to_stat!(self.damage, Stat::Damage)},
-            Stat::CritLuck(_) => {extract_to_stat!(self.crit_luck, Stat::CritLuck)},
-            Stat::CritDamage(_) => {extract_to_stat!(self.crit_damage, Stat::CritDamage)},
-            Stat::SwingRange(_) => {extract_to_stat!(self.swing_range, Stat::SwingRange)},
-            Stat::Accuracy(_) => {extract_to_stat!(self.accuracy, Stat::Accuracy)},
-            Stat::Mana(_) => {extract_to_stat!(self.mana, Stat::Mana)},
-            Stat::ManaRegen(_) => {extract_to_stat!(self.mana_regen, Stat::ManaRegen)},
-            Stat::CooldownRegen(_) => {extract_to_stat!(self.cooldown_regen, Stat::CooldownRegen)},
-            Stat::Sweep(_) => {extract_to_stat!(self.sweep, Stat::Sweep)},
-            Stat::LoadSpeed(_) => {extract_to_stat!(self.load_speed, Stat::LoadSpeed)},
-            Stat::Range(_) => {extract_to_stat!(self.range, Stat::Range)},
-            Stat::AbilityDamage(_) => {extract_to_stat!(self.ability_damage, Stat::AbilityDamage)},
-        }
+    pub fn extract_to_stat_vec(&self) -> Vec<Stat>{
+        let mut output: Vec<Stat> = Vec::new();
+        extract_to_stat_vec!(output, self);
+        output
+    }
+    pub fn extract_to_stat(&self, goal: Stat) -> Option<Stat>{
+        let mut output2: Vec<Stat> = Vec::new();
+        extract_to_stat_vec!(output2, self);
+        extract_stat_vec_to_stat( output2, goal)
     }
 }
 #[derive(Clone, Debug)]
