@@ -167,67 +167,77 @@ pub struct StatList {
     ability_damage: Option<i32>,
 }
 #[macro_export]
-macro_rules! struct_new_stat_value_def {
-    ($( $stat_expr_list: ident, $stat_ty_list: ty),*) => {
+macro_rules! extract_stat_to_under {
+    ($output:ident, $name:expr; $( $stat_expr_list: ident, $stat_ty_list: ty, $stat_enum_list: ident),*) => {
         $(
             let mut $stat_expr_list: Option<$stat_ty_list> = None;
         )*
-    };
-}
-#[macro_export]
-macro_rules! struct_new_stat_match {
-    ($name:ident, $t_name:ident) => {
-        if $name.is_none(){$name=Some($t_name)}else{$name=Some($t_name+$name.unwrap())}
+        for i in 0..$name.len() {
+            match $name[i] {
+                $(
+                Stat::$stat_enum_list(adding) => {if $stat_expr_list.is_none(){$stat_expr_list=Some(adding)}else{$stat_expr_list=Some(adding+$stat_expr_list.unwrap())}},
+                )*
+            }
+        }
+        $output = StatList::new2(
+            $(
+                $stat_expr_list,
+            )*
+        )
     }
 }
 #[macro_export]
-macro_rules! struct_get_stat_match {
+macro_rules! extract_stat_to {
+    ($output:ident, $name:expr) => {
+        extract_stat_to_under! [
+            $output, $name;
+            health, i32, Health,
+            defense, i32, Defense,
+            toughness, i32, Toughness,
+            vitality, i32, Vitality,
+            luck, i32, Luck,
+            damage, i32, Damage,
+            crit_luck, f32, CritLuck,
+            crit_damage, i32, CritDamage,
+            swing_range, f32, SwingRange,
+            accuracy, i32, Accuracy,
+            mana, i32, Mana,
+            mana_regen, i32, ManaRegen,
+            cooldown_regen, i32, CooldownRegen,
+            sweep, i32, Sweep,
+            load_speed, i32, LoadSpeed,
+            range, f32, Range,
+            ability_damage, i32, AbilityDamage
+        ];
+
+    }
+}
+#[macro_export]
+macro_rules! extract_to_stat {
     ($name:expr, $enum:expr) => {
         if $name.is_none() {return None}
         else {return Some($enum($name.unwrap()))}}
 }
 impl StatList {
-    pub fn new(stat_list: Vec<Stat>) -> Self {
-        struct_new_stat_value_def! [
-            health, i32, 
-            defense, i32, 
-            toughness, i32, 
-            vitality, i32, 
-            luck, i32, 
-            damage, i32, 
-            crit_luck, f32, 
-            crit_damage, i32, 
-            swing_range, f32, 
-            accuracy, i32, 
-            mana, i32, 
-            mana_regen, i32, 
-            cooldown_regen, i32, 
-            sweep, i32, 
-            load_speed, i32, 
-            range, f32, 
-            ability_damage, i32
-        ];
-        for i in 0..stat_list.len() {
-            match stat_list[i] {
-                Stat::Health(t_health) => struct_new_stat_match!(health, t_health),
-                Stat::Defense(t_defense) => struct_new_stat_match!(defense, t_defense),
-                Stat::Toughness(t_toughness) => struct_new_stat_match!(toughness, t_toughness),
-                Stat::Vitality(t_vitality) => struct_new_stat_match!(vitality, t_vitality),
-                Stat::Luck(t_luck) => struct_new_stat_match!(luck, t_luck),
-                Stat::Damage(t_damage) => struct_new_stat_match!(damage, t_damage),
-                Stat::CritLuck(t_crit_luck) => struct_new_stat_match!(crit_luck, t_crit_luck),
-                Stat::CritDamage(t_crit_damage) => struct_new_stat_match!(crit_damage, t_crit_damage),
-                Stat::SwingRange(t_swing_range) => struct_new_stat_match!(swing_range, t_swing_range),
-                Stat::Accuracy(t_accuracy) => struct_new_stat_match!(accuracy, t_accuracy),
-                Stat::Mana(t_mana) => struct_new_stat_match!(mana, t_mana),
-                Stat::ManaRegen(t_mana_regen) => struct_new_stat_match!(mana_regen, t_mana_regen),
-                Stat::CooldownRegen(t_cooldown_regen) => struct_new_stat_match!(cooldown_regen, t_cooldown_regen),
-                Stat::Sweep(t_sweep) => struct_new_stat_match!(sweep, t_sweep),
-                Stat::LoadSpeed(t_load_speed) => struct_new_stat_match!(load_speed, t_load_speed),
-                Stat::Range(t_range) => struct_new_stat_match!(range, t_range),
-                Stat::AbilityDamage(t_ability_damage) => struct_new_stat_match!(ability_damage, t_ability_damage),
-            }
-        }
+    pub fn new2(
+        health: Option<i32>,
+        defense: Option<i32>,
+        toughness: Option<i32>,
+        vitality: Option<i32>,
+        luck: Option<i32>,
+        damage: Option<i32>,
+        crit_luck: Option<f32>,
+        crit_damage: Option<i32>,
+        swing_range: Option<f32>,
+        accuracy: Option<i32>,
+        mana: Option<i32>,
+        mana_regen: Option<i32>,
+        cooldown_regen: Option<i32>,
+        sweep: Option<i32>,
+        load_speed: Option<i32>,
+        range: Option<f32>,
+        ability_damage: Option<i32>,
+    ) -> Self {
         Self {
             health,
             defense,
@@ -245,28 +255,33 @@ impl StatList {
             sweep,
             load_speed,
             range,
-            ability_damage
+            ability_damage,
         }
+    }
+    pub fn new(stat_list: Vec<Stat>) -> Self {
+        let out: StatList;
+        extract_stat_to!(out, stat_list);
+        out
     }
     pub fn get_stat_from_enum_as_stat(&self, stat: Stat) -> Option<Stat>{
         match stat {
-            Stat::Health(_) => struct_get_stat_match!(self.health, Stat::Health),
-            Stat::Defense(_) => {struct_get_stat_match!(self.defense, Stat::Defense)},
-            Stat::Toughness(_) => {struct_get_stat_match!(self.toughness, Stat::Toughness)},
-            Stat::Vitality(_) => {struct_get_stat_match!(self.vitality, Stat::Vitality)},
-            Stat::Luck(_) => {struct_get_stat_match!(self.luck, Stat::Luck)},
-            Stat::Damage(_) => {struct_get_stat_match!(self.damage, Stat::Damage)},
-            Stat::CritLuck(_) => {struct_get_stat_match!(self.crit_luck, Stat::CritLuck)},
-            Stat::CritDamage(_) => {struct_get_stat_match!(self.crit_damage, Stat::CritDamage)},
-            Stat::SwingRange(_) => {struct_get_stat_match!(self.swing_range, Stat::SwingRange)},
-            Stat::Accuracy(_) => {struct_get_stat_match!(self.accuracy, Stat::Accuracy)},
-            Stat::Mana(_) => {struct_get_stat_match!(self.mana, Stat::Mana)},
-            Stat::ManaRegen(_) => {struct_get_stat_match!(self.mana_regen, Stat::ManaRegen)},
-            Stat::CooldownRegen(_) => {struct_get_stat_match!(self.cooldown_regen, Stat::CooldownRegen)},
-            Stat::Sweep(_) => {struct_get_stat_match!(self.sweep, Stat::Sweep)},
-            Stat::LoadSpeed(_) => {struct_get_stat_match!(self.load_speed, Stat::LoadSpeed)},
-            Stat::Range(_) => {struct_get_stat_match!(self.range, Stat::Range)},
-            Stat::AbilityDamage(_) => {struct_get_stat_match!(self.ability_damage, Stat::AbilityDamage)},
+            Stat::Health(_) => extract_to_stat!(self.health, Stat::Health),
+            Stat::Defense(_) => {extract_to_stat!(self.defense, Stat::Defense)},
+            Stat::Toughness(_) => {extract_to_stat!(self.toughness, Stat::Toughness)},
+            Stat::Vitality(_) => {extract_to_stat!(self.vitality, Stat::Vitality)},
+            Stat::Luck(_) => {extract_to_stat!(self.luck, Stat::Luck)},
+            Stat::Damage(_) => {extract_to_stat!(self.damage, Stat::Damage)},
+            Stat::CritLuck(_) => {extract_to_stat!(self.crit_luck, Stat::CritLuck)},
+            Stat::CritDamage(_) => {extract_to_stat!(self.crit_damage, Stat::CritDamage)},
+            Stat::SwingRange(_) => {extract_to_stat!(self.swing_range, Stat::SwingRange)},
+            Stat::Accuracy(_) => {extract_to_stat!(self.accuracy, Stat::Accuracy)},
+            Stat::Mana(_) => {extract_to_stat!(self.mana, Stat::Mana)},
+            Stat::ManaRegen(_) => {extract_to_stat!(self.mana_regen, Stat::ManaRegen)},
+            Stat::CooldownRegen(_) => {extract_to_stat!(self.cooldown_regen, Stat::CooldownRegen)},
+            Stat::Sweep(_) => {extract_to_stat!(self.sweep, Stat::Sweep)},
+            Stat::LoadSpeed(_) => {extract_to_stat!(self.load_speed, Stat::LoadSpeed)},
+            Stat::Range(_) => {extract_to_stat!(self.range, Stat::Range)},
+            Stat::AbilityDamage(_) => {extract_to_stat!(self.ability_damage, Stat::AbilityDamage)},
         }
     }
 }
