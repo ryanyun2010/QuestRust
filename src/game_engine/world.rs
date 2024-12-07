@@ -26,7 +26,7 @@ pub struct World{
     element_id: usize,
     pub sprites: Vec<Sprite>,
     pub sprite_lookup: HashMap<usize,usize>, // corresponds element_ids to sprite_ids ie. to get the sprite for element_id x, just do sprite_lookup[x]
-    pub chunk_lookup: HashMap<[usize; 2],usize>, // corresponds chunk x,y to id
+    pub chunk_lookup: RefCell<HashMap<[usize; 2],usize>>, // corresponds chunk x,y to id
     pub terrain_lookup: HashMap<usize,usize>, // corresponds element_ids of terrain to chunk_ids
     pub terrain: HashMap<usize, Terrain>, // corresponds element id to Terrain element
     pub entities: RefCell<HashMap<usize, Entity>>, // corresponds element id to Entity element
@@ -42,7 +42,7 @@ impl World{
         let mut element_id: usize = 0;
         let mut sprites: Vec<Sprite> = Vec::new();
         let mut sprite_lookup: HashMap<usize, usize> = HashMap::new();
-        let mut chunk_lookup: HashMap<[usize; 2], usize> = HashMap::new();
+        let mut chunk_lookup: RefCell<HashMap<[usize; 2], usize>> = RefCell::new(HashMap::new());
         let mut terrain_lookup: HashMap<usize, usize> = HashMap::new();
         let mut entity_lookup: RefCell<HashMap<usize, usize>> = RefCell::new(HashMap::new());
         let mut entity_tags_lookup: HashMap<usize, Vec<EntityTags>> = HashMap::new();
@@ -65,7 +65,7 @@ impl World{
         }
     }
     
-    pub fn new_chunk(&mut self, chunk_x: usize, chunk_y: usize) -> usize{
+    pub fn new_chunk(&self, chunk_x: usize, chunk_y: usize) -> usize{
         let new_chunk_id: usize = self.chunks.borrow().len() as usize;
         
         self.chunks.borrow_mut().push(
@@ -77,7 +77,7 @@ impl World{
                 entities_ids: Vec::new(),
             });
         // println!("d:: {:?}", new_chunk_id);
-        self.chunk_lookup.insert([chunk_x, chunk_y], new_chunk_id);
+        self.chunk_lookup.borrow_mut().insert([chunk_x, chunk_y], new_chunk_id);
         new_chunk_id
     }
     pub fn get_entity(&self, element_id: usize) -> Option<Entity>{
@@ -99,10 +99,10 @@ impl World{
     pub fn get_chunk_from_xy(&self, x: usize, y: usize) -> Option<usize>{
         let chunk_x: usize = World::coord_to_chunk_coord(x);
         let chunk_y: usize = World::coord_to_chunk_coord(y);
-        self.chunk_lookup.get(&[chunk_x, chunk_y]).copied()
+        self.chunk_lookup.borrow().get(&[chunk_x, chunk_y]).copied()
     }
     pub fn get_chunk_from_chunk_xy(&self, x: usize, y: usize) -> Option<usize>{
-        self.chunk_lookup.get(&[x, y]).copied()
+        self.chunk_lookup.borrow().get(&[x, y]).copied()
     }
 
     pub fn get_entity_tags(&self, element_id: usize) -> Option<&Vec<EntityTags>>{
@@ -211,7 +211,13 @@ impl World{
         let prev_chunk = self.get_chunk_from_xy(entity.x as usize, entity.y as usize).unwrap();
         entity.x += movement[0];
         entity.y += movement[1];
-        let new_chunk = self.get_chunk_from_xy(entity.x as usize, entity.y as usize).unwrap();
+        let new_chunk_potentially = self.get_chunk_from_xy(entity.x as usize, entity.y as usize);
+        let new_chunk: usize;
+        if new_chunk_potentially.is_none(){
+            new_chunk = self.new_chunk(World::coord_to_chunk_coord(entity.x as usize), World::coord_to_chunk_coord(entity.y as usize));
+        }else{
+            new_chunk = new_chunk_potentially.unwrap();
+        }
 
         if new_chunk != prev_chunk {
             chunkref[prev_chunk].entities_ids.retain(|x| *x != *entity_id);
