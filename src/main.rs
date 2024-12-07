@@ -1,6 +1,4 @@
-use core::arch;
 
-use game_engine::world::Entity;
 use rand::prelude::*;
 pub mod rendering_engine;
 use rendering_engine::window;
@@ -14,7 +12,6 @@ use game_engine::camera;
 use game_engine::loot;
 use game_engine::entities;
 use game_engine::entities::EntityTags;
-use game_engine::item::Item;
 use game_engine::ui::UIElement;
 
 fn main() {

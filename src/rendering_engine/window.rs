@@ -15,8 +15,6 @@ pub async fn run(world: &mut World, camera: &mut Camera) {
 
     let mut focused: bool = false;
 
-    
-
     event_loop.run(move |event, control_flow| match event {
         
         Event::WindowEvent {
@@ -44,6 +42,7 @@ pub async fn run(world: &mut World, camera: &mut Camera) {
                         state.window().request_redraw();
                     }
                     camera.update_ui(world);
+                    state.update(world, camera);
                     match state.render(world, camera) {
                         Ok(_) => {}
                         Err(
@@ -57,7 +56,7 @@ pub async fn run(world: &mut World, camera: &mut Camera) {
                             log::warn!("Surface timeout")
                         }
                     }
-                    state.update(world);
+                    
                 }
                 _ => {}
             }   
