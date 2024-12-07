@@ -76,7 +76,7 @@ impl World{
                 terrain_ids: Vec::new(),
                 entities_ids: Vec::new(),
             });
-        println!("d:: {:?}", new_chunk_id);
+        // println!("d:: {:?}", new_chunk_id);
         self.chunk_lookup.insert([chunk_x, chunk_y], new_chunk_id);
         new_chunk_id
     }
@@ -286,7 +286,7 @@ impl World{
                     entity.cur_attack = 0;
                 }
                 entity.cur_attack_cooldown = attack_pattern.attack_cooldowns[entity.cur_attack];                
-                println!("Attacking player {:?}", self.player.borrow().health);
+                // println!("Attacking player {:?}", self.player.borrow().health);
             }else{
                 entity.cur_attack_cooldown -= 1.0/60.0;
             }

@@ -195,45 +195,61 @@ pub struct StatList {
     range: Option<f32>,
     ability_damage: Option<i32>,
 }
+#[macro_export]
+macro_rules! struct_new_stat_value_def {
+    ($( $stat_expr_list: ident, $stat_ty_list: ty),*) => {
+        $(
+            let mut $stat_expr_list: Option<$stat_ty_list> = None;
+        )*
+    };
+}
+#[macro_export]
+macro_rules! struct_new_stat_match {
+    ($name:ident, $t_name:ident) => {
+        if $name.is_none(){$name=Some($t_name)}else{$name=Some($t_name+$name.unwrap())}
+    }
+}
 impl StatList {
     pub fn new(stat_list: Vec<Stat>) -> Self {
-        let mut health: Option<i32> = None;
-        let mut defense: Option<i32> = None;
-        let mut toughness: Option<i32> = None;
-        let mut vitality: Option<i32> = None;
-        let mut luck: Option<i32> = None;
-        let mut damage: Option<i32> = None;
-        let mut crit_luck: Option<f32> = None;
-        let mut crit_damage: Option<i32> = None;
-        let mut swing_range: Option<f32> = None;
-        let mut accuracy: Option<i32> = None;
-        let mut mana: Option<i32> = None;
-        let mut mana_regen: Option<i32> = None;
-        let mut cooldown_regen: Option<i32> = None;
-        let mut sweep: Option<i32> = None;
-        let mut load_speed: Option<i32> = None;
-        let mut range: Option<f32> = None;
-        let mut ability_damage: Option<i32> = None;
+        struct_new_stat_value_def! [
+            health, i32, 
+            defense, i32, 
+            toughness, i32, 
+            vitality, i32, 
+            luck, i32, 
+            damage, i32, 
+            crit_luck, f32, 
+            crit_damage, i32, 
+            swing_range, f32, 
+            accuracy, i32, 
+            mana, i32, 
+            mana_regen, i32, 
+            cooldown_regen, i32, 
+            sweep, i32, 
+            load_speed, i32, 
+            range, f32, 
+            ability_damage, i32
+        ];
         for i in 0..stat_list.len() {
             match stat_list[i] {
-                Stat::Health(t_health) => {if health.is_none(){health=Some(t_health)}else{health=Some(t_health+health.unwrap())}},
-                Stat::Defense(t_defense) => {if defense.is_none(){defense=Some(t_defense)}else{defense=Some(t_defense+defense.unwrap())}},
-                Stat::Toughness(t_toughness) => {if toughness.is_none(){toughness=Some(t_toughness)}else{toughness=Some(t_toughness+toughness.unwrap())}},
-                Stat::Vitality(t_vitality) => {if vitality.is_none(){vitality=Some(t_vitality)}else{vitality=Some(t_vitality+vitality.unwrap())}},
-                Stat::Luck(t_luck) => {if luck.is_none(){luck=Some(t_luck)}else{luck=Some(t_luck+luck.unwrap())}},
-                Stat::Damage(t_damage) => {if damage.is_none(){damage=Some(t_damage)}else{damage=Some(t_damage+damage.unwrap())}},
-                Stat::CritLuck(t_crit_luck) => {if crit_luck.is_none(){crit_luck=Some(t_crit_luck)}else{crit_luck=Some(t_crit_luck+crit_luck.unwrap())}},
-                Stat::CritDamage(t_crit_damage) => {if crit_damage.is_none(){crit_damage=Some(t_crit_damage)}else{crit_damage=Some(t_crit_damage+crit_damage.unwrap())}},
-                Stat::SwingRange(t_swing_range) => {if swing_range.is_none(){swing_range=Some(t_swing_range)}else{swing_range=Some(t_swing_range+swing_range.unwrap())}},
-                Stat::Accuracy(t_accuracy) => {if accuracy.is_none(){accuracy=Some(t_accuracy)}else{accuracy=Some(t_accuracy+accuracy.unwrap())}},
-                Stat::Mana(t_mana) => {if mana.is_none(){mana=Some(t_mana)}else{mana=Some(t_mana+mana.unwrap())}},
-                Stat::ManaRegen(t_mana_regen) => {if mana_regen.is_none(){mana_regen=Some(t_mana_regen)}else{mana_regen=Some(t_mana_regen+mana_regen.unwrap())}},
-                Stat::CooldownRegen(t_cooldown_regen) => {if cooldown_regen.is_none(){cooldown_regen=Some(t_cooldown_regen)}else{cooldown_regen=Some(t_cooldown_regen+cooldown_regen.unwrap())}},
-                Stat::Sweep(t_sweep) => {if sweep.is_none(){sweep=Some(t_sweep)}else{sweep=Some(t_sweep+sweep.unwrap())}},
-                Stat::LoadSpeed(t_load_speed) => {if load_speed.is_none(){load_speed=Some(t_load_speed)}else{load_speed=Some(t_load_speed+load_speed.unwrap())}},
-                Stat::Range(t_range) => {if range.is_none(){range=Some(t_range)}else{range=Some(t_range+range.unwrap())}},
-                Stat::AbilityDamage(t_ability_damage) => {if ability_damage.is_none(){ability_damage=Some(t_ability_damage)}else{ability_damage=Some(t_ability_damage+ability_damage.unwrap())}},
-            } 
+                Stat::Health(t_health) => struct_new_stat_match!(health, t_health),
+                Stat::Defense(t_defense) => struct_new_stat_match!(defense, t_defense),
+                Stat::Toughness(t_toughness) => struct_new_stat_match!(toughness, t_toughness),
+                Stat::Vitality(t_vitality) => struct_new_stat_match!(vitality, t_vitality),
+                Stat::Luck(t_luck) => struct_new_stat_match!(luck, t_luck),
+                Stat::Damage(t_damage) => struct_new_stat_match!(damage, t_damage),
+                Stat::CritLuck(t_crit_luck) => struct_new_stat_match!(crit_luck, t_crit_luck),
+                Stat::CritDamage(t_crit_damage) => struct_new_stat_match!(crit_damage, t_crit_damage),
+                Stat::SwingRange(t_swing_range) => struct_new_stat_match!(swing_range, t_swing_range),
+                Stat::Accuracy(t_accuracy) => struct_new_stat_match!(accuracy, t_accuracy),
+                Stat::Mana(t_mana) => struct_new_stat_match!(mana, t_mana),
+                Stat::ManaRegen(t_mana_regen) => struct_new_stat_match!(mana_regen, t_mana_regen),
+                Stat::CooldownRegen(t_cooldown_regen) => struct_new_stat_match!(cooldown_regen, t_cooldown_regen),
+                Stat::Sweep(t_sweep) => struct_new_stat_match!(sweep, t_sweep),
+                Stat::LoadSpeed(t_load_speed) => struct_new_stat_match!(load_speed, t_load_speed),
+                Stat::Range(t_range) => struct_new_stat_match!(range, t_range),
+                Stat::AbilityDamage(t_ability_damage) => struct_new_stat_match!(ability_damage, t_ability_damage),
+            }
         }
         Self {
             health,
