@@ -1,5 +1,4 @@
 use std::os::macos::raw::stat;
-
 use crate::game_engine::entities::AttackType;
 use super::{loot::Rarity, world::{Sprite, Terrain}};
 #[derive(Clone, Debug)]
