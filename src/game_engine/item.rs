@@ -144,7 +144,7 @@ pub struct GearStat {
 }
 impl GearStat {
     pub fn new(base: Stat, variation: Stat) -> Self {
-        let max: Stat = StatList::new(vec![base,  variation]).get_stat_from_enum_as_stat(base).unwrap();
+        let max: Stat = StatList::extract_from_list(vec![base,  variation]).extract_to_stat(base).unwrap();
         Self {
             base,
             variation,
@@ -208,7 +208,7 @@ macro_rules! extract_stat_to_under {
                 )*
             }
         }
-        $output = StatList::new2(
+        $output = StatList::new(
             $(
                 $stat_expr_list,
             )*
@@ -248,7 +248,7 @@ macro_rules! extract_to_stat {
         else {return Some($enum($name.unwrap()))}}
 }
 impl StatList {
-    pub fn new2(
+    pub fn new(
         health: Option<i32>,
         defense: Option<i32>,
         toughness: Option<i32>,
@@ -287,12 +287,12 @@ impl StatList {
             ability_damage,
         }
     }
-    pub fn new(stat_list: Vec<Stat>) -> Self {
+    pub fn extract_from_list(stat_list: Vec<Stat>) -> Self {
         let out: StatList;
         extract_stat_to!(out, stat_list);
         out
     }
-    pub fn get_stat_from_enum_as_stat(&self, stat: Stat) -> Option<Stat>{
+    pub fn extract_to_stat(&self, stat: Stat) -> Option<Stat>{
         match stat {
             Stat::Health(_) => extract_to_stat!(self.health, Stat::Health),
             Stat::Defense(_) => {extract_to_stat!(self.defense, Stat::Defense)},
