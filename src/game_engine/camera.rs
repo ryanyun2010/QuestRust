@@ -12,7 +12,8 @@ pub struct Camera{
     pub camera_y: f32,
     ui_elements: Vec<crate::game_engine::ui::UIElement>, // vec element i should be element with id i
     ui_element_names: HashMap<String, usize>, // map names to ids
-    ui_element_id: usize
+    ui_element_id: usize,
+    velocity: [isize; 2]
 }
 
 impl Camera{
@@ -24,7 +25,8 @@ impl Camera{
             camera_y: 0.0,
             ui_elements: Vec::new(),
             ui_element_names: HashMap::new(),
-            ui_element_id: 0
+            ui_element_id: 0,
+            velocity: [0,0]
         }
     }
     pub fn update_ui(&mut self, world: &mut World){
@@ -50,7 +52,7 @@ impl Camera{
 
         let direction = [player.x - (self.viewpoint_width / 2) as f32 - self.camera_x, player.y - (self.viewpoint_height / 2) as f32 - self.camera_y];
         let magnitude = (direction[0].powi(2) + direction[1].powi(2)).sqrt();
-        if magnitude < 4.0{
+        if magnitude < 6.0{
             return;
         }
         self.camera_x += (direction[0]/magnitude * 3.0).round();
