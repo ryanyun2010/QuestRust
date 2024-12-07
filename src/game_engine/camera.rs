@@ -45,24 +45,30 @@ impl Camera{
     pub fn get_ui_element_mut(&mut self, id: usize) -> &mut crate::game_engine::ui::UIElement{
         &mut self.ui_elements[id]
     }
-    pub fn render(&mut self, world: &mut World) -> RenderData{
-
+    pub fn update_camera_position(&mut self, world: &World){
         let player = world.player.borrow().clone();
-        if player.x > (self.viewpoint_width / 2) as f32{
-            self.camera_x = player.x - (self.viewpoint_width / 2) as f32;
-        }else{
+
+        let direction = [player.x - (self.viewpoint_width / 2) as f32 - self.camera_x, player.y - (self.viewpoint_height / 2) as f32 - self.camera_y];
+        let magnitude = (direction[0].powi(2) + direction[1].powi(2)).sqrt();
+        if magnitude < 4.0{
+            return;
+        }
+        self.camera_x += (direction[0]/magnitude * 3.0).round();
+        self.camera_y += (direction[1]/magnitude * 3.0).round();
+
+        if self.camera_x < 0.0{
             self.camera_x = 0.0;
-        }   
-        if player.y > (self.viewpoint_height / 2) as f32{
-            self.camera_y = player.y - (self.viewpoint_height / 2) as f32;
-        }else{
+        }
+        if self.camera_y < 0.0{
             self.camera_y = 0.0;
         }
+    }
+    pub fn render(&mut self, world: &mut World) -> RenderData{
         let mut render_data = RenderData::new();
         let mut terrain_data: RenderData = RenderData::new();
         let mut entity_data: RenderData = RenderData::new();
         let mut index_offset: u16 = 0;
-        
+        let player = world.player.borrow().clone(); 
 
 
         let camera_left_chunk_x = World::coord_to_chunk_coord(self.camera_x.floor() as usize);
