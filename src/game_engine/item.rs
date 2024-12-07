@@ -209,6 +209,12 @@ macro_rules! struct_new_stat_match {
         if $name.is_none(){$name=Some($t_name)}else{$name=Some($t_name+$name.unwrap())}
     }
 }
+#[macro_export]
+macro_rules! struct_get_stat_match {
+    ($name:expr, $enum:expr) => {
+        if $name.is_none() {return None}
+        else {return Some($enum($name.unwrap()))}}
+}
 impl StatList {
     pub fn new(stat_list: Vec<Stat>) -> Self {
         struct_new_stat_value_def! [
@@ -273,24 +279,23 @@ impl StatList {
     }
     pub fn get_stat_from_enum_as_stat(&self, stat: Stat) -> Option<Stat>{
         match stat {
-            Stat::Health(_) => {if self.health.is_none() {return None} else {return Some(Stat::Health(self.health.unwrap()))}},
-            Stat::Defense(_) => {if self.defense.is_none() {return None} else {return Some(Stat::Defense(self.defense.unwrap()))}},
-            Stat::Toughness(_) => {if self.toughness.is_none() {return None} else {return Some(Stat::Toughness(self.toughness.unwrap()))}},
-            Stat::Vitality(_) => {if self.vitality.is_none() {return None} else {return Some(Stat::Vitality(self.vitality.unwrap()))}},
-            Stat::Luck(_) => {if self.luck.is_none() {return None} else {return Some(Stat::Luck(self.luck.unwrap()))}},
-            Stat::Damage(_) => {if self.damage.is_none() {return None} else {return Some(Stat::Damage(self.damage.unwrap()))}},
-            Stat::CritLuck(_) => {if self.crit_luck.is_none() {return None} else {return Some(Stat::CritLuck(self.crit_luck.unwrap()))}},
-            Stat::CritDamage(_) => {if self.crit_damage.is_none() {return None} else {return Some(Stat::CritDamage(self.crit_damage.unwrap()))}},
-            Stat::SwingRange(_) => {if self.swing_range.is_none() {return None} else {return Some(Stat::SwingRange(self.swing_range.unwrap()))}},
-            Stat::Accuracy(_) => {if self.accuracy.is_none() {return None} else {return Some(Stat::Accuracy(self.accuracy.unwrap()))}},
-            Stat::Mana(_) => {if self.mana.is_none() {return None} else {return Some(Stat::Mana(self.mana.unwrap()))}},
-            Stat::ManaRegen(_) => {if self.mana_regen.is_none() {return None} else {return Some(Stat::ManaRegen(self.mana_regen.unwrap()))}},
-            Stat::CooldownRegen(_) => {if self.cooldown_regen.is_none() {return None} else {return Some(Stat::CooldownRegen(self.cooldown_regen.unwrap()))}},
-            Stat::Sweep(_) => {if self.sweep.is_none() {return None} else {return Some(Stat::Sweep(self.sweep.unwrap()))}},
-            Stat::LoadSpeed(_) => {if self.load_speed.is_none() {return None} else {return Some(Stat::LoadSpeed(self.load_speed.unwrap()))}},
-            Stat::Range(_) => {if self.range.is_none() {return None} else {return Some(Stat::Range(self.range.unwrap()))}},
-            Stat::AbilityDamage(_) => {if self.ability_damage.is_none() {return None} else {return Some(Stat::AbilityDamage(self.ability_damage.unwrap()))}},
-            _ => {panic!("Nonexistent type you fucking idiot.");}
+            Stat::Health(_) => struct_get_stat_match!(self.health, Stat::Health),
+            Stat::Defense(_) => {struct_get_stat_match!(self.defense, Stat::Defense)},
+            Stat::Toughness(_) => {struct_get_stat_match!(self.toughness, Stat::Toughness)},
+            Stat::Vitality(_) => {struct_get_stat_match!(self.vitality, Stat::Vitality)},
+            Stat::Luck(_) => {struct_get_stat_match!(self.luck, Stat::Luck)},
+            Stat::Damage(_) => {struct_get_stat_match!(self.damage, Stat::Damage)},
+            Stat::CritLuck(_) => {struct_get_stat_match!(self.crit_luck, Stat::CritLuck)},
+            Stat::CritDamage(_) => {struct_get_stat_match!(self.crit_damage, Stat::CritDamage)},
+            Stat::SwingRange(_) => {struct_get_stat_match!(self.swing_range, Stat::SwingRange)},
+            Stat::Accuracy(_) => {struct_get_stat_match!(self.accuracy, Stat::Accuracy)},
+            Stat::Mana(_) => {struct_get_stat_match!(self.mana, Stat::Mana)},
+            Stat::ManaRegen(_) => {struct_get_stat_match!(self.mana_regen, Stat::ManaRegen)},
+            Stat::CooldownRegen(_) => {struct_get_stat_match!(self.cooldown_regen, Stat::CooldownRegen)},
+            Stat::Sweep(_) => {struct_get_stat_match!(self.sweep, Stat::Sweep)},
+            Stat::LoadSpeed(_) => {struct_get_stat_match!(self.load_speed, Stat::LoadSpeed)},
+            Stat::Range(_) => {struct_get_stat_match!(self.range, Stat::Range)},
+            Stat::AbilityDamage(_) => {struct_get_stat_match!(self.ability_damage, Stat::AbilityDamage)},
         }
     }
 }
