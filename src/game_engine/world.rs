@@ -186,8 +186,8 @@ impl World{
         let magnitude: f32 = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
         
         if magnitude > 0.0{
-            player.y += direction[1] / magnitude * player.movement_speed;
-            player.x += direction[0] / magnitude * player.movement_speed;
+            player.y += (direction[1] / magnitude * player.movement_speed).round();
+            player.x += (direction[0] / magnitude * player.movement_speed).round();
         }
 
         if player.y < 3.0 {
@@ -404,7 +404,7 @@ impl Player {
             health: 100,
             max_health: 100,
             texture_index: 3,
-            movement_speed: 3.0,
+            movement_speed: 2.8284,
             hunger: 100,
             max_hunger: 100,
         }
