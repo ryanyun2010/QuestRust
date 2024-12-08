@@ -78,35 +78,6 @@ pub enum WeaponTag {
     Ranged(RangedWeaponTag),
     Magic(MagicWeaponTag)
 }
-<<<<<<< HEAD
-//Damage is the same as Health basically.
-#[derive(Clone, Copy, Debug)]
-pub enum Stat {
-<<<<<<< HEAD
-    Damage(i32),
-    Health(i32),
-    SwingRange(f32),
-    CritLuck(f32),
-    CritDamage(i32),
-=======
-    //Armor
-    Health(i32),
->>>>>>> 43547c3 (mana)
-    Defense(i32),
-    Toughness(i32),
-    Vitality(i32),
-    Luck(i32),
-    //Weapons
-    Damage(i32), //Global
-    CritLuck(f32), //Melee, Ranged
-    CritDamage(i32), //Melee, Ranged
-    SwingRange(f32),//Melee
-    Accuracy(i32), //Ranged, Magic, (Degrees of width of cone).
-    Mana(i32),
-    ManaRegen(i32)
-}
-=======
->>>>>>> 421f822 (16 stats now)
 pub fn crit_chance_roll(crit_chance: f32) -> bool {
     if crit_chance >= 500.0 {
         return true;
