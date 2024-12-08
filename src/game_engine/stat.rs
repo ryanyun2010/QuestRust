@@ -157,7 +157,7 @@ macro_rules! extract_to_stat_vec {
 }
 #[macro_export]
 macro_rules! extract_to_stat_vec_under {
-    ($output:expr, $name:expr; $( $stat_expr_list: ident, $stat_ty_list: ty, $stat_enum_list: ident),*) => {
+    ($output:ident, $name:expr; $( $stat_expr_list: ident, $stat_ty_list: ty, $stat_enum_list: ident),*) => {
         $(
             if $name.$stat_expr_list.is_some() {$output.push(Stat::$stat_enum_list($name.$stat_expr_list.unwrap()))}
         )*
