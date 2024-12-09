@@ -12,6 +12,7 @@ use game_engine::camera;
 use game_engine::loot;
 use game_engine::entities;
 use game_engine::stat;
+use game_engine::terrain;
 use game_engine::entities::EntityTags;
 use game_engine::ui::UIElement;
 

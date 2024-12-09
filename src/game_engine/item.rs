@@ -7,7 +7,7 @@ Items give stats to the player. Entities and Terrain can have items (specificall
 use std::os::macos::raw::stat;
 use crate::game_engine::entities::AttackType;
 use crate::stat::GearStat;
-use super::{loot::Rarity, world::{Sprite, Terrain}};
+use super::{loot::Rarity, world::{Sprite}};
 //Each item when stored will be exactly like this. The item_type_id will be used in a lookup to find the tags.
 //They also have a Vec of components that will be largely unique. It's stackability will not be judged by the components, but instead by the tags.
 #[derive(Clone, Debug)]

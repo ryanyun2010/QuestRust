@@ -4,8 +4,10 @@ use crate::vertex::Vertex;
 use crate::entities::EntityTags;
 use winit::keyboard::Key;
 use std::cell::RefCell;
+use crate::game_engine::terrain::Terrain;
 
 use super::entities::EntityAttackPattern;
+use super::terrain::{self, TerrainTags};
 
 #[derive(Debug, Clone)]
 pub struct Chunk{  // 32x32 blocks of 32x32 = chunks are 1024x1024 pixels but 1024 * RETINA SCALE accounting for retina, so a chunk with x =0, y =0, is pixels 0-1023, 0-1023
@@ -32,6 +34,7 @@ pub struct World{
     pub entities: RefCell<HashMap<usize, Entity>>, // corresponds element id to Entity element
     pub entity_lookup: RefCell<HashMap<usize,usize>>, // corresponds element_ids of entities to chunk_ids
     pub entity_tags_lookup: HashMap<usize,Vec<EntityTags>>, // corresponds element_ids of entities to the entity's tags
+    pub terrain_tags_lookup: HashMap<usize,Vec<TerrainTags>>, // corresponds element_ids of entities to the entity's tags
     pub loaded_chunks: Vec<usize>, // chunk ids that are currently loaded
 }
 
@@ -46,22 +49,24 @@ impl World{
         let mut terrain_lookup: HashMap<usize, usize> = HashMap::new();
         let mut entity_lookup: RefCell<HashMap<usize, usize>> = RefCell::new(HashMap::new());
         let mut entity_tags_lookup: HashMap<usize, Vec<EntityTags>> = HashMap::new();
+        let mut terrain_tags_lookup: HashMap<usize, Vec<TerrainTags>> = HashMap::new();
         let mut terrain: HashMap<usize, Terrain> = HashMap::new();
         let mut entities: RefCell<HashMap<usize, Entity>> = RefCell::new(HashMap::new());
         let mut loaded_chunks: Vec<usize> = Vec::new(); 
         Self{
-            chunks: chunks,
-            player: player,
-            element_id: element_id,
-            sprites: sprites,
-            sprite_lookup: sprite_lookup,
-            chunk_lookup: chunk_lookup,
-            terrain_lookup: terrain_lookup,
-            entity_lookup: entity_lookup,
-            entity_tags_lookup: entity_tags_lookup,
-            terrain: terrain,
-            entities: entities,
-            loaded_chunks: loaded_chunks
+            chunks,
+            player,
+            element_id,
+            sprites,
+            sprite_lookup,
+            chunk_lookup,
+            terrain_lookup,
+            entity_lookup,
+            entity_tags_lookup,
+            terrain_tags_lookup,
+            terrain,
+            entities,
+            loaded_chunks
         }
     }
     
@@ -312,12 +317,6 @@ impl World{
     
     
     
-}
-#[derive(Copy, Clone, Debug)]
-pub struct Terrain{ // terrain is always 32x32 pixels
-    pub element_id: usize,
-    pub x: usize,
-    pub y: usize
 }
 
 #[derive(Copy, Clone, Debug)]
