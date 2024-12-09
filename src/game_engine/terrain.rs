@@ -6,5 +6,8 @@ pub struct Terrain{ // terrain is always 32x32 pixels
 }
 #[derive(Copy, Clone, Debug)]
 pub enum TerrainTags {
-    
+    HeightLevel(usize),
+    BlocksMovement,
+    BlocksFlight,
+    Swim(usize) //How fast you can swim in it.
 }

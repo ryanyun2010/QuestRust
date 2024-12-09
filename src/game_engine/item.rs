@@ -111,13 +111,32 @@ pub struct MeleeWeaponTag {
     damage: GearStat,
     attack_speed: GearStat,
     swing_range: GearStat,
+    crit_luck: GearStat,
+    crit_damage: GearStat,
+    sweep: GearStat
 }
 #[derive(Clone, Debug)]
 pub struct RangedWeaponTag {
-    
+    damage: GearStat,
+    crit_luck: GearStat,
+    crit_damage: GearStat,
+    accuracy: GearStat,
+    load_speed: GearStat,
+    range: GearStat
+}
+#[derive(Clone, Debug)]
+pub struct MagicAbility {
+    mana_cost: i32,
+    cooldown: i32,
+    ability_id: usize,
 }
 #[derive(Clone, Debug)]
 pub struct MagicWeaponTag {
+    main_ability: MagicAbility,
+    secondary_ability: MagicAbility,
+    mana: GearStat,
+    mana_regen: GearStat,
+    cooldown_regen: GearStat
 }
 #[derive(Clone, Debug)]
 pub enum WeaponComponentType {

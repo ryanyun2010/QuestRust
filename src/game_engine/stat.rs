@@ -57,8 +57,8 @@ pub enum Stat {
     CritDamage(i32), //Melee, Ranged
     SwingRange(f32),//Melee
     Accuracy(i32), //Ranged, Magic, (Degrees of width of cone).
-    Mana(i32),
-    ManaRegen(i32),
+    Mana(i32), //Magic
+    ManaRegen(i32), //Magic
     CooldownRegen(i32), //Magic
     Sweep(i32), //Melee, (Degrees of width of cone)
     LoadSpeed(i32), //Ranged, (In ticks).
