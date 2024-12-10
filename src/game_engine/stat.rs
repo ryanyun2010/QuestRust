@@ -26,6 +26,17 @@ pub fn healing_tick_with_vitality(max_health: i32, current_health: i32, vitality
 pub fn mana_regen_tick_with_regen(max_mana: i32, current_mana: i32, mana_regen: i32) -> i32 {
     mana_regen_with_regen((0.05*(max_mana-current_mana) as f32).ceil() as i32, mana_regen)
 }
+pub fn calculate_scaling_damage(multipliers: Vec<f32>, damage: i32, crit_chance: f32, crit_damage: i32) -> i32 {
+    //Multipliers are additive
+    let mut total_multipliers: f32 = 0.0;
+    for i in 0..multipliers.len() {
+        total_multipliers += multipliers[i];
+    }
+    if crit_chance_roll(crit_chance) {
+        return (total_multipliers*(damage as f32)*(crit_damage as f32+100.0)/100.0).ceil() as i32
+    }
+    return (total_multipliers*(damage as f32)).ceil() as i32
+}
 #[derive(Clone, Debug)]
 pub struct GearStat {
     base: Stat,

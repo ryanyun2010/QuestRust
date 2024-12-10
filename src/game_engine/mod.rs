@@ -6,3 +6,4 @@ pub mod loot;
 pub mod item;
 pub mod stat;
 pub mod ui;
+pub mod magic;
