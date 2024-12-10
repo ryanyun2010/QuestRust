@@ -66,6 +66,7 @@ fn main() {
 
 
     let ghost = world.add_entity(160.0,160.0);
+    // okay well you fucking see here, ghost is an entity ID and you're adding tags as they're fucking components.
     let mut archetype: Vec<EntityTags> = Vec::new();
     archetype.push(EntityTags::Aggressive);
     archetype.push(EntityTags::MovementSpeed(2.0));
@@ -74,7 +75,6 @@ fn main() {
     archetype.push(EntityTags::Range(32));
     archetype.push(EntityTags::AggroRange(1000));
     archetype.push(EntityTags::AttackType(entities::AttackType::Melee));
-
     // world.add_tag(ghost, EntityTags::Aggressive);
     // world.add_tag(ghost, EntityTags::MovementSpeed(2.0));
     // world.add_tag(ghost, EntityTags::MonsterType(entities::MonsterType::Undead));
