@@ -5,7 +5,7 @@ use crate::entities::EntityTags;
 use winit::keyboard::Key;
 use std::cell::RefCell;
 use crate::game_engine::terrain::Terrain;
-
+use crate::entities::Entity;
 use super::entities::EntityAttackPattern;
 use super::terrain::{self, TerrainTags};
 
@@ -317,29 +317,6 @@ impl World{
     
     
     
-}
-
-#[derive(Copy, Clone, Debug)]
-pub struct Entity{
-    pub element_id: usize,
-    pub x: f32,
-    pub y: f32,
-    pub aggroed_to_player: bool,
-    pub cur_attack: usize,
-    pub cur_attack_cooldown: f32,
-}
-
-impl Entity{
-    pub fn new(element_id: usize, x: f32, y:f32) -> Self{
-        Self{
-            element_id: element_id,
-            x: x,
-            y: y,
-            aggroed_to_player: false,
-            cur_attack: 0,
-            cur_attack_cooldown: 0.15,
-        }
-    }
 }
 
 #[derive(Copy, Clone, Debug)]

@@ -7,7 +7,7 @@ Items give stats to the player. Entities and Terrain can have items (specificall
 use std::os::macos::raw::stat;
 use crate::game_engine::entities::AttackType;
 use crate::stat::GearStat;
-use super::{loot::Rarity, world::{Sprite}};
+use super::{loot::Rarity, stat::Stat, world::Sprite};
 //Each item when stored will be exactly like this. The item_type_id will be used in a lookup to find the tags.
 //They also have a Vec of components that will be largely unique. It's stackability will not be judged by the components, but instead by the tags.
 #[derive(Clone, Debug)]
@@ -125,12 +125,6 @@ pub struct RangedWeaponTag {
     range: GearStat
 }
 #[derive(Clone, Debug)]
-pub struct MagicAbility {
-    mana_cost: i32,
-    cooldown: i32,
-    ability_id: usize,
-}
-#[derive(Clone, Debug)]
 pub struct MagicWeaponTag {
     main_ability: MagicAbility,
     secondary_ability: MagicAbility,
@@ -161,13 +155,51 @@ pub struct WeaponComponent {
 }
 #[derive(Clone, Debug)]
 pub struct MeleeWeaponComponent {
-
+    damage: Stat,
+    attack_speed: Stat,
+    swing_range: Stat,
+    crit_luck: Stat,
+    crit_damage: Stat,
+    sweep: Stat
 }
 #[derive(Clone, Debug)]
 pub struct RangedWeaponComponent {
-    
+    damage: Stat,
+    crit_luck: Stat,
+    crit_damage: Stat,
+    accuracy: Stat,
+    load_speed: Stat,
+    range: Stat
 }
 #[derive(Clone, Debug)]
 pub struct MagicWeaponComponent {
-
+    mana: Stat,
+    mana_regen: Stat,
+    cooldown_regen: Stat
+}
+//MAGIC SHIT FUCK YEAH!!!
+#[derive(Clone, Debug)]
+pub struct MagicAbility {
+    element_id: usize,
+    mana_cost: i32,
+    ability_id: usize,
+    cooldown_ticks: i32,
+    current_cooldown_ticks: i32
+}
+impl MagicAbility {
+    pub fn new(
+        element_id: usize,
+        mana_cost: i32,
+        ability_id: usize,
+        cooldown_ticks: i32,
+        current_cooldown_ticks: i32
+    ) -> Self {
+        Self {
+            element_id,
+            mana_cost,
+            ability_id,
+            cooldown_ticks,
+            current_cooldown_ticks,
+        }
+    }
 }
