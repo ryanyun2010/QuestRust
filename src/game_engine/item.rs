@@ -23,7 +23,6 @@ pub enum ItemTags {
     Weapon(WeaponTag), //Weapon Stuff.
     // Place(PlaceTerrain), //I don't think we need this.
     Use(UseItem), //For special uses like food and maybe things like permenant consumables. This is largely for edge cases.
-    // MaxDurability(usize), //We shouldn't have Durability. Nobody fucking likes it.
     UseRange(f32), //The range in which this item can be used. Mostly cosmetic, but for uprgrading things in your base, it can be useful.
 }
 #[derive(Clone, Debug)]

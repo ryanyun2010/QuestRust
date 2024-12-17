@@ -30,7 +30,8 @@ impl Entity{
 }
 
 impl World {
-    pub fn move_entity(&self, entity: &mut Entity, entity_id: &usize, movement: [f32; 2], chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>){
+    pub fn move_entity(&self, entity: &mut Entity, entity_id: &usize, movement: [f32; 2], chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>){ 
+        // TODO: RESPECT COLLISION STUFF
         let prev_chunk = self.get_chunk_from_xy(entity.x as usize, entity.y as usize).unwrap();
         entity.x += movement[0];
         entity.y += movement[1];
@@ -191,6 +192,7 @@ pub enum EntityTags {
     MonsterType(MonsterType),
     FollowsPlayer,
     Range(usize),
+    RespectsCollision,
     AggroRange(usize),
     AttackType(AttackType),
     Attacks(EntityAttackPattern),
@@ -198,25 +200,6 @@ pub enum EntityTags {
     Item(Item),
     Drops(Loot),
     BaseHealth(usize),
-}
-
-impl EntityTags{
-    // pub fn new(aggressive: bool, monster_type: MonsterType, follows_player: bool, range: usize, aggro_range: usize, attack_type: AttackType, attacks: EntityAttackPattern, movement_speed: usize, is_item: bool, drops: Option<Loot>,  contained_item: Option<Item>, max_health: usize) -> Self{
-    //     Self{
-    //         aggressive: aggressive,
-    //         monster_type: monster_type,
-    //         follows_player: follows_player,
-    //         range: range,
-    //         aggro_range: aggro_range,
-    //         attack_type: attack_type,
-    //         attacks: attacks,
-    //         movement_speed: movement_speed,
-    //         is_item: is_item,
-    //         drops: drops,
-    //         contained_item: contained_item,
-    //         max_health: max_health
-    //     }
-    // }
 
 }
 

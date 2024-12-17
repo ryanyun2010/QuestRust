@@ -131,8 +131,8 @@ impl World{
         self.entity_tags_lookup.insert(element_id, tags);
     }
 
-    pub fn attempt_move_player(&self, player: &mut Player, movement: [f32; 2]){
-        for chunk in self.loaded_chunks.iter(){
+    pub fn check_collision(&self, x: usize, y: usize, w: usize, h: usize) -> bool{
+        for chunk in self.loaded_chunks.iter(){ // TODO: THIS IS BAD DESIGN BUT I CANT REALLY FIX IT SOOOOOOOO
             let chunk = &self.chunks.borrow()[*chunk];
             for terrain_id in chunk.terrain_ids.iter(){
                 let terrain = self.terrain.get(terrain_id).unwrap();
@@ -144,18 +144,24 @@ impl World{
                 for tag in terrain_tags.iter(){
                     match tag{
                         TerrainTags::BlocksMovement => {
-                            if terrain.x < (player.x + movement[0]).floor() as usize && terrain.x + 32 > (player.x + movement[0]).floor() as usize && terrain.y < (player.y + movement[1]).floor() as usize && terrain.y + 32 > (player.y + movement[1]).floor() as usize{
-                                return;
+                            if x < terrain.x + 32 && x + w > terrain.x && y < terrain.y + 32 && y + h > terrain.y{
+                                return true;
                             }
                         }
                         _ => ()
                     }
                 }
             }
+        } 
+        false
+    }
+
+    pub fn attempt_move_player(&self, player: &mut Player, movement: [f32; 2]){
+        if self.check_collision((player.x + movement[0]).floor() as usize, (player.y + movement[1]).floor() as usize, 32, 32){
+            return;
         }
         player.x += movement[0];
-        player.y += movement[1];
-        return;
+        player.y += movement[1]
     }
 
     pub fn add_terrain_tag(&mut self, element_id: usize, tag: TerrainTags){
@@ -203,8 +209,6 @@ impl World{
 
             self.attempt_move_player(&mut player, [movement[0], 0.0]);
             self.attempt_move_player(&mut player, [0.0, movement[1]]);
-            // player.y += (direction[1] / magnitude * player.movement_speed).round();
-            // player.x += (direction[0] / magnitude * player.movement_speed).round();
         }
 
         if player.y < 3.0 {
