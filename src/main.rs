@@ -36,6 +36,14 @@ fn main() {
         texture_id: 10,
         visible: true
     });
+    camera.add_ui_element(String::from("inventory_button"), UIElement {
+        x: 1030.0,
+        y: 650.0,
+        width: 75.0,
+        height: 25.0,
+        texture_id: 11,
+        visible: true
+    });
 
     
     let outside_sprite = world.add_sprite(6);
@@ -52,6 +60,7 @@ fn main() {
     for m in 0..70 {
         let new_terrain = world.add_terrain(544,m*32);
         world.set_sprite(new_terrain,wall_sprite);
+        world.add_terrain_tag(new_terrain, terrain::TerrainTags::BlocksMovement);
     }
     for n in 18..35 {
         for m in 0..70 {
@@ -85,8 +94,8 @@ fn main() {
     // world.add_tag(ghost, EntityTags::AttackType(entities::AttackType::Melee));
     let mut attacks_tests = Vec::new();
     attacks_tests.push(entities::EntityAttack::new(3));
-    world.add_tags(ghost, archetype);
-    world.add_tag(ghost, EntityTags::Attacks(entities::EntityAttackPattern::new(attacks_tests, vec![0.1])));
+    world.add_entity_tags(ghost, archetype);
+    world.add_entity_tag(ghost, EntityTags::Attacks(entities::EntityAttackPattern::new(attacks_tests, vec![0.1])));
 
 
     //   game_engine::entities::EntityTags::new(true, game_engine::entities::MonsterType::Undead, true, 0, 1500, game_engine::entities::AttackType::Melee, game_engine::entities::EntityAttackPattern::new(), 3, false, Some(game_engine::loot::Loot::new(Vec::new())), None, 10)

@@ -59,7 +59,11 @@ impl World {
         }
     }
     pub fn update_entity(&self, entity_id: &usize, player_x: f32, player_y: f32, chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>) {
-        let entity_tags: &Vec<EntityTags> = self.get_entity_tags(*entity_id).unwrap();
+        let entity_tags_potentially: Option<&Vec<EntityTags>> = self.get_entity_tags(*entity_id);
+        if entity_tags_potentially.is_none() {
+            return;
+        }
+        let entity_tags: &Vec<EntityTags> = entity_tags_potentially.unwrap();
         let mut entity_mut_hash: std::cell::RefMut<'_, HashMap<usize, Entity>> = self.entities.borrow_mut();
         let mut entity: &mut Entity = entity_mut_hash.get_mut(entity_id).unwrap();
         let mut distance: f64 = f64::MAX;
@@ -71,17 +75,17 @@ impl World {
         let mut aggressive: bool = false;
         let mut attacks: Option<EntityAttackPattern>= None; 
         let mut can_attack_player: bool = false;
-        for tag_id in 0..entity_tags.len() {
+        for tag in entity_tags.iter() {
             // println!("{:?}", entity_tags[tag_id]);
-            match entity_tags[tag_id].clone() {
+            match tag.clone() {
                 EntityTags::FollowsPlayer => {
                     follows_player = true;
                 },
                 EntityTags::AggroRange(range) => {
-                    aggro_range = range as usize;
+                    aggro_range = range;
                 },
                 EntityTags::Range(range) => {
-                    attack_range = range as usize;
+                    attack_range = range;
                 },
                 EntityTags::MovementSpeed(speed) => {
                     movement_speed = speed;

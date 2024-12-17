@@ -4,10 +4,9 @@ use crate::vertex::Vertex;
 use crate::entities::EntityTags;
 use winit::keyboard::Key;
 use std::cell::RefCell;
-use crate::game_engine::terrain::Terrain;
 use crate::entities::Entity;
 use super::entities::EntityAttackPattern;
-use super::terrain::{self, TerrainTags};
+use super::terrain::{self, Terrain, TerrainTags};
 
 #[derive(Debug, Clone)]
 pub struct Chunk{  // 32x32 blocks of 32x32 = chunks are 1024x1024 pixels but 1024 * RETINA SCALE accounting for retina, so a chunk with x =0, y =0, is pixels 0-1023, 0-1023
@@ -126,10 +125,43 @@ impl World{
         self.element_id - 1
     }
 
-    pub fn add_tag(&mut self, element_id: usize, tag: EntityTags){
+    pub fn add_entity_tag(&mut self, element_id: usize, tag: EntityTags){
         let mut tags: Vec<EntityTags> = self.entity_tags_lookup.get(&element_id).unwrap_or(&Vec::new()).clone();
         tags.push(tag);
         self.entity_tags_lookup.insert(element_id, tags);
+    }
+
+    pub fn attempt_move_player(&self, player: &mut Player, movement: [f32; 2]){
+        for chunk in self.loaded_chunks.iter(){
+            let chunk = &self.chunks.borrow()[*chunk];
+            for terrain_id in chunk.terrain_ids.iter(){
+                let terrain = self.terrain.get(terrain_id).unwrap();
+                let terrain_tags_potentially = self.terrain_tags_lookup.get(terrain_id);
+                if terrain_tags_potentially.is_none(){
+                    continue;
+                }
+                let terrain_tags = terrain_tags_potentially.unwrap();
+                for tag in terrain_tags.iter(){
+                    match tag{
+                        TerrainTags::BlocksMovement => {
+                            if terrain.x < (player.x + movement[0]).floor() as usize && terrain.x + 32 > (player.x + movement[0]).floor() as usize && terrain.y < (player.y + movement[1]).floor() as usize && terrain.y + 32 > (player.y + movement[1]).floor() as usize{
+                                return;
+                            }
+                        }
+                        _ => ()
+                    }
+                }
+            }
+        }
+        player.x += movement[0];
+        player.y += movement[1];
+        return;
+    }
+
+    pub fn add_terrain_tag(&mut self, element_id: usize, tag: TerrainTags){
+        let mut tags: Vec<TerrainTags> = self.terrain_tags_lookup.get(&element_id).unwrap_or(&Vec::new()).clone();
+        tags.push(tag);
+        self.terrain_tags_lookup.insert(element_id, tags);
     }
 
     pub fn lookup_terrain_chunk(&self, element_id: usize) -> Option<usize>{
@@ -167,8 +199,12 @@ impl World{
         let magnitude: f32 = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
         
         if magnitude > 0.0{
-            player.y += (direction[1] / magnitude * player.movement_speed).round();
-            player.x += (direction[0] / magnitude * player.movement_speed).round();
+            let movement = [(direction[0] / magnitude * player.movement_speed).round(), (direction[1] / magnitude * player.movement_speed).round()];
+
+            self.attempt_move_player(&mut player, [movement[0], 0.0]);
+            self.attempt_move_player(&mut player, [0.0, movement[1]]);
+            // player.y += (direction[1] / magnitude * player.movement_speed).round();
+            // player.x += (direction[0] / magnitude * player.movement_speed).round();
         }
 
         if player.y < 3.0 {
@@ -179,11 +215,17 @@ impl World{
         }
     }
 
-    pub fn add_tags(&mut self, element_id: usize, tags: Vec<EntityTags>){ //Change this to allow an enum of a vector of tags of various types.
+    pub fn add_entity_tags(&mut self, element_id: usize, tags: Vec<EntityTags>){ //Change this to allow an enum of a vector of tags of various types.
         let mut d = self.entity_tags_lookup.get(&element_id).unwrap_or(&Vec::new()).clone(); 
         d.extend(tags);
         self.entity_tags_lookup.insert(element_id, d);
     }
+    pub fn add_terrain_tags(&mut self, element_id: usize, tags: Vec<TerrainTags>){ //Change this to allow an enum of a vector of tags of various types.
+        let mut d: Vec<TerrainTags> = self.terrain_tags_lookup.get(&element_id).unwrap_or(&Vec::new()).clone(); 
+        d.extend(tags);
+        self.terrain_tags_lookup.insert(element_id, d);
+    }
+
 
     
 }
@@ -244,7 +286,7 @@ pub struct Player {
 impl Player {
     fn new() -> Self {
         Self {
-            x: 576.0,
+            x: 596.0,
             y: 360.0,
             health: 100,
             max_health: 100,
