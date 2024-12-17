@@ -1,4 +1,6 @@
 
+use core::arch;
+
 use rand::prelude::*;
 pub mod rendering_engine;
 use rendering_engine::window;
@@ -75,8 +77,7 @@ fn main() {
     }
 
 
-    let ghost = world.add_entity(160.0,160.0);
-    // okay well you fucking see here, ghost is an entity ID and you're adding tags as they're fucking components.
+    
     let mut archetype: Vec<EntityTags> = Vec::new();
     archetype.push(EntityTags::Aggressive);
     archetype.push(EntityTags::MovementSpeed(2.0));
@@ -85,25 +86,23 @@ fn main() {
     archetype.push(EntityTags::Range(32));
     archetype.push(EntityTags::AggroRange(1000));
     archetype.push(EntityTags::AttackType(entities::AttackType::Melee));
-    // world.add_tag(ghost, EntityTags::Aggressive);
-    // world.add_tag(ghost, EntityTags::MovementSpeed(2.0));
-    // world.add_tag(ghost, EntityTags::MonsterType(entities::MonsterType::Undead));
-    // world.add_tag(ghost, EntityTags::FollowsPlayer);
-    // world.add_tag(ghost, EntityTags::Range(32));
-    // world.add_tag(ghost, EntityTags::AggroRange(1000));
-    // world.add_tag(ghost, EntityTags::AttackType(entities::AttackType::Melee));
     let mut attacks_tests = Vec::new();
     attacks_tests.push(entities::EntityAttack::new(3));
-    world.add_entity_tags(ghost, archetype);
-    world.add_entity_tag(ghost, EntityTags::Attacks(entities::EntityAttackPattern::new(attacks_tests, vec![0.1])));
 
 
-    //   game_engine::entities::EntityTags::new(true, game_engine::entities::MonsterType::Undead, true, 0, 1500, game_engine::entities::AttackType::Melee, game_engine::entities::EntityAttackPattern::new(), 3, false, Some(game_engine::loot::Loot::new(Vec::new())), None, 10)
-
-
-    // println!("{:?}",world.chunks);
+    let ghost = world.add_entity(160.0,160.0);
+    world.add_entity_tags(ghost, archetype.clone());
+    world.add_entity_tag(ghost, EntityTags::Attacks(entities::EntityAttackPattern::new(attacks_tests.clone(), vec![0.1])));
     world.set_sprite(ghost,ghost_sprite);
-    // println!("{:?}",world.chunks[0]);
+
+    for i in 0..10000{
+        let ghost2 = world.add_entity(i as f32/10.0,160.0);
+        world.add_entity_tags(ghost2, archetype.clone());
+        world.add_entity_tag(ghost2, EntityTags::Attacks(entities::EntityAttackPattern::new(attacks_tests.clone(), vec![0.1])));
+        // world.add_entity_tag(ghost2, EntityTags::RespectsCollision);
+        // COLLISION TAG IS REALLY FUCKING SLOW, THIS RUNS FINE WITH 10000 ghosts normally, but with it, like 50 entities max. Need to fix this REALLY BADLY.
+        world.set_sprite(ghost2,ghost_sprite);
+    }
     
     pollster::block_on(window::run(&mut world, &mut camera));
 }
