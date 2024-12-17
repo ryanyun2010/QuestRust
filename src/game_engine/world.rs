@@ -131,9 +131,15 @@ impl World{
         self.entity_tags_lookup.insert(element_id, tags);
     }
 
-    pub fn check_collision(&self, x: usize, y: usize, w: usize, h: usize) -> bool{
+    pub fn check_collision(&self, x: usize, y: usize, w: usize, h: usize, chunkref: Option<Vec<Chunk>>) -> bool{
+        let mut cr: Vec<Chunk>;
+        if chunkref.is_none(){
+            cr = self.chunks.borrow().clone();
+        }else{
+            cr = chunkref.unwrap();
+        }
         for chunk in self.loaded_chunks.iter(){ // TODO: THIS IS BAD DESIGN BUT I CANT REALLY FIX IT SOOOOOOOO
-            let chunk = &self.chunks.borrow()[*chunk];
+            let chunk = &cr[*chunk];
             for terrain_id in chunk.terrain_ids.iter(){
                 let terrain = self.terrain.get(terrain_id).unwrap();
                 let terrain_tags_potentially = self.terrain_tags_lookup.get(terrain_id);
@@ -157,7 +163,7 @@ impl World{
     }
 
     pub fn attempt_move_player(&self, player: &mut Player, movement: [f32; 2]){
-        if self.check_collision((player.x + movement[0]).floor() as usize, (player.y + movement[1]).floor() as usize, 32, 32){
+        if self.check_collision((player.x + movement[0]).floor() as usize, (player.y + movement[1]).floor() as usize, 32, 32, None){
             return;
         }
         player.x += movement[0];

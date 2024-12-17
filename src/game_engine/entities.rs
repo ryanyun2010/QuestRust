@@ -30,8 +30,30 @@ impl Entity{
 }
 
 impl World {
+    pub fn move_entity_respect_collision(&self, entity: &mut Entity, entity_id: &usize, movement: [f32; 2], chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>){ 
+        if self.check_collision((entity.x + movement[0]).floor() as usize, (entity.y + movement[1]).floor() as usize, 32, 32, Some(chunkref.clone())){
+            return;
+        }
+        let prev_chunk = self.get_chunk_from_xy(entity.x as usize, entity.y as usize).unwrap();
+        entity.x += movement[0];
+        entity.y += movement[1];
+        let new_chunk_potentially = self.get_chunk_from_xy(entity.x as usize, entity.y as usize);
+        let new_chunk: usize;
+        if new_chunk_potentially.is_none(){
+            new_chunk = self.new_chunk(World::coord_to_chunk_coord(entity.x as usize), World::coord_to_chunk_coord(entity.y as usize));
+        }else{
+            new_chunk = new_chunk_potentially.unwrap();
+        }
+
+        if new_chunk != prev_chunk {
+            chunkref[prev_chunk].entities_ids.retain(|x| *x != *entity_id);
+            chunkref[new_chunk].entities_ids.push(*entity_id);
+            self.entity_lookup.borrow_mut().insert(new_chunk, *entity_id);
+        } 
+        // entity.move_(movement);
+    }
+
     pub fn move_entity(&self, entity: &mut Entity, entity_id: &usize, movement: [f32; 2], chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>){ 
-        // TODO: RESPECT COLLISION STUFF
         let prev_chunk = self.get_chunk_from_xy(entity.x as usize, entity.y as usize).unwrap();
         entity.x += movement[0];
         entity.y += movement[1];
@@ -76,6 +98,7 @@ impl World {
         let mut aggressive: bool = false;
         let mut attacks: Option<EntityAttackPattern>= None; 
         let mut can_attack_player: bool = false;
+        let mut respects_collision: bool = false;
         for tag in entity_tags.iter() {
             // println!("{:?}", entity_tags[tag_id]);
             match tag.clone() {
@@ -96,6 +119,9 @@ impl World {
                 },
                 EntityTags::Attacks(att) => {
                     attacks = Some(att);
+                },
+                EntityTags::RespectsCollision => {
+                    respects_collision = true;
                 },
                 _ => ()
             }
@@ -134,7 +160,11 @@ impl World {
             if (direction[0].abs() + direction[1].abs()) > 0.0 {
                 let magnitude: f32 = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
                 let movement: [f32; 2] = [direction[0] / magnitude * movement_speed, direction[1] / magnitude * movement_speed];
-                self.move_entity(entity, entity_id,  movement, chunkref);
+                if respects_collision {
+                    self.move_entity_respect_collision(entity, entity_id,  movement, chunkref);
+                }else{
+                    self.move_entity(entity, entity_id,  movement, chunkref); 
+                }
 
             }
         }
