@@ -38,6 +38,8 @@ impl World {
         let new_chunk_potentially = self.get_chunk_from_xy(entity.x as usize, entity.y as usize);
         let new_chunk: usize;
         if new_chunk_potentially.is_none(){
+            //Realistically we should be unloading them if they move to an unloaded chunk until it's loaded by the player.
+            //Does this already do this though?
             new_chunk = self.new_chunk(World::coord_to_chunk_coord(entity.x as usize), World::coord_to_chunk_coord(entity.y as usize), Some(chunkref));
         }else{
             new_chunk = new_chunk_potentially.unwrap();
