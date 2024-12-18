@@ -95,12 +95,11 @@ fn main() {
     world.add_entity_tag(ghost, EntityTags::Attacks(entities::EntityAttackPattern::new(attacks_tests.clone(), vec![0.1])));
     world.set_sprite(ghost,ghost_sprite);
 
-    for i in 0..10000{
+    for i in 0..1000{
         let ghost2 = world.add_entity(i as f32/10.0,160.0);
         world.add_entity_tags(ghost2, archetype.clone());
         world.add_entity_tag(ghost2, EntityTags::Attacks(entities::EntityAttackPattern::new(attacks_tests.clone(), vec![0.1])));
-        // world.add_entity_tag(ghost2, EntityTags::RespectsCollision);
-        // COLLISION TAG IS REALLY FUCKING SLOW, THIS RUNS FINE WITH 10000 ghosts normally, but with it, like 50 entities max. Need to fix this REALLY BADLY.
+        world.add_entity_tag(ghost2, EntityTags::RespectsCollision);
         world.set_sprite(ghost2,ghost_sprite);
     }
     
