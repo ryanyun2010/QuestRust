@@ -83,7 +83,7 @@ fn main() {
     archetype.push(EntityTags::MovementSpeed(2.0));
     archetype.push(EntityTags::MonsterType(entities::MonsterType::Undead));
     archetype.push(EntityTags::FollowsPlayer);
-    archetype.push(EntityTags::Range(32));
+    archetype.push(EntityTags::Range(50));
     archetype.push(EntityTags::AggroRange(1000));
     archetype.push(EntityTags::AttackType(entities::AttackType::Melee));
     let mut attacks_tests = Vec::new();
@@ -96,8 +96,6 @@ fn main() {
     world.add_entity_tag(ghost, EntityTags::RespectsCollision);
     world.add_entity_tag(ghost, EntityTags::HasCollision);
     world.set_sprite(ghost,ghost_sprite);
-
-    // TODO: GIVE THE PLAYER A COLLISON BOX THATS THE PROBLEM OMG
     
     println!("{:?}",world.chunks);
     pollster::block_on(window::run(&mut world, &mut camera));

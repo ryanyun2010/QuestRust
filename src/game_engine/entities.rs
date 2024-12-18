@@ -31,28 +31,8 @@ impl Entity{
 }
 
 impl World {
-    pub fn move_entity_respect_collision(&self, entity: &mut Entity, entity_id: &usize, movement: [f32; 2], chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>){ 
-        let prev_chunk = self.get_chunk_from_xy(entity.x as usize, entity.y as usize).unwrap();
-        entity.x += movement[0];
-        entity.y += movement[1];
-        let new_chunk_potentially = self.get_chunk_from_xy(entity.x as usize, entity.y as usize);
-        let new_chunk: usize;
-        if new_chunk_potentially.is_none(){
-            new_chunk = self.new_chunk(World::coord_to_chunk_coord(entity.x as usize), World::coord_to_chunk_coord(entity.y as usize), Some(chunkref));
-        }else{
-            new_chunk = new_chunk_potentially.unwrap();
-        }
-
-        if new_chunk != prev_chunk {
-            chunkref[prev_chunk].entities_ids.retain(|x| *x != *entity_id);
-            chunkref[new_chunk].entities_ids.push(*entity_id);
-            self.entity_lookup.borrow_mut().insert(new_chunk, *entity_id);
-        } 
-        // entity.move_(movement);
-    }
-
     pub fn move_entity(&self, entity: &mut Entity, entity_id: &usize, movement: [f32; 2], chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>, entityref: HashMap<usize, Entity> , respects_collision: bool, has_collision: bool){ 
-        if respects_collision && self.check_collision(Some(*entity_id), (entity.x + movement[0]).floor() as usize, (entity.y + movement[1]).floor() as usize, 32,32, true,Some(entityref)){
+        if respects_collision && self.check_collision(false, Some(*entity_id), (entity.x + movement[0]).floor() as usize, (entity.y + movement[1]).floor() as usize, 32,32, true,Some(entityref)){
             return;
         }
         let prev_chunk = self.get_chunk_from_xy(entity.x as usize, entity.y as usize).unwrap();

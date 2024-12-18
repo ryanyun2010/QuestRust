@@ -211,7 +211,14 @@ impl World{
         }  
     }
 
-    pub fn check_collision(&self, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, entity: bool, entity_hash: Option<HashMap<usize, Entity>>) -> bool{
+    pub fn check_collision(&self, player: bool, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, entity: bool, entity_hash: Option<HashMap<usize, Entity>>) -> bool{
+        if !player {
+            let p = self.player.borrow();
+            if p.x - 8.0 < (x + w) as f32 && p.x + 40.0 > x as f32 && p.y - 8.0 < (y + h) as f32 && p.y + 40.0 > y as f32{
+                println!("DIE");
+                return true;
+            }
+        }
         let tiles_to_check = World::get_terrain_tiles(x, y, w, h);
         let mut ids_to_check: Vec<usize> = Vec::new();
         for tile in tiles_to_check.iter(){
@@ -237,7 +244,7 @@ impl World{
             if terrain_potentially.is_none(){
                 if entity{
                     let entity = eh.get(&id).unwrap();
-                    if entity.x < (x + w) as f32 && entity.x + 16.0 > x as f32 && entity.y < (y + h) as f32 && entity.y + 32.0 > y as f32{
+                    if entity.x < (x + w) as f32 && entity.x + 32.0 > x as f32 && entity.y < (y + h) as f32 && entity.y + 32.0 > y as f32{
                         return true;
                     }
                 }
@@ -253,7 +260,7 @@ impl World{
     }
 
     pub fn attempt_move_player(&self, player: &mut Player, movement: [f32; 2]){
-        if self.check_collision(None,(player.x + movement[0]).floor() as usize, (player.y + movement[1]).floor() as usize, 32, 32, true, Some(self.entities.borrow().clone())){
+        if self.check_collision(true, None,(player.x + movement[0]).floor() as usize, (player.y + movement[1]).floor() as usize, 32, 32, true, Some(self.entities.borrow().clone())){
             return;
         }
         player.x += movement[0];
