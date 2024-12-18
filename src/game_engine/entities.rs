@@ -15,6 +15,7 @@ pub struct Entity{
     // Back to Items for now.
     // pub components: Vec<EntityComponents>
 }
+// TODO: ENTITY CHUNKING HAS A CRAZY AMOUNT OF BUGS HERE
 
 impl Entity{
     pub fn new(element_id: usize, x: f32, y:f32) -> Self{
@@ -54,6 +55,7 @@ impl World {
         if respects_collision && self.check_collision(Some(*entity_id), (entity.x + movement[0]).floor() as usize, (entity.y + movement[1]).floor() as usize, 32,32, true,Some(entityref)){
             return;
         }
+        println!("{}, {}", entity.x, entity.y);
         let prev_chunk = self.get_chunk_from_xy(entity.x as usize, entity.y as usize).unwrap();
         
         if has_collision {

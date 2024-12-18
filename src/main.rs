@@ -97,14 +97,14 @@ fn main() {
     world.add_entity_tag(ghost, EntityTags::HasCollision);
     world.set_sprite(ghost,ghost_sprite);
 
-    for i in 0..1000{
-        let ghost2 = world.add_entity(i as f32* 20.0,160.0);
+    for i in 0..6{
+        let ghost2 = world.add_entity(i as f32* 400.0,160.0);
         world.add_entity_tags(ghost2, archetype.clone());
         world.add_entity_tag(ghost2, EntityTags::Attacks(entities::EntityAttackPattern::new(attacks_tests.clone(), vec![0.1])));
         world.add_entity_tag(ghost2, EntityTags::HasCollision);
         world.add_entity_tag(ghost2, EntityTags::RespectsCollision);
         world.set_sprite(ghost2,ghost_sprite);
     }
-    
+    println!("{:?}",world.chunks);
     pollster::block_on(window::run(&mut world, &mut camera));
 }

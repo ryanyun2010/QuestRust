@@ -21,7 +21,7 @@ pub struct Chunk{  // 32x32 blocks of 32x32 = chunks are 1024x1024 pixels but 10
 
 impl Chunk{
 }
-
+// TODO: ENTITY CHUNKING HAS A CRAZY AMOUNT OF BUGS HERE
 pub struct World{
     pub chunks: RefCell<Vec<Chunk>>,
     pub player: RefCell<Player>,
@@ -147,7 +147,7 @@ impl World{
         }
         tiles
     }
-    pub fn generate_collision_cache(&mut self){ // TODO: REMEMBER THAT WHEN I MAKE ENTITIES HAVE COLLISIONS WITH EACHOTHER, MOVING ENTITIES NEEDS TO UPDATE THIS CACHE
+    pub fn generate_collision_cache(&mut self){
         let mut collision_cache_ref = self.collision_cache.borrow_mut();
         collision_cache_ref.clear();
         for chunk in self.loaded_chunks.iter(){ 
@@ -240,7 +240,7 @@ impl World{
     }
 
     pub fn attempt_move_player(&self, player: &mut Player, movement: [f32; 2]){
-        if self.check_collision(None, (player.x + movement[0]).floor() as usize, (player.y + movement[1]).floor() as usize, 32, 32, false, None){
+        if self.check_collision(None,(player.x + movement[0]).floor() as usize, (player.y + movement[1]).floor() as usize, 32, 32, false, None){
             return;
         }
         player.x += movement[0];
