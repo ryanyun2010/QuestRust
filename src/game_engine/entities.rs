@@ -33,6 +33,7 @@ impl Entity{
 impl World {
     pub fn move_entity(&self, entity: &mut Entity, entity_id: &usize, movement: [f32; 2], chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>, entityref: HashMap<usize, Entity> , respects_collision: bool, has_collision: bool){ 
         if respects_collision && self.check_collision(false, Some(*entity_id), (entity.x + movement[0]).floor() as usize, (entity.y + movement[1]).floor() as usize, 32,32, true,Some(entityref)){
+            //Maybe change this to a direction enum and have directional collisions?
             return;
         }
         let prev_chunk = self.get_chunk_from_xy(entity.x as usize, entity.y as usize).unwrap();
