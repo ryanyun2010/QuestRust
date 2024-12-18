@@ -31,9 +31,6 @@ impl Entity{
 
 impl World {
     pub fn move_entity_respect_collision(&self, entity: &mut Entity, entity_id: &usize, movement: [f32; 2], chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>){ 
-        if self.check_collision((entity.x + movement[0]).floor() as usize, (entity.y + movement[1]).floor() as usize, 32, 32){
-            return;
-        }
         let prev_chunk = self.get_chunk_from_xy(entity.x as usize, entity.y as usize).unwrap();
         entity.x += movement[0];
         entity.y += movement[1];
@@ -53,10 +50,33 @@ impl World {
         // entity.move_(movement);
     }
 
-    pub fn move_entity(&self, entity: &mut Entity, entity_id: &usize, movement: [f32; 2], chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>){ 
+    pub fn move_entity(&self, entity: &mut Entity, entity_id: &usize, movement: [f32; 2], chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>, entityref: HashMap<usize, Entity> , respects_collision: bool, has_collision: bool){ 
+        if respects_collision && self.check_collision(Some(*entity_id), (entity.x + movement[0]).floor() as usize, (entity.y + movement[1]).floor() as usize, 32,32, true,Some(entityref)){
+            return;
+        }
         let prev_chunk = self.get_chunk_from_xy(entity.x as usize, entity.y as usize).unwrap();
+        
+        if has_collision {
+            let mut collision_cache_ref = self.collision_cache.borrow_mut();
+            let prev_collision_tiles = World::get_terrain_tiles(entity.x as usize, entity.y as usize, 32, 32);
+            let new_collision_tiles = World::get_terrain_tiles((entity.x + movement[0]) as usize, (entity.y + movement[1]) as usize, 32, 32);
+            
+            for tile in prev_collision_tiles.iter(){
+                if new_collision_tiles.contains(tile){
+                    continue;
+                }else{
+                    let tile_potentially = collision_cache_ref.get_mut(tile);
+                    if tile_potentially.is_none(){
+                        continue;
+                    }else{
+                        tile_potentially.unwrap().retain(|&x| x != *entity_id);
+                    }
+                }
+            }
+        }
         entity.x += movement[0];
         entity.y += movement[1];
+
         let new_chunk_potentially = self.get_chunk_from_xy(entity.x as usize, entity.y as usize);
         let new_chunk: usize;
         if new_chunk_potentially.is_none(){
@@ -87,6 +107,7 @@ impl World {
             return;
         }
         let entity_tags: &Vec<EntityTags> = entity_tags_potentially.unwrap();
+        let entity_hash = self.entities.borrow().clone();
         let mut entity_mut_hash: std::cell::RefMut<'_, HashMap<usize, Entity>> = self.entities.borrow_mut();
         let mut entity: &mut Entity = entity_mut_hash.get_mut(entity_id).unwrap();
         let mut distance: f64 = f64::MAX;
@@ -99,6 +120,7 @@ impl World {
         let mut attacks: Option<EntityAttackPattern>= None; 
         let mut can_attack_player: bool = false;
         let mut respects_collision: bool = false;
+        let mut has_collision: bool = false;
         for tag in entity_tags.iter() {
             // println!("{:?}", entity_tags[tag_id]);
             match tag.clone() {
@@ -122,6 +144,9 @@ impl World {
                 },
                 EntityTags::RespectsCollision => {
                     respects_collision = true;
+                },
+                EntityTags::HasCollision => {
+                    has_collision = true;
                 },
                 _ => ()
             }
@@ -148,7 +173,6 @@ impl World {
                     entity.cur_attack = 0;
                 }
                 entity.cur_attack_cooldown = attack_pattern.attack_cooldowns[entity.cur_attack];                
-                // println!("Attacking player {:?}", self.player.borrow().health);
             }else{
                 entity.cur_attack_cooldown -= 1.0/60.0;
             }
@@ -160,11 +184,8 @@ impl World {
             if (direction[0].abs() + direction[1].abs()) > 0.0 {
                 let magnitude: f32 = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
                 let movement: [f32; 2] = [direction[0] / magnitude * movement_speed, direction[1] / magnitude * movement_speed];
-                if respects_collision {
-                    self.move_entity_respect_collision(entity, entity_id,  movement, chunkref);
-                }else{
-                    self.move_entity(entity, entity_id,  movement, chunkref); 
-                }
+
+                self.move_entity(entity, entity_id,  movement, chunkref, entity_hash,  respects_collision, has_collision); 
 
             }
         }
@@ -223,6 +244,7 @@ pub enum EntityTags {
     FollowsPlayer,
     Range(usize),
     RespectsCollision,
+    HasCollision,
     AggroRange(usize),
     AttackType(AttackType),
     Attacks(EntityAttackPattern),
@@ -230,6 +252,7 @@ pub enum EntityTags {
     Item(Item),
     Drops(Loot),
     BaseHealth(usize),
+
 
 }
 

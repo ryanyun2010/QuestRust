@@ -36,9 +36,7 @@ pub struct World{
     pub entity_tags_lookup: HashMap<usize,Vec<EntityTags>>, // corresponds element_ids of entities to the entity's tags
     pub terrain_tags_lookup: HashMap<usize,Vec<TerrainTags>>, // corresponds element_ids of entities to the entity's tags
     pub loaded_chunks: Vec<usize>, // chunk ids that are currently loaded
-    pub collision_cache: HashMap<[usize; 2], Vec<usize>>, // collision x,y, to element id, collision tiles are 64x64
-    // TODO: to speed up collision detection, want to do some sort of tiling system or something for caching. Current system is way too slow. Its bad.
-    // I dont think that just having chunks would be sufficient, even though chunks dont really contribute rn to the collision system.
+    pub collision_cache: RefCell<HashMap<[usize; 2], Vec<usize>>>, // collision x,y, to element id, collision tiles are 64x64
 }
 // OKAY RYAN WE NEED MAJOR REFORMS.
 // OVER TIME, LET'S MOVE THESE INTO MULTIPLE IMPL STATEMENTS IN THEIR RESPECTIVE MODULES.
@@ -57,7 +55,7 @@ impl World{
         let mut terrain: HashMap<usize, Terrain> = HashMap::new();
         let mut entities: RefCell<HashMap<usize, Entity>> = RefCell::new(HashMap::new());
         let mut loaded_chunks: Vec<usize> = Vec::new(); 
-        let mut collision_cache: HashMap<[usize; 2], Vec<usize>> = HashMap::new();
+        let mut collision_cache: RefCell<HashMap<[usize; 2], Vec<usize>>> = RefCell::new(HashMap::new());
         Self{
             chunks,
             player,
@@ -136,10 +134,23 @@ impl World{
         tags.push(tag);
         self.entity_tags_lookup.insert(element_id, tags);
     }
-
-    pub fn generate_collision_cache(&mut self){
-        self.collision_cache.clear();
-        for chunk in self.loaded_chunks.iter(){ // TODO: THIS IS BAD DESIGN BUT I CANT REALLY FIX IT SOOOOOOOO
+    pub fn get_terrain_tiles(x: usize, y: usize, w: usize, h: usize) -> Vec<[usize; 2]>{
+        let mut tiles: Vec<[usize; 2]> = Vec::new();
+        let left_x = (x as f32 / 64.0).floor() as usize;
+        let right_x = ((x as f32 + w as f32) / 64.0).floor() as usize;
+        let top_y = (y as f32 / 64.0).floor() as usize;
+        let bot_y = ((y as f32 + h as f32)/ 64.0).floor() as usize;
+        for x in left_x..(right_x + 1){
+            for y in top_y..(bot_y + 1){
+                tiles.push([x,y]);
+            }
+        }
+        tiles
+    }
+    pub fn generate_collision_cache(&mut self){ // TODO: REMEMBER THAT WHEN I MAKE ENTITIES HAVE COLLISIONS WITH EACHOTHER, MOVING ENTITIES NEEDS TO UPDATE THIS CACHE
+        let mut collision_cache_ref = self.collision_cache.borrow_mut();
+        collision_cache_ref.clear();
+        for chunk in self.loaded_chunks.iter(){ 
             let chunk = &self.chunks.borrow()[*chunk];
             for terrain_id in chunk.terrain_ids.iter(){
                 let terrain = self.terrain.get(terrain_id).unwrap();
@@ -151,17 +162,33 @@ impl World{
                 for tag in terrain_tags.iter(){
                     match tag{
                         TerrainTags::BlocksMovement => {
-                            let left_terrain_x = (terrain.x as f32 / 64.0).floor() as usize;
-                            let right_terrain_x = ((terrain.x as f32 + 32.0) / 64.0).floor() as usize;
-                            let top_terrain_y = (terrain.y as f32 / 64.0).floor() as usize;
-                            let bot_terrain_y = ((terrain.y as f32 + 32.0)/ 64.0).floor() as usize;
+                            let tiles_blocked: Vec<[usize; 2]> = World::get_terrain_tiles(terrain.x, terrain.y, 32, 32);
+                            for tile in tiles_blocked.iter(){
+                                let mut collision_cache_entry = collision_cache_ref.get(&[tile[0],tile[1]]).unwrap_or(&Vec::new()).clone();
+                                collision_cache_entry.push(*terrain_id);
+                                collision_cache_ref.insert([tile[0],tile[1]], collision_cache_entry);
+                            }
+                        }
+                        _ => ()
+                    }
+                }
+            }
 
-                            for x in left_terrain_x..(right_terrain_x + 1){
-                                for y in top_terrain_y..(bot_terrain_y + 1){
-                                    let mut collision_cache_entry = self.collision_cache.get(&[x,y]).unwrap_or(&Vec::new()).clone();
-                                    collision_cache_entry.push(*terrain_id);
-                                    self.collision_cache.insert([x,y], collision_cache_entry);
-                                }
+            for entity_id in chunk.entities_ids.iter(){
+                let entity = self.entities.borrow().get(entity_id).unwrap().clone();
+                let entity_tags_potentially = self.entity_tags_lookup.get(entity_id);
+                if entity_tags_potentially.is_none(){
+                    continue;
+                }
+                let entity_tags = entity_tags_potentially.unwrap();
+                for tag in entity_tags.iter(){
+                    match tag{
+                        EntityTags::HasCollision => {
+                            let tiles_blocked: Vec<[usize; 2]> = World::get_terrain_tiles(entity.x as usize, entity.y as usize, 32, 32);
+                            for tile in tiles_blocked.iter(){
+                                let mut collision_cache_entry = collision_cache_ref.get(&[tile[0],tile[1]]).unwrap_or(&Vec::new()).clone();
+                                collision_cache_entry.push(*entity_id);
+                                collision_cache_ref.insert([tile[0],tile[1]], collision_cache_entry);
                             }
                         }
                         _ => ()
@@ -171,37 +198,53 @@ impl World{
         }  
     }
 
-    pub fn check_collision(&self, x: usize, y: usize, w: usize, h: usize) -> bool{
-        let left_x = (x as f32 / 64.0).floor() as usize;
-        let right_x = ((x as f32 + 32.0) / 64.0).floor() as usize;
-        let top_y = (y as f32 / 64.0).floor() as usize;
-        let bot_y = ((y as f32 + 32.0)/ 64.0).floor() as usize;
+    pub fn check_collision(&self, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, entity: bool, entity_hash: Option<HashMap<usize, Entity>>) -> bool{
+        let tiles_to_check = World::get_terrain_tiles(x, y, w, h);
         let mut ids_to_check: Vec<usize> = Vec::new();
-        for x in left_x..(right_x + 1){
-            for y in top_y..(bot_y + 1){
-                if self.collision_cache.get(&[x,y]).is_none(){
-                    continue;
-                }else{
-                    ids_to_check.extend(self.collision_cache.get(&[x,y]).unwrap());
-                }
+        for tile in tiles_to_check.iter(){
+            if self.collision_cache.borrow().get(&[tile[0],tile[1]]).is_none(){
+                continue;
+            }else{
+                ids_to_check.extend(self.collision_cache.borrow().get(&[tile[0],tile[1]]).unwrap());
             }
         }
-
+        let mut eh;
+        if entity {
+            eh = entity_hash.unwrap();
+        }else{
+            eh = HashMap::new();
+        }
+        let idti: usize = id_to_ignore.unwrap_or(usize::MAX);
         for id in ids_to_check{
-            let terrain = self.terrain.get(&id).unwrap();
-            if terrain.x < x + w && terrain.x + 32 > x && terrain.y < y + h && terrain.y + 32 > y{
-                return true;
+            if id == idti{
+                continue;
+            }
+            let terrain_potentially = self.terrain.get(&id);
+            
+            if terrain_potentially.is_none(){
+                if entity{
+                    let entity = eh.get(&id).unwrap();
+                    if entity.x < (x + w) as f32 && entity.x + 16.0 > x as f32 && entity.y < (y + h) as f32 && entity.y + 32.0 > y as f32{
+                        return true;
+                    }
+                }
+                
+            }else{
+                let terrain = terrain_potentially.unwrap();
+                if terrain.x < x + w && terrain.x + 32 > x && terrain.y < y + h && terrain.y + 32 > y{
+                    return true;
+                }
             }
         }
         false
     }
 
     pub fn attempt_move_player(&self, player: &mut Player, movement: [f32; 2]){
-        if self.check_collision((player.x + movement[0]).floor() as usize, (player.y + movement[1]).floor() as usize, 32, 32){
+        if self.check_collision(None, (player.x + movement[0]).floor() as usize, (player.y + movement[1]).floor() as usize, 32, 32, false, None){
             return;
         }
         player.x += movement[0];
-        player.y += movement[1]
+        player.y += movement[1];
     }
 
     pub fn add_terrain_tag(&mut self, element_id: usize, tag: TerrainTags){
