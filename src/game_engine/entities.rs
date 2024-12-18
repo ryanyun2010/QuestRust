@@ -61,7 +61,6 @@ impl World {
         let new_chunk_potentially = self.get_chunk_from_xy(entity.x as usize, entity.y as usize);
         let new_chunk: usize;
         if new_chunk_potentially.is_none(){
-            // THIS LINE HERE IS THE PROBLEM I NEED TO FIX IT OMGGG
             new_chunk = self.new_chunk(World::coord_to_chunk_coord(entity.x as usize), World::coord_to_chunk_coord(entity.y as usize), Some(chunkref));
         }else{
             new_chunk = new_chunk_potentially.unwrap();
@@ -72,7 +71,6 @@ impl World {
             chunkref[new_chunk].entities_ids.push(*entity_id);
             self.entity_lookup.borrow_mut().insert(new_chunk, *entity_id);
         } 
-        // entity.move_(movement);
     }
     pub fn update_entities(&mut self) {
         let player: Player = self.player.borrow().clone();
