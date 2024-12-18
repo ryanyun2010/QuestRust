@@ -214,7 +214,7 @@ impl World{
     pub fn check_collision(&self, player: bool, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, entity: bool, entity_hash: Option<HashMap<usize, Entity>>) -> bool{
         if !player {
             let p = self.player.borrow();
-            if p.x - 8.0 < (x + w) as f32 && p.x + 40.0 > x as f32 && p.y - 8.0 < (y + h) as f32 && p.y + 40.0 > y as f32{
+            if p.x - 1.0 < (x + w) as f32 && p.x + 33.0 > x as f32 && p.y - 1.0 < (y + h) as f32 && p.y + 33.0 > y as f32{
                 println!("DIE");
                 return true;
             }

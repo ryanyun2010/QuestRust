@@ -83,7 +83,7 @@ fn main() {
     archetype.push(EntityTags::MovementSpeed(2.0));
     archetype.push(EntityTags::MonsterType(entities::MonsterType::Undead));
     archetype.push(EntityTags::FollowsPlayer);
-    archetype.push(EntityTags::Range(60));
+    archetype.push(EntityTags::Range(40));
     archetype.push(EntityTags::AggroRange(1000));
     archetype.push(EntityTags::AttackType(entities::AttackType::Melee));
     let mut attacks_tests = Vec::new();
@@ -91,6 +91,13 @@ fn main() {
 
 
     let ghost = world.add_entity(700.0,50.0);
+    world.add_entity_tags(ghost, archetype.clone());
+    world.add_entity_tag(ghost, EntityTags::Attacks(entities::EntityAttackPattern::new(attacks_tests.clone(), vec![0.1])));
+    world.add_entity_tag(ghost, EntityTags::RespectsCollision);
+    world.add_entity_tag(ghost, EntityTags::HasCollision);
+    world.set_sprite(ghost,ghost_sprite);
+
+    let ghost = world.add_entity(900.0,50.0);
     world.add_entity_tags(ghost, archetype.clone());
     world.add_entity_tag(ghost, EntityTags::Attacks(entities::EntityAttackPattern::new(attacks_tests.clone(), vec![0.1])));
     world.add_entity_tag(ghost, EntityTags::RespectsCollision);
