@@ -74,17 +74,30 @@ impl World{
         }
     }
     
-    pub fn new_chunk(&self, chunk_x: usize, chunk_y: usize) -> usize{
-        let new_chunk_id: usize = self.chunks.borrow().len() as usize;
-        
-        self.chunks.borrow_mut().push(
-            Chunk{
-                chunk_id: new_chunk_id,
-                x: chunk_x,
-                y: chunk_y,
-                terrain_ids: Vec::new(),
-                entities_ids: Vec::new(),
-            });
+    pub fn new_chunk(&self, chunk_x: usize, chunk_y: usize, chunkref: Option<&mut std::cell::RefMut<'_, Vec<Chunk>>>) -> usize{
+        let mut new_chunk_id: usize = 0;
+        if chunkref.is_none(){
+            new_chunk_id = self.chunks.borrow().len() as usize; 
+            self.chunks.borrow_mut().push(
+                Chunk{
+                    chunk_id: new_chunk_id,
+                    x: chunk_x,
+                    y: chunk_y,
+                    terrain_ids: Vec::new(),
+                    entities_ids: Vec::new(),
+                });
+        }else{
+            let cr = chunkref.unwrap();
+            new_chunk_id = cr.len() as usize; 
+            cr.push(
+                Chunk{
+                    chunk_id: new_chunk_id,
+                    x: chunk_x,
+                    y: chunk_y,
+                    terrain_ids: Vec::new(),
+                    entities_ids: Vec::new(),
+                });
+        }
         // println!("d:: {:?}", new_chunk_id);
         self.chunk_lookup.borrow_mut().insert([chunk_x, chunk_y], new_chunk_id);
         new_chunk_id
@@ -117,7 +130,7 @@ impl World{
         
         let chunk_id: usize;
         if chunk_id_potentially.is_none() {
-            chunk_id = self.new_chunk(World::coord_to_chunk_coord(new_terrain.x), World::coord_to_chunk_coord(new_terrain.y));
+            chunk_id = self.new_chunk(World::coord_to_chunk_coord(new_terrain.x), World::coord_to_chunk_coord(new_terrain.y), None);
         }else{
             chunk_id = chunk_id_potentially.unwrap();
         }
@@ -240,7 +253,7 @@ impl World{
     }
 
     pub fn attempt_move_player(&self, player: &mut Player, movement: [f32; 2]){
-        if self.check_collision(None,(player.x + movement[0]).floor() as usize, (player.y + movement[1]).floor() as usize, 32, 32, false, None){
+        if self.check_collision(None,(player.x + movement[0]).floor() as usize, (player.y + movement[1]).floor() as usize, 32, 32, true, Some(self.entities.borrow().clone())){
             return;
         }
         player.x += movement[0];
