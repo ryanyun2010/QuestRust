@@ -1,4 +1,4 @@
-
+#![allow(warnings)]
 use core::arch;
 
 use rand::prelude::*;
@@ -97,6 +97,7 @@ fn main() {
     world.add_entity_tag(ghost, EntityTags::HasCollision);
     world.set_sprite(ghost,ghost_sprite);
 
+    // TODO: GIVE THE PLAYER A COLLISON BOX THATS THE PROBLEM OMG
     
     println!("{:?}",world.chunks);
     pollster::block_on(window::run(&mut world, &mut camera));
