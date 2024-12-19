@@ -83,7 +83,7 @@ fn main() {
     archetype.push(EntityTags::MovementSpeed(2.0));
     archetype.push(EntityTags::MonsterType(entities::MonsterType::Undead));
     archetype.push(EntityTags::FollowsPlayer);
-    archetype.push(EntityTags::Range(40));
+    archetype.push(EntityTags::Range(46));
     archetype.push(EntityTags::AggroRange(1000));
     archetype.push(EntityTags::AttackType(entities::AttackType::Melee));
     let mut attacks_tests = Vec::new();
