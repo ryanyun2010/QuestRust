@@ -267,6 +267,13 @@ impl World{
         player.y += movement[1];
     }
 
+    pub fn can_move_player(&self, player: &mut Player, movement: [f32; 2]) -> bool{
+        if self.check_collision(true, None,(player.x + movement[0]).floor() as usize, (player.y + movement[1]).floor() as usize, 32, 32, true, Some(self.entities.borrow().clone())){
+            return false;
+        }
+        true
+    }
+
     pub fn add_terrain_tag(&mut self, element_id: usize, tag: TerrainTags){
         let mut tags: Vec<TerrainTags> = self.terrain_tags_lookup.get(&element_id).unwrap_or(&Vec::new()).clone();
         tags.push(tag);
@@ -309,9 +316,15 @@ impl World{
         
         if magnitude > 0.0{
             let movement = [(direction[0] / magnitude * player.movement_speed).round(), (direction[1] / magnitude * player.movement_speed).round()];
-
-            self.attempt_move_player(&mut player, [movement[0], 0.0]);
-            self.attempt_move_player(&mut player, [0.0, movement[1]]);
+            let player_movement_speed = player.movement_speed.clone();
+            
+            if !self.can_move_player(&mut player, [movement[0], 0.0]){
+                self.attempt_move_player(&mut player, [0.0, (direction[1] * player_movement_speed).round()]);
+            }else if !self.can_move_player(&mut player, [0.0, movement[1]]){
+                self.attempt_move_player(&mut player, [(direction[0] * player_movement_speed).round(), 0.0]);
+            }else{
+                self.attempt_move_player(&mut player, movement);
+            }
         }
 
         if player.y < 3.0 {
