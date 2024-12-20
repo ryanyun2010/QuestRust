@@ -98,7 +98,6 @@ impl World{
                     entities_ids: Vec::new(),
                 });
         }
-        // println!("d:: {:?}", new_chunk_id);
         self.chunk_lookup.borrow_mut().insert([chunk_x, chunk_y], new_chunk_id);
         new_chunk_id
     }
@@ -215,7 +214,6 @@ impl World{
         if !player {
             let p = self.player.borrow();
             if p.x - 1.0 < (x + w) as f32 && p.x + 33.0 > x as f32 && p.y - 1.0 < (y + h) as f32 && p.y + 33.0 > y as f32{
-                println!("DIE");
                 return true;
             }
         }

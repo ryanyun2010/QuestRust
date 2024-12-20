@@ -103,6 +103,5 @@ fn main() {
     world.add_entity_tag(ghost, EntityTags::HasCollision);
     world.set_sprite(ghost,d);
     
-    println!("{:?}",world.chunks);
     pollster::block_on(window::run(&mut world, &mut camera));
 }
