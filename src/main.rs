@@ -47,6 +47,8 @@ fn main() {
 
     
     let outside_sprite = world.add_sprite(6);
+    let wall2_sprite = world.add_sprite(13);
+    let wall3_sprite = world.add_sprite(14);
     let dirt_sprite = world.add_sprite(5);
     let dirt2_sprite = world.add_sprite(4);
     let wall_sprite = world.add_sprite(7);
@@ -58,13 +60,30 @@ fn main() {
             world.set_sprite(new_terrain,outside_sprite);
         }
     }
-    for m in 0..70 {
+
+    for n in 17..35 {
+        for m in 0..17 {
+            let new_terrain = world.add_terrain(n*32,m*32);
+            world.set_sprite(new_terrain,outside_sprite);
+        }
+    }
+
+    for n in 18..35 {
+        let new_terrain = world.add_terrain(n*32,544);
+        world.set_sprite(new_terrain,wall2_sprite);
+        world.add_terrain_tag(new_terrain, terrain::TerrainTags::BlocksMovement);
+    }
+        let new_terrain = world.add_terrain(544,544);
+        world.set_sprite(new_terrain,wall3_sprite);
+
+
+    for m in 18..70 {
         let new_terrain = world.add_terrain(544,m*32);
         world.set_sprite(new_terrain,wall_sprite);
         world.add_terrain_tag(new_terrain, terrain::TerrainTags::BlocksMovement);
     }
     for n in 18..35 {
-        for m in 0..70 {
+        for m in 18..70 {
             let new_terrain = world.add_terrain(n*32,m*32);
             let x: u8 = random();
             if x > 150{
@@ -89,14 +108,14 @@ fn main() {
     attacks_tests.push(entities::EntityAttack::new(3));
 
 
-    let ghost = world.add_entity(700.0,50.0);
+    let ghost = world.add_entity(700.0,800.0);
     world.add_entity_tags(ghost, archetype.clone());
     world.add_entity_tag(ghost, EntityTags::Attacks(entities::EntityAttackPattern::new(attacks_tests.clone(), vec![0.1])));
     world.add_entity_tag(ghost, EntityTags::RespectsCollision);
     world.add_entity_tag(ghost, EntityTags::HasCollision);
     world.set_sprite(ghost,ghost_sprite);
 
-    let ghost = world.add_entity(900.0,50.0);
+    let ghost = world.add_entity(900.0,900.0);
     world.add_entity_tags(ghost, archetype.clone());
     world.add_entity_tag(ghost, EntityTags::Attacks(entities::EntityAttackPattern::new(attacks_tests.clone(), vec![0.1])));
     world.add_entity_tag(ghost, EntityTags::RespectsCollision);

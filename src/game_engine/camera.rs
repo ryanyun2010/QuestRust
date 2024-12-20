@@ -21,8 +21,8 @@ impl Camera{
         Self{
             viewpoint_width: viewpoint_width,
             viewpoint_height: viewpoint_height,
-            camera_x: 0.0,
-            camera_y: 0.0,
+            camera_x: 20.0,
+            camera_y: 84.0,
             ui_elements: Vec::new(),
             ui_element_names: HashMap::new(),
             ui_element_id: 0,
@@ -59,6 +59,8 @@ impl Camera{
 
         
         let magnitude = (direction[0].powi(2) + direction[1].powi(2)).sqrt();
+
+        
         if magnitude < 6.0{
             return;
         }
