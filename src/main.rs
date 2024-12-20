@@ -16,6 +16,7 @@ use game_engine::terrain;
 use game_engine::magic;
 use game_engine::entities::EntityTags;
 use game_engine::ui::UIElement;
+use game_engine::player::Player;
 
 fn main() {
     let mut world = world::World::new(); // 36 x 22.5 blocks

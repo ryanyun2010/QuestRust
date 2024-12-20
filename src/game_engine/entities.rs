@@ -1,7 +1,8 @@
 use crate::loot::Loot;
 use crate::game_engine::item::Item;
 use std::{cell::RefCell, collections::HashMap};
-use super::world::{Chunk, Player, World};
+use super::world::{Chunk, World};
+use super::player::Player;
 #[derive(Copy, Clone, Debug)]
 pub struct Entity{
     pub element_id: usize,
