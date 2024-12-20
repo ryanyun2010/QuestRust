@@ -49,8 +49,15 @@ impl Camera{
     }
     pub fn update_camera_position(&mut self, world: &World){
         let player = world.player.borrow().clone();
+        let mut direction = [player.x - (self.viewpoint_width / 2) as f32 - self.camera_x, player.y - (self.viewpoint_height / 2) as f32 - self.camera_y];
+        if self.camera_x < 4.0 && direction[0] < 0.0{
+            direction[0] = 0.0;
+        }
+        if self.camera_y < 4.0 && direction[1] < 0.0{
+            direction[1] = 0.0;
+        }
 
-        let direction = [player.x - (self.viewpoint_width / 2) as f32 - self.camera_x, player.y - (self.viewpoint_height / 2) as f32 - self.camera_y];
+        
         let magnitude = (direction[0].powi(2) + direction[1].powi(2)).sqrt();
         if magnitude < 6.0{
             return;
