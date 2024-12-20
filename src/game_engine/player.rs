@@ -1,6 +1,6 @@
-use super::world::Sprite;
 use crate::vertex::Vertex;
-use crate::world::RenderData;
+use crate::rendering_engine::abstractions::Sprite;
+use crate::rendering_engine::abstractions::RenderData;
 
 #[derive(Copy, Clone, Debug)]
 pub struct Player {

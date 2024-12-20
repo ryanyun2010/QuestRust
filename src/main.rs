@@ -6,6 +6,7 @@ use rendering_engine::window;
 use rendering_engine::state;
 use rendering_engine::vertex;
 use rendering_engine::texture;
+use rendering_engine::abstractions;
 pub mod game_engine;
 use game_engine::world;
 use game_engine::camera;

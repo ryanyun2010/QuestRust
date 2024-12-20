@@ -1,4 +1,4 @@
-use crate::{game_engine::world::RenderData, rendering_engine::vertex::Vertex};
+use crate::{rendering_engine::abstractions::RenderData, rendering_engine::vertex::Vertex};
 #[derive(Clone, Copy, Debug)]
 pub struct UIElement{
     pub x: f32,
