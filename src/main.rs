@@ -1,6 +1,5 @@
 #![allow(warnings)]
 use core::arch;
-
 use rand::prelude::*;
 pub mod rendering_engine;
 use rendering_engine::window;
@@ -8,7 +7,6 @@ use rendering_engine::state;
 use rendering_engine::vertex;
 use rendering_engine::texture;
 pub mod game_engine;
-// use game_engine::*;
 use game_engine::world;
 use game_engine::camera;
 use game_engine::loot;
@@ -53,6 +51,7 @@ fn main() {
     let dirt2_sprite = world.add_sprite(4);
     let wall_sprite = world.add_sprite(7);
     let ghost_sprite = world.add_sprite(8);
+    let d = world.add_sprite(12);
     for n in 0..17 {
         for m in 0..70 {
             let new_terrain = world.add_terrain(n*32,m*32);
@@ -102,7 +101,7 @@ fn main() {
     world.add_entity_tag(ghost, EntityTags::Attacks(entities::EntityAttackPattern::new(attacks_tests.clone(), vec![0.1])));
     world.add_entity_tag(ghost, EntityTags::RespectsCollision);
     world.add_entity_tag(ghost, EntityTags::HasCollision);
-    world.set_sprite(ghost,ghost_sprite);
+    world.set_sprite(ghost,d);
     
     println!("{:?}",world.chunks);
     pollster::block_on(window::run(&mut world, &mut camera));
