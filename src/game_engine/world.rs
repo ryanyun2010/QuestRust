@@ -406,7 +406,7 @@ impl Player {
     fn new() -> Self {
         Self {
             x: 596.0,
-            y: 660.0,
+            y: 400.0,
             health: 100,
             max_health: 100,
             texture_index: 3,

@@ -22,7 +22,7 @@ impl Camera{
             viewpoint_width: viewpoint_width,
             viewpoint_height: viewpoint_height,
             camera_x: 20.0,
-            camera_y: 84.0,
+            camera_y: 40.0,
             ui_elements: Vec::new(),
             ui_element_names: HashMap::new(),
             ui_element_id: 0,
