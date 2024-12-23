@@ -1,8 +1,9 @@
 use crate::loot::Loot;
 use crate::game_engine::item::Item;
 use std::{cell::RefCell, collections::HashMap};
-use super::world::{Chunk, World};
+use super::world::{Chunk, EntityDirectionOptions, World};
 use super::player::Player;
+use super::pathfinding;
 #[derive(Copy, Clone, Debug)]
 pub struct Entity{
     pub element_id: usize,
@@ -34,7 +35,6 @@ impl Entity{
 impl World {
     pub fn move_entity(&self, entity: &mut Entity, entity_id: &usize, movement: [f32; 2], chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>, entityref: HashMap<usize, Entity> , respects_collision: bool, has_collision: bool){ 
         if respects_collision && self.check_collision(false, Some(*entity_id), (entity.x + movement[0]).floor() as usize, (entity.y + movement[1]).floor() as usize, 32,32, true,Some(entityref)){
-            //Maybe change this to a direction enum and have directional collisions?
             return;
         }
         let prev_chunk = self.get_chunk_from_xy(entity.x as usize, entity.y as usize).unwrap();
@@ -69,6 +69,8 @@ impl World {
         }
 
         if new_chunk != prev_chunk {
+            println!("Moving entity from chunk: {} to chunk: {}", prev_chunk, new_chunk);
+            println!("prev chunk: {:?}, new chunk: {:?}", chunkref[prev_chunk].entities_ids, chunkref[new_chunk].entities_ids);
             chunkref[prev_chunk].entities_ids.retain(|x| *x != *entity_id);
             chunkref[new_chunk].entities_ids.push(*entity_id);
             self.entity_lookup.borrow_mut().insert(new_chunk, *entity_id);
@@ -165,16 +167,46 @@ impl World {
             let direction: [f32; 2] = [player_x - entity.x, player_y - entity.y];
             if (direction[0].abs() + direction[1].abs()) > 0.0 {
                 let magnitude: f32 = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
-                let movement: [f32; 2] = [direction[0] / magnitude * movement_speed, direction[1] / magnitude * movement_speed];
-
-                self.move_entity(entity, entity_id,  movement, chunkref, entity_hash,  respects_collision, has_collision); 
-
+                if magnitude > 64.0{
+                    let direction: EntityDirectionOptions = pathfinding::pathfind(*entity_id, self, entity, entity_hash.clone());
+                    match direction {
+                        EntityDirectionOptions::Down => {
+                            self.move_entity(entity, entity_id, [0.0, movement_speed], chunkref, entity_hash, respects_collision, has_collision);
+                        },
+                        EntityDirectionOptions::Up => {
+                            self.move_entity(entity, entity_id, [0.0, -movement_speed], chunkref, entity_hash, respects_collision, has_collision);
+                        },
+                        EntityDirectionOptions::Left => {
+                            self.move_entity(entity, entity_id, [-movement_speed, 0.0], chunkref, entity_hash, respects_collision, has_collision);
+                        },
+                        EntityDirectionOptions::Right => {
+                            self.move_entity(entity, entity_id, [movement_speed, 0.0], chunkref, entity_hash, respects_collision, has_collision);
+                        },
+                        EntityDirectionOptions::None => {
+                            ()
+                        },
+                    }
+                }else {
+                    let movement = [direction[0] / magnitude * movement_speed, direction[1] / magnitude * movement_speed];
+                    self.move_entity(entity, entity_id,  movement, chunkref, entity_hash,  respects_collision, has_collision);
+                }
             }
+
+
+            
+                
+            //     let movement: [f32; 2] = [direction[0] / magnitude * movement_speed, direction[1] / magnitude * movement_speed];
+
+            //     self.move_entity(entity, entity_id,  movement, chunkref, entity_hash,  respects_collision, has_collision); 
+
+            // }
+
+            
         }
     }
     pub fn add_entity(&mut self, x: f32, y: f32) -> usize{
         let new_entity: Entity = Entity::new(self.element_id,x,y);
-        let chunk_id_potentially: Option<usize> = self.get_chunk_from_xy(World::coord_to_chunk_coord(new_entity.x.floor() as usize), World::coord_to_chunk_coord(new_entity.y.floor() as usize));
+        let chunk_id_potentially: Option<usize> = self.get_chunk_from_xy((new_entity.x.floor() as usize), (new_entity.y.floor() as usize));
         let chunk_id: usize;
         if chunk_id_potentially.is_none() {
             chunk_id = self.new_chunk(World::coord_to_chunk_coord(new_entity.x.floor() as usize), World::coord_to_chunk_coord(new_entity.y.floor() as usize), None);

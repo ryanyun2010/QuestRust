@@ -13,6 +13,14 @@ use super::player::Player;
 use super::entities::EntityAttackPattern;
 use super::terrain::{self, Terrain, TerrainTags};
 
+
+pub enum EntityDirectionOptions{
+    Up,
+    Down,
+    Left,
+    Right,
+    None
+}
 #[derive(Debug, Clone)]
 pub struct Chunk{  // 32x32 blocks of 32x32 = chunks are 1024x1024 pixels but 1024 * RETINA SCALE accounting for retina, so a chunk with x =0, y =0, is pixels 0-1023, 0-1023
     pub chunk_id: usize,
@@ -152,10 +160,10 @@ impl World{
     }
     pub fn get_terrain_tiles(x: usize, y: usize, w: usize, h: usize) -> Vec<[usize; 2]>{
         let mut tiles: Vec<[usize; 2]> = Vec::new();
-        let left_x = (x as f32 / 64.0).floor() as usize;
-        let right_x = ((x as f32 + w as f32) / 64.0).floor() as usize;
-        let top_y = (y as f32 / 64.0).floor() as usize;
-        let bot_y = ((y as f32 + h as f32)/ 64.0).floor() as usize;
+        let left_x = (x as f32 / 32.0).floor() as usize;
+        let right_x = ((x as f32 + w as f32) / 32.0).floor() as usize;
+        let top_y = (y as f32 / 32.0).floor() as usize;
+        let bot_y = ((y as f32 + h as f32)/ 32.0).floor() as usize;
         for x in left_x..(right_x + 1){
             for y in top_y..(bot_y + 1){
                 tiles.push([x,y]);
@@ -215,7 +223,7 @@ impl World{
     }
 
     pub fn check_collision(&self, player: bool, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, entity: bool, entity_hash: Option<HashMap<usize, Entity>>) -> bool{
-        let d = Instant::now();
+        
         if !player {
             let p = self.player.borrow();
             if p.x - 1.0 < (x + w) as f32 && p.x + 33.0 > x as f32 && p.y - 1.0 < (y + h) as f32 && p.y + 33.0 > y as f32{
@@ -261,6 +269,9 @@ impl World{
         }
         false
     }
+
+   
+    
 
     pub fn attempt_move_player(&self, player: &mut Player, movement: [f32; 2]){
         

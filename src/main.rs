@@ -22,6 +22,7 @@ use game_engine::ui::UIElement;
 use game_engine::player::Player;
 use game_engine::json_parsing;
 use game_engine::starting_level_generator::generate_world_from_json_parsed_data;
+use game_engine::pathfinding;
 use wgpu::naga::back::Level;
 use std::env;
 
