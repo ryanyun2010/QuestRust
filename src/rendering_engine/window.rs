@@ -32,7 +32,6 @@ pub async fn run(world: &mut World, camera: &mut Camera) {
                 },
                 WindowEvent::Focused(bool) => {
                     focused = bool;
-
                     if focused {
                         state.window().request_redraw();
                     }

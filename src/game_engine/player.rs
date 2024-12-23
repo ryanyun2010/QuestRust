@@ -7,7 +7,7 @@ pub struct Player {
     pub x: f32,
     pub y: f32,
     pub texture_index: i32,
-    pub health: i32,
+    pub health: f32,
     pub max_health: i32,
     pub movement_speed: f32,
     pub hunger: usize,
@@ -20,7 +20,7 @@ impl Player {
         Self {
             x: 596.0,
             y: 400.0,
-            health: 100,
+            health: 100.0,
             max_health: 100,
             texture_index: 3,
             movement_speed: 2.8284,

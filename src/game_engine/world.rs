@@ -8,6 +8,7 @@ use crate::entities::EntityTags;
 use winit::keyboard::Key;
 use std::cell::RefCell;
 use crate::entities::Entity;
+use super::json_parsing::JSON_parser;
 use super::player::Player;
 use super::entities::EntityAttackPattern;
 use super::terrain::{self, Terrain, TerrainTags};
@@ -290,6 +291,13 @@ impl World{
         self.sprites.len() - 1
     }
 
+    pub fn create_entity_from_json_archetype(&mut self, x: f32, y: f32, archetype: &str, parser: &JSON_parser) -> usize{
+        let archetype = parser.get_archetype(archetype).expect(&format!("Archetype {} not found", archetype));
+        let entity = self.add_entity(x, y);
+        self.add_entity_tags(entity, archetype.clone());
+        entity
+    }
+
     pub fn set_sprite(&mut self, element_id: usize, sprite_id: usize){
         self.sprite_lookup.insert(element_id, sprite_id);
     }
@@ -297,6 +305,7 @@ impl World{
     pub fn get_sprite(&self, element_id: usize) -> Option<usize>{
         self.sprite_lookup.get(&element_id).copied()
     }
+
     pub fn process_input(&mut self, keys: HashMap<String,bool>){
         let mut direction: [f32; 2] = [0.0,0.0];
         let mut player: std::cell::RefMut<'_, Player> = self.player.borrow_mut();
@@ -346,8 +355,6 @@ impl World{
         d.extend(tags);
         self.terrain_tags_lookup.insert(element_id, d);
     }
-
-
     
 }
 

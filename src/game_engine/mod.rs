@@ -8,3 +8,4 @@ pub mod stat;
 pub mod ui;
 pub mod magic;
 pub mod player;
+pub mod json_parsing;

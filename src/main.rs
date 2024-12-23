@@ -18,6 +18,7 @@ use game_engine::magic;
 use game_engine::entities::EntityTags;
 use game_engine::ui::UIElement;
 use game_engine::player::Player;
+use game_engine::json_parsing;
 
 fn main() {
     let mut world = world::World::new(); // 36 x 22.5 blocks
@@ -96,33 +97,15 @@ fn main() {
         }
     }
 
-
+    let mut parser = json_parsing::JSON_parser::new();
+    parser.parse_and_convert_game_data("src/game_data/entity_archetypes.json", "src/game_data/entity_attack_patterns.json", "src/game_data/entity_attacks.json");
     
-    let mut archetype: Vec<EntityTags> = Vec::new();
-    archetype.push(EntityTags::Aggressive);
-    archetype.push(EntityTags::MovementSpeed(2.0));
-    archetype.push(EntityTags::MonsterType(entities::MonsterType::Undead));
-    archetype.push(EntityTags::FollowsPlayer);
-    archetype.push(EntityTags::Range(46)); // MINIMUM RANGE FOR IT TO ACTUALLY WORK
-    archetype.push(EntityTags::AggroRange(1000));
-    archetype.push(EntityTags::AttackType(entities::AttackType::Melee));
-    let mut attacks_tests = Vec::new();
-    attacks_tests.push(entities::EntityAttack::new(3));
+    let ghost = world.create_entity_from_json_archetype(900.0, 600.0, "ghost", &parser);
+    world.set_sprite(ghost, ghost_sprite);
+
+    let ghost2 = world.create_entity_from_json_archetype(1200.0, 600.0, "ghost", &parser);
+    world.set_sprite(ghost2, ghost_sprite);
 
 
-    let ghost = world.add_entity(700.0,500.0);
-    world.add_entity_tags(ghost, archetype.clone());
-    world.add_entity_tag(ghost, EntityTags::Attacks(entities::EntityAttackPattern::new(attacks_tests.clone(), vec![0.1])));
-    world.add_entity_tag(ghost, EntityTags::RespectsCollision);
-    world.add_entity_tag(ghost, EntityTags::HasCollision);
-    world.set_sprite(ghost,ghost_sprite);
-
-    let ghost = world.add_entity(900.0,600.0);
-    world.add_entity_tags(ghost, archetype.clone());
-    world.add_entity_tag(ghost, EntityTags::Attacks(entities::EntityAttackPattern::new(attacks_tests.clone(), vec![0.1])));
-    world.add_entity_tag(ghost, EntityTags::RespectsCollision);
-    world.add_entity_tag(ghost, EntityTags::HasCollision);
-    world.set_sprite(ghost,d);
-    
     pollster::block_on(window::run(&mut world, &mut camera));
 }

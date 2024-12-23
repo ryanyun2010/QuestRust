@@ -202,7 +202,7 @@ impl World {
 #[derive(Copy, Clone, Debug)]
 pub enum AttackType {
     Melee,
-    Range,
+    Ranged,
     Magic
 }
 
@@ -217,7 +217,6 @@ pub enum MonsterType {
     Dragon,
     Item,
     Ambient,
-    Structure
 }
 #[derive(Clone, Debug)]
 pub enum EntityTags {
@@ -266,17 +265,17 @@ impl EntityAttackPattern{
 
 #[derive(Copy, Clone, Debug)]
 pub struct EntityAttack{
-    damage: usize
+    damage: f32
 }
 
 impl EntityAttack{
-    pub fn new(damage: usize) -> Self{
+    pub fn new(damage: f32) -> Self{
         Self{
             damage: damage
         }
     }
 
-    pub fn attack(&self) -> i32{
-        self.damage as i32
+    pub fn attack(&self) -> f32{
+        self.damage as f32
     }
 }
