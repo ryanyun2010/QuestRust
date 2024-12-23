@@ -66,6 +66,35 @@ pub struct JSON_parser {
     pub starting_level_json: starting_level_json,
 }
 
+#[macro_export]
+macro_rules! from_JSON_entity_tag_parsing_basic {
+    ($output:ident, $tag_list:expr) => {
+        from_JSON_entity_tag_parsing_under! [$output, $tag_list;
+            "aggressive", Aggressive,
+            "respectsCollision", RespectsCollision,
+            "hasCollision", HasCollision,
+            "followsPlayer", FollowsPlayer
+        ]
+    }
+}
+#[macro_export]
+macro_rules! from_JSON_entity_tag_parsing_under {
+    ($output:ident, $tag_list:expr; $($string_list:expr, $id_list:ident),*) => {
+        for current_tag in $tag_list {
+            match current_tag.as_str() {
+                $(
+                    $string_list => {
+                        $output.push(EntityTags::$id_list);
+                    }
+                )*
+                _ => {
+                    panic!("When parsing entity archetypes, tag: {} was not recognized", current_tag);
+                }
+            }
+        }
+    };
+}
+
 impl JSON_parser {
     pub fn new() -> Self {
         Self {
@@ -142,25 +171,26 @@ impl JSON_parser {
 
         for (name, entity_archetype) in &self.entity_archetypes_json {
             let mut tags = Vec::new();
-            for basic_tag in &entity_archetype.basic_tags {
-                match basic_tag.as_str() {
-                    "aggressive" => {
-                        tags.push(EntityTags::Aggressive);
-                    }
-                    "respectsCollision" => {
-                        tags.push(EntityTags::RespectsCollision);
-                    }
-                    "hasCollision" => {
-                        tags.push(EntityTags::HasCollision);
-                    }
-                    "followsPlayer" => {
-                        tags.push(EntityTags::FollowsPlayer);
-                    }
-                    _ => {
-                        panic!("When parsing entity archetypes, basic tag: {} in archetype: {} was not recognized", basic_tag, entity_archetype.name);
-                    }
-                }
-            }
+            from_JSON_entity_tag_parsing_basic!(tags, &entity_archetype.basic_tags);
+            // for basic_tag in &entity_archetype.basic_tags {
+            //     match basic_tag.as_str() {
+            //         "aggressive" => {
+            //             tags.push(EntityTags::Aggressive);
+            //         }
+            //         "respectsCollision" => {
+            //             tags.push(EntityTags::RespectsCollision);
+            //         }
+            //         "hasCollision" => {
+            //             tags.push(EntityTags::HasCollision);
+            //         }
+            //         "followsPlayer" => {
+            //             tags.push(EntityTags::FollowsPlayer);
+            //         }
+            //         _ => {
+            //             panic!("When parsing entity archetypes, basic tag: {} in archetype: {} was not recognized", basic_tag, entity_archetype.name);
+            //         }
+            //     }
+            // }
             match entity_archetype.monster_type.as_str() {
                 "Undead" => {
                     tags.push(EntityTags::MonsterType(crate::game_engine::entities::MonsterType::Undead));
