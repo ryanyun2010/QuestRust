@@ -61,9 +61,9 @@ fn main() {
         texture_id: parsed_data.get_texture_id("inventory"),
         visible: true
     });
+
     let (mut world, mut sprites) = generate_world_from_json_parsed_data(&parsed_data);
-    // world::World::new(Player::new(parsed_data.get_texture_id("player"))); // 36 x 22.5 blocks
-    // abstractions::SpriteIDContainer::generate_from_json_parsed_data(&parsed_data, &mut world);
+
     world.player.borrow_mut().holding_texture_sprite = Some(sprites.get_sprite("sword"));
     for n in 0..17 {
         for m in 0..70 {
@@ -105,8 +105,6 @@ fn main() {
         }
     }
 
-
-    
     println!("Time to load: {:?} ms", load_time.elapsed().as_millis());
     pollster::block_on(window::run(&mut world, &mut camera, parsed_data.sprites_to_load_json));
 }
