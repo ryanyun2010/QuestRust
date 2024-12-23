@@ -76,7 +76,6 @@ pub fn pathfind_by_block(entity_id: usize, world: &World, entity: &Entity, entit
             if path.len() < 2 {
                 return EntityDirectionOptions::None;
             }
-            println!("Pathfinding took: {:?}", start_time.elapsed().as_nanos());
             return match (path[1].0 as isize - path[0].0 as isize, path[1].1 as isize - path[0].1 as isize) {
                 (1, 0) => EntityDirectionOptions::Right,
                 (-1, 0) => EntityDirectionOptions::Left,
@@ -157,7 +156,6 @@ pub fn pathfind_high_granularity(entity_id: usize, world: &World, entity: &Entit
             if path.len() < 2 {
                 return EntityDirectionOptions::None;
             }
-            println!("Pathfinding took: {:?}", start_time.elapsed().as_nanos());
             return match (path[1].0 as isize - path[0].0 as isize, path[1].1 as isize - path[0].1 as isize) {
                 (1, 0) => EntityDirectionOptions::Right,
                 (-1, 0) => EntityDirectionOptions::Left,

@@ -20,5 +20,83 @@
             "archetype": "ghost",
             "sprite": "ghost"
         }
+    ],
+    "terrain": [
+        {
+            "x": 0,
+            "y": 0,
+            "width": 17,
+            "height": 70,
+            "terrain_descriptor":
+            {
+                "type": "basic",
+                "sprites": ["outside"],
+                "basic_tags": []
+            }
+        },
+        {
+            "x": 17,
+            "y": 0,
+            "width": 18,
+            "height": 11,
+            "terrain_descriptor":
+            {
+                "type": "basic",
+                "sprites": ["outside"],
+                "basic_tags": []
+            }
+        },
+        {
+            "x": 18,
+            "y": 11,
+            "width": 17,
+            "height": 1,
+            "terrain_descriptor":
+            {
+                "type": "basic",
+                "sprites": ["wall2"],
+                "basic_tags": ["blocksMovement"]
+            }
+        },
+        {
+            "x": 17,
+            "y": 11,
+            "width": 1,
+            "height": 1,
+            "terrain_descriptor":
+            {
+                "type": "basic",
+                "sprites": ["wall3"],
+                "basic_tags": ["blocksMovement"]
+            }
+        },
+        {
+            "x": 17,
+            "y": 12,
+            "width": 1,
+            "height": 58,
+            "terrain_descriptor":
+            {
+                "type": "basic",
+                "sprites": ["wall"],
+                "basic_tags": ["blocksMovement"]
+            }
+        },
+        {
+            "x": 18,
+            "y": 12,
+            "width": 17,
+            "height": 58,
+            "terrain_descriptor":
+            {
+                "type": "randomness",
+                "random_chances": [0.5, 0.5],
+                "sprites": ["dirt", "dirt2"],
+                "basic_tags": []
+            }
+        }
+
     ]
 }
+
+

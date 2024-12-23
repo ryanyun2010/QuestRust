@@ -4,6 +4,8 @@ use std::{cell::RefCell, collections::HashMap};
 use super::world::{Chunk, EntityDirectionOptions, World};
 use super::player::Player;
 use super::pathfinding;
+use super::json_parsing::ParsedData;
+
 #[derive(Copy, Clone, Debug)]
 pub struct Entity{
     pub element_id: usize,
@@ -13,6 +15,7 @@ pub struct Entity{
     // I should change this to components one day 🤷‍♂️
     pub cur_attack: usize,
     pub cur_attack_cooldown: f32,
+    pub cur_pathfinding_direction: EntityDirectionOptions,
     // Oh wait I need to make EntityComponents soon 💀
     // Back to Items for now.
     // pub components: Vec<EntityComponents>
@@ -26,6 +29,7 @@ impl Entity{
             x: x,
             y: y,
             aggroed_to_player: false,
+            cur_pathfinding_direction: EntityDirectionOptions::None,
             cur_attack: 0,
             cur_attack_cooldown: 0.15,
         }
@@ -77,6 +81,7 @@ impl World {
         } 
     }
     pub fn update_entities(&mut self) {
+        self.pathfinding_frame += 1;
         let player: Player = self.player.borrow().clone();
         for chunk in self.loaded_chunks.iter() {
             let mut chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>> = &mut self.chunks.borrow_mut();
@@ -160,13 +165,17 @@ impl World {
             }else{
                 entity.cur_attack_cooldown -= 1.0/60.0;
             }
-
-            
         }
         if aggroed_to_player {
-            let direction: [f32; 2] = [player_x - entity.x, player_y - entity.y];
-            if (direction[0].abs() + direction[1].abs()) > 0.0 {
-                let magnitude: f32 = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
+            self.move_entity_towards_player(entity_id, entity,chunkref, entity_hash.clone(),  player_x, player_y, respects_collision, has_collision, movement_speed);
+        }
+    }
+
+    pub fn move_entity_towards_player(&self, entity_id: &usize, entity: &mut Entity, chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>, entity_hash: HashMap<usize, Entity>, player_x: f32, player_y: f32, respects_collision: bool, has_collision: bool, movement_speed: f32){
+        let direction: [f32; 2] = [player_x - entity.x, player_y - entity.y];
+        if (direction[0].abs() + direction[1].abs()) > 0.0 {
+            let magnitude: f32 = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
+            if respects_collision {
                 if magnitude > 128.0{
                     let direction: EntityDirectionOptions = pathfinding::pathfind_by_block(*entity_id, self, entity, entity_hash.clone());
                     match direction {
@@ -187,7 +196,6 @@ impl World {
                         },
                     }
                 }else if magnitude > 32.0{
-                    println!("Pathfinding by high granularity");
                     let direction: EntityDirectionOptions = pathfinding::pathfind_high_granularity(*entity_id, self, entity, entity_hash.clone());
                     match direction {
                         EntityDirectionOptions::Down => {
@@ -210,19 +218,11 @@ impl World {
                     let movement = [direction[0] / magnitude * movement_speed, direction[1] / magnitude * movement_speed];
                     self.move_entity(entity, entity_id,  movement, chunkref, entity_hash,  respects_collision, has_collision);
                 }
+            }else{
+                let movement = [direction[0] / magnitude * movement_speed, direction[1] / magnitude * movement_speed];
+                self.move_entity(entity, entity_id,  movement, chunkref, entity_hash,  respects_collision, has_collision);
             }
-
-
-            
-                
-            //     let movement: [f32; 2] = [direction[0] / magnitude * movement_speed, direction[1] / magnitude * movement_speed];
-
-            //     self.move_entity(entity, entity_id,  movement, chunkref, entity_hash,  respects_collision, has_collision); 
-
-            // }
-
-            
-        }
+        } 
     }
     pub fn add_entity(&mut self, x: f32, y: f32) -> usize{
         let new_entity: Entity = Entity::new(self.element_id,x,y);
@@ -237,8 +237,14 @@ impl World {
         self.chunks.borrow_mut()[chunk_id].entities_ids.push(self.element_id - 1);
         self.entities.borrow_mut().insert(self.element_id - 1, new_entity);
         self.entity_lookup.borrow_mut().insert(self.element_id - 1, chunk_id);
-        // self.entity_tags_lookup.insert(self.element_id - 1, tags);
         self.element_id - 1
+    }
+    
+    pub fn create_entity_from_json_archetype(&mut self, x: f32, y: f32, archetype: &str, parser: &ParsedData) -> usize{
+        let archetype = parser.get_archetype(archetype).expect(&format!("Archetype {} not found", archetype));
+        let entity = self.add_entity(x, y);
+        self.add_entity_tags(entity, archetype.clone());
+        entity
     }
     pub fn get_entity_tags(&self, element_id: usize) -> Option<&Vec<EntityTags>>{
         self.entity_tags_lookup.get(&element_id)

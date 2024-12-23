@@ -55,9 +55,25 @@ pub struct entity_json{
     pub sprite: String,
 }
 #[derive(Debug, Deserialize, Clone)]
+pub struct terrain_json{
+    pub x: usize,
+    pub y: usize,
+    pub width: usize,
+    pub height: usize,
+    pub terrain_descriptor: terrain_descriptor_json
+}
+#[derive(Debug, Deserialize, Clone)]
+pub struct terrain_descriptor_json{
+    pub r#type: String,
+    pub random_chances: Option<Vec<f32>>,
+    pub sprites: Vec<String>,
+    pub basic_tags: Vec<String>
+}
+#[derive(Debug, Deserialize, Clone)]
 pub struct starting_level_json{
     pub player: player_json,
-    pub entities: Vec<entity_json>
+    pub entities: Vec<entity_json>,
+    pub terrain: Vec<terrain_json>
 }
 pub struct JSON_parser {
     pub entity_archetypes_json: HashMap<String, entity_archetype_json>,
@@ -112,7 +128,8 @@ impl JSON_parser {
                     max_health: 0,
                     movement_speed: 0.0
                 },
-                entities: Vec::new()
+                entities: Vec::new(),
+                terrain: Vec::new()
             }
         }
     }
@@ -293,7 +310,8 @@ impl ParsedData{
                     max_health: 0,
                     movement_speed: 0.0
                 },
-                entities: Vec::new()
+                entities: Vec::new(),
+                terrain: Vec::new()
             }
         }
     }

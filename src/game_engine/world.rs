@@ -14,6 +14,7 @@ use super::entities::EntityAttackPattern;
 use super::terrain::{self, Terrain, TerrainTags};
 
 
+#[derive(Debug, Clone, Copy)]
 pub enum EntityDirectionOptions{
     Up,
     Down,
@@ -49,6 +50,9 @@ pub struct World{
     pub terrain_tags_lookup: HashMap<usize,Vec<TerrainTags>>, // corresponds element_ids of entities to the entity's tags
     pub loaded_chunks: Vec<usize>, // chunk ids that are currently loaded
     pub collision_cache: RefCell<HashMap<[usize; 2], Vec<usize>>>, // collision x,y, to element id, collision tiles are 64x64
+    pub pathfinding_frames: HashMap<usize, usize>, // entity id to frame of pathfinding
+    pub next_pathfinding_frame_for_entity: usize,
+    pub pathfinding_frame: usize,
 }
 // OKAY RYAN WE NEED MAJOR REFORMS.
 // OVER TIME, LET'S MOVE THESE INTO MULTIPLE IMPL STATEMENTS IN THEIR RESPECTIVE MODULES.
@@ -68,6 +72,9 @@ impl World{
         let mut entities: RefCell<HashMap<usize, Entity>> = RefCell::new(HashMap::new());
         let mut loaded_chunks: Vec<usize> = Vec::new(); 
         let mut collision_cache: RefCell<HashMap<[usize; 2], Vec<usize>>> = RefCell::new(HashMap::new());
+        let mut pathfinding_frames: HashMap<usize, usize> = HashMap::new();
+        let mut next_pathfinding_frame_for_entity: usize = 0;
+        let mut pathfinding_frame: usize = 0;
         Self{
             chunks,
             player,
@@ -82,7 +89,10 @@ impl World{
             terrain,
             entities,
             loaded_chunks,
-            collision_cache
+            collision_cache,
+            pathfinding_frames,
+            next_pathfinding_frame_for_entity,
+            pathfinding_frame,
         }
     }
     
@@ -302,13 +312,6 @@ impl World{
     pub fn add_sprite(&mut self, texture_index: i32) -> usize{
         self.sprites.push(Sprite{ texture_index: texture_index });
         self.sprites.len() - 1
-    }
-
-    pub fn create_entity_from_json_archetype(&mut self, x: f32, y: f32, archetype: &str, parser: &ParsedData) -> usize{
-        let archetype = parser.get_archetype(archetype).expect(&format!("Archetype {} not found", archetype));
-        let entity = self.add_entity(x, y);
-        self.add_entity_tags(entity, archetype.clone());
-        entity
     }
 
     pub fn set_sprite(&mut self, element_id: usize, sprite_id: usize){
