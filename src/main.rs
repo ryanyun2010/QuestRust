@@ -1,5 +1,7 @@
 #![allow(warnings)]
 use core::arch;
+use std::time::Instant;
+use image::load;
 use rand::prelude::*;
 pub mod rendering_engine;
 use rendering_engine::window;
@@ -22,7 +24,9 @@ use game_engine::json_parsing;
 
 fn main() {
     let mut parser = json_parsing::JSON_parser::new();
+    let load_time = Instant::now();
     let parsed_data = parser.parse_and_convert_game_data("src/game_data/entity_archetypes.json", "src/game_data/entity_attack_patterns.json", "src/game_data/entity_attacks.json", "src/game_data/sprites.json");
+    
     
     let mut world = world::World::new(Player::new(parsed_data.get_texture_id("player"))); // 36 x 22.5 blocks
     
@@ -103,6 +107,6 @@ fn main() {
     let ghost2 = world.create_entity_from_json_archetype(1200.0, 600.0, "ghost", &parsed_data);
     world.set_sprite(ghost2, sprites.get_sprite("ghost"));
 
-    
+    println!("Time to load: {:?} ms", load_time.elapsed().as_millis());
     pollster::block_on(window::run(&mut world, &mut camera, parsed_data.sprites_to_load_json));
 }
