@@ -167,8 +167,28 @@ impl World {
             let direction: [f32; 2] = [player_x - entity.x, player_y - entity.y];
             if (direction[0].abs() + direction[1].abs()) > 0.0 {
                 let magnitude: f32 = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
-                if magnitude > 64.0{
-                    let direction: EntityDirectionOptions = pathfinding::pathfind(*entity_id, self, entity, entity_hash.clone());
+                if magnitude > 128.0{
+                    let direction: EntityDirectionOptions = pathfinding::pathfind_by_block(*entity_id, self, entity, entity_hash.clone());
+                    match direction {
+                        EntityDirectionOptions::Down => {
+                            self.move_entity(entity, entity_id, [0.0, movement_speed], chunkref, entity_hash, respects_collision, has_collision);
+                        },
+                        EntityDirectionOptions::Up => {
+                            self.move_entity(entity, entity_id, [0.0, -movement_speed], chunkref, entity_hash, respects_collision, has_collision);
+                        },
+                        EntityDirectionOptions::Left => {
+                            self.move_entity(entity, entity_id, [-movement_speed, 0.0], chunkref, entity_hash, respects_collision, has_collision);
+                        },
+                        EntityDirectionOptions::Right => {
+                            self.move_entity(entity, entity_id, [movement_speed, 0.0], chunkref, entity_hash, respects_collision, has_collision);
+                        },
+                        EntityDirectionOptions::None => {
+                            ()
+                        },
+                    }
+                }else if magnitude > 32.0{
+                    println!("Pathfinding by high granularity");
+                    let direction: EntityDirectionOptions = pathfinding::pathfind_high_granularity(*entity_id, self, entity, entity_hash.clone());
                     match direction {
                         EntityDirectionOptions::Down => {
                             self.move_entity(entity, entity_id, [0.0, movement_speed], chunkref, entity_hash, respects_collision, has_collision);
