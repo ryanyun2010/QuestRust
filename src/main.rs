@@ -65,45 +65,6 @@ fn main() {
 
     world.player.borrow_mut().holding_texture_sprite = Some(sprites.get_sprite("sword"));
 
-    // for n in 0..17 {
-    //     for m in 0..70 {
-    //         let new_terrain = world.add_terrain(n*32,m*32);
-    //         world.set_sprite(new_terrain,sprites.get_sprite("outside"));
-    //     }
-    // }
-
-    // for n in 17..35 {
-    //     for m in 0..11 {
-    //         let new_terrain = world.add_terrain(n*32,m*32);
-    //         world.set_sprite(new_terrain,sprites.get_sprite("outside"));
-    //     }
-    // }
-
-    // for n in 18..35 {
-    //     let new_terrain = world.add_terrain(n*32,352);
-    //     world.set_sprite(new_terrain,sprites.get_sprite("wall2"));
-    //     world.add_terrain_tag(new_terrain, terrain::TerrainTags::BlocksMovement);
-    // }
-        // let new_terrain = world.add_terrain(544,352);
-        // world.set_sprite(new_terrain,sprites.get_sprite("wall3"));
-
-
-    // for m in 12..70 {
-    //     let new_terrain = world.add_terrain(544,m*32);
-    //     world.set_sprite(new_terrain,sprites.get_sprite("wall"));
-    //     world.add_terrain_tag(new_terrain, terrain::TerrainTags::BlocksMovement);
-    // }
-    // for n in 18..35 {
-    //     for m in 12..70 {
-    //         let new_terrain = world.add_terrain(n*32,m*32);
-    //         let x: u8 = random();
-    //         if x > 150{
-    //         world.set_sprite(new_terrain,sprites.get_sprite("dirt"));
-    //         } else{
-    //             world.set_sprite(new_terrain,sprites.get_sprite("dirt2")); 
-    //         }
-    //     }
-    // }
 
     println!("Time to load: {:?} ms", load_time.elapsed().as_millis());
     pollster::block_on(window::run(&mut world, &mut camera, parsed_data.sprites_to_load_json));
