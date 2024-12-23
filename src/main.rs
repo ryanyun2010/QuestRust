@@ -34,8 +34,6 @@ fn main() {
     let load_time = Instant::now();
     let parsed_data = parser.parse_and_convert_game_data("src/game_data/entity_archetypes.json", "src/game_data/entity_attack_patterns.json", "src/game_data/entity_attacks.json", "src/game_data/sprites.json", "src/game_data/starting_level.json");
     
-    
-    
     let mut camera = camera::Camera::new(1152,720);
     camera.add_ui_element(String::from("health_bar_background"), UIElement {
         x: 32.0,

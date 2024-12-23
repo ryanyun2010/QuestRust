@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use std::fmt::format;
 use std::hash::Hash;
 use std::io::BufReader;
 use std::fs::File;
@@ -164,7 +165,7 @@ impl JSON_parser {
         for (name, entity_attack_pattern) in &self.entity_attack_patterns_json {
             let mut attacks = Vec::new();
             for attack in &entity_attack_pattern.attacks {
-                attacks.push(data.entity_attacks.get(attack).unwrap().clone());
+                attacks.push(data.entity_attacks.get(attack).expect(&format!("Couldn't find attack: {}, when parsing attack pattern: {}", attack, entity_attack_pattern.name)).clone());
             }
             data.entity_attack_patterns.insert(name.clone(), EntityAttackPattern::new(attacks, entity_attack_pattern.cooldowns.clone()));
         }
