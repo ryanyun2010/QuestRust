@@ -12,22 +12,18 @@ pub struct Player {
     pub health: f32,
     pub max_health: i32,
     pub movement_speed: f32,
-    pub hunger: usize,
-    pub max_hunger: usize,
     pub holding_texture_sprite: Option<usize>
 }
 
 impl Player {
-    pub fn new(texture_index: i32) -> Self {
+    pub fn new(x: f32, y: f32, health: f32, max_health: i32, movement_speed: f32, texture_index: i32) -> Self {
         Self {
-            x: 596.0,
-            y: 400.0,
-            health: 100.0,
-            max_health: 100,
+            x: x,
+            y: y,
+            health: health,
+            max_health: max_health,
             texture_index: texture_index,
-            movement_speed: 2.8284,
-            hunger: 100,
-            max_hunger: 100,
+            movement_speed: movement_speed,
             holding_texture_sprite: None
         }
     }

@@ -21,14 +21,20 @@ use game_engine::entities::EntityTags;
 use game_engine::ui::UIElement;
 use game_engine::player::Player;
 use game_engine::json_parsing;
+use game_engine::starting_level_generator::generate_world_from_json_parsed_data;
+use wgpu::naga::back::Level;
+use std::env;
 
 fn main() {
+    let args: Vec<String> = env::args().collect();
+    if args.contains(&String::from("level_editor")){
+        // Do level editor stuff
+    }
     let mut parser = json_parsing::JSON_parser::new();
     let load_time = Instant::now();
-    let parsed_data = parser.parse_and_convert_game_data("src/game_data/entity_archetypes.json", "src/game_data/entity_attack_patterns.json", "src/game_data/entity_attacks.json", "src/game_data/sprites.json");
+    let parsed_data = parser.parse_and_convert_game_data("src/game_data/entity_archetypes.json", "src/game_data/entity_attack_patterns.json", "src/game_data/entity_attacks.json", "src/game_data/sprites.json", "src/game_data/starting_level.json");
     
     
-    let mut world = world::World::new(Player::new(parsed_data.get_texture_id("player"))); // 36 x 22.5 blocks
     
     let mut camera = camera::Camera::new(1152,720);
     camera.add_ui_element(String::from("health_bar_background"), UIElement {
@@ -55,8 +61,9 @@ fn main() {
         texture_id: parsed_data.get_texture_id("inventory"),
         visible: true
     });
-
-    let sprites = abstractions::SpriteIDContainer::generate_from_json_parsed_data(&parsed_data, &mut world);
+    let (mut world, mut sprites) = generate_world_from_json_parsed_data(&parsed_data);
+    // world::World::new(Player::new(parsed_data.get_texture_id("player"))); // 36 x 22.5 blocks
+    // abstractions::SpriteIDContainer::generate_from_json_parsed_data(&parsed_data, &mut world);
     world.player.borrow_mut().holding_texture_sprite = Some(sprites.get_sprite("sword"));
     for n in 0..17 {
         for m in 0..70 {
@@ -98,15 +105,8 @@ fn main() {
         }
     }
 
-    
-    
-    
-    let ghost = world.create_entity_from_json_archetype(900.0, 600.0, "ghost", &parsed_data);
-    world.set_sprite(ghost, sprites.get_sprite("ghost"));
 
-    let ghost2 = world.create_entity_from_json_archetype(1200.0, 600.0, "ghost", &parsed_data);
-    world.set_sprite(ghost2, sprites.get_sprite("ghost"));
-
+    
     println!("Time to load: {:?} ms", load_time.elapsed().as_millis());
     pollster::block_on(window::run(&mut world, &mut camera, parsed_data.sprites_to_load_json));
 }

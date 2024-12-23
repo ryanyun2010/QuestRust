@@ -7,7 +7,6 @@ use crate::state::State;
 use crate::world::World;
 use crate::camera::Camera;
 use winit::event::WindowEvent::KeyboardInput;
-use crate::game_engine::json_parsing::sprite_json;
 
 pub async fn run(world: &mut World, camera: &mut Camera, sprites_json_to_load: Vec<String>){
     let event_loop = EventLoop::new().unwrap();

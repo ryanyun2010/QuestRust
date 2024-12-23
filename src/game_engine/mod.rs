@@ -9,3 +9,4 @@ pub mod ui;
 pub mod magic;
 pub mod player;
 pub mod json_parsing;
+pub mod starting_level_generator;

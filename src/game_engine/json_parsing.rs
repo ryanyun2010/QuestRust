@@ -6,7 +6,9 @@ use std::collections::HashMap;
 use crate::game_engine::entities::EntityTags;
 use crate::game_engine::entities::EntityAttack;
 use crate::rendering_engine::abstractions::Sprite;
+use super::entities::Entity;
 use super::entities::EntityAttackPattern;
+use super::player::Player;
 
 #[derive(Debug, Deserialize)]
 struct entity_archetype_json {
@@ -31,16 +33,37 @@ struct entity_attack_json{
     damage: f32,
 }
 #[derive(Debug, Deserialize)]
-pub struct sprite_json {
+struct sprite_json {
     name: String,
     path: String,
 }
-
+#[derive(Debug, Deserialize, Clone)]
+pub struct player_json{
+    pub x: f32,
+    pub y: f32,
+    pub sprite: String,
+    pub health: f32,
+    pub max_health: i32,
+    pub movement_speed: f32
+}
+#[derive(Debug, Deserialize, Clone)]
+pub struct entity_json{
+    pub x: f32,
+    pub y: f32,
+    pub archetype: String,
+    pub sprite: String,
+}
+#[derive(Debug, Deserialize, Clone)]
+pub struct starting_level_json{
+    pub player: player_json,
+    pub entities: Vec<entity_json>
+}
 pub struct JSON_parser {
     pub entity_archetypes_json: HashMap<String, entity_archetype_json>,
     pub entity_attack_patterns_json: HashMap<String, entity_attack_pattern_json>,
     pub entity_attacks_json: HashMap<String, entity_attack_json>,
     pub sprites_json: HashMap<String, sprite_json>,
+    pub starting_level_json: starting_level_json,
 }
 
 impl JSON_parser {
@@ -50,6 +73,17 @@ impl JSON_parser {
             entity_attack_patterns_json: HashMap::new(),
             entity_attacks_json: HashMap::new(),
             sprites_json: HashMap::new(),
+            starting_level_json: starting_level_json {
+                player: player_json {
+                    x: 0.0,
+                    y: 0.0,
+                    sprite: String::from(""),
+                    health: 0.0,
+                    max_health: 0,
+                    movement_speed: 0.0
+                },
+                entities: Vec::new()
+            }
         }
     }
     pub fn parse_entity_archetypes(&mut self, path: &str) {
@@ -83,6 +117,12 @@ impl JSON_parser {
         for sprite in data {
             self.sprites_json.insert(sprite.name.clone(), sprite);
         }
+    }
+    pub fn parse_starting_level(&mut self, path: &str) {
+        let file = File::open(path).expect("Could not open file");
+        let reader = BufReader::new(file);
+        let data: starting_level_json = serde_json::from_reader(reader).expect("JSON was not well-formatted");
+        self.starting_level_json = data;
     }
     
     pub fn convert(&mut self) -> ParsedData {
@@ -179,14 +219,16 @@ impl JSON_parser {
             i += 1;
         }
         data.sprites_to_load_json = sprites_to_load;
+        data.starting_level_descriptor = self.starting_level_json.clone();
 
         data
     }
-    pub fn parse_and_convert_game_data(&mut self, entity_archetypes_path: &str, entity_attack_patterns_path: &str, entity_attacks_path: &str, sprites_path: &str) -> ParsedData{
+    pub fn parse_and_convert_game_data(&mut self, entity_archetypes_path: &str, entity_attack_patterns_path: &str, entity_attacks_path: &str, sprites_path: &str, starting_level_path: &str) -> ParsedData{
         self.parse_entity_archetypes(entity_archetypes_path);
         self.parse_entity_attack_patterns(entity_attack_patterns_path);
         self.parse_entity_attacks(entity_attacks_path);
         self.parse_sprites(sprites_path);
+        self.parse_starting_level(starting_level_path);
         self.convert()
     }
     
@@ -199,7 +241,8 @@ pub struct ParsedData{
     pub entity_attack_patterns: HashMap<String, EntityAttackPattern>,
     pub entity_attacks: HashMap<String, EntityAttack>,
     pub texture_ids: HashMap<String, i32>,
-    pub sprites_to_load_json: Vec<String>
+    pub sprites_to_load_json: Vec<String>,
+    pub starting_level_descriptor: starting_level_json
 }
 
 impl ParsedData{
@@ -209,7 +252,18 @@ impl ParsedData{
             entity_attack_patterns: HashMap::new(),
             entity_attacks: HashMap::new(),
             texture_ids: HashMap::new(),
-            sprites_to_load_json: Vec::new()
+            sprites_to_load_json: Vec::new(),
+            starting_level_descriptor: starting_level_json {
+                player: player_json {
+                    x: 0.0,
+                    y: 0.0,
+                    sprite: String::from(""),
+                    health: 0.0,
+                    max_health: 0,
+                    movement_speed: 0.0
+                },
+                entities: Vec::new()
+            }
         }
     }
     pub fn get_archetype(&self, name: &str) -> Option<&Vec<EntityTags>> {

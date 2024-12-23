@@ -5,7 +5,6 @@ use winit::window::Window;
 use winit::event::*;
 use std::collections::HashMap;
 use wgpu::util::DeviceExt;
-use crate::game_engine::json_parsing::sprite_json;
 use crate::rendering_engine::texture;
 use crate::vertex::Vertex;
 use crate::texture::create_texture_bind_group;

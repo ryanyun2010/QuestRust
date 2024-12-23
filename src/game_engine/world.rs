@@ -215,6 +215,7 @@ impl World{
     }
 
     pub fn check_collision(&self, player: bool, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, entity: bool, entity_hash: Option<HashMap<usize, Entity>>) -> bool{
+        let d = Instant::now();
         if !player {
             let p = self.player.borrow();
             if p.x - 1.0 < (x + w) as f32 && p.x + 33.0 > x as f32 && p.y - 1.0 < (y + h) as f32 && p.y + 33.0 > y as f32{
@@ -262,6 +263,7 @@ impl World{
     }
 
     pub fn attempt_move_player(&self, player: &mut Player, movement: [f32; 2]){
+        
         if self.check_collision(true, None,(player.x + movement[0]).floor() as usize, (player.y + movement[1]).floor() as usize, 32, 32, true, Some(self.entities.borrow().clone())){
             return;
         }
