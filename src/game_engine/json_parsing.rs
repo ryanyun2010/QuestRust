@@ -41,11 +41,6 @@ pub struct JSON_parser {
     pub entity_attack_patterns_json: HashMap<String, entity_attack_pattern_json>,
     pub entity_attacks_json: HashMap<String, entity_attack_json>,
     pub sprites_json: HashMap<String, sprite_json>,
-    pub entity_archetypes: HashMap<String, Vec<EntityTags>>,
-    pub entity_attack_patterns: HashMap<String, EntityAttackPattern>,
-    pub entity_attacks: HashMap<String, EntityAttack>,
-    pub texture_ids: HashMap<String, i32>,
-    pub sprites_to_load_json: Vec<String>
 }
 
 impl JSON_parser {
@@ -55,11 +50,6 @@ impl JSON_parser {
             entity_attack_patterns_json: HashMap::new(),
             entity_attacks_json: HashMap::new(),
             sprites_json: HashMap::new(),
-            entity_archetypes: HashMap::new(),
-            entity_attack_patterns: HashMap::new(),
-            entity_attacks: HashMap::new(),
-            texture_ids: HashMap::new(),
-            sprites_to_load_json: Vec::new()
         }
     }
     pub fn parse_entity_archetypes(&mut self, path: &str) {
@@ -94,31 +84,20 @@ impl JSON_parser {
             self.sprites_json.insert(sprite.name.clone(), sprite);
         }
     }
-    pub fn create_sprites_to_load_json(&mut self) {
-        let mut sprites_to_load = Vec::new();
-        let mut i = 0;
-        for (_, sprite) in &self.sprites_json {
-            sprites_to_load.push(sprite.path.clone());
-            self.texture_ids.insert(sprite.name.clone(), i);
-            i += 1;
-        }
-        self.sprites_to_load_json = sprites_to_load;
-    }
-    pub fn get_texture_id(&self, name: &str) -> i32 {
-        self.texture_ids.get(name).expect(&format!("Texture with name: {} was not found", name)).clone()
-    }
-    pub fn convert(&mut self){
+    
+    pub fn convert(&mut self) -> ParsedData {
         // Convert the JSON data into the game's data structures
         // Convert Entity Attacks First
+        let mut data = ParsedData::new();
         for (name, entity_attack) in &self.entity_attacks_json {
-            self.entity_attacks.insert(name.clone(), EntityAttack::new(entity_attack.damage));
+            data.entity_attacks.insert(name.clone(), EntityAttack::new(entity_attack.damage));
         }
         for (name, entity_attack_pattern) in &self.entity_attack_patterns_json {
             let mut attacks = Vec::new();
             for attack in &entity_attack_pattern.attacks {
-                attacks.push(self.entity_attacks.get(attack).unwrap().clone());
+                attacks.push(data.entity_attacks.get(attack).unwrap().clone());
             }
-            self.entity_attack_patterns.insert(name.clone(), EntityAttackPattern::new(attacks, entity_attack_pattern.cooldowns.clone()));
+            data.entity_attack_patterns.insert(name.clone(), EntityAttackPattern::new(attacks, entity_attack_pattern.cooldowns.clone()));
         }
 
         for (name, entity_archetype) in &self.entity_archetypes_json {
@@ -188,17 +167,55 @@ impl JSON_parser {
                     panic!("When parsing entity archetypes, attack type: {} in archetype: {} was not recognized", entity_archetype.attack_type, entity_archetype.name);
                 }
             }
-            tags.push(EntityTags::Attacks(self.entity_attack_patterns.get(&entity_archetype.attack_pattern).expect(&format!("When parsing entity archetypes, attack pattern: {} in archetype: {} was not found", entity_archetype.attack_pattern, entity_archetype.name)).clone()));
-            self.entity_archetypes.insert(entity_archetype.name.clone(), tags);
+            tags.push(EntityTags::Attacks(data.entity_attack_patterns.get(&entity_archetype.attack_pattern).expect(&format!("When parsing entity archetypes, attack pattern: {} in archetype: {} was not found", entity_archetype.attack_pattern, entity_archetype.name)).clone()));
+            data.entity_archetypes.insert(entity_archetype.name.clone(), tags);
+            
         }
+        let mut sprites_to_load = Vec::new();
+        let mut i = 0;
+        for (_, sprite) in &self.sprites_json {
+            sprites_to_load.push(sprite.path.clone());
+            data.texture_ids.insert(sprite.name.clone(), i);
+            i += 1;
+        }
+        data.sprites_to_load_json = sprites_to_load;
+
+        data
     }
-    pub fn parse_and_convert_game_data(&mut self, entity_archetypes_path: &str, entity_attack_patterns_path: &str, entity_attacks_path: &str, sprites_path: &str) {
+    pub fn parse_and_convert_game_data(&mut self, entity_archetypes_path: &str, entity_attack_patterns_path: &str, entity_attacks_path: &str, sprites_path: &str) -> ParsedData{
         self.parse_entity_archetypes(entity_archetypes_path);
         self.parse_entity_attack_patterns(entity_attack_patterns_path);
         self.parse_entity_attacks(entity_attacks_path);
-        self.convert();
+        self.parse_sprites(sprites_path);
+        self.convert()
+    }
+    
+}
+
+
+#[derive(Debug, Clone)]
+pub struct ParsedData{
+    pub entity_archetypes: HashMap<String, Vec<EntityTags>>,
+    pub entity_attack_patterns: HashMap<String, EntityAttackPattern>,
+    pub entity_attacks: HashMap<String, EntityAttack>,
+    pub texture_ids: HashMap<String, i32>,
+    pub sprites_to_load_json: Vec<String>
+}
+
+impl ParsedData{
+    pub fn new() -> Self{
+        Self{
+            entity_archetypes: HashMap::new(),
+            entity_attack_patterns: HashMap::new(),
+            entity_attacks: HashMap::new(),
+            texture_ids: HashMap::new(),
+            sprites_to_load_json: Vec::new()
+        }
     }
     pub fn get_archetype(&self, name: &str) -> Option<&Vec<EntityTags>> {
         self.entity_archetypes.get(name)
+    }
+    pub fn get_texture_id(&self, name: &str) -> i32 {
+        self.texture_ids.get(name).expect(&format!("Texture with name: {} was not found", name)).clone()
     }
 }

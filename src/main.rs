@@ -22,11 +22,9 @@ use game_engine::json_parsing;
 
 fn main() {
     let mut parser = json_parsing::JSON_parser::new();
-    parser.parse_and_convert_game_data("src/game_data/entity_archetypes.json", "src/game_data/entity_attack_patterns.json", "src/game_data/entity_attacks.json", "src/game_data/sprites.json");
-    parser.parse_sprites("src/game_data/sprites.json");
-    parser.create_sprites_to_load_json();
+    let parsed_data = parser.parse_and_convert_game_data("src/game_data/entity_archetypes.json", "src/game_data/entity_attack_patterns.json", "src/game_data/entity_attacks.json", "src/game_data/sprites.json");
     
-    let mut world = world::World::new(Player::new(parser.get_texture_id("player"))); // 36 x 22.5 blocks
+    let mut world = world::World::new(Player::new(parsed_data.get_texture_id("player"))); // 36 x 22.5 blocks
     
     let mut camera = camera::Camera::new(1152,720);
     camera.add_ui_element(String::from("health_bar_background"), UIElement {
@@ -34,7 +32,7 @@ fn main() {
         y: 32.0,
         width: 256.0,
         height: 32.0,
-        texture_id: parser.get_texture_id("health_bar_back"),
+        texture_id: parsed_data.get_texture_id("health_bar_back"),
         visible: true
     });
     camera.add_ui_element(String::from("health_bar_inside"), UIElement {
@@ -42,7 +40,7 @@ fn main() {
         y: 35.0,
         width: 250.0,
         height: 26.0,
-        texture_id: parser.get_texture_id("health"),
+        texture_id: parsed_data.get_texture_id("health"),
         visible: true
     });
     camera.add_ui_element(String::from("inventory_button"), UIElement {
@@ -50,11 +48,11 @@ fn main() {
         y: 650.0,
         width: 75.0,
         height: 25.0,
-        texture_id: parser.get_texture_id("inventory"),
+        texture_id: parsed_data.get_texture_id("inventory"),
         visible: true
     });
 
-    let sprites = abstractions::SpriteIDContainer::generate_from_json_parser(&parser, &mut world);
+    let sprites = abstractions::SpriteIDContainer::generate_from_json_parsed_data(&parsed_data, &mut world);
     world.player.borrow_mut().holding_texture_sprite = Some(sprites.get_sprite("sword"));
     for n in 0..17 {
         for m in 0..70 {
@@ -99,12 +97,12 @@ fn main() {
     
     
     
-    let ghost = world.create_entity_from_json_archetype(900.0, 600.0, "ghost", &parser);
+    let ghost = world.create_entity_from_json_archetype(900.0, 600.0, "ghost", &parsed_data);
     world.set_sprite(ghost, sprites.get_sprite("ghost"));
 
-    let ghost2 = world.create_entity_from_json_archetype(1200.0, 600.0, "ghost", &parser);
+    let ghost2 = world.create_entity_from_json_archetype(1200.0, 600.0, "ghost", &parsed_data);
     world.set_sprite(ghost2, sprites.get_sprite("ghost"));
 
     
-    pollster::block_on(window::run(&mut world, &mut camera, parser.sprites_to_load_json));
+    pollster::block_on(window::run(&mut world, &mut camera, parsed_data.sprites_to_load_json));
 }

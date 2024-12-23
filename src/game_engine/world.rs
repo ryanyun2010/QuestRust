@@ -8,7 +8,7 @@ use crate::entities::EntityTags;
 use winit::keyboard::Key;
 use std::cell::RefCell;
 use crate::entities::Entity;
-use super::json_parsing::JSON_parser;
+use super::json_parsing::ParsedData;
 use super::player::Player;
 use super::entities::EntityAttackPattern;
 use super::terrain::{self, Terrain, TerrainTags};
@@ -291,7 +291,7 @@ impl World{
         self.sprites.len() - 1
     }
 
-    pub fn create_entity_from_json_archetype(&mut self, x: f32, y: f32, archetype: &str, parser: &JSON_parser) -> usize{
+    pub fn create_entity_from_json_archetype(&mut self, x: f32, y: f32, archetype: &str, parser: &ParsedData) -> usize{
         let archetype = parser.get_archetype(archetype).expect(&format!("Archetype {} not found", archetype));
         let entity = self.add_entity(x, y);
         self.add_entity_tags(entity, archetype.clone());

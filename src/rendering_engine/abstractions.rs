@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::game_engine::{json_parsing::JSON_parser, world::World};
+use crate::game_engine::{json_parsing::ParsedData, world::World};
 
 use super::vertex::Vertex;
 
@@ -51,10 +51,10 @@ pub struct SpriteIDContainer{
 }
 
 impl SpriteIDContainer{
-    pub fn generate_from_json_parser(parser: &JSON_parser, world: &mut World) -> Self{
+    pub fn generate_from_json_parsed_data(parser: &ParsedData, world: &mut World) -> Self{
         let mut sprites = HashMap::new();
-        for (name, sprite_json) in parser.sprites_json.iter(){
-            let sprite = world.add_sprite(parser.texture_ids.get(name).unwrap().clone());
+        for (name, texture_id) in &parser.texture_ids {
+            let sprite = world.add_sprite(texture_id.clone());
             sprites.insert(name.clone(), sprite);
         }
         Self { sprites }
