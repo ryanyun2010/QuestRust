@@ -2,6 +2,8 @@ use crate::vertex::Vertex;
 use crate::rendering_engine::abstractions::Sprite;
 use crate::rendering_engine::abstractions::RenderData;
 
+use super::world::World;
+
 #[derive(Copy, Clone, Debug)]
 pub struct Player {
     pub x: f32,
@@ -12,24 +14,24 @@ pub struct Player {
     pub movement_speed: f32,
     pub hunger: usize,
     pub max_hunger: usize,
-    pub holding_texture_sprite: Option<Sprite>
+    pub holding_texture_sprite: Option<usize>
 }
 
 impl Player {
-    pub fn new() -> Self {
+    pub fn new(texture_index: i32) -> Self {
         Self {
             x: 596.0,
             y: 400.0,
             health: 100.0,
             max_health: 100,
-            texture_index: 3,
+            texture_index: texture_index,
             movement_speed: 2.8284,
             hunger: 100,
             max_hunger: 100,
-            holding_texture_sprite: Some(Sprite {texture_index: 12})
+            holding_texture_sprite: None
         }
     }
-    pub fn draw_data(&self, window_size_width: usize, window_size_height: usize, index_offset:u16, vertex_offset_x: i32, vertex_offset_y: i32) -> RenderData{
+    pub fn draw_data(&self, world: &World, window_size_width: usize, window_size_height: usize, index_offset:u16, vertex_offset_x: i32, vertex_offset_y: i32) -> RenderData{
         let screen_to_render_ratio_x: f32 = 2.0 / window_size_width as f32;
         let screen_to_render_ratio_y: f32 = 2.0 / window_size_height as f32;
         
@@ -52,7 +54,7 @@ impl Player {
         if self.holding_texture_sprite.is_none(){
             return RenderData { vertex, index }
         }else{
-            let sprite = self.holding_texture_sprite.unwrap();
+            let sprite = world.sprites[self.holding_texture_sprite.unwrap() as usize];
             let d = sprite.draw_data(self.x + 16.0, self.y + 8.0, 24, 24,window_size_width, window_size_height, index_offset + 4, vertex_offset_x, vertex_offset_y);
             index.extend(d.index);
             vertex.extend(d.vertex);

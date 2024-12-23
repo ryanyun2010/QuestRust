@@ -1,3 +1,7 @@
+use std::collections::HashMap;
+
+use crate::game_engine::{json_parsing::JSON_parser, world::World};
+
 use super::vertex::Vertex;
 
 
@@ -40,3 +44,23 @@ impl RenderData{
         Self{ vertex: Vec::new(), index: Vec::new() }
     }
 }
+
+
+pub struct SpriteIDContainer{
+    pub sprites: HashMap<String, usize>
+}
+
+impl SpriteIDContainer{
+    pub fn generate_from_json_parser(parser: &JSON_parser, world: &mut World) -> Self{
+        let mut sprites = HashMap::new();
+        for (name, sprite_json) in parser.sprites_json.iter(){
+            let sprite = world.add_sprite(parser.texture_ids.get(name).unwrap().clone());
+            sprites.insert(name.clone(), sprite);
+        }
+        Self { sprites }
+    }
+    pub fn get_sprite(&self, name: &str) -> usize{
+        self.sprites.get(name).expect(format!("Sprite with name: {} was not found", name).as_str()).clone()
+    }
+}
+

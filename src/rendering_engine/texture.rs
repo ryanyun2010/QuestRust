@@ -1,6 +1,8 @@
 use image::GenericImageView;
 use anyhow::*;
 use wgpu::util::DeviceExt;
+use std::fs;
+
 
 pub struct Texture {
     #[allow(unused)]
@@ -82,16 +84,16 @@ impl Texture {
 
 
 macro_rules! create_texture_bind_group {
-    ($device:expr, $queue:expr, $($texture_path:expr),*) => {{
-        let mut textures = Vec::new();
+    ($device:expr, $queue:expr, $texture_paths:expr) => {{
+        let mut textures: Vec<wgpu::TextureView> = Vec::new();
         let mut samplers = Vec::new();
         
-        $(
-            let texture_bytes = include_bytes!($texture_path);
-            let texture = crate::texture::Texture::from_bytes($device, $queue, texture_bytes, $texture_path).unwrap();
-            textures.push(&texture.view);
-            samplers.push(&texture.sampler); 
-        )*
+        for texture_path in $texture_paths {
+            let texture_bytes = fs::read(texture_path).unwrap();
+            let texture = Texture::from_bytes($device, $queue, &texture_bytes, texture_path).unwrap();
+            textures.push(texture.view);
+            samplers.push(texture.sampler); 
+        }
 
         let mut texture_index_buffer_contents = vec![0u32; textures.len()];
         let texture_index_buffer = $device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -136,11 +138,11 @@ macro_rules! create_texture_bind_group {
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: wgpu::BindingResource::TextureViewArray(&textures),
+                    resource: wgpu::BindingResource::TextureViewArray(&textures.as_slice().iter().collect::<Vec<_>>()[..]),
                 },
                 wgpu::BindGroupEntry {
                     binding: 1,
-                    resource: wgpu::BindingResource::SamplerArray(&samplers),
+                    resource: wgpu::BindingResource::SamplerArray(&samplers.as_slice().iter().collect::<Vec<_>>()[..]),
                 },
                 wgpu::BindGroupEntry {
                     binding: 2,

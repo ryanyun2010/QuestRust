@@ -5,6 +5,8 @@ use winit::window::Window;
 use winit::event::*;
 use std::collections::HashMap;
 use wgpu::util::DeviceExt;
+use crate::game_engine::json_parsing::sprite_json;
+use crate::rendering_engine::texture;
 use crate::vertex::Vertex;
 use crate::texture::create_texture_bind_group;
 use crate::world;
@@ -14,10 +16,8 @@ use std::num::NonZeroU64;
 use std::num::NonZeroU32;
 use std::time::Instant;
 use winit::event::WindowEvent::KeyboardInput;
-
-
-
-
+use std::fs;
+use crate::texture::Texture;
 
 
 const BACKGROUND_COLOR: wgpu::Color = wgpu::Color {
@@ -43,7 +43,7 @@ pub struct State<'a> {
     window: &'a Window,
 }
 impl<'a> State<'a> { 
-    pub async fn new(window: &'a Window) -> State<'a> {
+    pub async fn new(window: &'a Window, sprites_to_load_json: Vec<String>) -> State<'a> {
         let instant = Instant::now();
         let fpsarray = Vec::new();
         let test = 0;
@@ -91,25 +91,12 @@ impl<'a> State<'a> {
             desired_maximum_frame_latency: 2,
         };
         surface.configure(&device, &config);
-        let (texture_bind_group_layout, diffuse_bind_group): (wgpu::BindGroupLayout, wgpu::BindGroup) = create_texture_bind_group!(
-            &device,
-            &queue,
-            "img/grass.png",
-            "img/panda2.png",
-            "img/panda3.jpeg",
-            "img/player.png",
-            "img/dirt.png",
-            "img/dirt2.png",
-            "img/outside.png",
-            "img/wall.png",
-            "img/ghost.png",
-            "img/health_bar_back.png",
-            "img/health.png",
-            "img/inventory.png",
-            "img/sword.png",
-            "img/wall2.png",
-            "img/wall3.png"
-        );
+        let mut texture_paths = Vec::new();
+        for path in sprites_to_load_json.iter() {
+            texture_paths.push(path.as_str());
+        }
+        let (texture_bind_group_layout, diffuse_bind_group): (wgpu::BindGroupLayout, wgpu::BindGroup) =
+            create_texture_bind_group!(&device, &queue, &texture_paths);
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),

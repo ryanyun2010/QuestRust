@@ -5,6 +5,7 @@ use std::fs::File;
 use std::collections::HashMap;
 use crate::game_engine::entities::EntityTags;
 use crate::game_engine::entities::EntityAttack;
+use crate::rendering_engine::abstractions::Sprite;
 use super::entities::EntityAttackPattern;
 
 #[derive(Debug, Deserialize)]
@@ -29,14 +30,22 @@ struct entity_attack_json{
     name: String,
     damage: f32,
 }
+#[derive(Debug, Deserialize)]
+pub struct sprite_json {
+    name: String,
+    path: String,
+}
 
 pub struct JSON_parser {
     pub entity_archetypes_json: HashMap<String, entity_archetype_json>,
     pub entity_attack_patterns_json: HashMap<String, entity_attack_pattern_json>,
     pub entity_attacks_json: HashMap<String, entity_attack_json>,
+    pub sprites_json: HashMap<String, sprite_json>,
     pub entity_archetypes: HashMap<String, Vec<EntityTags>>,
     pub entity_attack_patterns: HashMap<String, EntityAttackPattern>,
-    pub entity_attacks: HashMap<String, EntityAttack>
+    pub entity_attacks: HashMap<String, EntityAttack>,
+    pub texture_ids: HashMap<String, i32>,
+    pub sprites_to_load_json: Vec<String>
 }
 
 impl JSON_parser {
@@ -45,9 +54,12 @@ impl JSON_parser {
             entity_archetypes_json: HashMap::new(),
             entity_attack_patterns_json: HashMap::new(),
             entity_attacks_json: HashMap::new(),
+            sprites_json: HashMap::new(),
             entity_archetypes: HashMap::new(),
             entity_attack_patterns: HashMap::new(),
-            entity_attacks: HashMap::new()
+            entity_attacks: HashMap::new(),
+            texture_ids: HashMap::new(),
+            sprites_to_load_json: Vec::new()
         }
     }
     pub fn parse_entity_archetypes(&mut self, path: &str) {
@@ -73,6 +85,27 @@ impl JSON_parser {
         for attack in data {
             self.entity_attacks_json.insert(attack.name.clone(), attack);
         }
+    }
+    pub fn parse_sprites(&mut self, path: &str) {
+        let file = File::open(path).expect("Could not open file");
+        let reader = BufReader::new(file);
+        let data: Vec<sprite_json> = serde_json::from_reader(reader).expect("JSON was not well-formatted");
+        for sprite in data {
+            self.sprites_json.insert(sprite.name.clone(), sprite);
+        }
+    }
+    pub fn create_sprites_to_load_json(&mut self) {
+        let mut sprites_to_load = Vec::new();
+        let mut i = 0;
+        for (_, sprite) in &self.sprites_json {
+            sprites_to_load.push(sprite.path.clone());
+            self.texture_ids.insert(sprite.name.clone(), i);
+            i += 1;
+        }
+        self.sprites_to_load_json = sprites_to_load;
+    }
+    pub fn get_texture_id(&self, name: &str) -> i32 {
+        self.texture_ids.get(name).expect(&format!("Texture with name: {} was not found", name)).clone()
     }
     pub fn convert(&mut self){
         // Convert the JSON data into the game's data structures
@@ -159,7 +192,7 @@ impl JSON_parser {
             self.entity_archetypes.insert(entity_archetype.name.clone(), tags);
         }
     }
-    pub fn parse_and_convert_game_data(&mut self, entity_archetypes_path: &str, entity_attack_patterns_path: &str, entity_attacks_path: &str){
+    pub fn parse_and_convert_game_data(&mut self, entity_archetypes_path: &str, entity_attack_patterns_path: &str, entity_attacks_path: &str, sprites_path: &str) {
         self.parse_entity_archetypes(entity_archetypes_path);
         self.parse_entity_attack_patterns(entity_attack_patterns_path);
         self.parse_entity_attacks(entity_attacks_path);

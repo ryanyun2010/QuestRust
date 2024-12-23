@@ -7,11 +7,12 @@ use crate::state::State;
 use crate::world::World;
 use crate::camera::Camera;
 use winit::event::WindowEvent::KeyboardInput;
+use crate::game_engine::json_parsing::sprite_json;
 
-pub async fn run(world: &mut World, camera: &mut Camera) {
+pub async fn run(world: &mut World, camera: &mut Camera, sprites_json_to_load: Vec<String>){
     let event_loop = EventLoop::new().unwrap();
     let window = WindowBuilder::new().with_title("RustTest").with_inner_size(winit::dpi::LogicalSize::new(1152, 720)).build(&event_loop).unwrap();
-    let mut state = State::new(&window).await;
+    let mut state = State::new(&window, sprites_json_to_load.clone()).await;
 
     let mut focused: bool = false;
 

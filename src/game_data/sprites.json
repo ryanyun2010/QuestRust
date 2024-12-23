@@ -1,0 +1,63 @@
+[
+    {
+        "name": "panda2",
+        "path": "src/rendering_engine/img/panda2.png"
+    },
+    {
+        "name": "panda3",
+        "path": "src/rendering_engine/img/panda3.jpeg"
+    },
+    {
+        "name": "player",
+        "path": "src/rendering_engine/img/player.png"
+    },
+    {
+        "name": "dirt",
+        "path": "src/rendering_engine/img/dirt.png"
+    },
+    {
+        "name": "dirt2",
+        "path": "src/rendering_engine/img/dirt2.png"
+    },
+    {
+        "name": "outside",
+        "path": "src/rendering_engine/img/outside.png"
+    },
+    {
+        "name": "wall",
+        "path": "src/rendering_engine/img/wall.png"
+    },
+    {
+        "name": "ghost",
+        "path": "src/rendering_engine/img/ghost.png"
+    },
+    {
+        "name": "health_bar_back",
+        "path": "src/rendering_engine/img/health_bar_back.png"
+    },
+    {
+        "name": "health",
+        "path": "src/rendering_engine/img/health.png"
+    },
+    {
+        "name": "inventory",
+        "path": "src/rendering_engine/img/inventory.png"
+    },
+    {
+        "name": "sword",
+        "path": "src/rendering_engine/img/sword.png"
+    },
+    {
+        "name": "wall2",
+        "path": "src/rendering_engine/img/wall2.png"
+    },
+    {
+        "name": "wall3",
+        "path": "src/rendering_engine/img/wall3.png"
+    }
+
+]
+
+
+
+

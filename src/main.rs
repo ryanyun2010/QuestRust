@@ -21,14 +21,20 @@ use game_engine::player::Player;
 use game_engine::json_parsing;
 
 fn main() {
-    let mut world = world::World::new(); // 36 x 22.5 blocks
+    let mut parser = json_parsing::JSON_parser::new();
+    parser.parse_and_convert_game_data("src/game_data/entity_archetypes.json", "src/game_data/entity_attack_patterns.json", "src/game_data/entity_attacks.json", "src/game_data/sprites.json");
+    parser.parse_sprites("src/game_data/sprites.json");
+    parser.create_sprites_to_load_json();
+    
+    let mut world = world::World::new(Player::new(parser.get_texture_id("player"))); // 36 x 22.5 blocks
+    
     let mut camera = camera::Camera::new(1152,720);
     camera.add_ui_element(String::from("health_bar_background"), UIElement {
         x: 32.0,
         y: 32.0,
         width: 256.0,
         height: 32.0,
-        texture_id: 9,
+        texture_id: parser.get_texture_id("health_bar_back"),
         visible: true
     });
     camera.add_ui_element(String::from("health_bar_inside"), UIElement {
@@ -36,7 +42,7 @@ fn main() {
         y: 35.0,
         width: 250.0,
         height: 26.0,
-        texture_id: 10,
+        texture_id: parser.get_texture_id("health"),
         visible: true
     });
     camera.add_ui_element(String::from("inventory_button"), UIElement {
@@ -44,45 +50,38 @@ fn main() {
         y: 650.0,
         width: 75.0,
         height: 25.0,
-        texture_id: 11,
+        texture_id: parser.get_texture_id("inventory"),
         visible: true
     });
 
-    
-    let outside_sprite = world.add_sprite(6);
-    let wall2_sprite = world.add_sprite(13);
-    let wall3_sprite = world.add_sprite(14);
-    let dirt_sprite = world.add_sprite(5);
-    let dirt2_sprite = world.add_sprite(4);
-    let wall_sprite = world.add_sprite(7);
-    let ghost_sprite = world.add_sprite(8);
-    let d = world.add_sprite(12);
+    let sprites = abstractions::SpriteIDContainer::generate_from_json_parser(&parser, &mut world);
+    world.player.borrow_mut().holding_texture_sprite = Some(sprites.get_sprite("sword"));
     for n in 0..17 {
         for m in 0..70 {
             let new_terrain = world.add_terrain(n*32,m*32);
-            world.set_sprite(new_terrain,outside_sprite);
+            world.set_sprite(new_terrain,sprites.get_sprite("outside"));
         }
     }
 
     for n in 17..35 {
         for m in 0..11 {
             let new_terrain = world.add_terrain(n*32,m*32);
-            world.set_sprite(new_terrain,outside_sprite);
+            world.set_sprite(new_terrain,sprites.get_sprite("outside"));
         }
     }
 
     for n in 18..35 {
         let new_terrain = world.add_terrain(n*32,352);
-        world.set_sprite(new_terrain,wall2_sprite);
+        world.set_sprite(new_terrain,sprites.get_sprite("wall2"));
         world.add_terrain_tag(new_terrain, terrain::TerrainTags::BlocksMovement);
     }
         let new_terrain = world.add_terrain(544,352);
-        world.set_sprite(new_terrain,wall3_sprite);
+        world.set_sprite(new_terrain,sprites.get_sprite("wall3"));
 
 
     for m in 12..70 {
         let new_terrain = world.add_terrain(544,m*32);
-        world.set_sprite(new_terrain,wall_sprite);
+        world.set_sprite(new_terrain,sprites.get_sprite("wall"));
         world.add_terrain_tag(new_terrain, terrain::TerrainTags::BlocksMovement);
     }
     for n in 18..35 {
@@ -90,22 +89,22 @@ fn main() {
             let new_terrain = world.add_terrain(n*32,m*32);
             let x: u8 = random();
             if x > 150{
-            world.set_sprite(new_terrain,dirt_sprite);
+            world.set_sprite(new_terrain,sprites.get_sprite("dirt"));
             } else{
-                world.set_sprite(new_terrain,dirt2_sprite); 
+                world.set_sprite(new_terrain,sprites.get_sprite("dirt2")); 
             }
         }
     }
 
-    let mut parser = json_parsing::JSON_parser::new();
-    parser.parse_and_convert_game_data("src/game_data/entity_archetypes.json", "src/game_data/entity_attack_patterns.json", "src/game_data/entity_attacks.json");
+    
+    
     
     let ghost = world.create_entity_from_json_archetype(900.0, 600.0, "ghost", &parser);
-    world.set_sprite(ghost, ghost_sprite);
+    world.set_sprite(ghost, sprites.get_sprite("ghost"));
 
     let ghost2 = world.create_entity_from_json_archetype(1200.0, 600.0, "ghost", &parser);
-    world.set_sprite(ghost2, ghost_sprite);
+    world.set_sprite(ghost2, sprites.get_sprite("ghost"));
 
-
-    pollster::block_on(window::run(&mut world, &mut camera));
+    
+    pollster::block_on(window::run(&mut world, &mut camera, parser.sprites_to_load_json));
 }

@@ -45,9 +45,9 @@ pub struct World{
 // OKAY RYAN WE NEED MAJOR REFORMS.
 // OVER TIME, LET'S MOVE THESE INTO MULTIPLE IMPL STATEMENTS IN THEIR RESPECTIVE MODULES.
 impl World{ 
-    pub fn new() -> Self{
+    pub fn new(player: Player) -> Self{
         let mut chunks: RefCell<Vec<Chunk>> = RefCell::new(Vec::new());
-        let mut player: RefCell<Player> = RefCell::new(Player::new());
+        let mut player: RefCell<Player> = RefCell::new(player);
         let mut element_id: usize = 0;
         let mut sprites: Vec<Sprite> = Vec::new();
         let mut sprite_lookup: HashMap<usize, usize> = HashMap::new();

@@ -143,7 +143,8 @@ impl Camera{
         render_data.index.extend(terrain_data.index);
         render_data.index.extend(entity_data.index);
 
-        let player_draw_data = player.draw_data(self.viewpoint_width, self.viewpoint_height, render_data.vertex.len() as u16, -1 * self.camera_x as i32, -1 * self.camera_y as i32);
+        let player_draw_data = player.draw_data(world, self.viewpoint_width, self.viewpoint_height, render_data.vertex.len() as u16, -1 * self.camera_x as i32, -1 * self.camera_y as i32);
+    
         render_data.vertex.extend(player_draw_data.vertex);
         render_data.index.extend(player_draw_data.index);
         world.set_loaded_chunks(chunks_loaded);

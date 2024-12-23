@@ -5,7 +5,7 @@ pub struct UIElement{
     pub y: f32,
     pub width: f32,
     pub height: f32,
-    pub texture_id: usize,
+    pub texture_id: i32,
     pub visible: bool,
 }
 
