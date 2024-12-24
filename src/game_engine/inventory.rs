@@ -28,5 +28,9 @@ pub struct ItemContainer {
     contained_item: Option<Item>,
 }
 impl ItemContainer {
-    
+    pub fn tansfer_item(mut self, mut other: ItemContainer) {
+        other.contained_item = self.contained_item;
+        self.contained_item = None;
+        println!("{:?}", other.contained_item);
+    }
 }
