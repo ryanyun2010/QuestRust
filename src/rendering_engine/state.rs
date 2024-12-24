@@ -39,6 +39,7 @@ pub struct State<'a> {
     pub instant: Instant,
     pub fpsarray: Vec<f64>,
     pub keys_down: HashMap<String, bool>,
+    pub level_editor: bool,
     window: &'a Window,
 }
 impl<'a> State<'a> { 
@@ -162,6 +163,7 @@ impl<'a> State<'a> {
             test: test,
             fpsarray: fpsarray,
             keys_down: keys_down,
+            level_editor: false
         }
  
     }
@@ -178,8 +180,13 @@ impl<'a> State<'a> {
             self.surface.configure(&self.device, &self.config);
         }
     }
-
     pub fn update(&self, world: &mut World, camera: &mut Camera) {
+        if self.level_editor{
+            world.level_editor_process_input(self.keys_down.clone());
+            camera.level_editor_update_camera_position(&world);
+            return;
+        }
+        camera.update_ui(world);
         world.generate_collision_cache();
         world.process_input(self.keys_down.clone());
         camera.update_camera_position(&world);
@@ -235,7 +242,8 @@ impl<'a> State<'a> {
         // println!("{:?}",world.player.x);
         self.instant = Instant::now();
         self.test += 1;
-        let render_data = &camera.render(world);
+        let mut render_data = if self.level_editor {&camera.level_editor_render(world)} else {&camera.render(world)};
+        
         let vertices = &render_data.vertex;
         if vertices.len() < 1 {
             return Ok(());

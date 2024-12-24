@@ -53,6 +53,8 @@ pub struct World{
     pub pathfinding_frames: HashMap<usize, usize>, // entity id to frame of pathfinding
     pub next_pathfinding_frame_for_entity: usize,
     pub pathfinding_frame: usize,
+    pub level_editor: bool,
+    pub highlighted: Option<usize>,
 }
 // OKAY RYAN WE NEED MAJOR REFORMS.
 // OVER TIME, LET'S MOVE THESE INTO MULTIPLE IMPL STATEMENTS IN THEIR RESPECTIVE MODULES.
@@ -75,6 +77,8 @@ impl World{
         let mut pathfinding_frames: HashMap<usize, usize> = HashMap::new();
         let mut next_pathfinding_frame_for_entity: usize = 0;
         let mut pathfinding_frame: usize = 0;
+        let mut level_editor: bool = false;
+        let mut highlighted = None;
         Self{
             chunks,
             player,
@@ -93,6 +97,8 @@ impl World{
             pathfinding_frames,
             next_pathfinding_frame_for_entity,
             pathfinding_frame,
+            level_editor,
+            highlighted
         }
     }
     

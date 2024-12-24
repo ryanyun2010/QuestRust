@@ -54,6 +54,14 @@
     {
         "name": "wall3",
         "path": "src/rendering_engine/img/wall3.png"
+    },
+    {
+        "name": "grid",
+        "path": "src/rendering_engine/img/grid.png"
+    },
+    {
+        "name": "highlight",
+        "path": "src/rendering_engine/img/highlight.png"
     }
 
 ]

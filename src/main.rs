@@ -23,14 +23,24 @@ use game_engine::player::Player;
 use game_engine::json_parsing;
 use game_engine::starting_level_generator::generate_world_from_json_parsed_data;
 use game_engine::pathfinding;
+use game_engine::level_editor;
 use wgpu::naga::back::Level;
 use std::env;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.contains(&String::from("level_editor")){
-        // Do level editor stuff
+        let mut parser = json_parsing::JSON_parser::new();
+        let parsed_data = parser.parse_and_convert_game_data("src/game_data/entity_archetypes.json", "src/game_data/entity_attack_patterns.json", "src/game_data/entity_attacks.json", "src/game_data/sprites.json", "src/game_data/starting_level.json");
+        let mut camera = camera::Camera::new(1152,720);
+        let (mut world, mut sprites) = generate_world_from_json_parsed_data(&parsed_data);
+        camera.set_level_editor();
+        world.set_level_editor();
+        world.add_level_editor_grid(sprites.get_sprite("grid"));
+        pollster::block_on(window::run(&mut world, &mut camera, parsed_data.sprites_to_load_json, sprites, true));
+        return;
     }
+    
     let mut parser = json_parsing::JSON_parser::new();
     let load_time = Instant::now();
     let parsed_data = parser.parse_and_convert_game_data("src/game_data/entity_archetypes.json", "src/game_data/entity_attack_patterns.json", "src/game_data/entity_attacks.json", "src/game_data/sprites.json", "src/game_data/starting_level.json");
@@ -62,10 +72,11 @@ fn main() {
     });
 
     let (mut world, mut sprites) = generate_world_from_json_parsed_data(&parsed_data);
+   
 
     world.player.borrow_mut().holding_texture_sprite = Some(sprites.get_sprite("sword"));
 
 
     println!("Time to load: {:?} ms", load_time.elapsed().as_millis());
-    pollster::block_on(window::run(&mut world, &mut camera, parsed_data.sprites_to_load_json));
+    pollster::block_on(window::run(&mut world, &mut camera, parsed_data.sprites_to_load_json, sprites, false));
 }

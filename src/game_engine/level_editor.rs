@@ -1,55 +1,84 @@
 use std::collections::HashMap;
-use std::hash::Hash;
 
-use crate::camera;
-use crate::world::World;
+use super::world::World;
+use super::camera::Camera;
 use crate::rendering_engine::abstractions::RenderData;
+use crate::rendering_engine::state::State;
+use super::player::Player;
 
-pub struct Camera{
-    pub viewpoint_width: usize,
-    pub viewpoint_height: usize,
-    pub camera_x: f32, // top left corner of the camera in world/element coordinates
-    pub camera_y: f32,
-    pub ui_elements: Vec<crate::game_engine::ui::UIElement>, // vec element i should be element with id i
-    pub ui_element_names: HashMap<String, usize>, // map names to ids
-    pub ui_element_id: usize,
-    velocity: [isize; 2],
-    pub level_editor: bool
-}
+impl World {
+    pub fn set_level_editor(&mut self){
+        self.level_editor = true;
+        self.player.borrow_mut().movement_speed = 5.0;
+    }
 
-impl Camera{
-    pub fn new(viewpoint_width:usize, viewpoint_height:usize) -> Self{
-        Self{
-            viewpoint_width: viewpoint_width,
-            viewpoint_height: viewpoint_height,
-            camera_x: 20.0,
-            camera_y: 40.0,
-            ui_elements: Vec::new(),
-            ui_element_names: HashMap::new(),
-            ui_element_id: 0,
-            velocity: [0,0],
-            level_editor: false
+    pub fn add_level_editor_grid(&mut self, sprite_id: usize){
+        for x in 0..1000{
+            for y in 0..1000{
+                let terrain = self.add_terrain(x * 32, y * 32);
+                self.set_sprite(terrain, sprite_id);
+            }
         }
     }
-    pub fn update_ui(&mut self, world: &mut World){
-        let player = world.player.borrow().clone();
-        let health_bar = self.get_ui_element_mut(self.get_element_by_name(String::from("health_bar_inside")).unwrap());
-        let health_bar_width = f32::max(0.0, (player.health as f32 / player.max_health as f32) * 250.0);
-        health_bar.width = health_bar_width;
+
+    pub fn level_editor_highlight_square(&mut self, x: f64, y: f64, width: u32, height: u32, camera_width: usize, camera_height: usize, camera_x: f32, camera_y: f32, sprite_id: usize){
+        let tx = (((((x as f32)/width as f32) * camera_width as f32) + camera_x) / 32.0).floor() as usize * 32;
+        let ty = (((((y as f32)/height as f32) * camera_height as f32) + camera_y)/ 32.0).floor() as usize * 32;
+        let terrain = self.add_terrain(tx, ty);
+        self.set_sprite(terrain, sprite_id); 
+        if self.highlighted.is_some(){
+            self.sprite_lookup.remove(&self.highlighted.unwrap());
+        }
+        self.highlighted = Some(terrain);
     }
-    pub fn add_ui_element(&mut self, name: String,  element: crate::game_engine::ui::UIElement) -> usize{
-        self.ui_elements.insert(self.ui_element_id, element);
-        self.ui_element_names.insert(name, self.ui_element_id);
-        self.ui_element_id += 1;
-        self.ui_element_id - 1
+    pub fn level_editor_process_input(&mut self, keys: HashMap<String,bool>){
+        let mut direction: [f32; 2] = [0.0,0.0];
+        let mut player: std::cell::RefMut<'_, Player> = self.player.borrow_mut();
+        if *keys.get("w").unwrap_or(&false) || *keys.get("ArrowUp").unwrap_or(&false){
+            direction[1] -= 1.0;
+        }
+        if *keys.get("a").unwrap_or(&false) || *keys.get("ArrowLeft").unwrap_or(&false){
+            direction[0] -= 1.0;
+        }
+        if *keys.get("s").unwrap_or(&false) || *keys.get("ArrowDown").unwrap_or(&false){
+            direction[1] += 1.0;
+        }
+        if *keys.get("d").unwrap_or(&false) || *keys.get("ArrowRight").unwrap_or(&false){
+            direction[0] += 1.0;
+        }
+
+        let magnitude: f32 = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
+        if magnitude > 0.0{
+            let movement = [(direction[0] / magnitude * player.movement_speed).round(), (direction[1] / magnitude * player.movement_speed).round()];
+            if player.x + movement[0] < 576.0 && player.y + movement[1] < 360.0 {
+                
+            }else if (player.x + movement[0] < 576.0){
+                if direction[1].abs() > 0.0{
+                    player.y += (direction[1]/ direction[1].abs() * player.movement_speed).round();
+                }
+            } else if (player.y + movement[1] < 360.0){
+                if direction[0].abs() > 0.0{
+                    player.x += (direction[0]/ direction[0].abs() * player.movement_speed).round();
+                }
+            } else {
+                player.x += movement[0];
+                player.y += movement[1];
+            }
+        }
+
+        if player.y < 360.0 {
+            player.y = 360.0;
+        }
+        if player.x < 576.0 {
+            player.x = 576.0;
+        }
     }
-    pub fn get_element_by_name(&self, name: String) -> Option<usize>{
-        self.ui_element_names.get(&name).copied()
+}
+impl Camera{
+    pub fn set_level_editor(&mut self){
+        self.level_editor = true;
     }
-    pub fn get_ui_element_mut(&mut self, id: usize) -> &mut crate::game_engine::ui::UIElement{
-        &mut self.ui_elements[id]
-    }
-    pub fn update_camera_position(&mut self, world: &World){
+    pub fn level_editor_update_camera_position(&mut self, world: &World){
         let player = world.player.borrow().clone();
         let mut direction = [player.x - (self.viewpoint_width / 2) as f32 - self.camera_x, player.y - (self.viewpoint_height / 2) as f32 - self.camera_y];
         if self.camera_x < 4.0 && direction[0] < 0.0{
@@ -63,11 +92,11 @@ impl Camera{
         let magnitude = (direction[0].powi(2) + direction[1].powi(2)).sqrt();
 
         
-        if magnitude < 6.0{
+        if magnitude < 10.0{
             return;
         }
-        self.camera_x += (direction[0]/magnitude * 3.0).round();
-        self.camera_y += (direction[1]/magnitude * 3.0).round();
+        self.camera_x += (direction[0]/magnitude * 5.0).round();
+        self.camera_y += (direction[1]/magnitude * 5.0).round();
 
         if self.camera_x < 0.0{
             self.camera_x = 0.0;
@@ -76,7 +105,7 @@ impl Camera{
             self.camera_y = 0.0;
         }
     }
-    pub fn render(&mut self, world: &mut World) -> RenderData{
+    pub fn level_editor_render(&mut self, world: &mut World) -> RenderData{
         let mut render_data = RenderData::new();
         let mut terrain_data: RenderData = RenderData::new();
         let mut entity_data: RenderData = RenderData::new();
@@ -145,11 +174,6 @@ impl Camera{
         render_data.index.extend(terrain_data.index);
         render_data.index.extend(entity_data.index);
 
-        let player_draw_data = player.draw_data(world, self.viewpoint_width, self.viewpoint_height, render_data.vertex.len() as u16, -1 * self.camera_x as i32, -1 * self.camera_y as i32);
-    
-        render_data.vertex.extend(player_draw_data.vertex);
-        render_data.index.extend(player_draw_data.index);
-        world.set_loaded_chunks(chunks_loaded);
         for i in 0..self.ui_elements.len(){
             let element = &self.ui_elements[i];
             if !element.visible{
@@ -162,5 +186,13 @@ impl Camera{
         }
         
         render_data
+    }
+}
+impl State<'_>{
+    pub fn set_level_editor(&mut self){
+        self.level_editor = true;
+    }
+    pub fn level_editor_highlight_square(&mut self,world: &mut World,camera: &Camera, x: f64, y: f64, sprite_id: usize){
+        world.level_editor_highlight_square(x, y, self.size.width, self.size.height, camera.viewpoint_width, camera.viewpoint_height, camera.camera_x, camera.camera_y, sprite_id);
     }
 }
