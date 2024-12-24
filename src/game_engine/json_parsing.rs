@@ -1,7 +1,10 @@
 use serde::Deserialize;
+use serde::Serialize;
 use std::fmt::format;
 use std::hash::Hash;
 use std::io::BufReader;
+use std::io::BufWriter;
+use std::io::Write;
 use std::fs::File;
 use std::collections::HashMap;
 use crate::game_engine::entities::EntityTags;
@@ -11,8 +14,8 @@ use super::entities::Entity;
 use super::entities::EntityAttackPattern;
 use super::player::Player;
 
-#[derive(Debug, Deserialize)]
-struct entity_archetype_json {
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct entity_archetype_json {
     name: String,
     basic_tags: Vec<String>,
     monster_type: String,
@@ -22,23 +25,23 @@ struct entity_archetype_json {
     attack_type: String,
     attack_pattern: String
 }
-#[derive(Debug, Deserialize)]
-struct entity_attack_pattern_json {
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct entity_attack_pattern_json {
     name: String,
     attacks: Vec<String>,
     cooldowns: Vec<f32>
 }
-#[derive(Debug, Deserialize)]
-struct entity_attack_json{
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct entity_attack_json{
     name: String,
     damage: f32,
 }
-#[derive(Debug, Deserialize)]
-struct sprite_json {
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct sprite_json {
     name: String,
     path: String,
 }
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct player_json{
     pub x: f32,
     pub y: f32,
@@ -47,14 +50,14 @@ pub struct player_json{
     pub max_health: i32,
     pub movement_speed: f32
 }
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct entity_json{
     pub x: f32,
     pub y: f32,
     pub archetype: String,
     pub sprite: String,
 }
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct terrain_json{
     pub x: usize,
     pub y: usize,
@@ -62,14 +65,14 @@ pub struct terrain_json{
     pub height: usize,
     pub terrain_descriptor: terrain_descriptor_json
 }
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct terrain_descriptor_json{
     pub r#type: String,
     pub random_chances: Option<Vec<f32>>,
     pub sprites: Vec<String>,
     pub basic_tags: Vec<String>
 }
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct starting_level_json{
     pub player: player_json,
     pub entities: Vec<entity_json>,
@@ -278,6 +281,13 @@ impl JSON_parser {
         self.parse_sprites(sprites_path);
         self.parse_starting_level(starting_level_path);
         self.convert()
+    }
+
+    pub fn write(&self, entity_archetypes_path: &str, entity_attack_patterns_path: &str, entity_attacks_path: &str, sprites_path: &str, starting_level_path: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let mut file = File::create(starting_level_path)?;
+        let mut writer = BufWriter::new(file);
+        write!(writer, "{}", serde_json::to_string(&self.starting_level_json)?)?;
+        Ok(())
     }
     
 }

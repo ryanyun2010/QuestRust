@@ -37,7 +37,7 @@ fn main() {
         camera.set_level_editor();
         world.set_level_editor();
         world.add_level_editor_grid(sprites.get_sprite("grid"));
-        pollster::block_on(window::run(&mut world, &mut camera, parsed_data.sprites_to_load_json, sprites, true));
+        pollster::block_on(window::run(&mut world, &mut camera, parsed_data.sprites_to_load_json, sprites, true, &mut parser));
         return;
     }
     
@@ -78,5 +78,5 @@ fn main() {
 
 
     println!("Time to load: {:?} ms", load_time.elapsed().as_millis());
-    pollster::block_on(window::run(&mut world, &mut camera, parsed_data.sprites_to_load_json, sprites, false));
+    pollster::block_on(window::run(&mut world, &mut camera, parsed_data.sprites_to_load_json, sprites, false, &mut parser));
 }

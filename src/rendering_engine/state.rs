@@ -5,6 +5,7 @@ use winit::window::Window;
 use winit::event::*;
 use std::collections::HashMap;
 use wgpu::util::DeviceExt;
+use crate::game_engine::json_parsing::JSON_parser;
 use crate::rendering_engine::texture;
 use crate::vertex::Vertex;
 use crate::texture::create_texture_bind_group;
@@ -40,6 +41,7 @@ pub struct State<'a> {
     pub fpsarray: Vec<f64>,
     pub keys_down: HashMap<String, bool>,
     pub level_editor: bool,
+    pub left_mouse_button_down: bool,
     window: &'a Window,
 }
 impl<'a> State<'a> { 
@@ -163,7 +165,8 @@ impl<'a> State<'a> {
             test: test,
             fpsarray: fpsarray,
             keys_down: keys_down,
-            level_editor: false
+            level_editor: false,
+            left_mouse_button_down: false,
         }
  
     }
@@ -180,9 +183,10 @@ impl<'a> State<'a> {
             self.surface.configure(&self.device, &self.config);
         }
     }
-    pub fn update(&self, world: &mut World, camera: &mut Camera) {
+    pub fn update(&self, world: &mut World, camera: &mut Camera, parser: &mut JSON_parser) {
         if self.level_editor{
             world.level_editor_process_input(self.keys_down.clone());
+            world.level_editor_process_mouse_input(self.left_mouse_button_down, parser);
             camera.level_editor_update_camera_position(&world);
             return;
         }

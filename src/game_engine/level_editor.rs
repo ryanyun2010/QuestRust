@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 
+use winit::event::{ElementState, MouseButton};
+
+use super::json_parsing::JSON_parser;
 use super::world::World;
-use super::camera::Camera;
+use super::camera::{self, Camera};
 use crate::rendering_engine::abstractions::RenderData;
 use crate::rendering_engine::state::State;
 use super::player::Player;
@@ -71,6 +74,35 @@ impl World {
         }
         if player.x < 576.0 {
             player.x = 576.0;
+        }
+    }
+    pub fn level_editor_process_mouse_input (&mut self, left_mouse_button_down: bool, parser: &mut super::json_parsing::JSON_parser){
+        if left_mouse_button_down{
+            if self.highlighted.is_some(){
+                let terrain_id = self.highlighted.unwrap();
+                let terrain = self.get_terrain(terrain_id).unwrap();
+                let x = terrain.x;
+                let y = terrain.y;
+                parser.starting_level_json.terrain.push(super::json_parsing::terrain_json {
+                    x: x/32,
+                    y: y/32,
+                    width: 1,
+                    height: 1,
+                    terrain_descriptor: super::json_parsing::terrain_descriptor_json {
+                        r#type: String::from("basic"),
+                        random_chances: None,
+                        basic_tags: Vec::new(),
+                        sprites: vec![String::from("wall")]
+                    }
+                });
+                parser.write("src/game_data/entity_archetypes.json", "src/game_data/entity_attack_patterns.json", "src/game_data/entity_attacks.json", "src/game_data/sprites.json", "src/game_data/starting_level.json").expect("d");
+                let (world_new, sprites_new) = super::starting_level_generator::generate_world_from_json_parsed_data(&parser.convert());
+                let saved_player_x = self.player.borrow().x;
+                let saved_player_y = self.player.borrow().y;
+                *self = world_new;
+                self.player.borrow_mut().x = saved_player_x;
+                self.player.borrow_mut().y = saved_player_y;
+            }
         }
     }
 }
@@ -192,7 +224,15 @@ impl State<'_>{
     pub fn set_level_editor(&mut self){
         self.level_editor = true;
     }
-    pub fn level_editor_highlight_square(&mut self,world: &mut World,camera: &Camera, x: f64, y: f64, sprite_id: usize){
+    pub fn level_editor_highlight_square(&mut self,world: &mut World, x: f64, y: f64, sprite_id: usize, camera: &Camera){
         world.level_editor_highlight_square(x, y, self.size.width, self.size.height, camera.viewpoint_width, camera.viewpoint_height, camera.camera_x, camera.camera_y, sprite_id);
     }
+    pub fn level_editor_process_mouse_input(&mut self, world: &mut World, state: ElementState, button: MouseButton){
+        if state == ElementState::Pressed && button == MouseButton::Left{
+            self.left_mouse_button_down = true;
+        } else if state == ElementState::Released && button == MouseButton::Left{
+            self.left_mouse_button_down = false;
+        }
+    }
 }
+
