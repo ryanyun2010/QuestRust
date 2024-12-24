@@ -24,6 +24,7 @@ use game_engine::json_parsing;
 use game_engine::starting_level_generator::generate_world_from_json_parsed_data;
 use game_engine::pathfinding;
 use game_engine::level_editor;
+use game_engine::inventory;
 use wgpu::naga::back::Level;
 use std::env;
 

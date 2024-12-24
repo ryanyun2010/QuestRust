@@ -8,6 +8,7 @@ use crate::entities::EntityTags;
 use winit::keyboard::Key;
 use std::cell::RefCell;
 use crate::entities::Entity;
+use super::inventory::ItemContainer;
 use super::json_parsing::ParsedData;
 use super::player::Player;
 use super::entities::EntityAttackPattern;
@@ -45,6 +46,7 @@ pub struct World{
     pub terrain_lookup: HashMap<usize,usize>, // corresponds element_ids of terrain to chunk_ids
     pub terrain: HashMap<usize, Terrain>, // corresponds element id to Terrain element
     pub entities: RefCell<HashMap<usize, Entity>>, // corresponds element id to Entity element
+    pub item_containers: HashMap<usize, ItemContainer>, // corresponds element id to Entity element
     pub entity_lookup: RefCell<HashMap<usize,usize>>, // corresponds element_ids of entities to chunk_ids
     pub entity_tags_lookup: HashMap<usize,Vec<EntityTags>>, // corresponds element_ids of entities to the entity's tags
     pub terrain_tags_lookup: HashMap<usize,Vec<TerrainTags>>, // corresponds element_ids of entities to the entity's tags
@@ -72,6 +74,7 @@ impl World{
         let mut terrain_tags_lookup: HashMap<usize, Vec<TerrainTags>> = HashMap::new();
         let mut terrain: HashMap<usize, Terrain> = HashMap::new();
         let mut entities: RefCell<HashMap<usize, Entity>> = RefCell::new(HashMap::new());
+        let mut item_containers: HashMap<usize, ItemContainer> = HashMap::new();
         let mut loaded_chunks: Vec<usize> = Vec::new(); 
         let mut collision_cache: RefCell<HashMap<[usize; 2], Vec<usize>>> = RefCell::new(HashMap::new());
         let mut pathfinding_frames: HashMap<usize, usize> = HashMap::new();
@@ -92,6 +95,7 @@ impl World{
             terrain_tags_lookup,
             terrain,
             entities,
+            item_containers,
             loaded_chunks,
             collision_cache,
             pathfinding_frames,
