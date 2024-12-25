@@ -34,10 +34,10 @@ fn main() {
         let parsed_data = parser.parse_and_convert_game_data("src/game_data/entity_archetypes.json", "src/game_data/entity_attack_patterns.json", "src/game_data/entity_attacks.json", "src/game_data/sprites.json", "src/game_data/starting_level.json");
         let mut camera = camera::Camera::new(1152,720);
         let (mut world, mut sprites) = generate_world_from_json_parsed_data(&parsed_data);
+        let mut level_editor = level_editor::LevelEditor::new(world, sprites, parser);
         camera.set_level_editor();
-        world.set_level_editor();
-        world.add_level_editor_grid(sprites.get_sprite("grid"));
-        pollster::block_on(window::run(&mut world, &mut camera, parsed_data.sprites_to_load_json, sprites, true, &mut parser));
+        level_editor.init();
+        pollster::block_on(level_editor::run(&mut level_editor, &mut camera, parsed_data.sprites_to_load_json));
         return;
     }
     
@@ -78,5 +78,5 @@ fn main() {
 
 
     println!("Time to load: {:?} ms", load_time.elapsed().as_millis());
-    pollster::block_on(window::run(&mut world, &mut camera, parsed_data.sprites_to_load_json, sprites, false, &mut parser));
+    pollster::block_on(window::run(&mut world, &mut camera, parsed_data.sprites_to_load_json, sprites));
 }

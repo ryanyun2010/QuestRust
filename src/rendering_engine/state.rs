@@ -183,13 +183,8 @@ impl<'a> State<'a> {
             self.surface.configure(&self.device, &self.config);
         }
     }
-    pub fn update(&self, world: &mut World, camera: &mut Camera, parser: &mut JSON_parser) {
-        if self.level_editor{
-            world.level_editor_process_input(self.keys_down.clone());
-            world.level_editor_process_mouse_input(self.left_mouse_button_down, parser);
-            camera.level_editor_update_camera_position(&world);
-            return;
-        }
+    pub fn update(&self, world: &mut World, camera: &mut Camera) {
+      
         camera.update_ui(world);
         world.generate_collision_cache();
         world.process_input(self.keys_down.clone());

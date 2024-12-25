@@ -1,39 +1,132 @@
 use std::collections::HashMap;
+use std::hash::Hash;
 
+use wgpu::naga::back::Level;
 use winit::event::{ElementState, MouseButton};
 
-use super::json_parsing::JSON_parser;
+use super::json_parsing::{entity_json, terrain_json, JSON_parser};
+use super::terrain;
 use super::world::World;
 use super::camera::{self, Camera};
-use crate::rendering_engine::abstractions::RenderData;
+use crate::rendering_engine::abstractions::{RenderData, SpriteIDContainer};
 use crate::rendering_engine::state::State;
 use super::player::Player;
 
-impl World {
+pub struct LevelEditor{
+    pub highlighted: Option<usize>,
+    pub parser: JSON_parser,
+    pub world: World,
+    pub sprites: SpriteIDContainer,
+    pub highlighted_or_grid: HashMap<usize, bool>
+}
+
+pub enum ObjectJSON {
+    Entity(entity_json),
+    Terrain(terrain_json)
+}
+
+impl LevelEditor{
+    pub fn new(world: World, sprites: SpriteIDContainer, parser: JSON_parser) -> Self{
+        Self {
+            highlighted: None,
+            world: world,
+            parser: parser,
+            sprites: sprites,
+            highlighted_or_grid: HashMap::new()
+        }
+    }
+    pub fn init(&mut self){
+        self.world.set_level_editor();
+        self.add_level_editor_grid(self.sprites.get_sprite("grid"));
+    }
+    pub fn save_edits(&self){
+        self.parser.write("src/game_data/entity_archetypes.json", "src/game_data/entity_attack_patterns.json", "src/game_data/entity_attacks.json", "src/game_data/sprites.json", "src/game_data/starting_level.json").expect("d");
+    }
+    pub fn query_stuff_at(&self, x: usize, y: usize) -> Vec<ObjectJSON>{
+        println!("Query at {}, {}", x, y);
+        let chunk_to_query = self.world.get_chunk_from_xy(x, y);
+        if chunk_to_query.is_none(){
+            return Vec::new();
+        }else{
+            let chunk_id = chunk_to_query.unwrap();
+            let chunk = self.world.chunks.borrow()[chunk_id].clone();
+            for entity_id in chunk.entities_ids{
+                let entity = &self.world.get_entity(entity_id).unwrap();
+                if entity.x <= x as f32 && entity.x + 32.0 >= x as f32 && entity.y <= y as f32 && entity.y + 32.0 >= y as f32 {
+                    println!("{:?}", entity)
+                }
+            }
+            for terrain_id in chunk.terrain_ids{
+                let terrain = self.world.get_terrain(terrain_id).unwrap();
+                if *self.highlighted_or_grid.get(&terrain_id).unwrap_or(&false){
+                    continue;
+                }
+                if terrain.x <= x && terrain.x + 32 >= x && terrain.y <= y && terrain.y + 32 >= y{
+                    println!("{:?}", terrain);
+                }
+            }
+            return Vec::new();
+        }
+
+    }
+    pub fn process_mouse_input (&mut self, left_mouse_button_down: bool){
+        if left_mouse_button_down{
+            if self.highlighted.is_some(){
+                let terrain_id = self.highlighted.unwrap();
+                let terrain = self.world.get_terrain(terrain_id).unwrap();
+                let x = terrain.x;
+                let y = terrain.y;
+                self.query_stuff_at(x + 16, y + 16);
+                // self.parser.starting_level_json.terrain.push(super::json_parsing::terrain_json {
+                //     x: x/32,
+                //     y: y/32,
+                //     width: 1,
+                //     height: 1,
+                //     terrain_descriptor: super::json_parsing::terrain_descriptor_json {
+                //         r#type: String::from("basic"),
+                //         random_chances: None,
+                //         basic_tags: Vec::new(),
+                //         sprites: vec![String::from("wall")]
+                //     }
+                // });
+                // let new_terrain = self.world.add_terrain(x, y);
+                // self.world.set_sprite(new_terrain, self.sprites.get_sprite("wall"));
+            }
+        }
+    }
+    pub fn highlight_square(&mut self, x: f64, y: f64, width: u32, height: u32, camera_width: usize, camera_height: usize, camera_x: f32, camera_y: f32){
+        let sprite_id = self.sprites.get_sprite("highlight");
+        let tx = (((((x as f32)/width as f32) * camera_width as f32) + camera_x) / 32.0).floor() as usize * 32;
+        let ty = (((((y as f32)/height as f32) * camera_height as f32) + camera_y)/ 32.0).floor() as usize * 32;
+        let terrain = self.world.add_terrain(tx, ty);
+        self.world.set_sprite(terrain, sprite_id); 
+        if self.highlighted.is_some(){
+            self.world.sprite_lookup.remove(&self.highlighted.unwrap());
+        }
+        self.highlighted_or_grid.insert(terrain, true);
+        self.highlighted = Some(terrain);
+    }
+    pub fn add_level_editor_grid(&mut self, sprite_id: usize){
+        for x in 0..1000{
+            for y in 0..1000{
+                let terrain = self.world.add_terrain(x * 32, y * 32);
+                self.world.set_sprite(terrain, sprite_id);
+                self.highlighted_or_grid.insert(terrain, true);
+            }
+        }
+    }
+
+
+}
+
+
+impl World { // TODO: ALL THE CODE IN THIS IMPL SHOULD BE MOVED TO LEVEL EDITOR
     pub fn set_level_editor(&mut self){
         self.level_editor = true;
         self.player.borrow_mut().movement_speed = 5.0;
     }
 
-    pub fn add_level_editor_grid(&mut self, sprite_id: usize){
-        for x in 0..1000{
-            for y in 0..1000{
-                let terrain = self.add_terrain(x * 32, y * 32);
-                self.set_sprite(terrain, sprite_id);
-            }
-        }
-    }
 
-    pub fn level_editor_highlight_square(&mut self, x: f64, y: f64, width: u32, height: u32, camera_width: usize, camera_height: usize, camera_x: f32, camera_y: f32, sprite_id: usize){
-        let tx = (((((x as f32)/width as f32) * camera_width as f32) + camera_x) / 32.0).floor() as usize * 32;
-        let ty = (((((y as f32)/height as f32) * camera_height as f32) + camera_y)/ 32.0).floor() as usize * 32;
-        let terrain = self.add_terrain(tx, ty);
-        self.set_sprite(terrain, sprite_id); 
-        if self.highlighted.is_some(){
-            self.sprite_lookup.remove(&self.highlighted.unwrap());
-        }
-        self.highlighted = Some(terrain);
-    }
     pub fn level_editor_process_input(&mut self, keys: HashMap<String,bool>){
         let mut direction: [f32; 2] = [0.0,0.0];
         let mut player: std::cell::RefMut<'_, Player> = self.player.borrow_mut();
@@ -76,35 +169,7 @@ impl World {
             player.x = 576.0;
         }
     }
-    pub fn level_editor_process_mouse_input (&mut self, left_mouse_button_down: bool, parser: &mut super::json_parsing::JSON_parser){
-        if left_mouse_button_down{
-            if self.highlighted.is_some(){
-                let terrain_id = self.highlighted.unwrap();
-                let terrain = self.get_terrain(terrain_id).unwrap();
-                let x = terrain.x;
-                let y = terrain.y;
-                parser.starting_level_json.terrain.push(super::json_parsing::terrain_json {
-                    x: x/32,
-                    y: y/32,
-                    width: 1,
-                    height: 1,
-                    terrain_descriptor: super::json_parsing::terrain_descriptor_json {
-                        r#type: String::from("basic"),
-                        random_chances: None,
-                        basic_tags: Vec::new(),
-                        sprites: vec![String::from("wall")]
-                    }
-                });
-                parser.write("src/game_data/entity_archetypes.json", "src/game_data/entity_attack_patterns.json", "src/game_data/entity_attacks.json", "src/game_data/sprites.json", "src/game_data/starting_level.json").expect("d");
-                let (world_new, sprites_new) = super::starting_level_generator::generate_world_from_json_parsed_data(&parser.convert());
-                let saved_player_x = self.player.borrow().x;
-                let saved_player_y = self.player.borrow().y;
-                *self = world_new;
-                self.player.borrow_mut().x = saved_player_x;
-                self.player.borrow_mut().y = saved_player_y;
-            }
-        }
-    }
+    
 }
 impl Camera{
     pub fn set_level_editor(&mut self){
@@ -224,15 +289,97 @@ impl State<'_>{
     pub fn set_level_editor(&mut self){
         self.level_editor = true;
     }
-    pub fn level_editor_highlight_square(&mut self,world: &mut World, x: f64, y: f64, sprite_id: usize, camera: &Camera){
-        world.level_editor_highlight_square(x, y, self.size.width, self.size.height, camera.viewpoint_width, camera.viewpoint_height, camera.camera_x, camera.camera_y, sprite_id);
+    pub fn level_editor_highlight_square(&mut self, level_editor: &mut LevelEditor, x: f64, y: f64, camera: &Camera){
+        level_editor.highlight_square(x, y, self.size.width, self.size.height, camera.viewpoint_width, camera.viewpoint_height, camera.camera_x, camera.camera_y);
     }
-    pub fn level_editor_process_mouse_input(&mut self, world: &mut World, state: ElementState, button: MouseButton){
+    pub fn level_editor_process_mouse_input(&mut self, state: ElementState, button: MouseButton){
         if state == ElementState::Pressed && button == MouseButton::Left{
             self.left_mouse_button_down = true;
         } else if state == ElementState::Released && button == MouseButton::Left{
             self.left_mouse_button_down = false;
         }
     }
+    pub fn level_editor_update(&self, level_editor: &mut LevelEditor, camera: &mut Camera){
+        level_editor.world.level_editor_process_input(self.keys_down.clone());
+        level_editor.process_mouse_input(self.left_mouse_button_down);
+        camera.level_editor_update_camera_position(&level_editor.world);
+    }
+}
+
+
+
+
+
+use winit::{
+    event::*, event_loop::EventLoop, keyboard::{Key, KeyCode, PhysicalKey}, platform::modifier_supplement::KeyEventExtModifierSupplement, window::WindowBuilder
+};
+
+use crate::{state};
+use winit::event::WindowEvent::KeyboardInput;
+
+pub async fn run(mut level_editor: &mut LevelEditor, camera: &mut Camera, sprites_json_to_load: Vec<String>) {
+    let event_loop = EventLoop::new().unwrap();
+    let mut title = "Level Editor";
+    let window = WindowBuilder::new().with_title(title).with_inner_size(winit::dpi::LogicalSize::new(1152, 720)).build(&event_loop).unwrap();
+    let mut State = state::State::new(&window, sprites_json_to_load.clone()).await;
+    State.set_level_editor();
+
+    let mut focused: bool = false;
+
+    event_loop.run(move |event, control_flow| match event {
+        
+        Event::WindowEvent {
+            event,
+            window_id,
+        } if window_id == State.window().id() =>{
+            match event {
+                WindowEvent::KeyboardInput {  event,.. } => { 
+                    let event = event.clone();
+                    State.input(event);
+                },
+                WindowEvent::CloseRequested => {
+                    level_editor.save_edits();
+                    control_flow.exit()
+                },
+                WindowEvent::Resized(physical_size) => {
+                    State.resize(physical_size);
+                },
+                WindowEvent::CursorMoved {position, ..} => {
+                    State.level_editor_highlight_square(&mut level_editor,   position.x, position.y, &camera);
+                },
+                WindowEvent::MouseInput { state, button, .. } => {
+                    State.level_editor_process_mouse_input(state, button);
+                },
+                WindowEvent::Focused(bool) => {
+                    focused = bool;
+                    if focused {
+                        State.window().request_redraw();
+                    }
+                },
+                WindowEvent::RedrawRequested => {
+                    if focused{
+                        State.window().request_redraw();
+                    }
+                    State.level_editor_update(&mut level_editor, camera);
+                    match State.render(&mut level_editor.world, camera) {
+                        Ok(_) => {}
+                        Err(
+                            wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated,
+                        ) => State.resize(State.size),
+                        Err(wgpu::SurfaceError::OutOfMemory) => {
+                            log::error!("OutOfMemory");
+                            control_flow.exit();
+                        }
+                        Err(wgpu::SurfaceError::Timeout) => {
+                            log::warn!("Surface timeout")
+                        }
+                    }
+                    
+                }
+                _ => {}
+            }   
+        }
+        _ => {}
+    }).unwrap();
 }
 
