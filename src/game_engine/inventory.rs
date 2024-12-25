@@ -1,4 +1,4 @@
-use super::item::Item;
+use super::{item::Item, world::{self, World}};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ItemType {
@@ -19,8 +19,30 @@ pub enum ItemType {
     BaubleBack,
     BaubleBody,
 }
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ItemContainerPointer {
+    element_id: Option<usize>,
+    container_type: Option<Vec<ItemType>>,
+}
+impl ItemContainerPointer {
+    pub fn new(container_type: Option<Vec<ItemType>>) -> Self {
+        Self {
+            container_type,
+            element_id: None
+        }
+    }
+    pub fn is_init(&self) -> bool {
+        self.element_id.is_some()
+    }
+    pub fn init(&mut self, world: &mut World) -> usize {
+        world.element_id+=1;
+        world.item_containers.borrow_mut().insert(world.element_id-1, ItemContainer::new(self.container_type.clone()));
+        self.element_id = Some(world.element_id-1);
+        world.element_id-1
+    }
+}
 //We just store a single item in each container.
-//Containers, not to be confused with chests (if we implement them), or falling items, are single, dynamic, inventory slots.
+//Containers, not to be confused with chests (if we implement them), or items (which are single, dynamic, inventory slots).
 #[derive(Clone, Debug)]
 pub struct ItemContainer {
     // element_id: usize,
@@ -37,7 +59,7 @@ impl ItemContainer {
     pub fn tansfer_item(mut self, mut other: ItemContainer) -> ItemContainer {
         other.contained_item = self.contained_item;
         self.contained_item = None;
-        println!("{:?}", other.contained_item);
+        println!("Self: {:?}\nOther: {:?}", self.contained_item, other.contained_item);
         other
     }
     pub fn drop(mut self) {
