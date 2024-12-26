@@ -42,6 +42,7 @@ pub struct State<'a> {
     pub keys_down: HashMap<String, bool>,
     pub level_editor: bool,
     pub left_mouse_button_down: bool,
+    pub right_mouse_button_down: bool,
     window: &'a Window,
 }
 impl<'a> State<'a> { 
@@ -167,6 +168,7 @@ impl<'a> State<'a> {
             keys_down: keys_down,
             level_editor: false,
             left_mouse_button_down: false,
+            right_mouse_button_down: false
         }
  
     }

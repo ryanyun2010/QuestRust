@@ -1,13 +1,5 @@
 [
     {
-        "name": "panda2",
-        "path": "src/rendering_engine/img/panda2.png"
-    },
-    {
-        "name": "panda3",
-        "path": "src/rendering_engine/img/panda3.jpeg"
-    },
-    {
         "name": "player",
         "path": "src/rendering_engine/img/player.png"
     },

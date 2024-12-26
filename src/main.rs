@@ -34,8 +34,8 @@ fn main() {
         let mut parser = json_parsing::JSON_parser::new();
         let parsed_data = parser.parse_and_convert_game_data("src/game_data/entity_archetypes.json", "src/game_data/entity_attack_patterns.json", "src/game_data/entity_attacks.json", "src/game_data/sprites.json", "src/game_data/starting_level.json");
         let mut camera = camera::Camera::new(1152,720);
-        let (mut world, mut sprites) = generate_world_from_json_parsed_data(&parsed_data);
-        let mut level_editor = level_editor::LevelEditor::new(world, sprites, parser);
+        let (mut world, mut sprites, mut hash) = level_editor::level_editor_generate_world_from_json_parsed_data(&parsed_data);
+        let mut level_editor = level_editor::LevelEditor::new(world, sprites, parser, hash);
         camera.set_level_editor();
         level_editor.init();
         pollster::block_on(level_editor::run(&mut level_editor, &mut camera, parsed_data.sprites_to_load_json));

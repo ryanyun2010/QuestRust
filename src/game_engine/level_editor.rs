@@ -4,10 +4,12 @@ use std::hash::Hash;
 use wgpu::naga::back::Level;
 use winit::event::{ElementState, MouseButton};
 
-use super::json_parsing::{entity_json, terrain_json, JSON_parser};
+use super::json_parsing::{entity_json, terrain_json, JSON_parser, ParsedData};
+use super::starting_level_generator::match_terrain_tags;
 use super::terrain;
 use super::world::World;
 use super::camera::{self, Camera};
+use crate::game_engine::json_parsing::terrain_descriptor_json;
 use crate::rendering_engine::abstractions::{RenderData, SpriteIDContainer};
 use crate::rendering_engine::state::State;
 use super::player::Player;
@@ -17,22 +19,25 @@ pub struct LevelEditor{
     pub parser: JSON_parser,
     pub world: World,
     pub sprites: SpriteIDContainer,
-    pub highlighted_or_grid: HashMap<usize, bool>
+    pub not_real_elements: HashMap<usize, bool>,
+    pub object_descriptor_hash: HashMap<usize, ObjectJSON>
 }
 
+#[derive(Debug, Clone)]
 pub enum ObjectJSON {
     Entity(entity_json),
     Terrain(terrain_json)
 }
 
 impl LevelEditor{
-    pub fn new(world: World, sprites: SpriteIDContainer, parser: JSON_parser) -> Self{
+    pub fn new(world: World, sprites: SpriteIDContainer, parser: JSON_parser, hash: HashMap<usize, ObjectJSON>) -> Self{
         Self {
             highlighted: None,
             world: world,
             parser: parser,
             sprites: sprites,
-            highlighted_or_grid: HashMap::new()
+            not_real_elements: HashMap::new(),
+            object_descriptor_hash: hash
         }
     }
     pub fn init(&mut self){
@@ -53,23 +58,51 @@ impl LevelEditor{
             for entity_id in chunk.entities_ids{
                 let entity = &self.world.get_entity(entity_id).unwrap();
                 if entity.x <= x as f32 && entity.x + 32.0 >= x as f32 && entity.y <= y as f32 && entity.y + 32.0 >= y as f32 {
-                    println!("{:?}", entity)
+                    println!("Found Entity {:?}", entity);
+                    println!("From JSON: {:?}", self.object_descriptor_hash.get(&entity_id).unwrap());
                 }
             }
             for terrain_id in chunk.terrain_ids{
                 let terrain = self.world.get_terrain(terrain_id).unwrap();
-                if *self.highlighted_or_grid.get(&terrain_id).unwrap_or(&false){
+                if *self.not_real_elements.get(&terrain_id).unwrap_or(&false){
                     continue;
                 }
                 if terrain.x <= x && terrain.x + 32 >= x && terrain.y <= y && terrain.y + 32 >= y{
-                    println!("{:?}", terrain);
+                    println!("Found Terrain: {:?}", terrain);
+                    println!("From JSON: {:?}", self.object_descriptor_hash.get(&terrain_id).unwrap());
                 }
+                
             }
             return Vec::new();
         }
 
     }
-    pub fn process_mouse_input (&mut self, left_mouse_button_down: bool){
+    pub fn process_mouse_input (&mut self, left_mouse_button_down: bool, right_mouse_button_down: bool){
+        if right_mouse_button_down{
+            if self.highlighted.is_some(){
+                let terrain_id = self.highlighted.unwrap();
+                let terrain = self.world.get_terrain(terrain_id).unwrap();
+                let x = terrain.x;
+                let y = terrain.y;
+                let terrain_json = super::json_parsing::terrain_json {
+                    x: x/32,
+                    y: y/32,
+                    width: 1,
+                    height: 1,
+                    terrain_descriptor: super::json_parsing::terrain_descriptor_json {
+                        r#type: String::from("basic"),
+                        random_chances: None,
+                        basic_tags: Vec::new(),
+                        sprites: vec![String::from("wall")]
+                    }
+                };
+                self.parser.starting_level_json.terrain.push(terrain_json.clone());
+                let new_terrain = self.world.add_terrain(x, y);
+                self.object_descriptor_hash.insert(new_terrain, ObjectJSON::Terrain(terrain_json));
+                self.world.set_sprite(new_terrain, self.sprites.get_sprite("wall"));
+                /* this should probably replace the terrain under it honestly or at least you shouldnt be placing a whole bunch of terrain on top of eachother accidentally */
+            }
+        }
         if left_mouse_button_down{
             if self.highlighted.is_some(){
                 let terrain_id = self.highlighted.unwrap();
@@ -77,20 +110,7 @@ impl LevelEditor{
                 let x = terrain.x;
                 let y = terrain.y;
                 self.query_stuff_at(x + 16, y + 16);
-                // self.parser.starting_level_json.terrain.push(super::json_parsing::terrain_json {
-                //     x: x/32,
-                //     y: y/32,
-                //     width: 1,
-                //     height: 1,
-                //     terrain_descriptor: super::json_parsing::terrain_descriptor_json {
-                //         r#type: String::from("basic"),
-                //         random_chances: None,
-                //         basic_tags: Vec::new(),
-                //         sprites: vec![String::from("wall")]
-                //     }
-                // });
-                // let new_terrain = self.world.add_terrain(x, y);
-                // self.world.set_sprite(new_terrain, self.sprites.get_sprite("wall"));
+            
             }
         }
     }
@@ -103,7 +123,7 @@ impl LevelEditor{
         if self.highlighted.is_some(){
             self.world.sprite_lookup.remove(&self.highlighted.unwrap());
         }
-        self.highlighted_or_grid.insert(terrain, true);
+        self.not_real_elements.insert(terrain, true);
         self.highlighted = Some(terrain);
     }
     pub fn add_level_editor_grid(&mut self, sprite_id: usize){
@@ -111,7 +131,7 @@ impl LevelEditor{
             for y in 0..1000{
                 let terrain = self.world.add_terrain(x * 32, y * 32);
                 self.world.set_sprite(terrain, sprite_id);
-                self.highlighted_or_grid.insert(terrain, true);
+                self.not_real_elements.insert(terrain, true);
             }
         }
     }
@@ -297,11 +317,15 @@ impl State<'_>{
             self.left_mouse_button_down = true;
         } else if state == ElementState::Released && button == MouseButton::Left{
             self.left_mouse_button_down = false;
+        } else if state == ElementState::Pressed && button == MouseButton::Right{
+            self.right_mouse_button_down = true;
+        } else if state == ElementState::Released && button == MouseButton::Right{
+            self.right_mouse_button_down = false;
         }
     }
     pub fn level_editor_update(&self, level_editor: &mut LevelEditor, camera: &mut Camera){
         level_editor.world.level_editor_process_input(self.keys_down.clone());
-        level_editor.process_mouse_input(self.left_mouse_button_down);
+        level_editor.process_mouse_input(self.left_mouse_button_down, self.right_mouse_button_down);
         camera.level_editor_update_camera_position(&level_editor.world);
     }
 }
@@ -383,3 +407,68 @@ pub async fn run(mut level_editor: &mut LevelEditor, camera: &mut Camera, sprite
     }).unwrap();
 }
 
+pub fn level_editor_generate_world_from_json_parsed_data(data: &ParsedData) -> (World, SpriteIDContainer, HashMap<usize, ObjectJSON>) {
+
+    
+    let starting_level_descriptor = data.starting_level_descriptor.clone();
+    let player_descriptor = starting_level_descriptor.player;
+    let mut world = World::new(Player::new(player_descriptor.x, player_descriptor.y, player_descriptor.health, player_descriptor.max_health, player_descriptor.movement_speed, data.get_texture_id(&player_descriptor.sprite)));
+    let mut sprites = SpriteIDContainer::generate_from_json_parsed_data(data, &mut world);
+    let mut hash = HashMap::new();
+    for entity_descriptor in starting_level_descriptor.entities.iter(){
+        let entity = world.create_entity_from_json_archetype(entity_descriptor.x, entity_descriptor.y, &entity_descriptor.archetype, data);
+        world.set_sprite(entity, sprites.get_sprite(&entity_descriptor.sprite));
+        hash.insert(entity, ObjectJSON::Entity(entity_descriptor.clone()));
+    }
+    
+    for terrain_json in starting_level_descriptor.terrain.iter(){
+        let start_x = terrain_json.x;
+        let start_y = terrain_json.y;
+        let width = terrain_json.width;
+        let height = terrain_json.height;
+        let descriptor = terrain_json.terrain_descriptor.clone();
+        let tags = descriptor.basic_tags.clone();
+        match descriptor.r#type.as_str() {
+            "basic" => {
+                for x in start_x..start_x + width{
+                    for y in start_y..start_y + height{
+                        let terrain = world.add_terrain(x * 32, y * 32);
+                        world.set_sprite(terrain, sprites.get_sprite(&descriptor.sprites[0]));
+                        hash.insert(terrain, ObjectJSON::Terrain(terrain_json.clone()));
+                        match_terrain_tags(&tags, terrain, &mut world);
+                    }
+                }
+            },
+            "randomness" => {
+                println!("Randomness {:?}", descriptor);
+                let random_chances = descriptor.random_chances.unwrap();
+                let mut random_chances_adjusted = Vec::new();
+                let mut sum_so_far = 0.0;
+                for chance in random_chances{
+                    random_chances_adjusted.push(chance + sum_so_far);
+                    sum_so_far += chance;
+                }
+                for x in start_x..start_x + width{
+                    for y in start_y..start_y + height{
+                        let terrain = world.add_terrain(x * 32, y * 32);
+                        let random_number = rand::random::<f32>();
+                        for (index, chance) in random_chances_adjusted.iter().enumerate(){
+                            if random_number < *chance{
+                                world.set_sprite(terrain, sprites.get_sprite(&descriptor.sprites[index]));
+                                break;
+                            }
+                        }
+                        hash.insert(terrain, ObjectJSON::Terrain(terrain_json.clone()));
+                        match_terrain_tags(&tags, terrain, &mut world);
+                    }
+                }
+            },
+            _ => {
+                panic!("Unknown terrain type: {}", descriptor.r#type);
+            }
+        }
+
+
+    }
+    (world, sprites, hash)
+}
