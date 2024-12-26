@@ -7,7 +7,7 @@ Items give stats to the player. Entities and Terrain can have items (specificall
 use std::os::macos::raw::stat;
 use crate::game_engine::entities::AttackType;
 use crate::stat::GearStat;
-use super::{loot::Rarity, stat::Stat};
+use super::{inventory::ItemType, loot::Rarity, stat::Stat};
 use crate::rendering_engine::abstractions::Sprite;
 //Each item when stored will be exactly like this. The item_type_id will be used in a lookup to find the tags.
 //They also have a Vec of components that will be largely unique. It's stackability will not be judged by the components, but instead by the tags.
@@ -19,6 +19,7 @@ pub struct Item {
 //---THIS IS WHERE TAGS START---
 #[derive(Clone, Debug)]
 pub enum ItemTags {
+    ItemType(ItemType),
     Sprite(Sprite), //No Shit.
     Lore(String), //Description.
     Weapon(WeaponTag), //Weapon Stuff.

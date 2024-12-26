@@ -78,11 +78,16 @@ pub struct starting_level_json{
     pub entities: Vec<entity_json>,
     pub terrain: Vec<terrain_json>
 }
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct item_json {
+
+}
 pub struct JSON_parser {
     pub entity_archetypes_json: HashMap<String, entity_archetype_json>,
     pub entity_attack_patterns_json: HashMap<String, entity_attack_pattern_json>,
     pub entity_attacks_json: HashMap<String, entity_attack_json>,
     pub sprites_json: HashMap<String, sprite_json>,
+    pub item_json: HashMap<String, item_json>,
     pub starting_level_json: starting_level_json,
 }
 
@@ -122,6 +127,7 @@ impl JSON_parser {
             entity_attack_patterns_json: HashMap::new(),
             entity_attacks_json: HashMap::new(),
             sprites_json: HashMap::new(),
+            item_json: HashMap::new(),
             starting_level_json: starting_level_json {
                 player: player_json {
                     x: 0.0,
@@ -136,6 +142,7 @@ impl JSON_parser {
             }
         }
     }
+
     pub fn parse_entity_archetypes(&mut self, path: &str) {
         let file = File::open(path).expect("Could not open file");
         let reader = BufReader::new(file);
