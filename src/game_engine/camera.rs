@@ -4,7 +4,7 @@ use std::hash::Hash;
 use crate::camera;
 use crate::world::World;
 use crate::rendering_engine::abstractions::RenderData;
-
+#[derive(Debug, Clone)]
 pub struct Camera{
     pub viewpoint_width: usize,
     pub viewpoint_height: usize,

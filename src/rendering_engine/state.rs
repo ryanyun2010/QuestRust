@@ -186,14 +186,11 @@ impl<'a> State<'a> {
         }
     }
     pub fn update(&self, world: &mut World, camera: &mut Camera) {
-      
         camera.update_ui(world);
         world.generate_collision_cache();
         world.process_input(self.keys_down.clone());
         camera.update_camera_position(&world);
-
         world.update_entities();
-
     }
 
     pub fn input(&mut self, event: winit::event::KeyEvent) {

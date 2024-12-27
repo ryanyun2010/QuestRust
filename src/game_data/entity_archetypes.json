@@ -4,7 +4,7 @@
         "basic_tags": ["aggressive", "followsPlayer", "respectsCollision", "hasCollision"],
         "monster_type": "Undead",
         "movement_speed": 2.0,
-        "range": 54,
+        "range": 47,
         "aggro_range": 1000,
         "attack_type": "Melee",
         "attack_pattern": "ghost_attack_pattern"

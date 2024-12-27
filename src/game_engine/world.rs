@@ -36,6 +36,8 @@ pub struct Chunk{  // 32x32 blocks of 32x32 = chunks are 1024x1024 pixels but 10
 impl Chunk{
 }
 // TODO: ENTITY CHUNKING HAS A CRAZY AMOUNT OF BUGS HERE
+
+#[derive(Debug, Clone)]
 pub struct World{
     pub chunks: RefCell<Vec<Chunk>>,
     pub player: RefCell<Player>,

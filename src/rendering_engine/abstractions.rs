@@ -45,7 +45,7 @@ impl RenderData{
     }
 }
 
-
+#[derive(Debug, Clone)]
 pub struct SpriteIDContainer{
     pub sprites: HashMap<String, usize>
 }

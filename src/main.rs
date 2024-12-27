@@ -25,6 +25,9 @@ use game_engine::starting_level_generator::generate_world_from_json_parsed_data;
 use game_engine::pathfinding;
 use game_engine::level_editor;
 use game_engine::inventory;
+pub mod tests;
+use tests::headless;
+use tests::headless_state;
 use wgpu::naga::back::Level;
 use std::env;
 
@@ -79,5 +82,8 @@ fn main() {
 
 
     println!("Time to load: {:?} ms", load_time.elapsed().as_millis());
+
+    pollster::block_on(tests::tests::run(camera.clone()));
+
     pollster::block_on(window::run(&mut world, &mut camera, parsed_data.sprites_to_load_json, sprites));
 }
