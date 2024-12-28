@@ -14,7 +14,8 @@ pub struct Camera{
     pub ui_element_names: HashMap<String, usize>, // map names to ids
     pub ui_element_id: usize,
     velocity: [isize; 2],
-    pub level_editor: bool
+    pub level_editor: bool,
+    pub text: String,
 }
 
 impl Camera{
@@ -28,7 +29,8 @@ impl Camera{
             ui_element_names: HashMap::new(),
             ui_element_id: 0,
             velocity: [0,0],
-            level_editor: false
+            level_editor: false,
+            text: String::new(),
         }
     }
     pub fn update_ui(&mut self, world: &mut World){
@@ -162,5 +164,8 @@ impl Camera{
         }
         
         render_data
+    }
+    pub fn add_text(&mut self, text: String){
+        self.text = text;
     }
 }

@@ -78,8 +78,7 @@ fn main() {
 
     let (mut world, mut sprites) = generate_world_from_json_parsed_data(&parsed_data);
     
-   
-
+    camera.add_text(String::from("health"));
     world.player.borrow_mut().holding_texture_sprite = Some(sprites.get_sprite("sword"));
     println!("Time to load: {:?} ms", load_time.elapsed().as_millis());
 

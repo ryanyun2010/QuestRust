@@ -1,3 +1,4 @@
+use wgpu_text::{glyph_brush::{Section as TextSection, Text}, BrushBuilder, TextBrush};
 use winit::event;
 use winit::keyboard::Key;
 use winit::keyboard::NamedKey;
@@ -43,6 +44,7 @@ pub struct State<'a> {
     pub level_editor: bool,
     pub left_mouse_button_down: bool,
     pub right_mouse_button_down: bool,
+    pub text_brush: wgpu_text::TextBrush<wgpu_text::glyph_brush::ab_glyph::FontRef<'a>>,
     window: &'a Window,
 }
 impl<'a> State<'a> { 
@@ -105,6 +107,8 @@ impl<'a> State<'a> {
             label: Some("Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
         });
+        let bytes = include_bytes!("./img/font.ttf");
+        let brush: wgpu_text::TextBrush<wgpu_text::glyph_brush::ab_glyph::FontRef<'a>> = BrushBuilder::using_font_bytes(bytes).unwrap().build(&device, config.width, config.height, config.format);
 
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -168,7 +172,8 @@ impl<'a> State<'a> {
             keys_down: keys_down,
             level_editor: false,
             left_mouse_button_down: false,
-            right_mouse_button_down: false
+            right_mouse_button_down: false,
+            text_brush: brush,
         }
  
     }
@@ -273,6 +278,15 @@ impl<'a> State<'a> {
         });
 
         {
+            let section = TextSection::default().add_text(
+                Text::new("Hello World")
+                .with_scale(50.0)
+                .with_color([0.0, 0.0, 0.0, 1.0]))
+                .with_screen_position((50.0, 500.0)
+            );
+            self.text_brush.resize_view(self.size.width as f32, self.size.height as f32, &self.queue);
+            self.text_brush.queue(&self.device, &self.queue, [&section]).unwrap();
+            
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -293,6 +307,7 @@ impl<'a> State<'a> {
             render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
             render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint16);
             render_pass.draw_indexed(0..num_indicies,0, 0..1);
+            self.text_brush.draw(&mut render_pass)
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));
