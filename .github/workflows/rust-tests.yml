@@ -8,7 +8,7 @@ on:
       - main
 
 jobs:
-  test_phaser:
+  test_rust:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
@@ -28,3 +28,6 @@ jobs:
       - name: Test
         run: |
           cargo test --all          
+      - name: Build
+        run: |
+          cargo build --release     
