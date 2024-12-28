@@ -188,6 +188,7 @@ impl<'a> State<'a> {
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
+            self.text_brush.resize_view(self.config.width as f32, self.config.height as f32, &self.queue);
         }
     }
     pub fn update(&self, world: &mut World, camera: &mut Camera) {
@@ -279,7 +280,6 @@ impl<'a> State<'a> {
 
         {
             let sections = camera.get_sections();
-            self.text_brush.resize_view(self.size.width as f32, self.size.height as f32, &self.queue);
             self.text_brush.queue(&self.device, &self.queue, sections).unwrap();
             
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
