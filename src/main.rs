@@ -36,7 +36,7 @@ use std::env;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    if args.contains(&String::from("level_editor")){
+    if args.contains(&String::from("level-editor")){
         let mut parser = json_parsing::JSON_parser::new();
         let parsed_data = parser.parse_and_convert_game_data("src/game_data/entity_archetypes.json", "src/game_data/entity_attack_patterns.json", "src/game_data/entity_attacks.json", "src/game_data/sprites.json", "src/game_data/starting_level.json");
         let mut camera = camera::Camera::new(1152,720);
@@ -85,7 +85,7 @@ fn main() {
     world.player.borrow_mut().holding_texture_sprite = Some(sprites.get_sprite("sword"));
     println!("Time to load: {:?} ms", load_time.elapsed().as_millis());
 
-    if !args.contains(&String::from("no_tests")){
+    if !args.contains(&String::from("no-tests")){
         pollster::block_on(tests::tests::run(camera.clone()));
     }
 

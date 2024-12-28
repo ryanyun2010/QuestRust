@@ -15,23 +15,23 @@ use winit::event::WindowEvent;
 pub struct HeadlessGame {
     pub world: world::World,
     pub camera: camera::Camera,
+    pub state: super::headless_state::HeadlessState,
 }
 
 impl HeadlessGame{
     pub fn new(world: world::World, camera: camera::Camera) -> Self{
+        let mut State = super::headless_state::HeadlessState::new();
         Self{
             world,
             camera,
+            state: State,
         }
     }
     pub async fn run(&mut self, frames: usize){
-        let mut title = "Rust Game";
         let time_tracker = std::time::Instant::now();
-        let mut State = super::headless_state::HeadlessState::new();
-
         for i in 0..frames{
             self.camera.render(&mut self.world);
-            State.update(&mut self.world, &mut self.camera);    
+            self.state.update(&mut self.world, &mut self.camera);    
         }  
     }
 }
