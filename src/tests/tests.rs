@@ -202,7 +202,6 @@ pub async fn run(camera: camera::Camera){
     headless.state.keys_down.insert(String::from("d"), true);
     let player_starting_x = headless.world.player.borrow().x.clone();
     headless.run(200).await;
-    println!("Player x: {}", headless.world.player.borrow().x);
     assert_colored_print("Moving right does not allow player to move into terrain blocker, but player can move right up to the terrain blocker", headless.world.player.borrow().x == player_starting_x + 10.0);
 
     headless.state.keys_down.insert(String::from("d"), false);
@@ -240,7 +239,6 @@ pub async fn run(camera: camera::Camera){
     headless.state.keys_down.insert(String::from("d"), true);
     let player_starting_x = headless.world.player.borrow().x.clone();
     headless.run(200).await;
-    println!("Player x: {}", headless.world.player.borrow().x);
     assert_colored_print("Moving right does not allow player to move into entity blocker, but player can move right up to the entity blocker", headless.world.player.borrow().x == player_starting_x + 10.0);
 
     headless.state.keys_down.insert(String::from("d"), false);
