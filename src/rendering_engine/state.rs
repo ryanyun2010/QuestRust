@@ -37,9 +37,6 @@ pub struct State<'a> {
     pub size: winit::dpi::PhysicalSize<u32>,
     pub render_pipeline: wgpu::RenderPipeline,
     pub diffuse_bind_group: wgpu::BindGroup,
-    pub test: i32,
-    pub instant: Instant,
-    pub fpsarray: Vec<f64>,
     pub keys_down: HashMap<String, bool>,
     pub level_editor: bool,
     pub left_mouse_button_down: bool,
@@ -49,9 +46,6 @@ pub struct State<'a> {
 }
 impl<'a> State<'a> { 
     pub async fn new(window: &'a Window, sprites_to_load_json: Vec<String>) -> State<'a> {
-        let instant = Instant::now();
-        let fpsarray = Vec::new();
-        let test = 0;
         let size = window.inner_size();
         let keys_down = HashMap::new();
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
@@ -166,9 +160,6 @@ impl<'a> State<'a> {
             size: size,
             render_pipeline: render_pipeline,
             diffuse_bind_group: diffuse_bind_group,
-            instant: instant,
-            test: test,
-            fpsarray: fpsarray,
             keys_down: keys_down,
             level_editor: false,
             left_mouse_button_down: false,
@@ -229,23 +220,6 @@ impl<'a> State<'a> {
     }
 
     pub fn render(&mut self, world: &mut World, camera: &mut Camera) -> Result<(), wgpu::SurfaceError> {
-        if self.test > 70{
-            let elapsed_time = self.instant.elapsed();
-            if elapsed_time.as_nanos() > 0{
-                self.fpsarray.push(1.0/(elapsed_time.as_nanos() as f64/1000000000.0))
-            }
-            if self.fpsarray.len() > 100{
-                let mut sum = 0.0;
-                for i in 0..100{
-                    sum += self.fpsarray[i];
-                }
-                // println!("FPS: {}", sum/100.0);
-                self.fpsarray.remove(0);
-            }
-        }
-        // println!("{:?}",world.player.x);
-        self.instant = Instant::now();
-        self.test += 1;
         let mut render_data = if self.level_editor {&camera.level_editor_render(world)} else {&camera.render(world)};
         
         let vertices = &render_data.vertex;
