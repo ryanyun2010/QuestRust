@@ -48,6 +48,8 @@ pub fn pathfind_by_block(entity_id: usize, world: &World, entity: &Entity, entit
     let player = world.player.borrow();
     let (player_x, player_y) = ((player.x / 32.0).floor() as usize, (player.y / 32.0).floor() as usize);
     let (entity_x, entity_y) = ((entity.x / 32.0).floor() as usize, (entity.y / 32.0).floor() as usize);
+    let entity_x_offset = entity.x - entity_x as f32 * 32.0;
+    let entity_y_offset = entity.y - entity_y as f32 * 32.0;
 
     let distance = ((player_x as isize - entity_x as isize).abs() + (player_y as isize - entity_y as isize).abs()) as f32;
 
@@ -56,6 +58,7 @@ pub fn pathfind_by_block(entity_id: usize, world: &World, entity: &Entity, entit
     let mut closed_set: HashMap<[usize; 2], bool> = HashMap::new();
 
     let start_node = PathfindingNode::new(entity_x, entity_y, None, player_x, player_y, 0);
+    let start_node_clone = start_node.clone();
     open_set.push(start_node.clone());
     nodes.insert([entity_x, entity_y], start_node);
 
@@ -76,7 +79,8 @@ pub fn pathfind_by_block(entity_id: usize, world: &World, entity: &Entity, entit
             if path.len() < 2 {
                 return EntityDirectionOptions::None;
             }
-            return match (path[1].0 as isize - path[0].0 as isize, path[1].1 as isize - path[0].1 as isize) {
+            
+            return match (path[0].0 as isize - start_node_clone.x as isize, path[0].1 as isize - start_node_clone.y as isize) {
                 (1, 0) => EntityDirectionOptions::Right,
                 (-1, 0) => EntityDirectionOptions::Left,
                 (0, 1) => EntityDirectionOptions::Down,
@@ -102,7 +106,7 @@ pub fn pathfind_by_block(entity_id: usize, world: &World, entity: &Entity, entit
             if nx > 100000000 || ny > 100000000 {
                 continue;
             }
-            if world.check_collision(true, Some(entity_id), nx * 32, ny * 32, 32, 32, true, Some(entitiesref.clone())) {
+            if world.check_collision(true, Some(entity_id), ((nx * 32) as f32 + entity_x_offset).floor() as usize, ((ny * 32) as f32 + entity_y_offset).floor() as usize, 32, 32, true, Some(entitiesref.clone())) {
                 continue;
             }
 
@@ -129,6 +133,9 @@ pub fn pathfind_high_granularity(entity_id: usize, world: &World, entity: &Entit
     let player = world.player.borrow();
     let (player_x, player_y) = ((player.x / 4.0).floor() as usize, (player.y / 4.0).floor() as usize);
     let (entity_x, entity_y) = ((entity.x / 4.0).floor() as usize, (entity.y / 4.0).floor() as usize);
+    let entity_x_offset = entity.x - entity_x as f32 * 4.0;
+    let entity_y_offset = entity.y - entity_y as f32 * 4.0;
+
 
     let distance = ((player_x as isize - entity_x as isize).abs() + (player_y as isize - entity_y as isize).abs()) as f32;
 
@@ -137,13 +144,15 @@ pub fn pathfind_high_granularity(entity_id: usize, world: &World, entity: &Entit
     let mut closed_set: HashMap<[usize; 2], bool> = HashMap::new();
 
     let start_node = PathfindingNode::new(entity_x, entity_y, None, player_x, player_y, 0);
+    let start_node_clone = start_node.clone();
     open_set.push(start_node.clone());
     nodes.insert([entity_x, entity_y], start_node);
 
     let directions = [(0, 1), (0, -1), (1, 0), (-1, 0)];
 
     while let Some(current) = open_set.pop() {
-        if current.x == player_x && current.y == player_y {
+        let cur_distance_from_goal = ((player_x as isize - current.x as isize).abs() + (player_y as isize - current.y as isize).abs()) as f32;
+        if cur_distance_from_goal < 12.0 {
             let mut path = Vec::new();
             let mut node = current;
 
@@ -156,13 +165,15 @@ pub fn pathfind_high_granularity(entity_id: usize, world: &World, entity: &Entit
             if path.len() < 2 {
                 return EntityDirectionOptions::None;
             }
-            return match (path[1].0 as isize - path[0].0 as isize, path[1].1 as isize - path[0].1 as isize) {
+           
+            return match (path[0].0 as isize - start_node_clone.x as isize, path[0].1 as isize - start_node_clone.y as isize) {
                 (1, 0) => EntityDirectionOptions::Right,
                 (-1, 0) => EntityDirectionOptions::Left,
                 (0, 1) => EntityDirectionOptions::Down,
                 (0, -1) => EntityDirectionOptions::Up,
                 _ => EntityDirectionOptions::None,
             };
+
         }
 
         closed_set.insert([current.x, current.y], true);
@@ -172,6 +183,7 @@ pub fn pathfind_high_granularity(entity_id: usize, world: &World, entity: &Entit
             let ny = current.y.wrapping_add_signed(dy);
 
             let distance_from_goal = ((player_x as isize - nx as isize).abs() + (player_y as isize - ny as isize).abs()) as f32;
+            
             if distance_from_goal > distance + 10.0 {
                 continue;
             }
@@ -180,7 +192,7 @@ pub fn pathfind_high_granularity(entity_id: usize, world: &World, entity: &Entit
                 continue;
             }
 
-            if world.check_collision(true, Some(entity_id), nx * 4, ny * 4, 32, 32, true, Some(entitiesref.clone())) {
+            if world.check_collision(false, Some(entity_id), (nx as f32 * 4.0 + entity_x_offset).floor() as usize, (ny as f32 * 4.0 + entity_y_offset).floor() as usize, 32, 32, true, Some(entitiesref.clone())) {
                 continue;
             }
 
@@ -197,6 +209,7 @@ pub fn pathfind_high_granularity(entity_id: usize, world: &World, entity: &Entit
             }
         }
     }
+
 
     EntityDirectionOptions::None
 }
