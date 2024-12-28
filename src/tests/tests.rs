@@ -133,11 +133,11 @@ pub async fn run(camera: camera::Camera){
     }else if failcount == 1{
         println!("{} {} {} {} {}", "1".red(), "TEST FAILED".red(), "IN".red(), ((time_tracker.elapsed().as_millis() as f32)/1000.0).to_string().red(), "SECONDS".red());
         println!("{} {}", "Failed test:".red(), fail_list[0].red());
-        // panic!("{}", "Tests failed".red());
+        panic!("{}", "Tests failed".red());
     } else{
         println!("{} {} {} {} {}", failcount.to_string().red(), "TESTS FAILED".red(), "IN".red(), ((time_tracker.elapsed().as_millis() as f32)/1000.0).to_string().red(), "SECONDS".red());
         println!("{} {}", "Failed tests:".red(), fail_list.join(", ").red());
-        // panic!("{}", "Tests failed".red());
+        panic!("{}", "Tests failed".red());
     }
 
 }
