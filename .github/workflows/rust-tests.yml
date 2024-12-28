@@ -1,31 +1,30 @@
-name: Rust CI
+name: CI
 
-# This defines the event that triggers the workflow. 
-# In this case, it runs on pushes and pull requests to the `main` branch.
+# This workflow run tests and build for each push
+
 on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
 
 jobs:
-  # Define a job called 'build' that runs on the latest Ubuntu environment
-  test:
-    runs-on: ubuntu-latest  # You can also use 'macos-latest' or 'windows-latest' if needed
-
+  test_phaser:
+    runs-on: macos-latest
     steps:
-      # Step 1: Checkout the code from your repository
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-      # Step 2: Set up Rust (the Rust toolchain)
-      - name: Set up Rust
-        uses: actions/setup-rust@v1
-        with:
-          rust-version: stable  # You can specify other versions like '1.60.0' if needed
+      - name: Update local toolchain
+        run: |
+          rustup update
+          rustup component add clippy
+          rustup install nightly          
 
-      # Step 3: Run tests with cargo test
-      - name: Run tests
-        run: cargo test --verbose
+      - name: Toolchain info
+        run: |
+          cargo --version --verbose
+          rustc --version
+          cargo clippy --version              
+
+      - name: Test
+        run: |
+          cargo test --all          
