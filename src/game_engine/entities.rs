@@ -195,7 +195,7 @@ impl World {
                             ()
                         },
                     }
-                }else if magnitude > 60.0{
+                }else if magnitude > 20.0{
                     let direction: EntityDirectionOptions = pathfinding::pathfind_high_granularity(*entity_id, self, entity, entity_hash.clone());
                     match direction {
                         EntityDirectionOptions::Down => {
