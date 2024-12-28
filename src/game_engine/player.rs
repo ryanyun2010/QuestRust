@@ -1,8 +1,10 @@
 use crate::vertex::Vertex;
 use crate::rendering_engine::abstractions::RenderData;
-use super::inventory::{Hotbar, ItemContainer};
-use super::world::World;
 
+use super::inventory::Hotbar;
+use super::inventory::ItemContainer;
+use super::inventory::ItemContainerPointer;
+use super::world::World;
 #[derive(Clone, Debug)]
 pub struct Player {
     pub x: f32,
@@ -12,9 +14,15 @@ pub struct Player {
     pub max_health: i32,
     pub movement_speed: f32,
     pub holding_texture_sprite: Option<usize>,
-    pub inventory: [[ItemContainer; 6]; 6],
+    pub inventory: [[ItemContainerPointer; 6]; 6],
     pub hotbar: Hotbar,
-    pub mouse_slot: ItemContainer, //The item your mouse carries
+    pub mouse_slot: ItemContainerPointer, //The item your mouse carries
+}
+#[macro_export]
+macro_rules! repeat_token {
+    () => {
+        
+    };
 }
 impl Player {
     pub fn new(x: f32, y: f32, health: f32, max_health: i32, movement_speed: f32, texture_index: i32) -> Self {
@@ -27,17 +35,17 @@ impl Player {
             movement_speed: movement_speed,
             holding_texture_sprite: None,
             inventory: [
-                [ItemContainer::new(None), ItemContainer::new(None), ItemContainer::new(None), ItemContainer::new(None), ItemContainer::new(None), ItemContainer::new(None)],
-                [ItemContainer::new(None), ItemContainer::new(None), ItemContainer::new(None), ItemContainer::new(None), ItemContainer::new(None), ItemContainer::new(None)],
-                [ItemContainer::new(None), ItemContainer::new(None), ItemContainer::new(None), ItemContainer::new(None), ItemContainer::new(None), ItemContainer::new(None)],
-                [ItemContainer::new(None), ItemContainer::new(None), ItemContainer::new(None), ItemContainer::new(None), ItemContainer::new(None), ItemContainer::new(None)],
-                [ItemContainer::new(None), ItemContainer::new(None), ItemContainer::new(None), ItemContainer::new(None), ItemContainer::new(None), ItemContainer::new(None)],
-                [ItemContainer::new(None), ItemContainer::new(None), ItemContainer::new(None), ItemContainer::new(None), ItemContainer::new(None), ItemContainer::new(None)],
+                [ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None)],
+                [ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None)],
+                [ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None)],
+                [ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None)],
+                [ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None)],
+                [ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None)]
             ],
             hotbar: Hotbar::Normal(
-                [ItemContainer::new(None), ItemContainer::new(None), ItemContainer::new(None), ItemContainer::new(None), ItemContainer::new(None), ItemContainer::new(None)]
+                [ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None)]
             ),
-            mouse_slot: ItemContainer::new(None)
+            mouse_slot: ItemContainerPointer::new(None)
         }
     }
     pub fn draw_data(&self, world: &World, window_size_width: usize, window_size_height: usize, index_offset:u16, vertex_offset_x: i32, vertex_offset_y: i32) -> RenderData{
