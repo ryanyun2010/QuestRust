@@ -29,8 +29,6 @@ use game_engine::pathfinding;
 use game_engine::level_editor;
 use game_engine::inventory;
 pub mod tests;
-use tests::headless;
-use tests::headless_state;
 use wgpu::naga::back::Level;
 use std::env;
 
@@ -84,10 +82,6 @@ fn main() {
 
     world.player.borrow_mut().holding_texture_sprite = Some(sprites.get_sprite("sword"));
     println!("Time to load: {:?} ms", load_time.elapsed().as_millis());
-
-    if !args.contains(&String::from("no-tests")){
-        pollster::block_on(tests::tests::run(camera.clone()));
-    }
 
     pollster::block_on(window::run(&mut world, &mut camera, parsed_data.sprites_to_load_json, sprites));
 }

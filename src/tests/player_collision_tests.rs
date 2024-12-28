@@ -1,0 +1,141 @@
+use super::tests::basic_world;
+use super::tests::basic_camera;
+use crate::game_engine::entities::EntityTags;
+use crate::game_engine::terrain::TerrainTags;
+use crate::tests::lib::headless::HeadlessGame;
+#[tokio::test]
+async fn test_player_terrain_collision_moving_right(){
+    let mut world = basic_world().await;
+    let camera = basic_camera().await;
+    let terrain_blocker = world.add_terrain(638, 384);
+    world.set_sprite(terrain_blocker, 0);
+    world.add_terrain_tag(terrain_blocker, TerrainTags::BlocksMovement);
+    let player_starting_x = world.player.borrow().x;
+    let player_starting_x = world.player.borrow().x.clone();
+    let mut headless = HeadlessGame::new(world, camera);
+    headless.state.keys_down.insert(String::from("d"), true);
+    headless.run(200).await;
+    assert!(
+        headless.world.player.borrow().x == player_starting_x + 10.0,
+        "Player should not be able to move right into a terrain blocker, but the player should be able to move right all the way up to it"
+    )
+}
+
+#[tokio::test]
+async fn test_player_terrain_collision_moving_left(){
+    let mut world = basic_world().await;
+    let camera = basic_camera().await;
+    let terrain_blocker = world.add_terrain(554, 384);
+    world.set_sprite(terrain_blocker, 0);
+    world.add_terrain_tag(terrain_blocker, TerrainTags::BlocksMovement);
+    let player_starting_x = world.player.borrow().x;
+    let mut headless = HeadlessGame::new(world, camera);
+    headless.state.keys_down.insert(String::from("a"), true);
+    headless.run(200).await;
+    assert!(
+        headless.world.player.borrow().x == player_starting_x - 10.0,
+        "Player should not be able to move left into a terrain blocker, but the player should be able to move left all the way up to it"
+    )
+}
+
+#[tokio::test]
+async fn test_player_terrain_collision_moving_up(){
+    let mut world = basic_world().await;
+    let camera = basic_camera().await;
+    let terrain_blocker = world.add_terrain(576, 358);
+    world.set_sprite(terrain_blocker, 0);
+    world.add_terrain_tag(terrain_blocker, TerrainTags::BlocksMovement);
+    let player_starting_y = world.player.borrow().y;
+    let mut headless = HeadlessGame::new(world, camera);
+    headless.state.keys_down.insert(String::from("w"), true);
+    headless.run(200).await;
+    assert!(
+        headless.world.player.borrow().y == player_starting_y - 10.0,
+        "Player should not be able to move up into a terrain blocker, but the player should be able to move up all the way up to it"
+    )
+}
+
+#[tokio::test]
+async fn test_player_terrain_collision_moving_down(){
+    let mut world = basic_world().await;
+    let camera = basic_camera().await;
+    let terrain_blocker = world.add_terrain(576, 442);
+    world.set_sprite(terrain_blocker, 0);
+    world.add_terrain_tag(terrain_blocker, TerrainTags::BlocksMovement);
+    let player_starting_y = world.player.borrow().y;
+    let mut headless = HeadlessGame::new(world, camera);
+    headless.state.keys_down.insert(String::from("s"), true);
+    headless.run(200).await;
+    assert!(
+        headless.world.player.borrow().y == player_starting_y + 10.0,
+        "Player should not be able to move down into a terrain blocker, but the player should be able to move down all the way up to it"
+    )
+}
+
+#[tokio::test]
+async fn test_player_entity_collision_moving_down(){
+    let mut world = basic_world().await;
+    let camera = basic_camera().await;
+    let entity_blocker = world.add_entity(576.0, 442.0);
+    world.set_sprite(entity_blocker, 0);
+    world.add_entity_tag(entity_blocker, EntityTags::HasCollision);
+    let player_starting_y = world.player.borrow().y;
+    let mut headless = HeadlessGame::new(world, camera);
+    headless.state.keys_down.insert(String::from("s"), true);
+    headless.run(200).await;
+    assert!(
+        headless.world.player.borrow().y == player_starting_y + 10.0,
+        "Player should not be able to move down into a entity blocker, but the player should be able to move down all the way up to it"
+    )
+}
+
+#[tokio::test]
+async fn test_player_entity_collision_moving_up(){
+    let mut world = basic_world().await;
+    let camera = basic_camera().await;
+    let entity_blocker = world.add_entity(576.0, 358.0);
+    world.set_sprite(entity_blocker, 0);
+    world.add_entity_tag(entity_blocker, EntityTags::HasCollision);
+    let player_starting_y = world.player.borrow().y;
+    let mut headless = HeadlessGame::new(world, camera);
+    headless.state.keys_down.insert(String::from("w"), true);
+    headless.run(200).await;
+    assert!(
+        headless.world.player.borrow().y == player_starting_y - 10.0,
+        "Player should not be able to move up into a entity blocker, but the player should be able to move up all the way up to it"
+    )
+}
+
+#[tokio::test]
+async fn test_player_entity_collision_moving_left(){
+    let mut world = basic_world().await;
+    let camera = basic_camera().await;
+    let entity_blocker = world.add_entity(554.0, 384.0);
+    world.set_sprite(entity_blocker, 0);
+    world.add_entity_tag(entity_blocker, EntityTags::HasCollision);
+    let player_starting_x = world.player.borrow().x;
+    let mut headless = HeadlessGame::new(world, camera);
+    headless.state.keys_down.insert(String::from("a"), true);
+    headless.run(200).await;
+    assert!(
+        headless.world.player.borrow().x == player_starting_x - 10.0,
+        "Player should not be able to move left into a entity blocker, but the player should be able to move left all the way up to it"
+    )
+}
+
+#[tokio::test]
+async fn test_player_entity_collision_moving_right(){
+    let mut world = basic_world().await;
+    let camera = basic_camera().await;
+    let entity_blocker = world.add_entity(638.0, 384.0);
+    world.set_sprite(entity_blocker, 0);
+    world.add_entity_tag(entity_blocker, EntityTags::HasCollision);
+    let player_starting_x = world.player.borrow().x;
+    let mut headless = HeadlessGame::new(world, camera);
+    headless.state.keys_down.insert(String::from("d"), true);
+    headless.run(200).await;
+    assert!(
+        headless.world.player.borrow().x == player_starting_x + 10.0,
+        "Player should not be able to move right into a entity blocker, but the player should be able to move right all the way up to it"
+    )
+}
