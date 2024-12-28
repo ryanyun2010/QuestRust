@@ -26,7 +26,7 @@ impl Eq for PathfindingNode {}
 
 impl PartialOrd for PathfindingNode {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        other.f.partial_cmp(&self.f)
+        other.f.partial_cmp(&self.f)  
     }
 }
 
@@ -66,7 +66,9 @@ pub fn pathfind_by_block(entity_id: usize, world: &World, entity: &Entity, entit
 
 
     while let Some(current) = open_set.pop() {
-        if current.x == player_x && current.y == player_y {
+        let distance_from_goal = f32::sqrt(((player_x as f32 - current.x as f32).powf(2.0) as f32 + (player_y as f32 - current.y as f32).powf(2.0)) as f32);
+
+        if distance_from_goal < 2.0 {
             let mut path = Vec::new();
             let mut node = current;
 

@@ -82,6 +82,7 @@ impl World {
     }
     pub fn update_entities(&mut self) {
         self.pathfinding_frame += 1;
+        self.pathfinding_frame = self.pathfinding_frame % 5;
         let player: Player = self.player.borrow().clone();
         for chunk in self.loaded_chunks.iter() {
             let mut chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>> = &mut self.chunks.borrow_mut();
@@ -173,59 +174,95 @@ impl World {
 
     pub fn move_entity_towards_player(&self, entity_id: &usize, entity: &mut Entity, chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>, entity_hash: HashMap<usize, Entity>, player_x: f32, player_y: f32, respects_collision: bool, has_collision: bool, movement_speed: f32){
         let direction: [f32; 2] = [player_x - entity.x, player_y - entity.y];
-        if (direction[0].abs() + direction[1].abs()) > 0.0 {
+        let entity_pathfinding_frame = self.pathfinding_frames.get(entity_id).unwrap();
+        if direction[0] == 0.0 && direction[1] == 0.0 {
+            return;
+        }
+        if self.pathfinding_frame != *entity_pathfinding_frame {
             let magnitude: f32 = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
-            if respects_collision {
-                if magnitude > 128.0{
-                    let direction: EntityDirectionOptions = pathfinding::pathfind_by_block(*entity_id, self, entity, entity_hash.clone());
-                    match direction {
-                        EntityDirectionOptions::Down => {
-                            self.move_entity(entity, entity_id, [0.0, movement_speed], chunkref, entity_hash, respects_collision, has_collision);
-                        },
-                        EntityDirectionOptions::Up => {
-                            self.move_entity(entity, entity_id, [0.0, -movement_speed], chunkref, entity_hash, respects_collision, has_collision);
-                        },
-                        EntityDirectionOptions::Left => {
-                            self.move_entity(entity, entity_id, [-movement_speed, 0.0], chunkref, entity_hash, respects_collision, has_collision);
-                        },
-                        EntityDirectionOptions::Right => {
-                            self.move_entity(entity, entity_id, [movement_speed, 0.0], chunkref, entity_hash, respects_collision, has_collision);
-                        },
-                        EntityDirectionOptions::None => {
-                            ()
-                        },
-                    }
-                }else if magnitude > 60.0{
-                    let direction: EntityDirectionOptions = pathfinding::pathfind_high_granularity(*entity_id, self, entity, entity_hash.clone());
-                    match direction {
-                        EntityDirectionOptions::Down => {
-                            self.move_entity(entity, entity_id, [0.0, movement_speed], chunkref, entity_hash, respects_collision, has_collision);
-                        },
-                        EntityDirectionOptions::Up => {
-                            self.move_entity(entity, entity_id, [0.0, -movement_speed], chunkref, entity_hash, respects_collision, has_collision);
-                        },
-                        EntityDirectionOptions::Left => {
-                            self.move_entity(entity, entity_id, [-movement_speed, 0.0], chunkref, entity_hash, respects_collision, has_collision);
-                        },
-                        EntityDirectionOptions::Right => {
-                            self.move_entity(entity, entity_id, [movement_speed, 0.0], chunkref, entity_hash, respects_collision, has_collision);
-                        },
-                        EntityDirectionOptions::None => {
-                            ()
-                        },
-                    }
-                }else {
-                    let movement = [direction[0] / magnitude * movement_speed, direction[1] / magnitude * movement_speed];
-                    self.move_entity(entity, entity_id,  movement, chunkref, entity_hash,  respects_collision, has_collision);
+            if magnitude > 128.0{
+                match (entity.cur_pathfinding_direction) {
+                    EntityDirectionOptions::Down => {
+                        self.move_entity(entity, entity_id, [0.0, movement_speed], chunkref, entity_hash.clone(), respects_collision, has_collision);
+                    },
+                    EntityDirectionOptions::Up => {
+                        self.move_entity(entity, entity_id, [0.0, -movement_speed], chunkref, entity_hash.clone(), respects_collision, has_collision);
+                    },
+                    EntityDirectionOptions::Left => {
+                        self.move_entity(entity, entity_id, [-movement_speed, 0.0], chunkref, entity_hash.clone(), respects_collision, has_collision);
+                    },
+                    EntityDirectionOptions::Right => {
+                        self.move_entity(entity, entity_id, [movement_speed, 0.0], chunkref, entity_hash.clone(), respects_collision, has_collision);
+                    },
+                    EntityDirectionOptions::None => {
+                        ()
+                    },
                 }
-            }else{
+                return;
+            }
+        }
+        let magnitude: f32 = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
+        if respects_collision {
+            if magnitude > 128.0{
+                let direction: EntityDirectionOptions = pathfinding::pathfind_by_block(*entity_id, self, entity, entity_hash.clone());
+                match direction {
+                    EntityDirectionOptions::Down => {
+                        entity.cur_pathfinding_direction = EntityDirectionOptions::Down;
+                        self.move_entity(entity, entity_id, [0.0, movement_speed], chunkref, entity_hash, respects_collision, has_collision);
+                    },
+                    EntityDirectionOptions::Up => {
+                        entity.cur_pathfinding_direction = EntityDirectionOptions::Up;
+                        self.move_entity(entity, entity_id, [0.0, -movement_speed], chunkref, entity_hash, respects_collision, has_collision);
+                    },
+                    EntityDirectionOptions::Left => {
+                        entity.cur_pathfinding_direction = EntityDirectionOptions::Left;
+                        self.move_entity(entity, entity_id, [-movement_speed, 0.0], chunkref, entity_hash, respects_collision, has_collision);
+                    },
+                    EntityDirectionOptions::Right => {
+                        entity.cur_pathfinding_direction = EntityDirectionOptions::Right;
+                        self.move_entity(entity, entity_id, [movement_speed, 0.0], chunkref, entity_hash, respects_collision, has_collision);
+                    },
+                    EntityDirectionOptions::None => {
+                        entity.cur_pathfinding_direction = EntityDirectionOptions::None;
+                    },
+                }
+            }else if magnitude > 60.0{
+                let direction: EntityDirectionOptions = pathfinding::pathfind_high_granularity(*entity_id, self, entity, entity_hash.clone());
+                match direction {
+                    EntityDirectionOptions::Down => {
+                        entity.cur_pathfinding_direction = EntityDirectionOptions::Down;
+                        self.move_entity(entity, entity_id, [0.0, movement_speed], chunkref, entity_hash, respects_collision, has_collision);
+                    },
+                    EntityDirectionOptions::Up => {
+                        entity.cur_pathfinding_direction = EntityDirectionOptions::Up;
+                        self.move_entity(entity, entity_id, [0.0, -movement_speed], chunkref, entity_hash, respects_collision, has_collision);
+                    },
+                    EntityDirectionOptions::Left => {
+                        entity.cur_pathfinding_direction = EntityDirectionOptions::Left;
+                        self.move_entity(entity, entity_id, [-movement_speed, 0.0], chunkref, entity_hash, respects_collision, has_collision);
+                    },
+                    EntityDirectionOptions::Right => {
+                        entity.cur_pathfinding_direction = EntityDirectionOptions::Right;
+                        self.move_entity(entity, entity_id, [movement_speed, 0.0], chunkref, entity_hash, respects_collision, has_collision);
+                    },
+                    EntityDirectionOptions::None => {
+                        entity.cur_pathfinding_direction = EntityDirectionOptions::None;
+                    },
+                }
+            }else {
                 let movement = [direction[0] / magnitude * movement_speed, direction[1] / magnitude * movement_speed];
                 self.move_entity(entity, entity_id,  movement, chunkref, entity_hash,  respects_collision, has_collision);
             }
-        } 
+        }else{
+            let movement = [direction[0] / magnitude * movement_speed, direction[1] / magnitude * movement_speed];
+            self.move_entity(entity, entity_id,  movement, chunkref, entity_hash,  respects_collision, has_collision);
+        }
     }
     pub fn add_entity(&mut self, x: f32, y: f32) -> usize{
         let new_entity: Entity = Entity::new(self.element_id,x,y);
+        let new_entity_pathfinding_frame = self.next_pathfinding_frame_for_entity;
+        self.next_pathfinding_frame_for_entity += 1;
+        self.next_pathfinding_frame_for_entity = self.next_pathfinding_frame_for_entity % 5;
         let chunk_id_potentially: Option<usize> = self.get_chunk_from_xy((new_entity.x.floor() as usize), (new_entity.y.floor() as usize));
         let chunk_id: usize;
         if chunk_id_potentially.is_none() {
@@ -236,6 +273,7 @@ impl World {
         self.element_id += 1;
         self.chunks.borrow_mut()[chunk_id].entities_ids.push(self.element_id - 1);
         self.entities.borrow_mut().insert(self.element_id - 1, new_entity);
+        self.pathfinding_frames.insert(self.element_id - 1, new_entity_pathfinding_frame);
         self.entity_lookup.borrow_mut().insert(self.element_id - 1, chunk_id);
         self.element_id - 1
     }
