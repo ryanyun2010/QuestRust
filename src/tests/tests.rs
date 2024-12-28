@@ -223,23 +223,24 @@ pub async fn run(camera: camera::Camera){
     /* TEST WORLD 7 - PLAYER COLLISION WITH ENTITIES */
 
     let mut world7 = world.clone();
-    let entity_blocker = world7.add_terrain(638, 384);
+    let entity_blocker = world7.add_entity(638.0, 384.0);
     world7.set_sprite(entity_blocker, 0);
     world7.add_entity_tag(entity_blocker, EntityTags::HasCollision);
-    let entity_blocker = world7.add_terrain(554, 384);
+    let entity_blocker = world7.add_entity(554.0, 384.0);
     world7.set_sprite(entity_blocker, 0);
     world7.add_entity_tag(entity_blocker, EntityTags::HasCollision);
-    let entity_blocker = world7.add_terrain(576, 358);
+    let entity_blocker = world7.add_entity(576.0, 358.0);
     world7.set_sprite(entity_blocker, 0);
     world7.add_entity_tag(entity_blocker, EntityTags::HasCollision);
-    let entity_blocker = world7.add_terrain(576, 442);
+    let entity_blocker = world7.add_entity(576.0, 442.0);
     world7.set_sprite(entity_blocker, 0);
     world7.add_entity_tag(entity_blocker, EntityTags::HasCollision);
 
-    let mut headless = HeadlessGame::new(world6.clone(), camera.clone());
+    let mut headless = HeadlessGame::new(world7.clone(), camera.clone());
     headless.state.keys_down.insert(String::from("d"), true);
     let player_starting_x = headless.world.player.borrow().x.clone();
     headless.run(200).await;
+    println!("Player x: {}", headless.world.player.borrow().x);
     assert_colored_print("Moving right does not allow player to move into entity blocker, but player can move right up to the entity blocker", headless.world.player.borrow().x == player_starting_x + 10.0);
 
     headless.state.keys_down.insert(String::from("d"), false);
@@ -263,11 +264,11 @@ pub async fn run(camera: camera::Camera){
     }else if failcount == 1{
         println!("{} {} {} {} {}", "1".red(), "TEST FAILED".red(), "IN".red(), ((time_tracker.elapsed().as_millis() as f32)/1000.0).to_string().red(), "SECONDS".red());
         println!("{} {}", "Failed test:".red(), fail_list[0].red());
-        panic!("{}", "Tests failed".red());
+        panic!("{}", "Tests failed \nnote: to test run the game even though the tests fail, use 'cargo run -- no-tests'".red());
     } else{
         println!("{} {} {} {} {}", failcount.to_string().red(), "TESTS FAILED".red(), "IN".red(), ((time_tracker.elapsed().as_millis() as f32)/1000.0).to_string().red(), "SECONDS".red());
         println!("{} {}", "Failed tests:".red(), fail_list.join(", ").red());
-        panic!("{}", "Tests failed".red());
+        panic!("{}", "Tests failed \nnote: to test run the game even though the tests fail, use 'cargo run -- no-tests'".red());
     }
 
 }
