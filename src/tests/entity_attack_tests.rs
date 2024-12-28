@@ -1,9 +1,8 @@
-use crate::game_engine::entities::EntityAttack;
-use crate::game_engine::entities::EntityAttackPattern;
+#![cfg(test)]
+use crate::tests::tests::{basic_world, basic_camera};
+use crate::tests::lib::headless::HeadlessGame;
+use crate::game_engine::entities::{EntityAttack, EntityAttackPattern};
 use crate::game_engine::entities::EntityTags;
-use crate::tests::tests::basic_world;
-use crate::tests::tests::basic_camera;
-use super::lib::headless::HeadlessGame;
 
 #[tokio::test]
 async fn test_entity_can_kill_player(){

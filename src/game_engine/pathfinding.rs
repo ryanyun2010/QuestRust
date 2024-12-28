@@ -1,7 +1,5 @@
 use std::collections::{BinaryHeap, HashMap};
 use std::cmp::Ordering;
-use std::time::Instant;
-
 use super::entities::Entity;
 use super::world::{EntityDirectionOptions, World};
 
@@ -36,15 +34,7 @@ impl Ord for PathfindingNode {
     }
 }
 
-#[derive(PartialEq, Clone)]
-enum OpenClosed {
-    Open,
-    Closed,
-}
-
 pub fn pathfind_by_block(entity_id: usize, world: &World, entity: &Entity, entitiesref: HashMap<usize, Entity>) -> EntityDirectionOptions {
-    let start_time = Instant::now();
-
     let player = world.player.borrow();
     let (player_x, player_y) = ((player.x / 32.0).floor() as usize, (player.y / 32.0).floor() as usize);
     let (entity_x, entity_y) = ((entity.x / 32.0).floor() as usize, (entity.y / 32.0).floor() as usize);
@@ -130,8 +120,6 @@ pub fn pathfind_by_block(entity_id: usize, world: &World, entity: &Entity, entit
 }
 
 pub fn pathfind_high_granularity(entity_id: usize, world: &World, entity: &Entity, entitiesref: HashMap<usize, Entity>) -> EntityDirectionOptions {
-    let start_time = Instant::now();
-
     let player = world.player.borrow();
     let (player_x, player_y) = ((player.x / 4.0).floor() as usize, (player.y / 4.0).floor() as usize);
     let (entity_x, entity_y) = ((entity.x / 4.0).floor() as usize, (entity.y / 4.0).floor() as usize);

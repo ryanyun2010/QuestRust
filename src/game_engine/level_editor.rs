@@ -1,15 +1,11 @@
 use std::collections::HashMap;
-use std::hash::Hash;
-
-use wgpu::naga::back::Level;
-use winit::event::{ElementState, MouseButton};
-
+use winit::event::{ElementState, MouseButton, *};
+use winit::event_loop::EventLoop;
+use winit::window::WindowBuilder;
 use super::json_parsing::{entity_json, terrain_json, JSON_parser, ParsedData};
 use super::starting_level_generator::match_terrain_tags;
-use super::terrain;
 use super::world::World;
-use super::camera::{self, Camera};
-use crate::game_engine::json_parsing::terrain_descriptor_json;
+use super::camera::Camera;
 use crate::rendering_engine::abstractions::{RenderData, SpriteIDContainer};
 use crate::rendering_engine::state::State;
 use super::player::Player;
@@ -164,15 +160,15 @@ impl World { // TODO: ALL THE CODE IN THIS IMPL SHOULD BE MOVED TO LEVEL EDITOR
         }
 
         let magnitude: f32 = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
-        if magnitude > 0.0{
+        if magnitude > 0.0 {
             let movement = [(direction[0] / magnitude * player.movement_speed).round(), (direction[1] / magnitude * player.movement_speed).round()];
             if player.x + movement[0] < 576.0 && player.y + movement[1] < 360.0 {
                 
-            }else if (player.x + movement[0] < 576.0){
+            }else if player.x + movement[0] < 576.0{
                 if direction[1].abs() > 0.0{
                     player.y += (direction[1]/ direction[1].abs() * player.movement_speed).round();
                 }
-            } else if (player.y + movement[1] < 360.0){
+            } else if player.y + movement[1] < 360.0{
                 if direction[0].abs() > 0.0{
                     player.x += (direction[0]/ direction[0].abs() * player.movement_speed).round();
                 }
@@ -231,10 +227,10 @@ impl Camera{
 
 
         let camera_left_chunk_x = World::coord_to_chunk_coord(self.camera_x.floor() as usize);
-        let mut camera_right_chunk_x = World::coord_to_chunk_coord((self.camera_x + self.viewpoint_width as f32).floor() as usize) + 1;
+        let camera_right_chunk_x = World::coord_to_chunk_coord((self.camera_x + self.viewpoint_width as f32).floor() as usize) + 1;
 
         let camera_top_chunk_y = World::coord_to_chunk_coord(self.camera_y.floor() as usize);
-        let mut camera_bot_chunk_y = World::coord_to_chunk_coord((self.camera_y + self.viewpoint_height as f32).floor() as usize) + 1; 
+        let camera_bot_chunk_y = World::coord_to_chunk_coord((self.camera_y + self.viewpoint_height as f32).floor() as usize) + 1; 
 
         let mut chunks_loaded = Vec::new();
         for x in camera_left_chunk_x..camera_right_chunk_x{
@@ -330,23 +326,12 @@ impl State<'_>{
     }
 }
 
-
-
-
-
-use winit::{
-    event::*, event_loop::EventLoop, keyboard::{Key, KeyCode, PhysicalKey}, platform::modifier_supplement::KeyEventExtModifierSupplement, window::WindowBuilder
-};
-
-use crate::{state};
-use winit::event::WindowEvent::KeyboardInput;
-
 pub async fn run(mut level_editor: &mut LevelEditor, camera: &mut Camera, sprites_json_to_load: Vec<String>) {
     let event_loop = EventLoop::new().unwrap();
-    let mut title = "Level Editor";
+    let title = "Level Editor";
     let window = WindowBuilder::new().with_title(title).with_inner_size(winit::dpi::LogicalSize::new(1152, 720)).build(&event_loop).unwrap();
-    let mut State = state::State::new(&window, sprites_json_to_load.clone()).await;
-    State.set_level_editor();
+    let mut state_obj = State::new(&window, sprites_json_to_load.clone()).await;
+    state_obj.set_level_editor();
 
     let mut focused: bool = false;
 
@@ -355,41 +340,41 @@ pub async fn run(mut level_editor: &mut LevelEditor, camera: &mut Camera, sprite
         Event::WindowEvent {
             event,
             window_id,
-        } if window_id == State.window().id() =>{
+        } if window_id == state_obj.window().id() =>{
             match event {
                 WindowEvent::KeyboardInput {  event,.. } => { 
                     let event = event.clone();
-                    State.input(event);
+                    state_obj.input(event);
                 },
                 WindowEvent::CloseRequested => {
                     level_editor.save_edits();
                     control_flow.exit()
                 },
                 WindowEvent::Resized(physical_size) => {
-                    State.resize(physical_size);
+                    state_obj.resize(physical_size);
                 },
                 WindowEvent::CursorMoved {position, ..} => {
-                    State.level_editor_highlight_square(&mut level_editor,   position.x, position.y, &camera);
+                    state_obj.level_editor_highlight_square(&mut level_editor,   position.x, position.y, &camera);
                 },
                 WindowEvent::MouseInput { state, button, .. } => {
-                    State.level_editor_process_mouse_input(state, button);
+                    state_obj.level_editor_process_mouse_input(state, button);
                 },
                 WindowEvent::Focused(bool) => {
                     focused = bool;
                     if focused {
-                        State.window().request_redraw();
+                        state_obj.window().request_redraw();
                     }
                 },
                 WindowEvent::RedrawRequested => {
                     if focused{
-                        State.window().request_redraw();
+                        state_obj.window().request_redraw();
                     }
-                    State.level_editor_update(&mut level_editor, camera);
-                    match State.render(&mut level_editor.world, camera) {
+                    state_obj.level_editor_update(&mut level_editor, camera);
+                    match state_obj.render(&mut level_editor.world, camera) {
                         Ok(_) => {}
                         Err(
                             wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated,
-                        ) => State.resize(State.size),
+                        ) => state_obj.resize(state_obj.size),
                         Err(wgpu::SurfaceError::OutOfMemory) => {
                             log::error!("OutOfMemory");
                             control_flow.exit();
@@ -413,7 +398,7 @@ pub fn level_editor_generate_world_from_json_parsed_data(data: &ParsedData) -> (
     let starting_level_descriptor = data.starting_level_descriptor.clone();
     let player_descriptor = starting_level_descriptor.player;
     let mut world = World::new(Player::new(player_descriptor.x, player_descriptor.y, player_descriptor.health, player_descriptor.max_health, player_descriptor.movement_speed, data.get_texture_id(&player_descriptor.sprite)));
-    let mut sprites = SpriteIDContainer::generate_from_json_parsed_data(data, &mut world);
+    let sprites = SpriteIDContainer::generate_from_json_parsed_data(data, &mut world);
     let mut hash = HashMap::new();
     for entity_descriptor in starting_level_descriptor.entities.iter(){
         let entity = world.create_entity_from_json_archetype(entity_descriptor.x, entity_descriptor.y, &entity_descriptor.archetype, data);

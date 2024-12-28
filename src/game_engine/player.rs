@@ -1,9 +1,6 @@
 use crate::vertex::Vertex;
-use crate::rendering_engine::abstractions::Sprite;
 use crate::rendering_engine::abstractions::RenderData;
-
-use super::inventory::Hotbar;
-use super::inventory::ItemContainer;
+use super::inventory::{Hotbar, ItemContainer};
 use super::world::World;
 
 #[derive(Clone, Debug)]

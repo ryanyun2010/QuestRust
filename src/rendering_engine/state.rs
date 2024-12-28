@@ -1,24 +1,14 @@
-use wgpu_text::{glyph_brush::{Section as TextSection, Text}, BrushBuilder, TextBrush};
-use winit::event;
-use winit::keyboard::Key;
-use winit::keyboard::NamedKey;
-use winit::window::Window;
-use winit::event::*;
+use wgpu_text::{BrushBuilder, TextBrush, glyph_brush::ab_glyph::FontRef};
+
+use winit::{event, keyboard::{Key, NamedKey}, window::Window};
 use std::collections::HashMap;
 use wgpu::util::DeviceExt;
-use crate::game_engine::json_parsing::JSON_parser;
-use crate::rendering_engine::texture;
 use crate::vertex::Vertex;
-use crate::texture::create_texture_bind_group;
-use crate::world;
+use crate::texture::{create_texture_bind_group, Texture};
 use crate::world::World;
 use crate::camera::Camera;
-use std::num::NonZeroU64;
-use std::num::NonZeroU32;
-use std::time::Instant;
-use winit::event::WindowEvent::KeyboardInput;
+use std::num::{NonZeroU64, NonZeroU32};
 use std::fs;
-use crate::texture::Texture;
 
 
 const BACKGROUND_COLOR: wgpu::Color = wgpu::Color {
@@ -41,7 +31,7 @@ pub struct State<'a> {
     pub level_editor: bool,
     pub left_mouse_button_down: bool,
     pub right_mouse_button_down: bool,
-    pub text_brush: wgpu_text::TextBrush<wgpu_text::glyph_brush::ab_glyph::FontRef<'a>>,
+    pub text_brush: TextBrush<FontRef<'a>>,
     window: &'a Window,
 }
 impl<'a> State<'a> { 
@@ -102,7 +92,7 @@ impl<'a> State<'a> {
             source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
         });
         let bytes = include_bytes!("./img/font.ttf");
-        let brush: wgpu_text::TextBrush<wgpu_text::glyph_brush::ab_glyph::FontRef<'a>> = BrushBuilder::using_font_bytes(bytes).unwrap().build(&device, config.width, config.height, config.format);
+        let brush: TextBrush<FontRef<'_>> = BrushBuilder::using_font_bytes(bytes).unwrap().build(&device, config.width, config.height, config.format);
 
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -220,7 +210,7 @@ impl<'a> State<'a> {
     }
 
     pub fn render(&mut self, world: &mut World, camera: &mut Camera) -> Result<(), wgpu::SurfaceError> {
-        let mut render_data = if self.level_editor {&camera.level_editor_render(world)} else {&camera.render(world)};
+        let render_data = if self.level_editor {&camera.level_editor_render(world)} else {&camera.render(world)};
         
         let vertices = &render_data.vertex;
         if vertices.len() < 1 {

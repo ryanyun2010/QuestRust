@@ -1,6 +1,6 @@
 use crate::loot::Loot;
 use crate::game_engine::item::Item;
-use std::{cell::RefCell, collections::HashMap};
+use std::collections::HashMap;
 use super::world::{Chunk, EntityDirectionOptions, World};
 use super::player::Player;
 use super::pathfinding;
@@ -85,7 +85,7 @@ impl World {
         self.pathfinding_frame = self.pathfinding_frame % 5;
         let player: Player = self.player.borrow().clone();
         for chunk in self.loaded_chunks.iter() {
-            let mut chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>> = &mut self.chunks.borrow_mut();
+            let chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>> = &mut self.chunks.borrow_mut();
             for entity_id in chunkref[*chunk].clone().entities_ids.iter() {
                 self.update_entity(entity_id, player.x, player.y, chunkref);
             }
@@ -99,7 +99,7 @@ impl World {
         let entity_tags: &Vec<EntityTags> = entity_tags_potentially.unwrap();
         let entity_hash = self.entities.borrow().clone();
         let mut entity_mut_hash: std::cell::RefMut<'_, HashMap<usize, Entity>> = self.entities.borrow_mut();
-        let mut entity: &mut Entity = entity_mut_hash.get_mut(entity_id).unwrap();
+        let entity: &mut Entity = entity_mut_hash.get_mut(entity_id).unwrap();
         let mut distance: f64 = f64::MAX;
         let mut follows_player: bool = false;
         let mut aggroed_to_player: bool = false;
@@ -181,7 +181,7 @@ impl World {
         if self.pathfinding_frame != *entity_pathfinding_frame {
             let magnitude: f32 = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
             if magnitude > 128.0{
-                match (entity.cur_pathfinding_direction) {
+                match entity.cur_pathfinding_direction {
                     EntityDirectionOptions::Down => {
                         self.move_entity(entity, entity_id, [0.0, movement_speed], chunkref, entity_hash.clone(), respects_collision, has_collision);
                     },
@@ -263,7 +263,7 @@ impl World {
         let new_entity_pathfinding_frame = self.next_pathfinding_frame_for_entity;
         self.next_pathfinding_frame_for_entity += 1;
         self.next_pathfinding_frame_for_entity = self.next_pathfinding_frame_for_entity % 5;
-        let chunk_id_potentially: Option<usize> = self.get_chunk_from_xy((new_entity.x.floor() as usize), (new_entity.y.floor() as usize));
+        let chunk_id_potentially: Option<usize> = self.get_chunk_from_xy(new_entity.x.floor() as usize, new_entity.y.floor() as usize);
         let chunk_id: usize;
         if chunk_id_potentially.is_none() {
             chunk_id = self.new_chunk(World::coord_to_chunk_coord(new_entity.x.floor() as usize), World::coord_to_chunk_coord(new_entity.y.floor() as usize), None);

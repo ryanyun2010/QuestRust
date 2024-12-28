@@ -1,8 +1,8 @@
-use super::tests::basic_world;
-use super::tests::basic_camera;
-use crate::game_engine::entities::EntityTags;
-use crate::game_engine::terrain::TerrainTags;
+#![cfg(test)]
+use crate::tests::tests::{basic_camera, basic_world};
 use crate::tests::lib::headless::HeadlessGame;
+use crate::game_engine::{terrain::TerrainTags, entities::EntityTags};
+
 #[tokio::test]
 async fn test_player_terrain_collision_moving_right(){
     let mut world = basic_world().await;
@@ -11,7 +11,6 @@ async fn test_player_terrain_collision_moving_right(){
     world.set_sprite(terrain_blocker, 0);
     world.add_terrain_tag(terrain_blocker, TerrainTags::BlocksMovement);
     let player_starting_x = world.player.borrow().x;
-    let player_starting_x = world.player.borrow().x.clone();
     let mut headless = HeadlessGame::new(world, camera);
     headless.state.keys_down.insert(String::from("d"), true);
     headless.run(200).await;

@@ -1,4 +1,4 @@
-use super::{item::Item, world::{self, World}};
+use super::{item::Item, world::{World}};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ItemType {

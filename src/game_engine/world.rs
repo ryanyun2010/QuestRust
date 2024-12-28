@@ -1,18 +1,10 @@
 use std::collections::HashMap;
-use std::hash::Hash;
-use std::time::Instant;
-use crate::rendering_engine::abstractions::Sprite;
-use crate::rendering_engine::abstractions::RenderData;
-use crate::vertex::Vertex;
-use crate::entities::EntityTags;
-use winit::keyboard::Key;
 use std::cell::RefCell;
-use crate::entities::Entity;
-use super::inventory::ItemContainer;
-use super::json_parsing::ParsedData;
-use super::player::Player;
-use super::entities::EntityAttackPattern;
-use super::terrain::{self, Terrain, TerrainTags};
+use crate::rendering_engine::abstractions::Sprite;
+use crate::entities::{Entity, EntityTags};
+use crate::game_engine::inventory::ItemContainer;
+use crate::game_engine::player::Player;
+use crate::game_engine::terrain::{Terrain, TerrainTags};
 
 
 #[derive(Debug, Clone, Copy)]
@@ -64,26 +56,26 @@ pub struct World{
 // OVER TIME, LET'S MOVE THESE INTO MULTIPLE IMPL STATEMENTS IN THEIR RESPECTIVE MODULES.
 impl World{ 
     pub fn new(player: Player) -> Self{
-        let mut chunks: RefCell<Vec<Chunk>> = RefCell::new(Vec::new());
-        let mut player: RefCell<Player> = RefCell::new(player);
-        let mut element_id: usize = 0;
-        let mut sprites: Vec<Sprite> = Vec::new();
-        let mut sprite_lookup: HashMap<usize, usize> = HashMap::new();
-        let mut chunk_lookup: RefCell<HashMap<[usize; 2], usize>> = RefCell::new(HashMap::new());
-        let mut terrain_lookup: HashMap<usize, usize> = HashMap::new();
-        let mut entity_lookup: RefCell<HashMap<usize, usize>> = RefCell::new(HashMap::new());
-        let mut entity_tags_lookup: HashMap<usize, Vec<EntityTags>> = HashMap::new();
-        let mut terrain_tags_lookup: HashMap<usize, Vec<TerrainTags>> = HashMap::new();
-        let mut terrain: HashMap<usize, Terrain> = HashMap::new();
-        let mut entities: RefCell<HashMap<usize, Entity>> = RefCell::new(HashMap::new());
-        let mut item_containers: RefCell<HashMap<usize, ItemContainer>> = RefCell::new(HashMap::new());
-        let mut loaded_chunks: Vec<usize> = Vec::new(); 
-        let mut collision_cache: RefCell<HashMap<[usize; 2], Vec<usize>>> = RefCell::new(HashMap::new());
-        let mut pathfinding_frames: HashMap<usize, usize> = HashMap::new();
-        let mut next_pathfinding_frame_for_entity: usize = 0;
-        let mut pathfinding_frame: usize = 0;
-        let mut level_editor: bool = false;
-        let mut highlighted = None;
+        let chunks: RefCell<Vec<Chunk>> = RefCell::new(Vec::new());
+        let player: RefCell<Player> = RefCell::new(player);
+        let element_id: usize = 0;
+        let sprites: Vec<Sprite> = Vec::new();
+        let sprite_lookup: HashMap<usize, usize> = HashMap::new();
+        let chunk_lookup: RefCell<HashMap<[usize; 2], usize>> = RefCell::new(HashMap::new());
+        let terrain_lookup: HashMap<usize, usize> = HashMap::new();
+        let entity_lookup: RefCell<HashMap<usize, usize>> = RefCell::new(HashMap::new());
+        let entity_tags_lookup: HashMap<usize, Vec<EntityTags>> = HashMap::new();
+        let terrain_tags_lookup: HashMap<usize, Vec<TerrainTags>> = HashMap::new();
+        let terrain: HashMap<usize, Terrain> = HashMap::new();
+        let entities: RefCell<HashMap<usize, Entity>> = RefCell::new(HashMap::new());
+        let item_containers: RefCell<HashMap<usize, ItemContainer>> = RefCell::new(HashMap::new());
+        let loaded_chunks: Vec<usize> = Vec::new(); 
+        let collision_cache: RefCell<HashMap<[usize; 2], Vec<usize>>> = RefCell::new(HashMap::new());
+        let pathfinding_frames: HashMap<usize, usize> = HashMap::new();
+        let next_pathfinding_frame_for_entity: usize = 0;
+        let pathfinding_frame: usize = 0;
+        let level_editor: bool = false;
+        let highlighted = None;
         Self{
             chunks,
             player,
@@ -109,9 +101,8 @@ impl World{
     }
     
     pub fn new_chunk(&self, chunk_x: usize, chunk_y: usize, chunkref: Option<&mut std::cell::RefMut<'_, Vec<Chunk>>>) -> usize{
-        let mut new_chunk_id: usize = 0;
         if chunkref.is_none(){
-            new_chunk_id = self.chunks.borrow().len() as usize; 
+            let new_chunk_id = self.chunks.borrow().len() as usize; 
             self.chunks.borrow_mut().push(
                 Chunk{
                     chunk_id: new_chunk_id,
@@ -120,9 +111,11 @@ impl World{
                     terrain_ids: Vec::new(),
                     entities_ids: Vec::new(),
                 });
+            self.chunk_lookup.borrow_mut().insert([chunk_x, chunk_y], new_chunk_id);
+            return new_chunk_id;
         }else{
             let cr = chunkref.unwrap();
-            new_chunk_id = cr.len() as usize; 
+            let new_chunk_id = cr.len() as usize; 
             cr.push(
                 Chunk{
                     chunk_id: new_chunk_id,
@@ -131,9 +124,9 @@ impl World{
                     terrain_ids: Vec::new(),
                     entities_ids: Vec::new(),
                 });
+            self.chunk_lookup.borrow_mut().insert([chunk_x, chunk_y], new_chunk_id);
+            return new_chunk_id;
         }
-        self.chunk_lookup.borrow_mut().insert([chunk_x, chunk_y], new_chunk_id);
-        new_chunk_id
     }
 
     pub fn set_loaded_chunks(&mut self, chunk_ids: Vec<usize>){
@@ -261,7 +254,7 @@ impl World{
                 ids_to_check.extend(self.collision_cache.borrow().get(&[tile[0],tile[1]]).unwrap());
             }
         }
-        let mut eh;
+        let eh;
         if entity {
             eh = entity_hash.unwrap();
         }else{

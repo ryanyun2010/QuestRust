@@ -1,8 +1,5 @@
 use image::GenericImageView;
 use anyhow::*;
-use wgpu::util::DeviceExt;
-use std::fs;
-
 
 pub struct Texture {
     #[allow(unused)]
@@ -95,7 +92,7 @@ macro_rules! create_texture_bind_group {
             samplers.push(texture.sampler); 
         }
 
-        let mut texture_index_buffer_contents = vec![0u32; textures.len()];
+        let texture_index_buffer_contents = vec![0u32; textures.len()];
         let texture_index_buffer = $device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Index Buffer"),
             contents: bytemuck::cast_slice(&texture_index_buffer_contents),

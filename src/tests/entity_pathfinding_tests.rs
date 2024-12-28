@@ -1,10 +1,8 @@
-use crate::game_engine::entities::EntityAttack;
-use crate::game_engine::entities::EntityAttackPattern;
-use crate::game_engine::entities::EntityTags;
+#![cfg(test)]
+use crate::game_engine::entities::{EntityAttack, EntityAttackPattern, EntityTags};
 use crate::game_engine::terrain::TerrainTags;
-use crate::tests::tests::basic_world;
-use crate::tests::tests::basic_camera;
-use super::lib::headless::HeadlessGame;
+use crate::tests::tests::{basic_camera, basic_world};
+use crate::tests::lib::headless::HeadlessGame;
 
 #[tokio::test]
 async fn test_terrain_should_block_entities(){

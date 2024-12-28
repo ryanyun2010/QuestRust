@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use wgpu_text::{glyph_brush::{Section as TextSection, Text}, BrushBuilder, TextBrush};
+use wgpu_text::glyph_brush::{Section as TextSection, Text};
 use crate::game_engine::{json_parsing::ParsedData, world::World};
 
 use super::vertex::Vertex;

@@ -1,10 +1,8 @@
 use std::collections::HashMap;
-use std::hash::Hash;
 
-use crate::camera;
 use crate::world::World;
 use crate::rendering_engine::abstractions::{RenderData, TextSprite};
-use wgpu_text::{glyph_brush::{Section as TextSection, Text}, BrushBuilder, TextBrush};
+use wgpu_text::glyph_brush::Section as TextSection;
 #[derive(Debug, Clone)]
 pub struct Camera{
     pub viewpoint_width: usize,
@@ -14,7 +12,6 @@ pub struct Camera{
     pub ui_elements: Vec<crate::game_engine::ui::UIElement>, // vec element i should be element with id i
     pub ui_element_names: HashMap<String, usize>, // map names to ids
     pub ui_element_id: usize,
-    velocity: [isize; 2],
     pub level_editor: bool,
     pub text: Vec<TextSprite>,
 }
@@ -29,7 +26,6 @@ impl Camera{
             ui_elements: Vec::new(),
             ui_element_names: HashMap::new(),
             ui_element_id: 0,
-            velocity: [0,0],
             level_editor: false,
             text: Vec::new(),
         }
@@ -88,10 +84,10 @@ impl Camera{
 
 
         let camera_left_chunk_x = World::coord_to_chunk_coord(self.camera_x.floor() as usize);
-        let mut camera_right_chunk_x = World::coord_to_chunk_coord((self.camera_x + self.viewpoint_width as f32).floor() as usize) + 1;
+        let camera_right_chunk_x = World::coord_to_chunk_coord((self.camera_x + self.viewpoint_width as f32).floor() as usize) + 1;
 
         let camera_top_chunk_y = World::coord_to_chunk_coord(self.camera_y.floor() as usize);
-        let mut camera_bot_chunk_y = World::coord_to_chunk_coord((self.camera_y + self.viewpoint_height as f32).floor() as usize) + 1; 
+        let camera_bot_chunk_y = World::coord_to_chunk_coord((self.camera_y + self.viewpoint_height as f32).floor() as usize) + 1; 
 
         let mut chunks_loaded = Vec::new();
         for x in camera_left_chunk_x..camera_right_chunk_x{

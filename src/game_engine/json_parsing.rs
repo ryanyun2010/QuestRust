@@ -1,18 +1,8 @@
-use serde::Deserialize;
-use serde::Serialize;
-use std::fmt::format;
-use std::hash::Hash;
-use std::io::BufReader;
-use std::io::BufWriter;
-use std::io::Write;
+use serde::{Deserialize, Serialize};
+use std::io::{BufReader, BufWriter, Write};
 use std::fs::File;
 use std::collections::HashMap;
-use crate::game_engine::entities::EntityTags;
-use crate::game_engine::entities::EntityAttack;
-use crate::rendering_engine::abstractions::Sprite;
-use super::entities::Entity;
-use super::entities::EntityAttackPattern;
-use super::player::Player;
+use crate::game_engine::entities::{EntityTags, EntityAttack, EntityAttackPattern};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct entity_archetype_json {
@@ -197,7 +187,7 @@ impl JSON_parser {
             data.entity_attack_patterns.insert(name.clone(), EntityAttackPattern::new(attacks, entity_attack_pattern.cooldowns.clone()));
         }
 
-        for (name, entity_archetype) in &self.entity_archetypes_json {
+        for (.., entity_archetype) in &self.entity_archetypes_json {
             let mut tags = Vec::new();
             from_JSON_entity_tag_parsing_basic!(tags, &entity_archetype.basic_tags);
             // for basic_tag in &entity_archetype.basic_tags {
@@ -291,7 +281,7 @@ impl JSON_parser {
     }
 
     pub fn write(&self, entity_archetypes_path: &str, entity_attack_patterns_path: &str, entity_attacks_path: &str, sprites_path: &str, starting_level_path: &str) -> Result<(), Box<dyn std::error::Error>> {
-        let mut file = File::create(starting_level_path)?;
+        let file = File::create(starting_level_path)?;
         let mut writer = BufWriter::new(file);
         write!(writer, "{}", serde_json::to_string(&self.starting_level_json)?)?;
         Ok(())

@@ -1,10 +1,10 @@
-use crate::tests::tests::basic_world;
-use crate::tests::tests::basic_camera;
+#![cfg(test)]
+use crate::tests::tests::{basic_world, basic_camera};
 use super::lib::headless::HeadlessGame;
 
 #[tokio::test]
 async fn test_nothing_happens_in_blank_world(){
-    let mut world = basic_world().await;
+    let world = basic_world().await;
     let camera = basic_camera().await;
     let starting_x = world.player.borrow().x;
     let starting_y = world.player.borrow().y;
