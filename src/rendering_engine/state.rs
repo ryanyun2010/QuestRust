@@ -278,14 +278,9 @@ impl<'a> State<'a> {
         });
 
         {
-            let section = TextSection::default().add_text(
-                Text::new("Hello World")
-                .with_scale(50.0)
-                .with_color([0.0, 0.0, 0.0, 1.0]))
-                .with_screen_position((50.0, 500.0)
-            );
+            let sections = camera.get_sections();
             self.text_brush.resize_view(self.size.width as f32, self.size.height as f32, &self.queue);
-            self.text_brush.queue(&self.device, &self.queue, [&section]).unwrap();
+            self.text_brush.queue(&self.device, &self.queue, sections).unwrap();
             
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),

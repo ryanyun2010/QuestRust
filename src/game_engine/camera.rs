@@ -3,7 +3,8 @@ use std::hash::Hash;
 
 use crate::camera;
 use crate::world::World;
-use crate::rendering_engine::abstractions::RenderData;
+use crate::rendering_engine::abstractions::{RenderData, TextSprite};
+use wgpu_text::{glyph_brush::{Section as TextSection, Text}, BrushBuilder, TextBrush};
 #[derive(Debug, Clone)]
 pub struct Camera{
     pub viewpoint_width: usize,
@@ -15,7 +16,7 @@ pub struct Camera{
     pub ui_element_id: usize,
     velocity: [isize; 2],
     pub level_editor: bool,
-    pub text: String,
+    pub text: Vec<TextSprite>,
 }
 
 impl Camera{
@@ -30,7 +31,7 @@ impl Camera{
             ui_element_id: 0,
             velocity: [0,0],
             level_editor: false,
-            text: String::new(),
+            text: Vec::new(),
         }
     }
     pub fn update_ui(&mut self, world: &mut World){
@@ -165,7 +166,14 @@ impl Camera{
         
         render_data
     }
-    pub fn add_text(&mut self, text: String){
-        self.text = text;
+    pub fn add_text(&mut self, text: String, x: f32, y: f32, font_size: f32, color: [f32; 4]){
+        self.text.push(TextSprite::new(text, font_size, x, y, color));
+    }
+    pub fn get_sections(&self) -> Vec<TextSection>{
+        let mut sections = Vec::new();
+        for text in self.text.iter(){
+            sections.push(text.get_section().clone());
+        }
+        sections
     }
 }

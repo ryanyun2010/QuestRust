@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-
+use wgpu_text::{glyph_brush::{Section as TextSection, Text}, BrushBuilder, TextBrush};
 use crate::game_engine::{json_parsing::ParsedData, world::World};
 
 use super::vertex::Vertex;
@@ -64,3 +64,24 @@ impl SpriteIDContainer{
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct TextSprite{
+    pub text: String,
+    pub font_size: f32,
+    pub x: f32,
+    pub y: f32,
+    pub color: [f32; 4]
+}
+
+impl TextSprite{
+    pub fn new(text: String, font_size: f32, x: f32, y: f32, color: [f32; 4]) -> Self{
+        Self { text, font_size, x, y, color}
+    }
+    pub fn get_section(&self) -> TextSection<'_>{
+        TextSection::default().add_text(
+            Text::new(self.text.as_str())
+            .with_scale(self.font_size)
+            .with_color(self.color)
+        ).with_screen_position((self.x, self.y))
+    }
+}
