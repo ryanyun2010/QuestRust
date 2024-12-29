@@ -11,7 +11,7 @@ use std::num::{NonZeroU64, NonZeroU32};
 use std::fs;
 
 
-const BACKGROUND_COLOR: wgpu::Color = wgpu::Color {
+pub const BACKGROUND_COLOR: wgpu::Color = wgpu::Color {
     r: 1.0,
     g: 1.0,
     b: 1.0,
@@ -210,7 +210,7 @@ impl<'a> State<'a> {
     }
 
     pub fn render(&mut self, world: &mut World, camera: &mut Camera) -> Result<(), wgpu::SurfaceError> {
-        let render_data = if self.level_editor {&camera.level_editor_render(world)} else {&camera.render(world)};
+        let render_data = &camera.render(world);
         
         let vertices = &render_data.vertex;
         if vertices.len() < 1 {

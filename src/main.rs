@@ -11,7 +11,7 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     if args.contains(&String::from("level-editor")){
         let mut parser = json_parsing::JSON_parser::new();
-        let parsed_data = parser.parse_and_convert_game_data("src/game_data/entity_archetypes.json", "src/game_data/entity_attack_patterns.json", "src/game_data/entity_attacks.json", "src/game_data/sprites.json", "src/game_data/starting_level.json");
+        let parsed_data = parser.parse_and_convert_game_data("src/game_data/entity_archetypes.json", "src/game_data/entity_attack_patterns.json", "src/game_data/entity_attacks.json", "src/game_data/sprites.json", "src/game_data/starting_level.json", "src/game_data/terrain_archetypes.json");
         let mut camera = camera::Camera::new(1152,720);
         let (world, sprites, hash) = level_editor::level_editor_generate_world_from_json_parsed_data(&parsed_data);
         let mut level_editor = level_editor::LevelEditor::new(world, sprites, parser, hash);
@@ -23,7 +23,7 @@ fn main() {
     
     let mut parser = json_parsing::JSON_parser::new();
     let load_time = Instant::now();
-    let parsed_data = parser.parse_and_convert_game_data("src/game_data/entity_archetypes.json", "src/game_data/entity_attack_patterns.json", "src/game_data/entity_attacks.json", "src/game_data/sprites.json", "src/game_data/starting_level.json");
+    let parsed_data = parser.parse_and_convert_game_data("src/game_data/entity_archetypes.json", "src/game_data/entity_attack_patterns.json", "src/game_data/entity_attacks.json", "src/game_data/sprites.json", "src/game_data/starting_level.json", "src/game_data/terrain_archetypes.json");
     
     let mut camera = camera::Camera::new(1152,720);
     let (mut world, sprites) = starting_level_generator::generate_world_from_json_parsed_data(&parsed_data);

@@ -23,7 +23,7 @@ pub fn generate_world_from_json_parsed_data(data: &ParsedData) -> (World, Sprite
         let start_y = terrain_json.y;
         let width = terrain_json.width;
         let height = terrain_json.height;
-        let descriptor = terrain_json.terrain_descriptor.clone();
+        let descriptor = data.get_terrain_archetype(&terrain_json.terrain_archetype).expect(format!("Could not find terrain archetype: {}", terrain_json.terrain_archetype).as_str());
         let tags = descriptor.basic_tags.clone();
         match descriptor.r#type.as_str() {
             "basic" => {
@@ -37,7 +37,7 @@ pub fn generate_world_from_json_parsed_data(data: &ParsedData) -> (World, Sprite
             },
             "randomness" => {
                 println!("Randomness {:?}", descriptor);
-                let random_chances = descriptor.random_chances.unwrap();
+                let random_chances = descriptor.random_chances.clone().expect("Randomness terrain must have random_chances");
                 let mut random_chances_adjusted = Vec::new();
                 let mut sum_so_far = 0.0;
                 for chance in random_chances{

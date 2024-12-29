@@ -5,6 +5,8 @@ use std::fs::File;
 use std::collections::HashMap;
 use crate::game_engine::entities::{EntityTags, EntityAttack, EntityAttackPattern};
 
+use super::terrain;
+
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct entity_archetype_json {
     pub name: String,
@@ -54,10 +56,11 @@ pub struct terrain_json{
     pub y: usize,
     pub width: usize,
     pub height: usize,
-    pub terrain_descriptor: terrain_descriptor_json
+    pub terrain_archetype: String
 }
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
-pub struct terrain_descriptor_json{
+pub struct terrain_archetype_json{
+    pub name: String,
     pub r#type: String,
     pub random_chances: Option<Vec<f32>>,
     pub sprites: Vec<String>,
@@ -78,6 +81,7 @@ pub struct JSON_parser {
     pub entity_archetypes_json: HashMap<String, entity_archetype_json>,
     pub entity_attack_patterns_json: HashMap<String, entity_attack_pattern_json>,
     pub entity_attacks_json: HashMap<String, entity_attack_json>,
+    pub terrain_archetypes_json: HashMap<String, terrain_archetype_json>,
     pub sprites_json: HashMap<String, sprite_json>,
     pub item_json: HashMap<String, item_json>,
     pub starting_level_json: starting_level_json,
@@ -117,6 +121,7 @@ impl JSON_parser {
         Self {
             entity_archetypes_json: HashMap::new(),
             entity_attack_patterns_json: HashMap::new(),
+            terrain_archetypes_json: HashMap::new(),
             entity_attacks_json: HashMap::new(),
             sprites_json: HashMap::new(),
             item_json: HashMap::new(),
@@ -141,6 +146,14 @@ impl JSON_parser {
         let data: Vec<entity_archetype_json> = serde_json::from_reader(reader).expect("JSON was not well-formatted");
         for archetype in data {
             self.entity_archetypes_json.insert(archetype.name.clone(), archetype);
+        }
+    }
+    pub fn parse_terrain_archetypes(&mut self, path: &str) {
+        let file = File::open(path).expect("Could not open file");
+        let reader = BufReader::new(file);
+        let data: Vec<terrain_archetype_json> = serde_json::from_reader(reader).expect("JSON was not well-formatted");
+        for archetype in data {
+            self.terrain_archetypes_json.insert(archetype.name.clone(), archetype);
         }
     }
     pub fn parse_entity_attack_patterns(&mut self, path: &str) {
@@ -204,6 +217,9 @@ impl JSON_parser {
         data.sprites_to_load_json = sprites_to_load;
         data.starting_level_descriptor = self.starting_level_json.clone();
 
+        for (.., terrain_archetype) in &self.terrain_archetypes_json {
+            data.terrain_archetypes.insert(terrain_archetype.name.clone(), terrain_archetype.clone());
+        }
         data
     }
     pub fn convert_archetype(&self, entity_archetype: &entity_archetype_json, data: &ParsedData) -> Vec<EntityTags> {
@@ -258,10 +274,11 @@ impl JSON_parser {
         tags.push(EntityTags::Attacks(data.entity_attack_patterns.get(&entity_archetype.attack_pattern).expect(&format!("When parsing entity archetypes, attack pattern: {} in archetype: {} was not found", entity_archetype.attack_pattern, entity_archetype.name)).clone()));
         return tags;
     }
-    pub fn parse_and_convert_game_data(&mut self, entity_archetypes_path: &str, entity_attack_patterns_path: &str, entity_attacks_path: &str, sprites_path: &str, starting_level_path: &str) -> ParsedData{
+    pub fn parse_and_convert_game_data(&mut self, entity_archetypes_path: &str, entity_attack_patterns_path: &str, entity_attacks_path: &str, sprites_path: &str, starting_level_path: &str, terrain_archetypes_path: &str) -> ParsedData{
         self.parse_entity_archetypes(entity_archetypes_path);
         self.parse_entity_attack_patterns(entity_attack_patterns_path);
         self.parse_entity_attacks(entity_attacks_path);
+        self.parse_terrain_archetypes(terrain_archetypes_path);
         self.parse_sprites(sprites_path);
         self.parse_starting_level(starting_level_path);
         self.convert()
@@ -273,8 +290,11 @@ impl JSON_parser {
         write!(writer, "{}", serde_json::to_string(&self.starting_level_json)?)?;
         Ok(())
     }
-    pub fn get_archetype(&self, name: &str) -> Option<&entity_archetype_json> {
+    pub fn get_entity_archetype_json(&self, name: &str) -> Option<&entity_archetype_json> {
         self.entity_archetypes_json.get(name)
+    }
+    pub fn get_terrain_archetype_json(&self, name: &str) -> Option<&terrain_archetype_json> {
+        self.terrain_archetypes_json.get(name)
     }
     
 }
@@ -285,6 +305,7 @@ pub struct ParsedData{
     pub entity_archetypes: HashMap<String, Vec<EntityTags>>,
     pub entity_attack_patterns: HashMap<String, EntityAttackPattern>,
     pub entity_attacks: HashMap<String, EntityAttack>,
+    pub terrain_archetypes: HashMap<String, terrain_archetype_json>,
     pub texture_ids: HashMap<String, i32>,
     pub sprites_to_load_json: Vec<String>,
     pub starting_level_descriptor: starting_level_json
@@ -296,6 +317,7 @@ impl ParsedData{
             entity_archetypes: HashMap::new(),
             entity_attack_patterns: HashMap::new(),
             entity_attacks: HashMap::new(),
+            terrain_archetypes: HashMap::new(),
             texture_ids: HashMap::new(),
             sprites_to_load_json: Vec::new(),
             starting_level_descriptor: starting_level_json {
@@ -312,10 +334,13 @@ impl ParsedData{
             }
         }
     }
-    pub fn get_archetype(&self, name: &str) -> Option<&Vec<EntityTags>> {
+    pub fn get_entity_archetype(&self, name: &str) -> Option<&Vec<EntityTags>> {
         self.entity_archetypes.get(name)
     }
     pub fn get_texture_id(&self, name: &str) -> i32 {
         self.texture_ids.get(name).expect(&format!("Texture with name: {} was not found", name)).clone()
+    }
+    pub fn get_terrain_archetype(&self, name: &str) -> Option<&terrain_archetype_json> {
+        self.terrain_archetypes.get(name)
     }
 }

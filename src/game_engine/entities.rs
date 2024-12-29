@@ -279,7 +279,7 @@ impl World {
     }
     
     pub fn create_entity_from_json_archetype(&mut self, x: f32, y: f32, archetype: &str, parser: &ParsedData) -> usize{
-        let archetype = parser.get_archetype(archetype).expect(&format!("Archetype {} not found", archetype));
+        let archetype = parser.get_entity_archetype(archetype).expect(&format!("Archetype {} not found", archetype));
         let entity = self.add_entity(x, y);
         self.add_entity_tags(entity, archetype.clone());
         entity

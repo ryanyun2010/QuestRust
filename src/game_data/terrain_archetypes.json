@@ -1,0 +1,34 @@
+[
+    {
+        "name": "basic_outside",
+        "type": "basic",
+        "sprites": ["outside"],
+        "basic_tags": []
+    },
+    {
+        "name": "wall",
+        "type": "basic",
+        "sprites": ["wall"],
+        "basic_tags": ["blocksMovement"]
+    },
+    {
+        "name": "wall2",
+        "type": "basic",
+        "sprites": ["wall2"],
+        "basic_tags": ["blocksMovement"]
+    },
+    {
+        "name": "wall3",
+        "type": "basic",
+        "sprites": ["wall3"],
+        "basic_tags": ["blocksMovement"]
+    },
+    {
+        "name": "random_dirt",
+        "type": "randomness",
+        "random_chances": [0.5, 0.5],
+        "sprites": ["dirt", "dirt2"],
+        "basic_tags": []
+    }
+
+]
