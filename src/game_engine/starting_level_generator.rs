@@ -16,7 +16,7 @@ pub fn generate_world_from_json_parsed_data(data: &ParsedData) -> (World, Sprite
     let sprites = SpriteIDContainer::generate_from_json_parsed_data(data, &mut world);
     for entity_descriptor in starting_level_descriptor.entities.iter(){
         let entity = world.create_entity_from_json_archetype(entity_descriptor.x, entity_descriptor.y, &entity_descriptor.archetype, data);
-        world.set_sprite(entity, sprites.get_sprite(&entity_descriptor.sprite));
+        world.set_sprite(entity, sprites.get_sprite(&entity_descriptor.sprite).expect(format!("Could not find sprite: {}", entity_descriptor.sprite).as_str()));
     }
     for terrain_json in starting_level_descriptor.terrain.iter(){
         let start_x = terrain_json.x;
@@ -30,7 +30,7 @@ pub fn generate_world_from_json_parsed_data(data: &ParsedData) -> (World, Sprite
                 for x in start_x..start_x + width{
                     for y in start_y..start_y + height{
                         let terrain = world.add_terrain(x * 32, y * 32);
-                        world.set_sprite(terrain, sprites.get_sprite(&descriptor.sprites[0]));
+                        world.set_sprite(terrain, sprites.get_sprite(&descriptor.sprites[0]).expect(format!("Could not find sprite: {}", descriptor.sprites[0]).as_str()));
                         match_terrain_tags(&tags, terrain, &mut world);
                     }
                 }
@@ -50,7 +50,7 @@ pub fn generate_world_from_json_parsed_data(data: &ParsedData) -> (World, Sprite
                         let random_number = rand::random::<f32>();
                         for (index, chance) in random_chances_adjusted.iter().enumerate(){
                             if random_number < *chance{
-                                world.set_sprite(terrain, sprites.get_sprite(&descriptor.sprites[index]));
+                                world.set_sprite(terrain, sprites.get_sprite(&descriptor.sprites[index]).expect(format!("Could not find sprite: {}", descriptor.sprites[index]).as_str()));
                                 break;
                             }
                         }

@@ -61,11 +61,11 @@ impl SpriteIDContainer{
         let texture_ids = parser.texture_ids.clone();parser.texture_ids.clone();
         Self { sprites,  texture_ids}
     }
-    pub fn get_sprite(&self, name: &str) -> usize{
-        self.sprites.get(name).expect(format!("Sprite with name: {} was not found", name).as_str()).clone()
+    pub fn get_sprite(&self, name: &str) -> Option<usize>{
+        self.sprites.get(name).cloned()
     }
-    pub fn get_texture_id(&self, name: &str) -> i32{
-        self.texture_ids.get(name).expect(format!("Texture with name: {} was not found", name).as_str()).clone()
+    pub fn get_texture_id(&self, name: &str) -> Option<i32>{
+        self.texture_ids.get(name).cloned()
     }
 }
 

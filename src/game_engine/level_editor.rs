@@ -162,13 +162,13 @@ impl LevelEditor{
     }
     pub fn init(&mut self, camera: &mut Camera){
         self.world.set_level_editor();
-        self.add_level_editor_grid(self.sprites.get_sprite("grid"));
+        self.add_level_editor_grid(self.sprites.get_sprite("grid").unwrap());
         camera.add_ui_element("menu".to_string(), super::ui::UIElementDescriptor {
             x: 932.0,
             y: 40.0,
             width: 200.0,
             height: 640.0,
-            texture_id: self.sprites.get_texture_id("level_editor_menu_background"),
+            texture_id: self.sprites.get_texture_id("level_editor_menu_background").unwrap(),
             visible: true
         });
         camera.add_text("Level Editor".to_string(), 938.0, 45.0,60.0, 24.5, 24.5, [0.7,0.7,0.7,1.0], HorizontalAlign::Left);
@@ -177,7 +177,7 @@ impl LevelEditor{
             y: 45.0,
             width: 40.0,
             height: 12.5,
-            texture_id: self.sprites.get_texture_id("level_editor_button_background"),
+            texture_id: self.sprites.get_texture_id("level_editor_button_background").unwrap(),
             visible: true
         });
         camera.add_text("Save".to_string(), 1028.0, 45.0,60.0, 22.0, 22.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Center);
@@ -259,7 +259,7 @@ impl LevelEditor{
                     _ => {}
                 }
                 let entity_id = update_entity_property_json!(self, sprite, nv.clone(), String);
-                self.world.set_sprite(entity_id, self.sprites.get_sprite(&nv));
+                self.world.set_sprite(entity_id, self.sprites.get_sprite(&nv).expect(format!("Could not find sprite: {}", nv).as_str()));
             },
             EntityProperty::Archetype => {
                 let mut nv = String::new();
@@ -269,14 +269,10 @@ impl LevelEditor{
                     },
                     _ => {}
                 } 
-                let entity_id = update_entity_property_json!(self, archetype, nv.clone(), String);
-                let new_archetype_json_potentially = self.parser.get_archetype(&nv);
-                if (new_archetype_json_potentially.is_none()){
-                    println!("Archetype not found");
-                    return;
-                }
-                let new_archetype_json = new_archetype_json_potentially.unwrap();
+                let entity_id = self.last_query.clone().unwrap().objects[0].element_id;
+                let new_archetype_json = self.parser.get_archetype(&nv).expect(format!("Could not find archetype {}", nv).as_str());
                 let new_archetype_vec = self.parser.convert_archetype(new_archetype_json, &self.parsed_data);
+                update_entity_property_json!(self, archetype, nv.clone(), String);
                 self.world.entity_tags_lookup.insert(entity_id, new_archetype_vec.clone());
             }
             _ => {}
@@ -290,11 +286,10 @@ impl LevelEditor{
     }
     pub fn key_down(&mut self, key: String){
         if self.cur_editing.is_some(){
-            match self.cur_editing.as_ref().unwrap(){
-                EntityProperty::X => {
-                    match key.to_lowercase().as_str(){
-                        "enter" => {
-                            println!("Typed: {}", self.typed);
+            match key.to_lowercase().as_str(){
+                "enter" => {
+                    match self.cur_editing.as_ref().unwrap(){
+                        EntityProperty::X => {
                             let potential_new_value = self.typed.parse::<f32>();
                             if potential_new_value.is_err(){
                                 self.typed = String::new();
@@ -302,21 +297,8 @@ impl LevelEditor{
                                 return;
                             }
                             self.update_entity_property(self.cur_editing.clone().unwrap(), EntityPropertyValue::X(self.typed.parse::<f32>().unwrap()));
-                            self.typed = String::new();
-                            self.cur_editing = None;
-
-                        }
-                        _ => {}
-                    }
-                    if key.chars().all(char::is_numeric) {
-                        self.typed.push_str(key.as_str());
-                        println!("Typed: {}", self.typed);
-                    }
-                },
-                EntityProperty::Y => {
-                    match key.to_lowercase().as_str(){
-                        "enter" => {
-                            println!("Typed: {}", self.typed);
+                        },
+                        EntityProperty::Y => {
                             let potential_new_value = self.typed.parse::<f32>();
                             if potential_new_value.is_err(){
                                 self.typed = String::new();
@@ -324,22 +306,49 @@ impl LevelEditor{
                                 return;
                             }
                             self.update_entity_property(self.cur_editing.clone().unwrap(), EntityPropertyValue::Y(self.typed.parse::<f32>().unwrap()));
-                            self.typed = String::new();
-                            self.cur_editing = None;
-
+                        },
+                        EntityProperty::Sprite => {
+                            if self.sprites.get_sprite(&self.typed).is_none(){
+                                self.typed = String::new();
+                                self.cur_editing = None;
+                                return;
+                            }
+                            self.update_entity_property(self.cur_editing.clone().unwrap(), EntityPropertyValue::Sprite(self.typed.clone()));
+                        },
+                        EntityProperty::Archetype => {
+                            if self.parser.get_archetype(&self.typed).is_none(){
+                                self.typed = String::new();
+                                self.cur_editing = None;
+                                return;
+                            }
+                            self.update_entity_property(self.cur_editing.clone().unwrap(), EntityPropertyValue::Archetype(self.typed.clone()));
+                            
                         }
-                        _ => {}
                     }
-                    if key.chars().all(char::is_numeric) {
-                        self.typed.push_str(key.as_str());
-                        println!("Typed: {}", self.typed);
+                    self.typed = String::new();
+                    self.cur_editing = None;
+                },
+                "delete" => {
+                    if self.typed.len() > 0{
+                        self.typed.pop();
                     }
                 },
-                EntityProperty::Sprite | EntityProperty::Archetype => {
+                _ => {
+                    match self.cur_editing.as_ref().unwrap(){
+                        EntityProperty::X | EntityProperty::Y => {
+                            if key.chars().all(char::is_numeric) {
+                                self.typed.push_str(key.as_str());
+                            }
+                        },
+                        EntityProperty::Sprite | EntityProperty::Archetype => {
+                            if key.chars().all(char::is_alphanumeric) {
+                                self.typed.push_str(key.as_str());
+                            }
+                        }
+                    }
                     
                 }
             }
-           
         }
     }
     pub fn on_click(&mut self, mouse: MouseClick, camera: &Camera){
@@ -395,7 +404,7 @@ impl LevelEditor{
                 let new_ter_descriptor_id = self.parser.starting_level_json.terrain.len() - 1;
                 let new_terrain = self.world.add_terrain(x, y);
                 self.object_descriptor_hash.insert(new_terrain, ObjectJSONContainer::Terrain((terrain_json, new_ter_descriptor_id)));
-                self.world.set_sprite(new_terrain, self.sprites.get_sprite("wall"));
+                self.world.set_sprite(new_terrain, self.sprites.get_sprite("wall").unwrap());
             }
         }
     }
@@ -403,7 +412,7 @@ impl LevelEditor{
     }
     pub fn highlight_square(&mut self){
         if (!LevelEditor::check_click_on_menu(self.mouse_position.x_screen, self.mouse_position.y_screen)){
-            let sprite_id = self.sprites.get_sprite("highlight");
+            let sprite_id = self.sprites.get_sprite("highlight").unwrap();
             let tx = (self.mouse_position.x_world as f32 / 32.0).floor() as usize * 32;
             let ty = (self.mouse_position.y_world as f32 / 32.0).floor() as usize * 32;
             let terrain = self.world.add_terrain(tx, ty);
@@ -465,7 +474,7 @@ impl LevelEditor{
                         y: 90.0,
                         width: 40.0,
                         height: 15.0,
-                        texture_id: self.sprites.get_texture_id("level_editor_button_background"),
+                        texture_id: self.sprites.get_texture_id("level_editor_button_background").unwrap(),
                         visible: true
                     }));
                     let text: String = match element.object {
@@ -493,18 +502,18 @@ impl LevelEditor{
                     y,
                     width: 25.0,
                     height: 9.0,
-                    texture_id: self.sprites.get_texture_id("level_editor_button_background"),
+                    texture_id: self.sprites.get_texture_id("level_editor_button_background").unwrap(),
                     visible: true
                 })
             );
             unique_text.push(camera.add_text(String::from("Edit"), x + 11.5, y + 1.0, 25.0, 9.0, 13.0, [1.0, 1.0, 1.0, 1.0], HorizontalAlign::Center));
         };
-        let mut potentially_editable_button_display = |label: &str, edit_name: &str, being_edited: bool, value_normal: String, x: f32, y: f32, unique_ui: &mut Vec<usize>, unique_text: &mut Vec<usize>, camera: &mut Camera| {
+        let mut potentially_editable_button_display = |label: &str, edit_name: &str, being_edited: bool, value_normal: String, x: f32, y: f32, font_size: f32, unique_ui: &mut Vec<usize>, unique_text: &mut Vec<usize>, camera: &mut Camera| {
             if being_edited{
-                unique_text.push(camera.add_text(format!("{}: {}",label,  self.typed), x, y, 80.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                unique_text.push(camera.add_text(format!("{}: {}",label,  self.typed), x, y, 200.0, 20.0, font_size, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
             } else {
-                unique_text.push(camera.add_text(format!("{}: {}", label, value_normal), x, y, 80.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
-                edit_button(edit_name, x, y + 12.0, unique_ui, unique_text, camera);
+                unique_text.push(camera.add_text(format!("{}: {}", label, value_normal), x, y, 200.0, 20.0, font_size, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                edit_button(edit_name, x + 1.0, y + font_size/2.0 + 2.0, unique_ui, unique_text, camera);
             }
         };
 
@@ -514,37 +523,21 @@ impl LevelEditor{
                 unique_text.push(camera.add_text(format!("Entity:"), 945.0, 115.0, 50.0, 25.0, 25.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
                 potentially_editable_button_display(
                     "x", "entity_x", self.cur_editing == Some(EntityProperty::X), 
-                    entity.x.to_string(), 946.0, 140.0, &mut unique_ui, &mut unique_text, camera);
+                    entity.x.to_string(), 946.0, 140.0, 20.0, &mut unique_ui, &mut unique_text, camera);
 
                 potentially_editable_button_display(
                     "y", "entity_y", self.cur_editing == Some(EntityProperty::Y), 
-                    entity.y.to_string(), 1036.0, 140.0, &mut unique_ui, &mut unique_text, camera);
+                    entity.y.to_string(), 1036.0, 140.0, 20.0, &mut unique_ui, &mut unique_text, camera);
 
-                unique_text.push(camera.add_text(format!("sprite: {}", entity.sprite), 946.0, 165.0, 100.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
-                unique_ui.push(
-                    camera.add_ui_element(String::from("level_editor_query_edit_entity_sprite"), UIElementDescriptor {
-                        x: 946.0,
-                        y: 177.0,
-                        width: 25.0,
-                        height: 9.0,
-                        texture_id: self.sprites.get_texture_id("level_editor_button_background"),
-                        visible: true
-                    })
-                );
-                unique_text.push(camera.add_text(String::from("Edit"), 958.5, 178.0, 25.0, 9.0, 13.0, [1.0, 1.0, 1.0, 1.0], HorizontalAlign::Center));
+                potentially_editable_button_display(
+                        "sprite", "entity_sprite", self.cur_editing == Some(EntityProperty::Sprite), 
+                        entity.sprite.to_string(), 946.0, 165.0, 20.0, &mut unique_ui, &mut unique_text, camera);
+
+                potentially_editable_button_display(
+                            "Archetype", "entity_archetype", self.cur_editing == Some(EntityProperty::Archetype), 
+                            entity.archetype.to_string(), 945.0, 195.0, 25.0, &mut unique_ui, &mut unique_text, camera);
+
                 let archetype = self.parser.get_archetype(&entity.archetype).unwrap();
-                unique_text.push(camera.add_text(format!("Archetype: {}", entity.archetype), 945.0, 195.0, 100.0, 25.0, 25.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
-                unique_ui.push(
-                    camera.add_ui_element(String::from("level_editor_query_edit_entity_archetype"), UIElementDescriptor {
-                        x: 946.0,
-                        y: 210.0,
-                        width: 25.0,
-                        height: 9.0,
-                        texture_id: self.sprites.get_texture_id("level_editor_button_background"),
-                        visible: true
-                    })
-                );
-                unique_text.push(camera.add_text(String::from("Edit"), 958.5, 211.0, 25.0, 9.0, 13.0, [1.0, 1.0, 1.0, 1.0], HorizontalAlign::Center));
                 unique_text.push(camera.add_text(format!("Monster Type: {}", archetype.monster_type), 945.0, 225.0, 100.0, 15.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
                 unique_text.push(camera.add_text(format!("Range: {}", archetype.range), 1036.0, 225.0, 100.0, 15.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
                 unique_text.push(camera.add_text(format!("Aggro Range: {}", archetype.aggro_range), 945.0, 240.0, 100.0, 15.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
@@ -577,19 +570,12 @@ impl LevelEditor{
         return (unique_ui, unique_text);
     }
 
-}
-
-
-impl World {
-    pub fn set_level_editor(&mut self){
-        self.level_editor = true;
-        self.player.borrow_mut().movement_speed = 5.0;
-    }
-
-
-    pub fn level_editor_process_input(&mut self, keys: HashMap<String,bool>){
+    pub fn process_input(&mut self, keys: HashMap<String,bool>){
+        if self.cur_editing.is_some(){
+            return;
+        }
         let mut direction: [f32; 2] = [0.0,0.0];
-        let mut player: std::cell::RefMut<'_, Player> = self.player.borrow_mut();
+        let mut player: std::cell::RefMut<'_, Player> = self.world.player.borrow_mut();
         if *keys.get("w").unwrap_or(&false) || *keys.get("ArrowUp").unwrap_or(&false){
             direction[1] -= 1.0;
         }
@@ -628,8 +614,17 @@ impl World {
         if player.x < 576.0 {
             player.x = 576.0;
         }
+
     }
-    
+
+}
+
+
+impl World {
+    pub fn set_level_editor(&mut self){
+        self.level_editor = true;
+        self.player.borrow_mut().movement_speed = 5.0;
+    }
 }
 impl Camera{
     pub fn set_level_editor(&mut self){
@@ -784,7 +779,7 @@ impl State<'_>{
         }
     }
     pub fn level_editor_update(&mut self, level_editor: &mut LevelEditor, camera: &mut Camera){
-        level_editor.world.level_editor_process_input(self.keys_down.clone());
+        level_editor.process_input(self.keys_down.clone());
         level_editor.process_mouse_input(self.left_mouse_button_down, self.right_mouse_button_down);
         camera.level_editor_update_camera_position(level_editor);
         self.level_editor_highlight_square(level_editor);
@@ -881,7 +876,7 @@ pub fn level_editor_generate_world_from_json_parsed_data(data: &ParsedData) -> (
     let mut i = 0;
     for entity_descriptor in starting_level_descriptor.entities.iter(){
         let entity = world.create_entity_from_json_archetype(entity_descriptor.x, entity_descriptor.y, &entity_descriptor.archetype, data);
-        world.set_sprite(entity, sprites.get_sprite(&entity_descriptor.sprite));
+        world.set_sprite(entity, sprites.get_sprite(&entity_descriptor.sprite).expect(format!("Could not find sprite: {}", entity_descriptor.sprite).as_str()));
         hash.insert(entity, ObjectJSONContainer::Entity((entity_descriptor.clone(), i.clone())));
         i += 1;
     }
@@ -898,7 +893,7 @@ pub fn level_editor_generate_world_from_json_parsed_data(data: &ParsedData) -> (
                 for x in start_x..start_x + width{
                     for y in start_y..start_y + height{
                         let terrain = world.add_terrain(x * 32, y * 32);
-                        world.set_sprite(terrain, sprites.get_sprite(&descriptor.sprites[0]));
+                        world.set_sprite(terrain, sprites.get_sprite(&descriptor.sprites[0]).expect(format!("Could not find sprite: {}", descriptor.sprites[0]).as_str()));
                         hash.insert(terrain, ObjectJSONContainer::Terrain((terrain_json.clone(), i.clone())));
                         match_terrain_tags(&tags, terrain, &mut world);
                     }
@@ -919,7 +914,7 @@ pub fn level_editor_generate_world_from_json_parsed_data(data: &ParsedData) -> (
                         let random_number = rand::random::<f32>();
                         for (index, chance) in random_chances_adjusted.iter().enumerate(){
                             if random_number < *chance{
-                                world.set_sprite(terrain, sprites.get_sprite(&descriptor.sprites[index]));
+                                world.set_sprite(terrain, sprites.get_sprite(&descriptor.sprites[index]).expect(format!("Could not find sprite: {}", descriptor.sprites[index]).as_str()));
                                 break;
                             }
                         }
