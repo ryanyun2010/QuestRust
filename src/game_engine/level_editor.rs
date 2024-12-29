@@ -4,6 +4,7 @@ use std::vec;
 use wgpu_text::glyph_brush::HorizontalAlign;
 use winit::event::{ElementState, MouseButton, *};
 use winit::event_loop::EventLoop;
+use winit::keyboard::{Key, NamedKey};
 use winit::window::WindowBuilder;
 use super::entities::Entity;
 use super::json_parsing::{entity_json, terrain_json, JSON_parser, ParsedData};
@@ -16,22 +17,31 @@ use crate::rendering_engine::state::State;
 use super::player::Player;
 use super::command_line_input;
 
-
-enum EntityProperty{
+#[derive(Debug, Clone, PartialEq)]
+pub enum EntityProperty{
     X,
     Y,
     Archetype,
     Sprite
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum EntityPropertyValue{
+    X(f32),
+    Y(f32),
+    Archetype(String),
+    Sprite(String)
+}
+
 macro_rules! update_entity_property_json {
     ($self:ident, $property:ident, $new_value:expr, $type:ty) => {{
         let new_property: $type = $new_value;
-        if $self.last_query.as_ref().unwrap().query_type != QueryType::FollowingObject{
+        let last_query = $self.last_query.clone().unwrap();
+        if last_query.query_type != QueryType::FollowingObject{
             return;
         }
-        let entity_id = $self.last_query.clone().unwrap().objects[0].element_id;
-        let object = $self.last_query.clone().unwrap().objects[0].object.clone();
+        let entity_id = last_query.objects[0].element_id;
+        let object = last_query.objects[0].object.clone();
         let mut new_object = object.clone();
         match &mut new_object {
             ObjectJSONContainer::Entity(ref mut obj) => {
@@ -113,6 +123,8 @@ pub struct LevelEditor{
     pub mouse_position: MousePosition,
     pub query_at_text: Option<usize>,
     pub last_query: Option<QueryResult>,
+    pub cur_editing: Option<EntityProperty>,
+    pub typed: String,
     pub query_unique_ui_elements: Vec<usize>,
     pub query_unique_text_elements: Vec<usize>
 }
@@ -142,6 +154,8 @@ impl LevelEditor{
             last_query: None,
             mouse_position: MousePosition::default(),
             query_at_text: None,
+            typed: String::new(),
+            cur_editing: None,
             query_unique_ui_elements: Vec::new(),
             query_unique_text_elements: Vec::new()
         }
@@ -211,44 +225,51 @@ impl LevelEditor{
             objects: vec_objects
         };
     }
-    pub fn update_entity_property_with_prompt(&mut self, property: EntityProperty, prompt: &str){
+    pub fn update_entity_property(&mut self, property: EntityProperty, new_value: EntityPropertyValue){
         match property{
             EntityProperty::X => {
-                let new_value = command_line_input::prompt_float(prompt);
-                if(new_value.is_none()){
-                    return;
+                let mut nv = 0.0;
+                match new_value{
+                    EntityPropertyValue::X(f) => {
+                        nv = f;
+                    },
+                    _ => {}
                 }
-                let new_value = new_value.unwrap();
-                let entity_id = update_entity_property_json!(self, x, new_value, f32);
-                self.world.entities.borrow_mut().get_mut(&entity_id).unwrap().x = new_value;
+
+                let entity_id = update_entity_property_json!(self, x, nv, f32);
+                self.world.entities.borrow_mut().get_mut(&entity_id).unwrap().x = nv;
             },
             EntityProperty::Y => {
-                let new_value = command_line_input::prompt_float(prompt);
-                if(new_value.is_none()){
-                    return;
+                let mut nv = 0.0;
+                match new_value{
+                    EntityPropertyValue::Y(f) => {
+                        nv = f;
+                    },
+                    _ => {}
                 }
-                let new_value = new_value.unwrap();
-                let entity_id = update_entity_property_json!(self, y, new_value, f32);
-                self.world.entities.borrow_mut().get_mut(&entity_id).unwrap().y = new_value;
+                let entity_id = update_entity_property_json!(self, y, nv, f32);
+                self.world.entities.borrow_mut().get_mut(&entity_id).unwrap().y = nv;
             },
             EntityProperty::Sprite => {
-                let new_value = command_line_input::prompt_string(prompt);
-                if(new_value.is_none()){
-                    return;
+                let mut nv = String::new();
+                match new_value{
+                    EntityPropertyValue::Sprite(f) => {
+                        nv = f;
+                    },
+                    _ => {}
                 }
-                let new_value = new_value.unwrap();
-                let nv = new_value.clone();
-                let entity_id = update_entity_property_json!(self, sprite, new_value, String);
+                let entity_id = update_entity_property_json!(self, sprite, nv.clone(), String);
                 self.world.set_sprite(entity_id, self.sprites.get_sprite(&nv));
             },
             EntityProperty::Archetype => {
-                let new_value = command_line_input::prompt_string(prompt);
-                if(new_value.is_none()){
-                    return;
-                }
-                let new_value = new_value.unwrap();
-                let nv = new_value.clone();
-                let entity_id = update_entity_property_json!(self, archetype, new_value, String);
+                let mut nv = String::new();
+                match new_value{
+                    EntityPropertyValue::Archetype(f) => {
+                        nv = f;
+                    },
+                    _ => {}
+                } 
+                let entity_id = update_entity_property_json!(self, archetype, nv.clone(), String);
                 let new_archetype_json_potentially = self.parser.get_archetype(&nv);
                 if (new_archetype_json_potentially.is_none()){
                     println!("Archetype not found");
@@ -267,11 +288,66 @@ impl LevelEditor{
         }
         return false;
     }
+    pub fn key_down(&mut self, key: String){
+        if self.cur_editing.is_some(){
+            match self.cur_editing.as_ref().unwrap(){
+                EntityProperty::X => {
+                    match key.to_lowercase().as_str(){
+                        "enter" => {
+                            println!("Typed: {}", self.typed);
+                            let potential_new_value = self.typed.parse::<f32>();
+                            if potential_new_value.is_err(){
+                                self.typed = String::new();
+                                self.cur_editing = None;
+                                return;
+                            }
+                            self.update_entity_property(self.cur_editing.clone().unwrap(), EntityPropertyValue::X(self.typed.parse::<f32>().unwrap()));
+                            self.typed = String::new();
+                            self.cur_editing = None;
+
+                        }
+                        _ => {}
+                    }
+                    if key.chars().all(char::is_numeric) {
+                        self.typed.push_str(key.as_str());
+                        println!("Typed: {}", self.typed);
+                    }
+                },
+                EntityProperty::Y => {
+                    match key.to_lowercase().as_str(){
+                        "enter" => {
+                            println!("Typed: {}", self.typed);
+                            let potential_new_value = self.typed.parse::<f32>();
+                            if potential_new_value.is_err(){
+                                self.typed = String::new();
+                                self.cur_editing = None;
+                                return;
+                            }
+                            self.update_entity_property(self.cur_editing.clone().unwrap(), EntityPropertyValue::Y(self.typed.parse::<f32>().unwrap()));
+                            self.typed = String::new();
+                            self.cur_editing = None;
+
+                        }
+                        _ => {}
+                    }
+                    if key.chars().all(char::is_numeric) {
+                        self.typed.push_str(key.as_str());
+                        println!("Typed: {}", self.typed);
+                    }
+                },
+                EntityProperty::Sprite | EntityProperty::Archetype => {
+                    
+                }
+            }
+           
+        }
+    }
     pub fn on_click(&mut self, mouse: MouseClick, camera: &Camera){
         if mouse == MouseClick::Left {
             let elements = camera.get_ui_elements_at(self.mouse_position.x_screen as usize, self.mouse_position.y_screen as usize);
             if (!LevelEditor::check_click_on_menu(self.mouse_position.x_screen, self.mouse_position.y_screen)){
                 self.last_query = Some(self.query_stuff_at(self.mouse_position.x_world.floor() as usize, self.mouse_position.y_world.floor() as usize));
+                self.cur_editing = None;
             }
             for element_name in elements.iter() {
                 if element_name.contains("level_editor_query_button_"){
@@ -289,10 +365,10 @@ impl LevelEditor{
                 if element_name.contains("level_editor_query_edit_"){
                     let thing_to_edit = element_name.replace("level_editor_query_edit_", "");
                     match thing_to_edit.as_str() {
-                        "entity_x" => {self.update_entity_property_with_prompt(EntityProperty::X, "New Entity X");},
-                        "entity_y" => {self.update_entity_property_with_prompt(EntityProperty::Y, "New Entity Y");},
-                        "entity_sprite" => {self.update_entity_property_with_prompt(EntityProperty::Sprite, "New Entity Sprite");},
-                        "entity_archetype" => {self.update_entity_property_with_prompt(EntityProperty::Archetype, "New Entity Archetype");},
+                        "entity_x" => self.cur_editing = Some(EntityProperty::X),
+                        "entity_y" => self.cur_editing = Some(EntityProperty::Y),
+                        "entity_sprite" => self.cur_editing = Some(EntityProperty::Sprite),
+                        "entity_archetype" => self.cur_editing = Some(EntityProperty::Archetype),
                         _ => {}
                     }
                 }
@@ -409,34 +485,41 @@ impl LevelEditor{
     pub fn display_query_element(&self, camera: &mut Camera, element: ObjectJSONContainer) -> (Vec<usize>, Vec<usize>){
         let mut unique_ui = Vec::new();
         let mut unique_text = Vec::new();
+
+        let mut edit_button = |name: &str, x: f32, y: f32, unique_ui: &mut Vec<usize>, unique_text: &mut Vec<usize>, camera: &mut Camera| {
+            unique_ui.push(
+                camera.add_ui_element(format!("level_editor_query_edit_{}",name), UIElementDescriptor {
+                    x,
+                    y,
+                    width: 25.0,
+                    height: 9.0,
+                    texture_id: self.sprites.get_texture_id("level_editor_button_background"),
+                    visible: true
+                })
+            );
+            unique_text.push(camera.add_text(String::from("Edit"), x + 11.5, y + 1.0, 25.0, 9.0, 13.0, [1.0, 1.0, 1.0, 1.0], HorizontalAlign::Center));
+        };
+        let mut potentially_editable_button_display = |label: &str, edit_name: &str, being_edited: bool, value_normal: String, x: f32, y: f32, unique_ui: &mut Vec<usize>, unique_text: &mut Vec<usize>, camera: &mut Camera| {
+            if being_edited{
+                unique_text.push(camera.add_text(format!("{}: {}",label,  self.typed), x, y, 80.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+            } else {
+                unique_text.push(camera.add_text(format!("{}: {}", label, value_normal), x, y, 80.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                edit_button(edit_name, x, y + 12.0, unique_ui, unique_text, camera);
+            }
+        };
+
         match element {
             ObjectJSONContainer::Entity(ej) => {
                 let entity = ej.0;
                 unique_text.push(camera.add_text(format!("Entity:"), 945.0, 115.0, 50.0, 25.0, 25.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
-                unique_text.push(camera.add_text(format!("x: {}", entity.x), 946.0, 140.0, 80.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
-                unique_ui.push(
-                    camera.add_ui_element(String::from("level_editor_query_edit_entity_x"), UIElementDescriptor {
-                        x: 946.0,
-                        y: 152.0,
-                        width: 25.0,
-                        height: 9.0,
-                        texture_id: self.sprites.get_texture_id("level_editor_button_background"),
-                        visible: true
-                    })
-                );
-                unique_text.push(camera.add_text(String::from("Edit"), 958.5, 153.0, 25.0, 9.0, 13.0, [1.0, 1.0, 1.0, 1.0], HorizontalAlign::Center));
-                unique_text.push(camera.add_text(format!("y: {}", entity.y), 1036.0, 140.0, 100.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
-                unique_ui.push(
-                    camera.add_ui_element(String::from("level_editor_query_edit_entity_y"), UIElementDescriptor {
-                        x: 1036.0,
-                        y: 152.0,
-                        width: 25.0,
-                        height: 9.0,
-                        texture_id: self.sprites.get_texture_id("level_editor_button_background"),
-                        visible: true
-                    })
-                );
-                unique_text.push(camera.add_text(String::from("Edit"), 1047.5, 153.0, 25.0, 9.0, 13.0, [1.0, 1.0, 1.0, 1.0], HorizontalAlign::Center));
+                potentially_editable_button_display(
+                    "x", "entity_x", self.cur_editing == Some(EntityProperty::X), 
+                    entity.x.to_string(), 946.0, 140.0, &mut unique_ui, &mut unique_text, camera);
+
+                potentially_editable_button_display(
+                    "y", "entity_y", self.cur_editing == Some(EntityProperty::Y), 
+                    entity.y.to_string(), 1036.0, 140.0, &mut unique_ui, &mut unique_text, camera);
+
                 unique_text.push(camera.add_text(format!("sprite: {}", entity.sprite), 946.0, 165.0, 100.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
                 unique_ui.push(
                     camera.add_ui_element(String::from("level_editor_query_edit_entity_sprite"), UIElementDescriptor {
@@ -670,6 +753,25 @@ impl State<'_>{
     pub fn level_editor_highlight_square(&mut self, level_editor: &mut LevelEditor){
         level_editor.highlight_square();
     }
+    pub fn key_down(&mut self, event: &winit::event::KeyEvent, level_editor: &mut LevelEditor){
+        let key = event.clone().logical_key;
+        match key{
+            Key::Character(key) => {
+                level_editor.key_down(key.to_string());
+            },
+            Key::Named(key) => {
+                match key{
+                    NamedKey::Enter => {
+                        if self.level_editor{
+                            level_editor.key_down("Enter".to_string());
+                        }
+                    }
+                    _ => {}
+                }
+            },
+            _ => {}
+        }
+    }
     pub fn level_editor_process_mouse_input(&mut self, state: ElementState, button: MouseButton){
         if state == ElementState::Pressed && button == MouseButton::Left{
             self.left_mouse_button_down = true;
@@ -713,7 +815,10 @@ pub async fn run(mut level_editor: &mut LevelEditor, camera: &mut Camera, sprite
             match event {
                 WindowEvent::KeyboardInput {  event,.. } => { 
                     let event = event.clone();
-                    state_obj.input(event);
+                    state_obj.input(event.clone());
+                    if event.state == ElementState::Pressed{
+                        state_obj.key_down(&event, &mut level_editor);
+                    }
                 },
                 WindowEvent::CloseRequested => {
                     level_editor.save_edits();
