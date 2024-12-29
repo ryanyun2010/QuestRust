@@ -54,6 +54,14 @@
     {
         "name": "highlight",
         "path": "src/rendering_engine/img/highlight.png"
+    },
+    {
+        "name": "level_editor_menu_background",
+        "path": "src/rendering_engine/img/background.png"
+    },
+    {
+        "name": "level_editor_button_background",
+        "path": "src/rendering_engine/img/button.png"
     }
 
 ]

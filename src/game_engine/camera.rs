@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::world::World;
 use crate::rendering_engine::abstractions::{RenderData, TextSprite};
-use wgpu_text::glyph_brush::Section as TextSection;
+use wgpu_text::glyph_brush::{HorizontalAlign, Section as TextSection};
 #[derive(Debug, Clone)]
 pub struct Camera{
     pub viewpoint_width: usize,
@@ -162,13 +162,13 @@ impl Camera{
         
         render_data
     }
-    pub fn add_text(&mut self, text: String, x: f32, y: f32, font_size: f32, color: [f32; 4]){
-        self.text.push(TextSprite::new(text, font_size, x, y, color));
+    pub fn add_text(&mut self, text: String, x: f32, y: f32, w: f32, h: f32, font_size: f32, color: [f32; 4], align: HorizontalAlign){
+        self.text.push(TextSprite::new(text, font_size, x, y, w, h, color, align));
     }
-    pub fn get_sections(&self) -> Vec<TextSection>{
+    pub fn get_sections(&self, screen_width: f32, screen_height: f32) -> Vec<TextSection>{
         let mut sections = Vec::new();
         for text in self.text.iter(){
-            sections.push(text.get_section().clone());
+            sections.push(text.get_section(&self, screen_width, screen_height).clone());
         }
         sections
     }

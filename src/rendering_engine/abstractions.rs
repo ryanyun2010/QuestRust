@@ -1,6 +1,6 @@
 use std::collections::HashMap;
-use wgpu_text::glyph_brush::{Section as TextSection, Text};
-use crate::game_engine::{json_parsing::ParsedData, world::World};
+use wgpu_text::glyph_brush::{HorizontalAlign, Layout, Section as TextSection, Text};
+use crate::game_engine::{camera::Camera, json_parsing::ParsedData, world::World};
 
 use super::vertex::Vertex;
 
@@ -47,7 +47,8 @@ impl RenderData{
 
 #[derive(Debug, Clone)]
 pub struct SpriteIDContainer{
-    pub sprites: HashMap<String, usize>
+    pub sprites: HashMap<String, usize>,
+    pub texture_ids: HashMap<String, i32>
 }
 
 impl SpriteIDContainer{
@@ -57,10 +58,14 @@ impl SpriteIDContainer{
             let sprite = world.add_sprite(texture_id.clone());
             sprites.insert(name.clone(), sprite);
         }
-        Self { sprites }
+        let texture_ids = parser.texture_ids.clone();parser.texture_ids.clone();
+        Self { sprites,  texture_ids}
     }
     pub fn get_sprite(&self, name: &str) -> usize{
         self.sprites.get(name).expect(format!("Sprite with name: {} was not found", name).as_str()).clone()
+    }
+    pub fn get_texture_id(&self, name: &str) -> i32{
+        self.texture_ids.get(name).expect(format!("Texture with name: {} was not found", name).as_str()).clone()
     }
 }
 
@@ -70,18 +75,23 @@ pub struct TextSprite{
     pub font_size: f32,
     pub x: f32,
     pub y: f32,
-    pub color: [f32; 4]
+    pub w: f32,
+    pub h: f32,
+    pub color: [f32; 4],
+    pub align: HorizontalAlign
 }
 
 impl TextSprite{
-    pub fn new(text: String, font_size: f32, x: f32, y: f32, color: [f32; 4]) -> Self{
-        Self { text, font_size, x, y, color}
+    pub fn new(text: String, font_size: f32, x: f32, y: f32, w: f32, h: f32, color: [f32; 4], align: HorizontalAlign) -> Self{
+        Self { text, font_size, x, y, w, h, color, align}
     }
-    pub fn get_section(&self) -> TextSection<'_>{
+    pub fn get_section(&self, camera: &Camera, screen_width: f32, screen_height: f32) -> TextSection<'_>{
         TextSection::default().add_text(
             Text::new(self.text.as_str())
             .with_scale(self.font_size)
             .with_color(self.color)
-        ).with_screen_position((self.x, self.y))
+        ).with_screen_position((self.x/camera.viewpoint_width as f32 * screen_width, self.y/camera.viewpoint_height as f32 * screen_height))
+        .with_layout(Layout::default().h_align(self.align))
+        .with_bounds((self.w/camera.viewpoint_width as f32 * screen_width,self.h/camera.viewpoint_height as f32 * screen_height))
     }
 }

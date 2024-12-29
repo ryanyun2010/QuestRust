@@ -243,7 +243,7 @@ impl<'a> State<'a> {
         });
 
         {
-            let sections = camera.get_sections();
+            let sections = camera.get_sections(self.config.width as f32, self.config.height as f32);
             self.text_brush.queue(&self.device, &self.queue, sections).unwrap();
             
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {

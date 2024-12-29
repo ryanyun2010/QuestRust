@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use wgpu_text::glyph_brush::HorizontalAlign;
 use winit::event::{ElementState, MouseButton, *};
 use winit::event_loop::EventLoop;
 use winit::window::WindowBuilder;
@@ -16,7 +17,8 @@ pub struct LevelEditor{
     pub world: World,
     pub sprites: SpriteIDContainer,
     pub not_real_elements: HashMap<usize, bool>,
-    pub object_descriptor_hash: HashMap<usize, ObjectJSON>
+    pub object_descriptor_hash: HashMap<usize, ObjectJSON>,
+    pub last_query: Option<Vec<ObjectJSON>>
 }
 
 #[derive(Debug, Clone)]
@@ -33,12 +35,31 @@ impl LevelEditor{
             parser: parser,
             sprites: sprites,
             not_real_elements: HashMap::new(),
-            object_descriptor_hash: hash
+            object_descriptor_hash: hash,
+            last_query: None
         }
     }
-    pub fn init(&mut self){
+    pub fn init(&mut self, camera: &mut Camera){
         self.world.set_level_editor();
         self.add_level_editor_grid(self.sprites.get_sprite("grid"));
+        camera.add_ui_element("menu".to_string(), super::ui::UIElement {
+            x: 932.0,
+            y: 40.0,
+            width: 200.0,
+            height: 640.0,
+            texture_id: self.sprites.get_texture_id("level_editor_menu_background"),
+            visible: true
+        });
+        camera.add_text("Level Editor".to_string(), 938.0, 45.0,60.0, 24.5, 24.5, [0.7,0.7,0.7,1.0], HorizontalAlign::Left);
+        camera.add_ui_element("save_button".to_string(), super::ui::UIElement {
+            x: 1008.0,
+            y: 45.0,
+            width: 40.0,
+            height: 12.5,
+            texture_id: self.sprites.get_texture_id("level_editor_button_background"),
+            visible: true
+        });
+        camera.add_text("Save".to_string(), 1028.0, 45.0,60.0, 22.0, 22.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Center);
     }
     pub fn save_edits(&self){
         self.parser.write("src/game_data/entity_archetypes.json", "src/game_data/entity_attack_patterns.json", "src/game_data/entity_attacks.json", "src/game_data/sprites.json", "src/game_data/starting_level.json").expect("d");
@@ -46,16 +67,16 @@ impl LevelEditor{
     pub fn query_stuff_at(&self, x: usize, y: usize) -> Vec<ObjectJSON>{
         println!("Query at {}, {}", x, y);
         let chunk_to_query = self.world.get_chunk_from_xy(x, y);
+        let mut vec_json = Vec::new();
         if chunk_to_query.is_none(){
-            return Vec::new();
+            return vec_json;
         }else{
             let chunk_id = chunk_to_query.unwrap();
             let chunk = self.world.chunks.borrow()[chunk_id].clone();
             for entity_id in chunk.entities_ids{
                 let entity = &self.world.get_entity(entity_id).unwrap();
                 if entity.x <= x as f32 && entity.x + 32.0 >= x as f32 && entity.y <= y as f32 && entity.y + 32.0 >= y as f32 {
-                    println!("Found Entity {:?}", entity);
-                    println!("From JSON: {:?}", self.object_descriptor_hash.get(&entity_id).unwrap());
+                    vec_json.push(self.object_descriptor_hash.get(&entity_id).unwrap().clone());
                 }
             }
             for terrain_id in chunk.terrain_ids{
@@ -64,14 +85,12 @@ impl LevelEditor{
                     continue;
                 }
                 if terrain.x <= x && terrain.x + 32 >= x && terrain.y <= y && terrain.y + 32 >= y{
-                    println!("Found Terrain: {:?}", terrain);
-                    println!("From JSON: {:?}", self.object_descriptor_hash.get(&terrain_id).unwrap());
+                    vec_json.push(self.object_descriptor_hash.get(&terrain_id).unwrap().clone());
                 }
                 
-            }
-            return Vec::new();
+            }   
         }
-
+        return vec_json;
     }
     pub fn process_mouse_input (&mut self, left_mouse_button_down: bool, right_mouse_button_down: bool){
         if right_mouse_button_down{
@@ -105,7 +124,7 @@ impl LevelEditor{
                 let terrain = self.world.get_terrain(terrain_id).unwrap();
                 let x = terrain.x;
                 let y = terrain.y;
-                self.query_stuff_at(x + 16, y + 16);
+                self.last_query = Some(self.query_stuff_at(x + 16, y + 16));
             
             }
         }
@@ -114,6 +133,13 @@ impl LevelEditor{
         let sprite_id = self.sprites.get_sprite("highlight");
         let tx = (((((x as f32)/width as f32) * camera_width as f32) + camera_x) / 32.0).floor() as usize * 32;
         let ty = (((((y as f32)/height as f32) * camera_height as f32) + camera_y)/ 32.0).floor() as usize * 32;
+        if tx > 932 && tx < 1132 && ty > 40 && ty < 680{
+            if self.highlighted.is_some(){
+                self.world.sprite_lookup.remove(&self.highlighted.unwrap());
+            }
+            self.highlighted = None; 
+            return;
+        }
         let terrain = self.world.add_terrain(tx, ty);
         self.world.set_sprite(terrain, sprite_id); 
         if self.highlighted.is_some(){
@@ -130,6 +156,10 @@ impl LevelEditor{
                 self.not_real_elements.insert(terrain, true);
             }
         }
+    }
+
+    pub fn update_camera_ui(&mut self, camera: &mut Camera){
+
     }
 
 
