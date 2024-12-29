@@ -1,12 +1,36 @@
 use crate::{rendering_engine::abstractions::RenderData, rendering_engine::vertex::Vertex};
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct UIElement{
+    pub name: String,
     pub x: f32,
     pub y: f32,
     pub width: f32,
     pub height: f32,
     pub texture_id: i32,
     pub visible: bool,
+}
+
+pub struct UIElementDescriptor{
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
+    pub height: f32,
+    pub texture_id: i32,
+    pub visible: bool,
+}
+
+impl UIElement{
+    pub fn new(name: String, descriptor: UIElementDescriptor) -> Self{
+        Self{
+            name,
+            x: descriptor.x,
+            y: descriptor.y,
+            width: descriptor.width,
+            height: descriptor.height,
+            texture_id: descriptor.texture_id,
+            visible: descriptor.visible,
+        }
+    }
 }
 
 impl UIElement{

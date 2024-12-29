@@ -13,3 +13,4 @@ pub mod starting_level_generator;
 pub mod pathfinding;
 pub mod level_editor;
 pub mod inventory;
+pub mod command_line_input;

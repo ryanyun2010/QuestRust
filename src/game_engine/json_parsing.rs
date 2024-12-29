@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use core::arch;
 use std::io::{BufReader, BufWriter, Write};
 use std::fs::File;
 use std::collections::HashMap;
@@ -72,6 +73,7 @@ pub struct starting_level_json{
 pub struct item_json {
 
 }
+#[derive(Debug, Clone)]
 pub struct JSON_parser {
     pub entity_archetypes_json: HashMap<String, entity_archetype_json>,
     pub entity_attack_patterns_json: HashMap<String, entity_attack_pattern_json>,
@@ -172,7 +174,7 @@ impl JSON_parser {
         self.starting_level_json = data;
     }
     
-    pub fn convert(&mut self) -> ParsedData {
+    pub fn convert(&self) -> ParsedData {
         // Convert the JSON data into the game's data structures
         // Convert Entity Attacks First
         let mut data = ParsedData::new();
@@ -188,74 +190,7 @@ impl JSON_parser {
         }
 
         for (.., entity_archetype) in &self.entity_archetypes_json {
-            let mut tags = Vec::new();
-            from_JSON_entity_tag_parsing_basic!(tags, &entity_archetype.basic_tags);
-            // for basic_tag in &entity_archetype.basic_tags {
-            //     match basic_tag.as_str() {
-            //         "aggressive" => {
-            //             tags.push(EntityTags::Aggressive);
-            //         }
-            //         "respectsCollision" => {
-            //             tags.push(EntityTags::RespectsCollision);
-            //         }
-            //         "hasCollision" => {
-            //             tags.push(EntityTags::HasCollision);
-            //         }
-            //         "followsPlayer" => {
-            //             tags.push(EntityTags::FollowsPlayer);
-            //         }
-            //         _ => {
-            //             panic!("When parsing entity archetypes, basic tag: {} in archetype: {} was not recognized", basic_tag, entity_archetype.name);
-            //         }
-            //     }
-            // }
-            match entity_archetype.monster_type.as_str() {
-                "Undead" => {
-                    tags.push(EntityTags::MonsterType(crate::game_engine::entities::MonsterType::Undead));
-                },
-                "Uruk" => {
-                    tags.push(EntityTags::MonsterType(crate::game_engine::entities::MonsterType::Uruk));
-                },
-                "Parasite" => {
-                    tags.push(EntityTags::MonsterType(crate::game_engine::entities::MonsterType::Parasite));
-                },
-                "Beast" => {
-                    tags.push(EntityTags::MonsterType(crate::game_engine::entities::MonsterType::Beast));
-                },
-                "Demon" => {
-                    tags.push(EntityTags::MonsterType(crate::game_engine::entities::MonsterType::Demon));
-                },
-                "Dragon" => {
-                    tags.push(EntityTags::MonsterType(crate::game_engine::entities::MonsterType::Dragon));
-                },
-                "Item" => {
-                    tags.push(EntityTags::MonsterType(crate::game_engine::entities::MonsterType::Item));
-                },
-                "Ambient" => {
-                    tags.push(EntityTags::MonsterType(crate::game_engine::entities::MonsterType::Ambient));
-                },
-                _ => {
-                    panic!("When parsing entity archetypes, monster type: {} in archetype: {} was not recognized", entity_archetype.monster_type, entity_archetype.name);
-                }
-            }
-            tags.push(EntityTags::MovementSpeed(entity_archetype.movement_speed));
-            tags.push(EntityTags::Range(entity_archetype.range));
-            tags.push(EntityTags::AggroRange(entity_archetype.aggro_range));
-            match entity_archetype.attack_type.as_str() {
-                "Melee" => {
-                    tags.push(EntityTags::AttackType(crate::game_engine::entities::AttackType::Melee));
-                },
-                "Ranged" => {
-                    tags.push(EntityTags::AttackType(crate::game_engine::entities::AttackType::Ranged));
-                },
-                "Magic" => {
-                    tags.push(EntityTags::AttackType(crate::game_engine::entities::AttackType::Magic));
-                },
-                _ => {
-                    panic!("When parsing entity archetypes, attack type: {} in archetype: {} was not recognized", entity_archetype.attack_type, entity_archetype.name);
-                }
-            }
-            tags.push(EntityTags::Attacks(data.entity_attack_patterns.get(&entity_archetype.attack_pattern).expect(&format!("When parsing entity archetypes, attack pattern: {} in archetype: {} was not found", entity_archetype.attack_pattern, entity_archetype.name)).clone()));
+            let mut tags = self.convert_archetype(&entity_archetype, &data);
             data.entity_archetypes.insert(entity_archetype.name.clone(), tags);
             
         }
@@ -270,6 +205,58 @@ impl JSON_parser {
         data.starting_level_descriptor = self.starting_level_json.clone();
 
         data
+    }
+    pub fn convert_archetype(&self, entity_archetype: &entity_archetype_json, data: &ParsedData) -> Vec<EntityTags> {
+        let mut tags = Vec::new();
+        from_JSON_entity_tag_parsing_basic!(tags, &entity_archetype.basic_tags);
+        match entity_archetype.monster_type.as_str() {
+            "Undead" => {
+                tags.push(EntityTags::MonsterType(crate::game_engine::entities::MonsterType::Undead));
+            },
+            "Uruk" => {
+                tags.push(EntityTags::MonsterType(crate::game_engine::entities::MonsterType::Uruk));
+            },
+            "Parasite" => {
+                tags.push(EntityTags::MonsterType(crate::game_engine::entities::MonsterType::Parasite));
+            },
+            "Beast" => {
+                tags.push(EntityTags::MonsterType(crate::game_engine::entities::MonsterType::Beast));
+            },
+            "Demon" => {
+                tags.push(EntityTags::MonsterType(crate::game_engine::entities::MonsterType::Demon));
+            },
+            "Dragon" => {
+                tags.push(EntityTags::MonsterType(crate::game_engine::entities::MonsterType::Dragon));
+            },
+            "Item" => {
+                tags.push(EntityTags::MonsterType(crate::game_engine::entities::MonsterType::Item));
+            },
+            "Ambient" => {
+                tags.push(EntityTags::MonsterType(crate::game_engine::entities::MonsterType::Ambient));
+            },
+            _ => {
+                panic!("When parsing entity archetypes, monster type: {} in archetype: {} was not recognized", entity_archetype.monster_type, entity_archetype.name);
+            }
+        }
+        tags.push(EntityTags::MovementSpeed(entity_archetype.movement_speed));
+        tags.push(EntityTags::Range(entity_archetype.range));
+        tags.push(EntityTags::AggroRange(entity_archetype.aggro_range));
+        match entity_archetype.attack_type.as_str() {
+            "Melee" => {
+                tags.push(EntityTags::AttackType(crate::game_engine::entities::AttackType::Melee));
+            },
+            "Ranged" => {
+                tags.push(EntityTags::AttackType(crate::game_engine::entities::AttackType::Ranged));
+            },
+            "Magic" => {
+                tags.push(EntityTags::AttackType(crate::game_engine::entities::AttackType::Magic));
+            },
+            _ => {
+                panic!("When parsing entity archetypes, attack type: {} in archetype: {} was not recognized", entity_archetype.attack_type, entity_archetype.name);
+            }
+        }
+        tags.push(EntityTags::Attacks(data.entity_attack_patterns.get(&entity_archetype.attack_pattern).expect(&format!("When parsing entity archetypes, attack pattern: {} in archetype: {} was not found", entity_archetype.attack_pattern, entity_archetype.name)).clone()));
+        return tags;
     }
     pub fn parse_and_convert_game_data(&mut self, entity_archetypes_path: &str, entity_attack_patterns_path: &str, entity_attacks_path: &str, sprites_path: &str, starting_level_path: &str) -> ParsedData{
         self.parse_entity_archetypes(entity_archetypes_path);

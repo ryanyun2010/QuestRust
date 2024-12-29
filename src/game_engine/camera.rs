@@ -51,17 +51,27 @@ impl Camera{
         self.ui_element_names.remove(&name_to_remove);
         self.ui_elements.remove(&element);
     }
-    pub fn add_ui_element(&mut self, name: String,  element: crate::game_engine::ui::UIElement) -> usize{
+    pub fn add_ui_element(&mut self, name: String,  element_descriptor: crate::game_engine::ui::UIElementDescriptor) -> usize{
+        let element = UIElement::new(name.clone(), element_descriptor);
         self.ui_element_names.insert(name, self.ui_element_id);
         self.ui_elements.insert(self.ui_element_id, element);
         self.ui_element_id += 1;
         self.ui_element_id - 1
     }
+    pub fn get_ui_elements_at(&self, x: usize, y: usize) -> Vec<String>{
+        let mut elements = Vec::new();
+        for (id, element) in self.ui_elements.iter(){
+            if x >= element.x as usize && x <= (element.x + element.width) as usize && y >= element.y as usize && y <= (element.y + element.height) as usize{
+                elements.push(element.name.clone());
+            }
+        }
+        return elements;
+    }
     pub fn get_ui_element_id_from_name(&self, element: String) -> Option<usize>{
         self.ui_element_names.get(&element).copied()
     }
     pub fn get_ui_element(&self, element: usize) -> Option<UIElement>{
-        self.ui_elements.get(&element).copied()
+        self.ui_elements.get(&element).cloned()
     }
     pub fn get_ui_element_mut(&mut self, element: usize) -> &mut crate::game_engine::ui::UIElement{
         self.ui_elements.get_mut(&element).unwrap()

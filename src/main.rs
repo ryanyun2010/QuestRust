@@ -3,7 +3,7 @@ use std::time::Instant;
 pub mod rendering_engine;
 use rendering_engine::{window, state, vertex, texture};
 pub mod game_engine;
-use game_engine::{world, camera, loot, entities, stat, ui::UIElement, json_parsing, starting_level_generator, level_editor};
+use game_engine::{world, camera, loot, entities, stat, ui::UIElement, ui::UIElementDescriptor, json_parsing, starting_level_generator, level_editor};
 pub mod tests;
 use std::env;
 
@@ -27,7 +27,7 @@ fn main() {
     
     let mut camera = camera::Camera::new(1152,720);
     let (mut world, sprites) = starting_level_generator::generate_world_from_json_parsed_data(&parsed_data);
-    camera.add_ui_element(String::from("health_bar_background"), UIElement {
+    camera.add_ui_element(String::from("health_bar_background"), UIElementDescriptor {
         x: 32.0,
         y: 32.0,
         width: 256.0,
@@ -35,7 +35,7 @@ fn main() {
         texture_id: parsed_data.get_texture_id("health_bar_back"),
         visible: true
     });
-    camera.add_ui_element(String::from("health_bar_inside"), UIElement {
+    camera.add_ui_element(String::from("health_bar_inside"), UIElementDescriptor {
         x: 35.0,
         y: 35.0,
         width: 250.0,
@@ -43,7 +43,7 @@ fn main() {
         texture_id: parsed_data.get_texture_id("health"),
         visible: true
     });
-    camera.add_ui_element(String::from("inventory_button"), UIElement {
+    camera.add_ui_element(String::from("inventory_button"), UIElementDescriptor {
         x: 1030.0,
         y: 650.0,
         width: 75.0,
