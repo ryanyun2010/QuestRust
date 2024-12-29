@@ -123,7 +123,7 @@ impl LevelEditor{
     pub fn on_click(&mut self, mouse: MouseClick){
         if mouse == MouseClick::Left{
             if self.highlighted.is_some(){
-                self.last_query = Some(self.query_stuff_at(self.mouse_x.floor() as usize, self.mouse_y.floor() as usize));
+                self.last_query = Some(self.query_stuff_at(self.mouse_x_screen.floor() as usize, self.mouse_y_screen.floor() as usize));
             }
             for i in 0..self.last_query.clone().unwrap_or(Vec::new()).len(){
                 if self.mouse_x_screen > 942.0 + 45.0 * i as f32 && self.mouse_x_screen < 942.0 + 45.0 * i as f32 + 40.0 && self.mouse_y_screen > 90.0 && self.mouse_y_screen < 105.0{
