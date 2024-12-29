@@ -31,6 +31,7 @@ pub struct LevelEditor{
     pub mouse_y_screen: f32,
     pub query_at_text: Option<usize>,
     pub last_query_position: Option<(usize, usize)>,
+    pub last_query_object: Option<(ObjectJSON, usize)>,
     pub query_unique_ui_elements: Vec<usize>,
     pub query_unique_text_elements: Vec<usize>,
     pub clicked_query_element: Option<usize>,
@@ -67,6 +68,7 @@ impl LevelEditor{
             last_query_position: None,
             query_unique_ui_elements: Vec::new(),
             query_unique_text_elements: Vec::new(),
+            last_query_object: None,
             clicked_query_element: None,
         }
     }
@@ -137,6 +139,7 @@ impl LevelEditor{
                 self.clicked_query_element = None;
                 self.last_query = Some(self.query_stuff_at(self.mouse_x.floor() as usize, self.mouse_y.floor() as usize));
                 self.last_query_position = Some((self.mouse_x.floor() as usize, self.mouse_y.floor() as usize));
+                self.last_query_object = None;
             }
             let elements = camera.get_ui_elements_at(self.mouse_x_screen as usize, self.mouse_y_screen as usize);
             for element_name in elements.iter() {
@@ -155,8 +158,16 @@ impl LevelEditor{
                             let new_x = new_x_potentially.unwrap();
                             let entity_id = self.last_query.clone().unwrap().1[self.clicked_query_element.unwrap()];
                             let object = self.last_query.clone().unwrap().0[self.clicked_query_element.unwrap()].clone();
+                            let mut new_object = object.clone();
+                            match &mut new_object {
+                                ObjectJSON::Entity(ref mut obj) => {
+                                    obj.0.x = new_x;
+                                }
+                                _ => {}
+                            }
+                            self.last_query_object = Some((new_object.clone(),entity_id.clone()));
                             match object {
-                                ObjectJSON::Entity(obj) => {
+                                ObjectJSON::Entity(mut obj) => {
                                     self.parser.starting_level_json.entities[obj.1].x = new_x;
                                 },
                                 _ => {}
@@ -167,7 +178,9 @@ impl LevelEditor{
                                 },
                                 _ => {}
                             }
+                            
                             self.world.entities.borrow_mut().get_mut(&entity_id).unwrap().x = new_x;
+                            
                         },
                         // "entity_archetype" => {
                         //     let new_archetype_potentially = command_line_input::prompt_string("New Entity Archetype");
@@ -264,6 +277,22 @@ impl LevelEditor{
         }
         for text in self.query_unique_text_elements.clone(){
             camera.remove_text(text);
+        }
+        if self.last_query_object.is_some(){
+            let (object, id) = self.last_query_object.clone().unwrap();
+            match object.clone(){
+                ObjectJSON::Entity(entity) => {
+                    camera.text.get_mut(&self.query_at_text.unwrap()).unwrap().text = format!("Following Entity");
+                },
+                ObjectJSON::Terrain(terrain) => {
+                    camera.text.get_mut(&self.query_at_text.unwrap()).unwrap().text = format!("Following Terrain");
+                }
+            }
+            let (unique_ui, unique_text) = self.display_query_element(camera, object);
+            
+            self.query_unique_ui_elements.extend(unique_ui);
+            self.query_unique_text_elements.extend(unique_text);
+            return;
         }
         for element in self.last_query.clone().unwrap_or((Vec::new(),Vec::new())).0{
             self.query_unique_ui_elements.push(camera.add_ui_element(format!("level_editor_query_button_{}", i), UIElementDescriptor{
@@ -592,7 +621,6 @@ pub async fn run(mut level_editor: &mut LevelEditor, camera: &mut Camera, sprite
     let mut state_obj = State::new(&window, sprites_json_to_load.clone()).await;
     state_obj.set_level_editor();
 
-    let mut focused: bool = false;
 
     event_loop.run(move |event, control_flow| match event {
         
@@ -630,16 +658,8 @@ pub async fn run(mut level_editor: &mut LevelEditor, camera: &mut Camera, sprite
                     }
 
                 },
-                WindowEvent::Focused(bool) => {
-                    focused = bool;
-                    if focused {
-                        state_obj.window().request_redraw();
-                    }
-                },
                 WindowEvent::RedrawRequested => {
-                    if focused{
-                        state_obj.window().request_redraw();
-                    }
+                    state_obj.window().request_redraw();
                     state_obj.level_editor_update(&mut level_editor, camera);
                     match state_obj.render(&mut level_editor.world, camera) {
                         Ok(_) => {}
