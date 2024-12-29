@@ -40,14 +40,14 @@ pub struct player_json{
     pub max_health: i32,
     pub movement_speed: f32
 }
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct entity_json{
     pub x: f32,
     pub y: f32,
     pub archetype: String,
     pub sprite: String,
 }
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct terrain_json{
     pub x: usize,
     pub y: usize,
@@ -55,7 +55,7 @@ pub struct terrain_json{
     pub height: usize,
     pub terrain_descriptor: terrain_descriptor_json
 }
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct terrain_descriptor_json{
     pub r#type: String,
     pub random_chances: Option<Vec<f32>>,

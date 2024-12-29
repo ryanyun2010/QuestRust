@@ -31,7 +31,7 @@ enum MouseClick{
     Right
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ObjectJSON {
     Entity(entity_json),
     Terrain(terrain_json)
@@ -92,18 +92,22 @@ impl LevelEditor{
             for entity_id in chunk.entities_ids{
                 let entity = &self.world.get_entity(entity_id).unwrap();
                 if entity.x <= x as f32 && entity.x + 32.0 >= x as f32 && entity.y <= y as f32 && entity.y + 32.0 >= y as f32 {
-                    vec_json.push(self.object_descriptor_hash.get(&entity_id).unwrap().clone());
+                    let descriptor = self.object_descriptor_hash.get(&entity_id).unwrap().clone();
+                    vec_json.push(descriptor);
                 }
             }
+
             for terrain_id in chunk.terrain_ids{
                 let terrain = self.world.get_terrain(terrain_id).unwrap();
                 if *self.not_real_elements.get(&terrain_id).unwrap_or(&false){
                     continue;
                 }
-                if terrain.x <= x && terrain.x + 32 >= x && terrain.y <= y && terrain.y + 32 >= y{
-                    vec_json.push(self.object_descriptor_hash.get(&terrain_id).unwrap().clone());
+                let x_for_terrain = (x as f32 / 32.0).floor() as usize * 32 + 16;
+                let y_for_terrain = (y as f32 / 32.0).floor() as usize * 32 + 16;
+                if terrain.x <= x_for_terrain && terrain.x + 32 >= x && terrain.y <= y_for_terrain && terrain.y + 32 >= y{
+                    let descriptor = self.object_descriptor_hash.get(&terrain_id).unwrap().clone();
+                    vec_json.push(descriptor);
                 }
-                
             }   
         }
         return vec_json;
