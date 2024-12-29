@@ -25,7 +25,8 @@ pub struct LevelEditor{
     pub mouse_y: f32,
     pub mouse_x_screen: f32,
     pub mouse_y_screen: f32,
-    pub query_text: Option<usize>,
+    pub query_at_text: Option<usize>,
+    pub last_query_position: Option<(usize, usize)>,
     pub query_unique_ui_elements: Vec<usize>,
     pub query_unique_text_elements: Vec<usize>,
     pub clicked_query_element: Option<usize>,
@@ -56,7 +57,8 @@ impl LevelEditor{
             mouse_y_screen: 0.0,
             mouse_x: 0.0,
             mouse_y: 0.0,
-            query_text: None,
+            query_at_text: None,
+            last_query_position: None,
             query_unique_ui_elements: Vec::new(),
             query_unique_text_elements: Vec::new(),
             clicked_query_element: None,
@@ -83,7 +85,7 @@ impl LevelEditor{
             visible: true
         });
         camera.add_text("Save".to_string(), 1028.0, 45.0,60.0, 22.0, 22.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Center);
-        self.query_text = Some(camera.add_text("PLACEHOLDER".to_string(), 942.0, 120.0,180.0, 400.0, 28.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+        self.query_at_text = Some(camera.add_text("".to_string(), 942.0, 70.0,180.0, 25.0, 25.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
     }
     pub fn save_edits(&self){
         self.parser.write("src/game_data/entity_archetypes.json", "src/game_data/entity_attack_patterns.json", "src/game_data/entity_attacks.json", "src/game_data/sprites.json", "src/game_data/starting_level.json").expect("d");
@@ -122,8 +124,10 @@ impl LevelEditor{
     }
     pub fn on_click(&mut self, mouse: MouseClick){
         if mouse == MouseClick::Left{
-            if self.highlighted.is_some(){
-                self.last_query = Some(self.query_stuff_at(self.mouse_x_screen.floor() as usize, self.mouse_y_screen.floor() as usize));
+            if (self.mouse_x_screen < 932.0 || self.mouse_x_screen > 1132.0) || (self.mouse_y_screen < 40.0 || self.mouse_y_screen > 680.0){
+                self.clicked_query_element = None;
+                self.last_query = Some(self.query_stuff_at(self.mouse_x.floor() as usize, self.mouse_y.floor() as usize));
+                self.last_query_position = Some((self.mouse_x.floor() as usize, self.mouse_y.floor() as usize));
             }
             for i in 0..self.last_query.clone().unwrap_or(Vec::new()).len(){
                 if self.mouse_x_screen > 942.0 + 45.0 * i as f32 && self.mouse_x_screen < 942.0 + 45.0 * i as f32 + 40.0 && self.mouse_y_screen > 90.0 && self.mouse_y_screen < 105.0{
@@ -158,23 +162,25 @@ impl LevelEditor{
     pub fn process_mouse_input (&mut self, left_mouse_button_down: bool, right_mouse_button_down: bool){
     }
     pub fn highlight_square(&mut self){
-        let sprite_id = self.sprites.get_sprite("highlight");
-        let tx = (self.mouse_x as f32 / 32.0).floor() as usize * 32;
-        let ty = (self.mouse_y as f32 / 32.0).floor() as usize * 32;
-        if tx > 932 && tx < 1132 && ty > 40 && ty < 680{
+        if (self.mouse_x_screen < 932.0 || self.mouse_x_screen > 1132.0) || (self.mouse_y_screen < 40.0 || self.mouse_y_screen > 680.0){
+            let sprite_id = self.sprites.get_sprite("highlight");
+            let tx = (self.mouse_x as f32 / 32.0).floor() as usize * 32;
+            let ty = (self.mouse_y as f32 / 32.0).floor() as usize * 32;
+
+                
+            let terrain = self.world.add_terrain(tx, ty);
+            self.world.set_sprite(terrain, sprite_id); 
             if self.highlighted.is_some(){
                 self.world.remove_terrain(self.highlighted.unwrap());
             }
-            self.highlighted = None; 
-            return;
+            self.not_real_elements.insert(terrain, true);
+            self.highlighted = Some(terrain);
+        } else {
+            if self.highlighted.is_some(){
+                self.world.remove_terrain(self.highlighted.unwrap());
+            }
+            self.highlighted = None;
         }
-        let terrain = self.world.add_terrain(tx, ty);
-        self.world.set_sprite(terrain, sprite_id); 
-        if self.highlighted.is_some(){
-            self.world.remove_terrain(self.highlighted.unwrap());
-        }
-        self.not_real_elements.insert(terrain, true);
-        self.highlighted = Some(terrain);
     }
     pub fn add_level_editor_grid(&mut self, sprite_id: usize){
         for x in 0..1000{
@@ -186,9 +192,11 @@ impl LevelEditor{
         }
     }
     pub fn update_camera_ui(&mut self, camera: &mut Camera){
-        if self.query_text.is_none(){
+        if self.query_at_text.is_none() || self.last_query_position.is_none(){
             return;
         }
+        let lqposition = self.last_query_position.unwrap();
+        camera.text.get_mut(&self.query_at_text.unwrap()).unwrap().text = format!("Query at: {}, {}", lqposition.0, lqposition.1);
         let mut i = 0;
         for ui in self.query_unique_ui_elements.clone(){
             camera.remove_ui_element(ui);
@@ -197,7 +205,6 @@ impl LevelEditor{
             camera.remove_text(text);
         }
         for element in self.last_query.clone().unwrap_or(Vec::new()){
-            println!("Element {:?}", element);
             self.query_unique_ui_elements.push(camera.add_ui_element(format!("level_editor_query_button_{}", i), UIElement{
                 x: 942.0 + 45.0 * i as f32,
                 y: 90.0,
@@ -219,12 +226,55 @@ impl LevelEditor{
         }
         if let Some(last_query) = &self.last_query {
             if let Some(clicked_query_element) = self.clicked_query_element {
-                camera.text.get_mut(&self.query_text.unwrap()).unwrap().text = format!("{:?}",last_query[clicked_query_element]);
+                let (unique_ui, unique_text) = self.display_query_element(camera, last_query[clicked_query_element].clone());
+                self.query_unique_ui_elements.extend(unique_ui);
+                self.query_unique_text_elements.extend(unique_text);
+            }else{
             }
         }
         
     }
+    pub fn display_query_element(&self, camera: &mut Camera, element: ObjectJSON) -> (Vec<usize>, Vec<usize>){
+        let mut unique_ui = Vec::new();
+        let mut unique_text = Vec::new();
+        match element {
+            ObjectJSON::Entity(entity) => {
+                unique_text.push(camera.add_text(format!("Entity:"), 945.0, 115.0, 50.0, 25.0, 25.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                unique_text.push(camera.add_text(format!("x: {}", entity.x), 946.0, 140.0, 80.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                unique_text.push(camera.add_text(format!("y: {}", entity.y), 1036.0, 140.0, 100.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                unique_text.push(camera.add_text(format!("sprite: {}", entity.sprite), 946.0, 155.0, 100.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                let archetype = self.parser.get_archetype(&entity.archetype).unwrap();
+                unique_text.push(camera.add_text(format!("Archetype: {}", entity.archetype), 945.0, 175.0, 100.0, 25.0, 25.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                unique_text.push(camera.add_text(format!("Monster Type: {}", archetype.monster_type), 945.0, 200.0, 100.0, 15.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                unique_text.push(camera.add_text(format!("Range: {}", archetype.range), 1036.0, 200.0, 100.0, 15.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                unique_text.push(camera.add_text(format!("Aggro Range: {}", archetype.aggro_range), 945.0, 215.0, 100.0, 15.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                unique_text.push(camera.add_text(format!("Movement Speed: {}", archetype.movement_speed), 1036.0, 215.0, 100.0, 15.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                unique_text.push(camera.add_text(format!("Attack Type: {}", archetype.attack_type), 945.0, 230.0, 100.0, 15.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                unique_text.push(camera.add_text(format!("Attack Pattern: {}", archetype.attack_pattern), 945.0, 245.0, 200.0, 30.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                unique_text.push(camera.add_text(format!("Basic Tags: {:?}", archetype.basic_tags), 945.0, 260.0, 200.0, 30.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+            },
+            ObjectJSON::Terrain(terrain) => {
+                unique_text.push(camera.add_text(format!("Terrain Block:"), 945.0, 115.0, 200.0, 25.0, 25.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                unique_text.push(camera.add_text(format!("x: {}", terrain.x), 946.0, 140.0, 50.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                unique_text.push(camera.add_text(format!("y: {}", terrain.x), 1036.0, 140.0, 50.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left)); 
+                unique_text.push(camera.add_text(format!("w: {}", terrain.width), 946.0, 155.0, 50.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                unique_text.push(camera.add_text(format!("h: {}", terrain.height), 1036.0, 155.0, 50.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left)); 
+                let descriptor = terrain.terrain_descriptor;
 
+                unique_text.push(camera.add_text(format!("Terrain Descriptor:"), 945.0, 175.0, 100.0, 25.0, 25.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                unique_text.push(camera.add_text(format!("Type: {}", descriptor.r#type), 946.0, 200.0, 200.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                if (descriptor.random_chances.is_some()){
+                    unique_text.push(camera.add_text(format!("Random Chances: {:?}", descriptor.random_chances.unwrap()), 946.0, 215.0, 200.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                    unique_text.push(camera.add_text(format!("Sprites: {:?}", descriptor.sprites), 946.0, 230.0, 200.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                    unique_text.push(camera.add_text(format!("Basic Tags: {:?}", descriptor.basic_tags), 946.0, 245.0, 200.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                }else{
+                    unique_text.push(camera.add_text(format!("Sprites: {:?}", descriptor.sprites), 946.0, 215.0, 200.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                    unique_text.push(camera.add_text(format!("Basic Tags: {:?}", descriptor.basic_tags), 946.0, 230.0, 200.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                }
+            }
+        }
+        return (unique_ui, unique_text);
+    }
 
 }
 

@@ -54,7 +54,6 @@ impl Camera{
     pub fn add_ui_element(&mut self, name: String,  element: crate::game_engine::ui::UIElement) -> usize{
         self.ui_element_names.insert(name, self.ui_element_id);
         self.ui_elements.insert(self.ui_element_id, element);
-        println!("Added element with id: {} {:?}", self.ui_element_id, element);
         self.ui_element_id += 1;
         self.ui_element_id - 1
     }

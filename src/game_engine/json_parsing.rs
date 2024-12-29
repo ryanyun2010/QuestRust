@@ -6,14 +6,14 @@ use crate::game_engine::entities::{EntityTags, EntityAttack, EntityAttackPattern
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct entity_archetype_json {
-    name: String,
-    basic_tags: Vec<String>,
-    monster_type: String,
-    movement_speed: f32,
-    range: usize,
-    aggro_range: usize,
-    attack_type: String,
-    attack_pattern: String
+    pub name: String,
+    pub basic_tags: Vec<String>,
+    pub monster_type: String,
+    pub movement_speed: f32,
+    pub range: usize,
+    pub aggro_range: usize,
+    pub attack_type: String,
+    pub attack_pattern: String
 }
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct entity_attack_pattern_json {
@@ -285,6 +285,9 @@ impl JSON_parser {
         let mut writer = BufWriter::new(file);
         write!(writer, "{}", serde_json::to_string(&self.starting_level_json)?)?;
         Ok(())
+    }
+    pub fn get_archetype(&self, name: &str) -> Option<&entity_archetype_json> {
+        self.entity_archetypes_json.get(name)
     }
     
 }
