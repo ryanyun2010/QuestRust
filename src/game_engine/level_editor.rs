@@ -1,10 +1,12 @@
 use std::collections::HashMap;
+use std::fmt::format;
 use wgpu_text::glyph_brush::HorizontalAlign;
 use winit::event::{ElementState, MouseButton, *};
 use winit::event_loop::EventLoop;
 use winit::window::WindowBuilder;
 use super::json_parsing::{entity_json, terrain_json, JSON_parser, ParsedData};
 use super::starting_level_generator::match_terrain_tags;
+use super::ui::UIElement;
 use super::world::World;
 use super::camera::{self, Camera};
 use crate::rendering_engine::abstractions::{RenderData, SpriteIDContainer};
@@ -23,7 +25,9 @@ pub struct LevelEditor{
     pub mouse_y: f32,
     pub mouse_x_screen: f32,
     pub mouse_y_screen: f32,
-    pub query_text: Option<usize>
+    pub query_text: Option<usize>,
+    pub query_unique_ui_elements: Vec<usize>,
+    pub query_unique_text_elements: Vec<usize>
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum MouseClick{
@@ -51,7 +55,9 @@ impl LevelEditor{
             mouse_y_screen: 0.0,
             mouse_x: 0.0,
             mouse_y: 0.0,
-            query_text: None
+            query_text: None,
+            query_unique_ui_elements: Vec::new(),
+            query_unique_text_elements: Vec::new()
         }
     }
     pub fn init(&mut self, camera: &mut Camera){
@@ -151,7 +157,7 @@ impl LevelEditor{
         let ty = (self.mouse_y as f32 / 32.0).floor() as usize * 32;
         if tx > 932 && tx < 1132 && ty > 40 && ty < 680{
             if self.highlighted.is_some(){
-                self.world.sprite_lookup.remove(&self.highlighted.unwrap());
+                self.world.remove_terrain(self.highlighted.unwrap());
             }
             self.highlighted = None; 
             return;
@@ -159,7 +165,7 @@ impl LevelEditor{
         let terrain = self.world.add_terrain(tx, ty);
         self.world.set_sprite(terrain, sprite_id); 
         if self.highlighted.is_some(){
-            self.world.sprite_lookup.remove(&self.highlighted.unwrap());
+            self.world.remove_terrain(self.highlighted.unwrap());
         }
         self.not_real_elements.insert(terrain, true);
         self.highlighted = Some(terrain);
@@ -177,7 +183,35 @@ impl LevelEditor{
         if self.query_text.is_none(){
             return;
         }
-        camera.text[self.query_text.unwrap()].text = self.last_query.clone().unwrap_or(Vec::new()).iter().map(|x| format!("{:?}", x)).collect::<Vec<String>>().join("\n\n");
+        let mut i = 0;
+        for ui in self.query_unique_ui_elements.clone(){
+            camera.remove_ui_element(ui);
+        }
+        for text in self.query_unique_text_elements.clone(){
+            camera.remove_text(text);
+        }
+        for element in self.last_query.clone().unwrap_or(Vec::new()){
+            println!("Element {:?}", element);
+            self.query_unique_ui_elements.push(camera.add_ui_element(format!("level_editor_query_button_{}", i), UIElement{
+                x: 942.0 + 45.0 * i as f32,
+                y: 120.0,
+                width: 40.0,
+                height: 15.0,
+                texture_id: self.sprites.get_texture_id("level_editor_button_background"),
+                visible: true
+            }));
+            let text: String = match element {
+                ObjectJSON::Entity(entity) => {
+                    format!("{}. Entity", i + 1)
+                },
+                ObjectJSON::Terrain(terrain) => {
+                    format!("{}. Terrain", i + 1)
+                }
+            };
+            self.query_unique_text_elements.push(camera.add_text(text, 962.0 + 45.0 * i as f32, 123.0, 40.0, 18.0, 18.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Center));
+            i+= 1;
+        }
+        // camera.text[self.query_text.unwrap()].text = self.last_query.clone().unwrap_or(Vec::new()).iter().map(|x| format!("{:?}", x)).collect::<Vec<String>>().join("\n\n");
     }
 
 
@@ -337,8 +371,7 @@ impl Camera{
         render_data.index.extend(terrain_data.index);
         render_data.index.extend(entity_data.index);
 
-        for i in 0..self.ui_elements.len(){
-            let element = &self.ui_elements[i];
+        for (id, element) in self.ui_elements.iter(){
             if !element.visible{
                 continue;
             }

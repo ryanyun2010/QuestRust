@@ -128,6 +128,14 @@ impl World{
             return new_chunk_id;
         }
     }
+    pub fn remove_terrain(&mut self, element_id: usize){
+        let chunk_id = self.terrain_lookup.get(&element_id).unwrap();
+        let chunk = &mut self.chunks.borrow_mut()[*chunk_id];
+        let index = chunk.terrain_ids.iter().position(|&x| x == element_id).unwrap();
+        chunk.terrain_ids.remove(index);
+        self.terrain.remove(&element_id);
+        self.terrain_lookup.remove(&element_id);
+    }
 
     pub fn set_loaded_chunks(&mut self, chunk_ids: Vec<usize>){
         self.loaded_chunks = chunk_ids;

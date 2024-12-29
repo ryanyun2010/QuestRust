@@ -1,7 +1,9 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
+use std::hash::Hash;
 
 use crate::world::World;
 use crate::rendering_engine::abstractions::{RenderData, TextSprite};
+use crate::game_engine::ui::UIElement;
 use wgpu_text::glyph_brush::{HorizontalAlign, Section as TextSection};
 #[derive(Debug, Clone)]
 pub struct Camera{
@@ -9,11 +11,12 @@ pub struct Camera{
     pub viewpoint_height: usize,
     pub camera_x: f32, // top left corner of the camera in world/element coordinates
     pub camera_y: f32,
-    pub ui_elements: Vec<crate::game_engine::ui::UIElement>, // vec element i should be element with id i
-    pub ui_element_names: HashMap<String, usize>, // map names to ids
+    pub ui_element_names: HashMap<String, usize>,
+    pub ui_elements: BTreeMap<usize, UIElement>,
     pub ui_element_id: usize,
     pub level_editor: bool,
-    pub text: Vec<TextSprite>,
+    pub text: BTreeMap<usize, TextSprite>,
+    pub text_id: usize,
 }
 
 impl Camera{
@@ -23,30 +26,46 @@ impl Camera{
             viewpoint_height: viewpoint_height,
             camera_x: 20.0,
             camera_y: 40.0,
-            ui_elements: Vec::new(),
+            ui_elements: BTreeMap::new(),
             ui_element_names: HashMap::new(),
             ui_element_id: 0,
             level_editor: false,
-            text: Vec::new(),
+            text: BTreeMap::new(),
+            text_id: 0,
         }
     }
     pub fn update_ui(&mut self, world: &mut World){
         let player = world.player.borrow().clone();
-        let health_bar = self.get_ui_element_mut(self.get_element_by_name(String::from("health_bar_inside")).unwrap());
+        let health_bar = self.get_ui_element_mut(self.get_ui_element_id_from_name(String::from("health_bar_inside")).unwrap());
         let health_bar_width = f32::max(0.0, (player.health as f32 / player.max_health as f32) * 250.0);
         health_bar.width = health_bar_width;
     }
+    pub fn remove_ui_element(&mut self, element: usize){
+        let mut name_to_remove = String::new();
+        for (name, id) in self.ui_element_names.iter(){
+            if *id == element{
+                name_to_remove = name.clone();
+                break;
+            }
+        }
+        self.ui_element_names.remove(&name_to_remove);
+        self.ui_elements.remove(&element);
+    }
     pub fn add_ui_element(&mut self, name: String,  element: crate::game_engine::ui::UIElement) -> usize{
-        self.ui_elements.insert(self.ui_element_id, element);
         self.ui_element_names.insert(name, self.ui_element_id);
+        self.ui_elements.insert(self.ui_element_id, element);
+        println!("Added element with id: {} {:?}", self.ui_element_id, element);
         self.ui_element_id += 1;
         self.ui_element_id - 1
     }
-    pub fn get_element_by_name(&self, name: String) -> Option<usize>{
-        self.ui_element_names.get(&name).copied()
+    pub fn get_ui_element_id_from_name(&self, element: String) -> Option<usize>{
+        self.ui_element_names.get(&element).copied()
     }
-    pub fn get_ui_element_mut(&mut self, id: usize) -> &mut crate::game_engine::ui::UIElement{
-        &mut self.ui_elements[id]
+    pub fn get_ui_element(&self, element: usize) -> Option<UIElement>{
+        self.ui_elements.get(&element).copied()
+    }
+    pub fn get_ui_element_mut(&mut self, element: usize) -> &mut crate::game_engine::ui::UIElement{
+        self.ui_elements.get_mut(&element).unwrap()
     }
     pub fn update_camera_position(&mut self, world: &World){
         let player = world.player.borrow().clone();
@@ -149,8 +168,7 @@ impl Camera{
         render_data.vertex.extend(player_draw_data.vertex);
         render_data.index.extend(player_draw_data.index);
         world.set_loaded_chunks(chunks_loaded);
-        for i in 0..self.ui_elements.len(){
-            let element = &self.ui_elements[i];
+        for (id, element) in self.ui_elements.iter(){
             if !element.visible{
                 continue;
             }
@@ -163,12 +181,16 @@ impl Camera{
         render_data
     }
     pub fn add_text(&mut self, text: String, x: f32, y: f32, w: f32, h: f32, font_size: f32, color: [f32; 4], align: HorizontalAlign) -> usize{
-        self.text.push(TextSprite::new(text, font_size, x, y, w, h, color, align));
-        self.text.len() - 1
+        self.text.insert(self.text_id,TextSprite::new(text, font_size, x, y, w, h, color, align));
+        self.text_id += 1;
+        self.text_id - 1
+    }
+    pub fn remove_text(&mut self, id: usize){
+        self.text.remove(&id);
     }
     pub fn get_sections(&self, screen_width: f32, screen_height: f32) -> Vec<TextSection>{
         let mut sections = Vec::new();
-        for text in self.text.iter(){
+        for (id, text) in self.text.iter(){
             sections.push(text.get_section(&self, screen_width, screen_height).clone());
         }
         sections
