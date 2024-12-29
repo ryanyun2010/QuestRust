@@ -27,7 +27,8 @@ pub struct LevelEditor{
     pub mouse_y_screen: f32,
     pub query_text: Option<usize>,
     pub query_unique_ui_elements: Vec<usize>,
-    pub query_unique_text_elements: Vec<usize>
+    pub query_unique_text_elements: Vec<usize>,
+    pub clicked_query_element: Option<usize>,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum MouseClick{
@@ -57,7 +58,8 @@ impl LevelEditor{
             mouse_y: 0.0,
             query_text: None,
             query_unique_ui_elements: Vec::new(),
-            query_unique_text_elements: Vec::new()
+            query_unique_text_elements: Vec::new(),
+            clicked_query_element: None,
         }
     }
     pub fn init(&mut self, camera: &mut Camera){
@@ -81,7 +83,7 @@ impl LevelEditor{
             visible: true
         });
         camera.add_text("Save".to_string(), 1028.0, 45.0,60.0, 22.0, 22.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Center);
-        self.query_text = Some(camera.add_text("PLACEHOLDER".to_string(), 942.0, 90.0,180.0, 400.0, 28.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+        self.query_text = Some(camera.add_text("PLACEHOLDER".to_string(), 942.0, 120.0,180.0, 400.0, 28.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
     }
     pub fn save_edits(&self){
         self.parser.write("src/game_data/entity_archetypes.json", "src/game_data/entity_attack_patterns.json", "src/game_data/entity_attacks.json", "src/game_data/sprites.json", "src/game_data/starting_level.json").expect("d");
@@ -123,6 +125,11 @@ impl LevelEditor{
             if self.highlighted.is_some(){
                 self.last_query = Some(self.query_stuff_at(self.mouse_x.floor() as usize, self.mouse_y.floor() as usize));
             }
+            for i in 0..self.last_query.clone().unwrap_or(Vec::new()).len(){
+                if self.mouse_x_screen > 942.0 + 45.0 * i as f32 && self.mouse_x_screen < 942.0 + 45.0 * i as f32 + 40.0 && self.mouse_y_screen > 90.0 && self.mouse_y_screen < 105.0{
+                    self.clicked_query_element = Some(i);
+                }
+            }
         } else if mouse == MouseClick::Right{
             if self.highlighted.is_some(){
                 let terrain_id = self.highlighted.unwrap();
@@ -145,7 +152,6 @@ impl LevelEditor{
                 let new_terrain = self.world.add_terrain(x, y);
                 self.object_descriptor_hash.insert(new_terrain, ObjectJSON::Terrain(terrain_json));
                 self.world.set_sprite(new_terrain, self.sprites.get_sprite("wall"));
-                /* this should probably replace the terrain under it honestly or at least you shouldnt be placing a whole bunch of terrain on top of eachother accidentally */
             }
         }
     }
@@ -194,7 +200,7 @@ impl LevelEditor{
             println!("Element {:?}", element);
             self.query_unique_ui_elements.push(camera.add_ui_element(format!("level_editor_query_button_{}", i), UIElement{
                 x: 942.0 + 45.0 * i as f32,
-                y: 120.0,
+                y: 90.0,
                 width: 40.0,
                 height: 15.0,
                 texture_id: self.sprites.get_texture_id("level_editor_button_background"),
@@ -208,10 +214,15 @@ impl LevelEditor{
                     format!("{}. Terrain", i + 1)
                 }
             };
-            self.query_unique_text_elements.push(camera.add_text(text, 962.0 + 45.0 * i as f32, 123.0, 40.0, 18.0, 18.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Center));
+            self.query_unique_text_elements.push(camera.add_text(text, 962.0 + 45.0 * i as f32, 93.0, 40.0, 18.0, 18.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Center));
             i+= 1;
         }
-        // camera.text[self.query_text.unwrap()].text = self.last_query.clone().unwrap_or(Vec::new()).iter().map(|x| format!("{:?}", x)).collect::<Vec<String>>().join("\n\n");
+        if let Some(last_query) = &self.last_query {
+            if let Some(clicked_query_element) = self.clicked_query_element {
+                camera.text.get_mut(&self.query_text.unwrap()).unwrap().text = format!("{:?}",last_query[clicked_query_element]);
+            }
+        }
+        
     }
 
 
