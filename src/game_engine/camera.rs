@@ -162,8 +162,9 @@ impl Camera{
         
         render_data
     }
-    pub fn add_text(&mut self, text: String, x: f32, y: f32, w: f32, h: f32, font_size: f32, color: [f32; 4], align: HorizontalAlign){
+    pub fn add_text(&mut self, text: String, x: f32, y: f32, w: f32, h: f32, font_size: f32, color: [f32; 4], align: HorizontalAlign) -> usize{
         self.text.push(TextSprite::new(text, font_size, x, y, w, h, color, align));
+        self.text.len() - 1
     }
     pub fn get_sections(&self, screen_width: f32, screen_height: f32) -> Vec<TextSection>{
         let mut sections = Vec::new();

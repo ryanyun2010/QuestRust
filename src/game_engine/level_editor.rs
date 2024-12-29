@@ -6,7 +6,7 @@ use winit::window::WindowBuilder;
 use super::json_parsing::{entity_json, terrain_json, JSON_parser, ParsedData};
 use super::starting_level_generator::match_terrain_tags;
 use super::world::World;
-use super::camera::Camera;
+use super::camera::{self, Camera};
 use crate::rendering_engine::abstractions::{RenderData, SpriteIDContainer};
 use crate::rendering_engine::state::State;
 use super::player::Player;
@@ -18,7 +18,17 @@ pub struct LevelEditor{
     pub sprites: SpriteIDContainer,
     pub not_real_elements: HashMap<usize, bool>,
     pub object_descriptor_hash: HashMap<usize, ObjectJSON>,
-    pub last_query: Option<Vec<ObjectJSON>>
+    pub last_query: Option<Vec<ObjectJSON>>,
+    pub mouse_x: f32,
+    pub mouse_y: f32,
+    pub mouse_x_screen: f32,
+    pub mouse_y_screen: f32,
+    pub query_text: Option<usize>
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum MouseClick{
+    Left,
+    Right
 }
 
 #[derive(Debug, Clone)]
@@ -36,7 +46,12 @@ impl LevelEditor{
             sprites: sprites,
             not_real_elements: HashMap::new(),
             object_descriptor_hash: hash,
-            last_query: None
+            last_query: None,
+            mouse_x_screen: 0.0,
+            mouse_y_screen: 0.0,
+            mouse_x: 0.0,
+            mouse_y: 0.0,
+            query_text: None
         }
     }
     pub fn init(&mut self, camera: &mut Camera){
@@ -60,6 +75,7 @@ impl LevelEditor{
             visible: true
         });
         camera.add_text("Save".to_string(), 1028.0, 45.0,60.0, 22.0, 22.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Center);
+        self.query_text = Some(camera.add_text("PLACEHOLDER".to_string(), 942.0, 90.0,180.0, 400.0, 28.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
     }
     pub fn save_edits(&self){
         self.parser.write("src/game_data/entity_archetypes.json", "src/game_data/entity_attack_patterns.json", "src/game_data/entity_attacks.json", "src/game_data/sprites.json", "src/game_data/starting_level.json").expect("d");
@@ -92,8 +108,12 @@ impl LevelEditor{
         }
         return vec_json;
     }
-    pub fn process_mouse_input (&mut self, left_mouse_button_down: bool, right_mouse_button_down: bool){
-        if right_mouse_button_down{
+    pub fn on_click(&mut self, mouse: MouseClick){
+        if mouse == MouseClick::Left{
+            if self.highlighted.is_some(){
+                self.last_query = Some(self.query_stuff_at(self.mouse_x.floor() as usize, self.mouse_y.floor() as usize));
+            }
+        } else if mouse == MouseClick::Right{
             if self.highlighted.is_some(){
                 let terrain_id = self.highlighted.unwrap();
                 let terrain = self.world.get_terrain(terrain_id).unwrap();
@@ -118,21 +138,13 @@ impl LevelEditor{
                 /* this should probably replace the terrain under it honestly or at least you shouldnt be placing a whole bunch of terrain on top of eachother accidentally */
             }
         }
-        if left_mouse_button_down{
-            if self.highlighted.is_some(){
-                let terrain_id = self.highlighted.unwrap();
-                let terrain = self.world.get_terrain(terrain_id).unwrap();
-                let x = terrain.x;
-                let y = terrain.y;
-                self.last_query = Some(self.query_stuff_at(x + 16, y + 16));
-            
-            }
-        }
     }
-    pub fn highlight_square(&mut self, x: f64, y: f64, width: u32, height: u32, camera_width: usize, camera_height: usize, camera_x: f32, camera_y: f32){
+    pub fn process_mouse_input (&mut self, left_mouse_button_down: bool, right_mouse_button_down: bool){
+    }
+    pub fn highlight_square(&mut self){
         let sprite_id = self.sprites.get_sprite("highlight");
-        let tx = (((((x as f32)/width as f32) * camera_width as f32) + camera_x) / 32.0).floor() as usize * 32;
-        let ty = (((((y as f32)/height as f32) * camera_height as f32) + camera_y)/ 32.0).floor() as usize * 32;
+        let tx = (self.mouse_x as f32 / 32.0).floor() as usize * 32;
+        let ty = (self.mouse_y as f32 / 32.0).floor() as usize * 32;
         if tx > 932 && tx < 1132 && ty > 40 && ty < 680{
             if self.highlighted.is_some(){
                 self.world.sprite_lookup.remove(&self.highlighted.unwrap());
@@ -157,9 +169,11 @@ impl LevelEditor{
             }
         }
     }
-
     pub fn update_camera_ui(&mut self, camera: &mut Camera){
-
+        if self.query_text.is_none(){
+            return;
+        }
+        camera.text[self.query_text.unwrap()].text = self.last_query.clone().unwrap_or(Vec::new()).iter().map(|x| format!("{:?}", x)).collect::<Vec<String>>().join("\n\n");
     }
 
 
@@ -221,8 +235,8 @@ impl Camera{
     pub fn set_level_editor(&mut self){
         self.level_editor = true;
     }
-    pub fn level_editor_update_camera_position(&mut self, world: &World){
-        let player = world.player.borrow().clone();
+    pub fn level_editor_update_camera_position(&mut self, level_editor: &mut LevelEditor){
+        let player = level_editor.world.player.borrow().clone();
         let mut direction = [player.x - (self.viewpoint_width / 2) as f32 - self.camera_x, player.y - (self.viewpoint_height / 2) as f32 - self.camera_y];
         if self.camera_x < 4.0 && direction[0] < 0.0{
             direction[0] = 0.0;
@@ -247,6 +261,8 @@ impl Camera{
         if self.camera_y < 0.0{
             self.camera_y = 0.0;
         }
+        level_editor.mouse_x = level_editor.mouse_x_screen + self.camera_x;
+        level_editor.mouse_y = level_editor.mouse_y_screen + self.camera_y;
     }
     pub fn level_editor_render(&mut self, world: &mut World) -> RenderData{
         let mut render_data = RenderData::new();
@@ -335,8 +351,8 @@ impl State<'_>{
     pub fn set_level_editor(&mut self){
         self.level_editor = true;
     }
-    pub fn level_editor_highlight_square(&mut self, level_editor: &mut LevelEditor, x: f64, y: f64, camera: &Camera){
-        level_editor.highlight_square(x, y, self.size.width, self.size.height, camera.viewpoint_width, camera.viewpoint_height, camera.camera_x, camera.camera_y);
+    pub fn level_editor_highlight_square(&mut self, level_editor: &mut LevelEditor){
+        level_editor.highlight_square();
     }
     pub fn level_editor_process_mouse_input(&mut self, state: ElementState, button: MouseButton){
         if state == ElementState::Pressed && button == MouseButton::Left{
@@ -349,10 +365,18 @@ impl State<'_>{
             self.right_mouse_button_down = false;
         }
     }
-    pub fn level_editor_update(&self, level_editor: &mut LevelEditor, camera: &mut Camera){
+    pub fn level_editor_update(&mut self, level_editor: &mut LevelEditor, camera: &mut Camera){
         level_editor.world.level_editor_process_input(self.keys_down.clone());
         level_editor.process_mouse_input(self.left_mouse_button_down, self.right_mouse_button_down);
-        camera.level_editor_update_camera_position(&level_editor.world);
+        camera.level_editor_update_camera_position(level_editor);
+        self.level_editor_highlight_square(level_editor);
+        level_editor.update_camera_ui(camera);
+    }
+    pub fn process_mouse_position(&mut self, x: f64, y: f64, level_editor: &mut LevelEditor, camera: &Camera){
+        level_editor.mouse_x_screen = x as f32/self.config.width as f32 * camera.viewpoint_width as f32;
+        level_editor.mouse_y_screen = y as f32 /self.config.height as f32 * camera.viewpoint_height as f32;
+        level_editor.mouse_x = level_editor.mouse_x_screen + camera.camera_x;
+        level_editor.mouse_y = level_editor.mouse_y_screen + camera.camera_y;
     }
 }
 
@@ -384,10 +408,22 @@ pub async fn run(mut level_editor: &mut LevelEditor, camera: &mut Camera, sprite
                     state_obj.resize(physical_size);
                 },
                 WindowEvent::CursorMoved {position, ..} => {
-                    state_obj.level_editor_highlight_square(&mut level_editor,   position.x, position.y, &camera);
+                    state_obj.process_mouse_position(position.x, position.y, &mut level_editor, &camera);
                 },
                 WindowEvent::MouseInput { state, button, .. } => {
                     state_obj.level_editor_process_mouse_input(state, button);
+                    if state == ElementState::Pressed{
+                        match button{
+                            MouseButton::Left => {
+                                level_editor.on_click(MouseClick::Left);
+                            },
+                            MouseButton::Right => {;
+                                level_editor.on_click(MouseClick::Right);
+                            },
+                            _ => {}
+                        }
+                    }
+
                 },
                 WindowEvent::Focused(bool) => {
                     focused = bool;
