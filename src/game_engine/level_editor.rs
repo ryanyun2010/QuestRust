@@ -4,6 +4,7 @@ use wgpu_text::glyph_brush::HorizontalAlign;
 use winit::event::{ElementState, MouseButton, *};
 use winit::event_loop::EventLoop;
 use winit::window::WindowBuilder;
+use super::entities::Entity;
 use super::json_parsing::{entity_json, terrain_json, JSON_parser, ParsedData};
 use super::starting_level_generator::match_terrain_tags;
 use super::ui::UIElementDescriptor;
@@ -14,6 +15,54 @@ use crate::rendering_engine::state::State;
 use super::player::Player;
 use super::command_line_input;
 
+
+enum EntityProperty{
+    X,
+    Y,
+    Archetype,
+    Sprite
+}
+
+macro_rules! update_entity_property_json {
+    ($self:ident, $property:ident, $new_value:expr, $type:ty) => {{
+        let new_property: $type = $new_value;
+        let entity_id = $self.last_query.clone().unwrap().1[$self.clicked_query_element.unwrap()];
+        let object = $self.last_query.clone().unwrap().0[$self.clicked_query_element.unwrap()].clone();
+        let mut new_object = object.clone();
+        match &mut new_object {
+            ObjectJSON::Entity(ref mut obj) => {
+                obj.0.$property = new_property.clone();
+            }
+            _ => {}
+        }
+        $self.last_query_object = Some((new_object.clone(), entity_id.clone()));
+        match object {
+            ObjectJSON::Entity(mut obj) => {
+                $self.parser.starting_level_json.entities[obj.1].$property = new_property.clone();
+            },
+            _ => {}
+        }
+        match $self.object_descriptor_hash.get_mut(&entity_id).unwrap() {
+            ObjectJSON::Entity(entity) => {
+                entity.0.$property = new_property.clone();
+            },
+            _ => {}
+        }
+        entity_id
+        // match $property_e{
+        //     EntityProperty::X => {
+        //         $self.world.entities.borrow_mut().get_mut(&entity_id).unwrap().x = new_property as f32;
+        //     },
+        //     EntityProperty::Y => {
+        //         $self.world.entities.borrow_mut().get_mut(&entity_id).unwrap().y = new_property as f32;
+        //     },
+        //     EntityProperty::Sprite => {
+        //         $self.world.set_sprite(entity_id, $self.sprites.get_sprite(&new_property.as_str()));
+        //     },
+        //     _ => {}
+        // }
+    }
+}}
 
 
 pub struct LevelEditor{
@@ -133,6 +182,40 @@ impl LevelEditor{
         }
         return (vec_json, vec_ids);
     }
+    pub fn update_entity_property_with_prompt(&mut self, property: EntityProperty, prompt: &str){
+        match property{
+            EntityProperty::X => {
+                let new_value = command_line_input::prompt_float(prompt);
+                if(new_value.is_none()){
+                    return;
+                }
+                let new_value = new_value.unwrap();
+                let entity_id = update_entity_property_json!(self, x, new_value, f32);
+                self.world.entities.borrow_mut().get_mut(&entity_id).unwrap().x = new_value;
+            },
+            EntityProperty::Y => {
+                let new_value = command_line_input::prompt_float(prompt);
+                if(new_value.is_none()){
+                    return;
+                }
+                let new_value = new_value.unwrap();
+                let entity_id = update_entity_property_json!(self, y, new_value, f32);
+                self.world.entities.borrow_mut().get_mut(&entity_id).unwrap().y = new_value;
+            },
+            EntityProperty::Sprite => {
+                let new_value = command_line_input::prompt_string(prompt);
+                if(new_value.is_none()){
+                    return;
+                }
+                let new_value = new_value.unwrap();
+                let nv = new_value.clone();
+                let entity_id = update_entity_property_json!(self, sprite, new_value, String);
+                self.world.set_sprite(entity_id, self.sprites.get_sprite(&nv));
+            },
+            EntityProperty::Archetype => {}
+            _ => {}
+        }
+    }
     pub fn on_click(&mut self, mouse: MouseClick, camera: &Camera){
         if mouse == MouseClick::Left {
             if (self.mouse_x_screen < 932.0 || self.mouse_x_screen > 1132.0) || (self.mouse_y_screen < 40.0 || self.mouse_y_screen > 680.0){
@@ -150,38 +233,9 @@ impl LevelEditor{
                 if element_name.contains("level_editor_query_edit_"){
                     let thing_to_edit = element_name.replace("level_editor_query_edit_", "");
                     match thing_to_edit.as_str() {
-                        "entity_x" => {
-                            let new_x_potentially = command_line_input::prompt_float("New Entity X");
-                            if new_x_potentially.is_none(){
-                                return;
-                            }
-                            let new_x = new_x_potentially.unwrap();
-                            let entity_id = self.last_query.clone().unwrap().1[self.clicked_query_element.unwrap()];
-                            let object = self.last_query.clone().unwrap().0[self.clicked_query_element.unwrap()].clone();
-                            let mut new_object = object.clone();
-                            match &mut new_object {
-                                ObjectJSON::Entity(ref mut obj) => {
-                                    obj.0.x = new_x;
-                                }
-                                _ => {}
-                            }
-                            self.last_query_object = Some((new_object.clone(),entity_id.clone()));
-                            match object {
-                                ObjectJSON::Entity(mut obj) => {
-                                    self.parser.starting_level_json.entities[obj.1].x = new_x;
-                                },
-                                _ => {}
-                            }
-                            match self.object_descriptor_hash.get_mut(&entity_id).unwrap(){
-                                ObjectJSON::Entity(entity) => {
-                                    entity.0.x = new_x;
-                                },
-                                _ => {}
-                            }
-                            
-                            self.world.entities.borrow_mut().get_mut(&entity_id).unwrap().x = new_x;
-                            
-                        },
+                        "entity_x" => {self.update_entity_property_with_prompt(EntityProperty::X, "New Entity X");},
+                        "entity_y" => {self.update_entity_property_with_prompt(EntityProperty::Y, "New Entity Y");},
+                        "entity_sprite" => {self.update_entity_property_with_prompt(EntityProperty::Sprite, "New Entity Sprite");},
                         // "entity_archetype" => {
                         //     let new_archetype_potentially = command_line_input::prompt_string("New Entity Archetype");
                         //     if new_archetype_potentially.is_none(){
