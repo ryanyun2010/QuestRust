@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::fmt::format;
+use std::vec;
 use wgpu_text::glyph_brush::HorizontalAlign;
 use winit::event::{ElementState, MouseButton, *};
 use winit::event_loop::EventLoop;
@@ -26,24 +27,37 @@ enum EntityProperty{
 macro_rules! update_entity_property_json {
     ($self:ident, $property:ident, $new_value:expr, $type:ty) => {{
         let new_property: $type = $new_value;
-        let entity_id = $self.last_query.clone().unwrap().1[$self.clicked_query_element.unwrap()];
-        let object = $self.last_query.clone().unwrap().0[$self.clicked_query_element.unwrap()].clone();
+        if $self.last_query.as_ref().unwrap().query_type != QueryType::FollowingObject{
+            return;
+        }
+        let entity_id = $self.last_query.clone().unwrap().objects[0].element_id;
+        let object = $self.last_query.clone().unwrap().objects[0].object.clone();
         let mut new_object = object.clone();
         match &mut new_object {
-            ObjectJSON::Entity(ref mut obj) => {
+            ObjectJSONContainer::Entity(ref mut obj) => {
                 obj.0.$property = new_property.clone();
             }
             _ => {}
         }
-        $self.last_query_object = Some((new_object.clone(), entity_id.clone()));
+        $self.last_query = Some(
+            QueryResult {
+                query_type: QueryType::FollowingObject,
+                position: None,
+                objects: vec![
+                    QueriedObject{
+                        element_id: entity_id,
+                        object: new_object.clone()
+                    }]
+            }
+        );
         match object {
-            ObjectJSON::Entity(mut obj) => {
+            ObjectJSONContainer::Entity(mut obj) => {
                 $self.parser.starting_level_json.entities[obj.1].$property = new_property.clone();
             },
             _ => {}
         }
         match $self.object_descriptor_hash.get_mut(&entity_id).unwrap() {
-            ObjectJSON::Entity(entity) => {
+            ObjectJSONContainer::Entity(entity) => {
                 entity.0.$property = new_property.clone();
             },
             _ => {}
@@ -52,6 +66,41 @@ macro_rules! update_entity_property_json {
     }
 }}
 
+#[derive(Debug, Copy, Clone)]
+pub struct MousePosition{
+    pub x_world: f32,
+    pub y_world: f32,
+    pub x_screen: f32,
+    pub y_screen: f32,
+}
+
+impl MousePosition{
+    pub fn default() -> Self{
+        Self {
+            x_world: 0.0,
+            y_world: 0.0,
+            x_screen: 0.0,
+            y_screen: 0.0,
+        }
+    }
+}
+#[derive(Debug, Clone, PartialEq)]
+pub enum QueryType{
+    Position,
+    FollowingObject
+}
+#[derive(Debug, Clone)]
+pub struct QueryResult{
+    pub query_type: QueryType,
+    pub position: Option<(usize, usize)>,
+    pub objects: Vec<QueriedObject>,
+}
+
+#[derive(Debug, Clone)]
+pub struct QueriedObject{
+    pub object: ObjectJSONContainer,
+    pub element_id: usize
+}
 
 pub struct LevelEditor{
     pub highlighted: Option<usize>,
@@ -60,18 +109,12 @@ pub struct LevelEditor{
     pub world: World,
     pub sprites: SpriteIDContainer,
     pub not_real_elements: HashMap<usize, bool>,
-    pub object_descriptor_hash: HashMap<usize, ObjectJSON>,
-    pub last_query: Option<(Vec<ObjectJSON>, Vec<usize>)>,
-    pub mouse_x: f32,
-    pub mouse_y: f32,
-    pub mouse_x_screen: f32,
-    pub mouse_y_screen: f32,
+    pub object_descriptor_hash: HashMap<usize, ObjectJSONContainer>,
+    pub mouse_position: MousePosition,
     pub query_at_text: Option<usize>,
-    pub last_query_position: Option<(usize, usize)>,
-    pub last_query_object: Option<(ObjectJSON, usize)>,
+    pub last_query: Option<QueryResult>,
     pub query_unique_ui_elements: Vec<usize>,
-    pub query_unique_text_elements: Vec<usize>,
-    pub clicked_query_element: Option<usize>,
+    pub query_unique_text_elements: Vec<usize>
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum MouseClick{
@@ -80,13 +123,13 @@ enum MouseClick{
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum ObjectJSON {
+pub enum ObjectJSONContainer { // usize here is the index in the starting_level_json entity/json
     Entity((entity_json, usize)),
     Terrain((terrain_json, usize))
 }
 
 impl LevelEditor{
-    pub fn new(world: World, sprites: SpriteIDContainer, parser: JSON_parser, hash: HashMap<usize, ObjectJSON>) -> Self{
+    pub fn new(world: World, sprites: SpriteIDContainer, parser: JSON_parser, hash: HashMap<usize, ObjectJSONContainer>) -> Self{
         let parsed_data = parser.clone().convert();
         Self {
             highlighted: None,
@@ -97,16 +140,10 @@ impl LevelEditor{
             not_real_elements: HashMap::new(),
             object_descriptor_hash: hash,
             last_query: None,
-            mouse_x_screen: 0.0,
-            mouse_y_screen: 0.0,
-            mouse_x: 0.0,
-            mouse_y: 0.0,
+            mouse_position: MousePosition::default(),
             query_at_text: None,
-            last_query_position: None,
             query_unique_ui_elements: Vec::new(),
-            query_unique_text_elements: Vec::new(),
-            last_query_object: None,
-            clicked_query_element: None,
+            query_unique_text_elements: Vec::new()
         }
     }
     pub fn init(&mut self, camera: &mut Camera){
@@ -135,40 +172,44 @@ impl LevelEditor{
     pub fn save_edits(&self){
         self.parser.write("src/game_data/entity_archetypes.json", "src/game_data/entity_attack_patterns.json", "src/game_data/entity_attacks.json", "src/game_data/sprites.json", "src/game_data/starting_level.json").expect("d");
     }
-    pub fn query_stuff_at(&self, x: usize, y: usize) -> (Vec<ObjectJSON>, Vec<usize>){
+    pub fn query_stuff_at(&self, x: usize, y: usize) -> QueryResult{
         println!("Query at {}, {}", x, y);
         let chunk_to_query = self.world.get_chunk_from_xy(x, y);
-        let mut vec_json = Vec::new();
-        let mut vec_ids = Vec::new();
+        let mut vec_objects = Vec::new();
         if chunk_to_query.is_none(){
-            return (vec_json, vec_ids);
-        }else{
-            let chunk_id = chunk_to_query.unwrap();
-            let chunk = self.world.chunks.borrow()[chunk_id].clone();
-            for entity_id in chunk.entities_ids{
-                let entity = &self.world.get_entity(entity_id).unwrap();
-                if entity.x <= x as f32 && entity.x + 32.0 >= x as f32 && entity.y <= y as f32 && entity.y + 32.0 >= y as f32 {
-                    let descriptor = self.object_descriptor_hash.get(&entity_id).unwrap().clone();
-                    vec_ids.push(entity_id);
-                    vec_json.push(descriptor);
-                }
-            }
-
-            for terrain_id in chunk.terrain_ids{
-                let terrain = self.world.get_terrain(terrain_id).unwrap();
-                if *self.not_real_elements.get(&terrain_id).unwrap_or(&false){
-                    continue;
-                }
-                let x_for_terrain = (x as f32 / 32.0).floor() as usize * 32 + 16;
-                let y_for_terrain = (y as f32 / 32.0).floor() as usize * 32 + 16;
-                if terrain.x <= x_for_terrain && terrain.x + 32 >= x && terrain.y <= y_for_terrain && terrain.y + 32 >= y{
-                    let descriptor = self.object_descriptor_hash.get(&terrain_id).unwrap().clone();
-                    vec_ids.push(terrain_id);
-                    vec_json.push(descriptor);
-                }
-            }   
+            return QueryResult{
+                query_type: QueryType::Position,
+                position: Some((x, y)),
+                objects: vec_objects
+            };
         }
-        return (vec_json, vec_ids);
+        let chunk_id = chunk_to_query.unwrap();
+        let chunk = self.world.chunks.borrow()[chunk_id].clone();
+        for entity_id in chunk.entities_ids{
+            let entity = &self.world.get_entity(entity_id).unwrap();
+            if entity.x <= x as f32 && entity.x + 32.0 >= x as f32 && entity.y <= y as f32 && entity.y + 32.0 >= y as f32 {
+                let descriptor = self.object_descriptor_hash.get(&entity_id).unwrap().clone();
+                vec_objects.push(QueriedObject{element_id: entity_id, object: descriptor});
+            }
+        }
+
+        for terrain_id in chunk.terrain_ids{
+            let terrain = self.world.get_terrain(terrain_id).unwrap();
+            if *self.not_real_elements.get(&terrain_id).unwrap_or(&false){
+                continue;
+            }
+            let x_for_terrain = (x as f32 / 32.0).floor() as usize * 32 + 16;
+            let y_for_terrain = (y as f32 / 32.0).floor() as usize * 32 + 16;
+            if terrain.x <= x_for_terrain && terrain.x + 32 >= x && terrain.y <= y_for_terrain && terrain.y + 32 >= y{
+                let descriptor = self.object_descriptor_hash.get(&terrain_id).unwrap().clone();
+                vec_objects.push(QueriedObject{element_id: terrain_id, object: descriptor});
+            }
+        }   
+        return QueryResult{
+            query_type: QueryType::Position,
+            position: Some((x, y)),
+            objects: vec_objects
+        };
     }
     pub fn update_entity_property_with_prompt(&mut self, property: EntityProperty, prompt: &str){
         match property{
@@ -220,19 +261,30 @@ impl LevelEditor{
             _ => {}
         }
     }
+    pub fn check_click_on_menu(mouseX: f32, mouseY: f32) -> bool{
+        if mouseX > 932.0 && mouseX < 1132.0 && mouseY > 40.0 && mouseY < 680.0{
+            return true;
+        }
+        return false;
+    }
     pub fn on_click(&mut self, mouse: MouseClick, camera: &Camera){
         if mouse == MouseClick::Left {
-            if (self.mouse_x_screen < 932.0 || self.mouse_x_screen > 1132.0) || (self.mouse_y_screen < 40.0 || self.mouse_y_screen > 680.0){
-                self.clicked_query_element = None;
-                self.last_query = Some(self.query_stuff_at(self.mouse_x.floor() as usize, self.mouse_y.floor() as usize));
-                self.last_query_position = Some((self.mouse_x.floor() as usize, self.mouse_y.floor() as usize));
-                self.last_query_object = None;
+            let elements = camera.get_ui_elements_at(self.mouse_position.x_screen as usize, self.mouse_position.y_screen as usize);
+            if (!LevelEditor::check_click_on_menu(self.mouse_position.x_screen, self.mouse_position.y_screen)){
+                self.last_query = Some(self.query_stuff_at(self.mouse_position.x_world.floor() as usize, self.mouse_position.y_world.floor() as usize));
             }
-            let elements = camera.get_ui_elements_at(self.mouse_x_screen as usize, self.mouse_y_screen as usize);
             for element_name in elements.iter() {
                 if element_name.contains("level_editor_query_button_"){
                     let index = element_name.replace("level_editor_query_button_", "").parse::<usize>().unwrap();
-                    self.clicked_query_element = Some(index);
+                    self.last_query = Some(
+                        QueryResult {
+                            query_type: QueryType::FollowingObject,
+                            position: None,
+                            objects: vec![
+                                self.last_query.clone().unwrap().objects[index].clone()
+                            ]
+                        }
+                    );
                 }
                 if element_name.contains("level_editor_query_edit_"){
                     let thing_to_edit = element_name.replace("level_editor_query_edit_", "");
@@ -266,7 +318,7 @@ impl LevelEditor{
                 self.parser.starting_level_json.terrain.push(terrain_json.clone());
                 let new_ter_descriptor_id = self.parser.starting_level_json.terrain.len() - 1;
                 let new_terrain = self.world.add_terrain(x, y);
-                self.object_descriptor_hash.insert(new_terrain, ObjectJSON::Terrain((terrain_json, new_ter_descriptor_id)));
+                self.object_descriptor_hash.insert(new_terrain, ObjectJSONContainer::Terrain((terrain_json, new_ter_descriptor_id)));
                 self.world.set_sprite(new_terrain, self.sprites.get_sprite("wall"));
             }
         }
@@ -274,10 +326,10 @@ impl LevelEditor{
     pub fn process_mouse_input (&mut self, left_mouse_button_down: bool, right_mouse_button_down: bool){
     }
     pub fn highlight_square(&mut self){
-        if (self.mouse_x_screen < 932.0 || self.mouse_x_screen > 1132.0) || (self.mouse_y_screen < 40.0 || self.mouse_y_screen > 680.0){
+        if (!LevelEditor::check_click_on_menu(self.mouse_position.x_screen, self.mouse_position.y_screen)){
             let sprite_id = self.sprites.get_sprite("highlight");
-            let tx = (self.mouse_x as f32 / 32.0).floor() as usize * 32;
-            let ty = (self.mouse_y as f32 / 32.0).floor() as usize * 32;
+            let tx = (self.mouse_position.x_world as f32 / 32.0).floor() as usize * 32;
+            let ty = (self.mouse_position.y_world as f32 / 32.0).floor() as usize * 32;
             let terrain = self.world.add_terrain(tx, ty);
             self.world.set_sprite(terrain, sprite_id); 
             if self.highlighted.is_some(){
@@ -302,69 +354,63 @@ impl LevelEditor{
         }
     }
     pub fn update_camera_ui(&mut self, camera: &mut Camera){
-        if self.query_at_text.is_none() || self.last_query_position.is_none(){
+        if self.query_at_text.is_none() || self.last_query.is_none(){
             return;
         }
-        let lqposition = self.last_query_position.unwrap();
-        camera.text.get_mut(&self.query_at_text.unwrap()).unwrap().text = format!("Query at: {}, {}", lqposition.0, lqposition.1);
-        let mut i = 0;
+        let lq = self.last_query.as_ref().unwrap();
+    
         for ui in self.query_unique_ui_elements.clone(){
             camera.remove_ui_element(ui);
         }
         for text in self.query_unique_text_elements.clone(){
             camera.remove_text(text);
         }
-        if self.last_query_object.is_some(){
-            let (object, id) = self.last_query_object.clone().unwrap();
-            match object.clone(){
-                ObjectJSON::Entity(entity) => {
-                    camera.text.get_mut(&self.query_at_text.unwrap()).unwrap().text = format!("Following Entity");
-                },
-                ObjectJSON::Terrain(terrain) => {
-                    camera.text.get_mut(&self.query_at_text.unwrap()).unwrap().text = format!("Following Terrain");
+        match lq.query_type{
+            QueryType::FollowingObject => {
+                let queried_object = self.last_query.clone().unwrap().objects[0].clone();
+                match queried_object.object.clone(){
+                    ObjectJSONContainer::Entity(entity) => {
+                        camera.text.get_mut(&self.query_at_text.unwrap()).unwrap().text = format!("Following Entity");
+                    },
+                    ObjectJSONContainer::Terrain(terrain) => {
+                        camera.text.get_mut(&self.query_at_text.unwrap()).unwrap().text = format!("Following Terrain");
+                    }
                 }
-            }
-            let (unique_ui, unique_text) = self.display_query_element(camera, object);
-            
-            self.query_unique_ui_elements.extend(unique_ui);
-            self.query_unique_text_elements.extend(unique_text);
-            return;
-        }
-        for element in self.last_query.clone().unwrap_or((Vec::new(),Vec::new())).0{
-            self.query_unique_ui_elements.push(camera.add_ui_element(format!("level_editor_query_button_{}", i), UIElementDescriptor{
-                x: 942.0 + 45.0 * i as f32,
-                y: 90.0,
-                width: 40.0,
-                height: 15.0,
-                texture_id: self.sprites.get_texture_id("level_editor_button_background"),
-                visible: true
-            }));
-            let text: String = match element {
-                ObjectJSON::Entity(entity) => {
-                    format!("{}. Entity", i + 1)
-                },
-                ObjectJSON::Terrain(terrain) => {
-                    format!("{}. Terrain", i + 1)
-                }
-            };
-            self.query_unique_text_elements.push(camera.add_text(text, 962.0 + 45.0 * i as f32, 93.0, 40.0, 18.0, 18.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Center));
-            i+= 1;
-        }
-        if let Some(last_query) = &self.last_query {
-            if let Some(clicked_query_element) = self.clicked_query_element {
-                let (unique_ui, unique_text) = self.display_query_element(camera, last_query.0[clicked_query_element].clone());
+                let (unique_ui, unique_text) = self.display_query_element(camera, queried_object.object);
                 self.query_unique_ui_elements.extend(unique_ui);
                 self.query_unique_text_elements.extend(unique_text);
-            }else{
+            },
+            QueryType::Position => {
+                camera.text.get_mut(&self.query_at_text.unwrap()).unwrap().text = format!("Query at: {}, {}", lq.position.unwrap().0, lq.position.unwrap().1);
+                let mut i = 0;
+                for element in self.last_query.clone().unwrap().objects{
+                    self.query_unique_ui_elements.push(camera.add_ui_element(format!("level_editor_query_button_{}", i), UIElementDescriptor{
+                        x: 942.0 + 45.0 * i as f32,
+                        y: 90.0,
+                        width: 40.0,
+                        height: 15.0,
+                        texture_id: self.sprites.get_texture_id("level_editor_button_background"),
+                        visible: true
+                    }));
+                    let text: String = match element.object {
+                        ObjectJSONContainer::Entity(entity) => {
+                            format!("{}. Entity", i + 1)
+                        },
+                        ObjectJSONContainer::Terrain(terrain) => {
+                            format!("{}. Terrain", i + 1)
+                        }
+                    };
+                    self.query_unique_text_elements.push(camera.add_text(text, 962.0 + 45.0 * i as f32, 93.0, 40.0, 18.0, 18.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Center));
+                    i+= 1;
+                }
             }
         }
-        
     }
-    pub fn display_query_element(&self, camera: &mut Camera, element: ObjectJSON) -> (Vec<usize>, Vec<usize>){
+    pub fn display_query_element(&self, camera: &mut Camera, element: ObjectJSONContainer) -> (Vec<usize>, Vec<usize>){
         let mut unique_ui = Vec::new();
         let mut unique_text = Vec::new();
         match element {
-            ObjectJSON::Entity(ej) => {
+            ObjectJSONContainer::Entity(ej) => {
                 let entity = ej.0;
                 unique_text.push(camera.add_text(format!("Entity:"), 945.0, 115.0, 50.0, 25.0, 25.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
                 unique_text.push(camera.add_text(format!("x: {}", entity.x), 946.0, 140.0, 80.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
@@ -424,7 +470,7 @@ impl LevelEditor{
                 unique_text.push(camera.add_text(format!("Attack Pattern: {}", archetype.attack_pattern), 945.0, 270.0, 290.0, 30.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
                 unique_text.push(camera.add_text(format!("Basic Tags: {:?}", archetype.basic_tags), 945.0, 285.0, 200.0, 30.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
             },
-            ObjectJSON::Terrain(tj) => {
+            ObjectJSONContainer::Terrain(tj) => {
                 let terrain = tj.0;
                 unique_text.push(camera.add_text(format!("Terrain Block:"), 945.0, 115.0, 200.0, 25.0, 25.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
                 unique_text.push(camera.add_text(format!("x: {}", terrain.x), 946.0, 140.0, 50.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
@@ -532,8 +578,8 @@ impl Camera{
         if self.camera_y < 0.0{
             self.camera_y = 0.0;
         }
-        level_editor.mouse_x = level_editor.mouse_x_screen + self.camera_x;
-        level_editor.mouse_y = level_editor.mouse_y_screen + self.camera_y;
+        level_editor.mouse_position.x_world = level_editor.mouse_position.x_screen + self.camera_x;
+        level_editor.mouse_position.y_world = level_editor.mouse_position.y_screen + self.camera_y;
     }
     pub fn level_editor_render(&mut self, world: &mut World) -> RenderData{
         let mut render_data = RenderData::new();
@@ -643,10 +689,10 @@ impl State<'_>{
         level_editor.update_camera_ui(camera);
     }
     pub fn process_mouse_position(&mut self, x: f64, y: f64, level_editor: &mut LevelEditor, camera: &Camera){
-        level_editor.mouse_x_screen = x as f32/self.config.width as f32 * camera.viewpoint_width as f32;
-        level_editor.mouse_y_screen = y as f32 /self.config.height as f32 * camera.viewpoint_height as f32;
-        level_editor.mouse_x = level_editor.mouse_x_screen + camera.camera_x;
-        level_editor.mouse_y = level_editor.mouse_y_screen + camera.camera_y;
+        level_editor.mouse_position.x_screen = x as f32/self.config.width as f32 * camera.viewpoint_width as f32;
+        level_editor.mouse_position.y_screen = y as f32 /self.config.height as f32 * camera.viewpoint_height as f32;
+        level_editor.mouse_position.x_world = level_editor.mouse_position.x_screen + camera.camera_x;
+        level_editor.mouse_position.y_world = level_editor.mouse_position.y_screen + camera.camera_y;
     }
 }
 
@@ -719,7 +765,7 @@ pub async fn run(mut level_editor: &mut LevelEditor, camera: &mut Camera, sprite
     }).unwrap();
 }
 
-pub fn level_editor_generate_world_from_json_parsed_data(data: &ParsedData) -> (World, SpriteIDContainer, HashMap<usize, ObjectJSON>) {
+pub fn level_editor_generate_world_from_json_parsed_data(data: &ParsedData) -> (World, SpriteIDContainer, HashMap<usize, ObjectJSONContainer>) {
 
     
     let starting_level_descriptor = data.starting_level_descriptor.clone();
@@ -731,7 +777,7 @@ pub fn level_editor_generate_world_from_json_parsed_data(data: &ParsedData) -> (
     for entity_descriptor in starting_level_descriptor.entities.iter(){
         let entity = world.create_entity_from_json_archetype(entity_descriptor.x, entity_descriptor.y, &entity_descriptor.archetype, data);
         world.set_sprite(entity, sprites.get_sprite(&entity_descriptor.sprite));
-        hash.insert(entity, ObjectJSON::Entity((entity_descriptor.clone(), i.clone())));
+        hash.insert(entity, ObjectJSONContainer::Entity((entity_descriptor.clone(), i.clone())));
         i += 1;
     }
     i = 0;
@@ -748,7 +794,7 @@ pub fn level_editor_generate_world_from_json_parsed_data(data: &ParsedData) -> (
                     for y in start_y..start_y + height{
                         let terrain = world.add_terrain(x * 32, y * 32);
                         world.set_sprite(terrain, sprites.get_sprite(&descriptor.sprites[0]));
-                        hash.insert(terrain, ObjectJSON::Terrain((terrain_json.clone(), i.clone())));
+                        hash.insert(terrain, ObjectJSONContainer::Terrain((terrain_json.clone(), i.clone())));
                         match_terrain_tags(&tags, terrain, &mut world);
                     }
                 }
@@ -772,7 +818,7 @@ pub fn level_editor_generate_world_from_json_parsed_data(data: &ParsedData) -> (
                                 break;
                             }
                         }
-                        hash.insert(terrain, ObjectJSON::Terrain((terrain_json.clone(), i.clone())));
+                        hash.insert(terrain, ObjectJSONContainer::Terrain((terrain_json.clone(), i.clone())));
                         match_terrain_tags(&tags, terrain, &mut world);
                     }
                 }
