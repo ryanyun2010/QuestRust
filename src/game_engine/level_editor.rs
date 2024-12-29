@@ -49,18 +49,6 @@ macro_rules! update_entity_property_json {
             _ => {}
         }
         entity_id
-        // match $property_e{
-        //     EntityProperty::X => {
-        //         $self.world.entities.borrow_mut().get_mut(&entity_id).unwrap().x = new_property as f32;
-        //     },
-        //     EntityProperty::Y => {
-        //         $self.world.entities.borrow_mut().get_mut(&entity_id).unwrap().y = new_property as f32;
-        //     },
-        //     EntityProperty::Sprite => {
-        //         $self.world.set_sprite(entity_id, $self.sprites.get_sprite(&new_property.as_str()));
-        //     },
-        //     _ => {}
-        // }
     }
 }}
 
@@ -212,7 +200,23 @@ impl LevelEditor{
                 let entity_id = update_entity_property_json!(self, sprite, new_value, String);
                 self.world.set_sprite(entity_id, self.sprites.get_sprite(&nv));
             },
-            EntityProperty::Archetype => {}
+            EntityProperty::Archetype => {
+                let new_value = command_line_input::prompt_string(prompt);
+                if(new_value.is_none()){
+                    return;
+                }
+                let new_value = new_value.unwrap();
+                let nv = new_value.clone();
+                let entity_id = update_entity_property_json!(self, archetype, new_value, String);
+                let new_archetype_json_potentially = self.parser.get_archetype(&nv);
+                if (new_archetype_json_potentially.is_none()){
+                    println!("Archetype not found");
+                    return;
+                }
+                let new_archetype_json = new_archetype_json_potentially.unwrap();
+                let new_archetype_vec = self.parser.convert_archetype(new_archetype_json, &self.parsed_data);
+                self.world.entity_tags_lookup.insert(entity_id, new_archetype_vec.clone());
+            }
             _ => {}
         }
     }
@@ -236,29 +240,7 @@ impl LevelEditor{
                         "entity_x" => {self.update_entity_property_with_prompt(EntityProperty::X, "New Entity X");},
                         "entity_y" => {self.update_entity_property_with_prompt(EntityProperty::Y, "New Entity Y");},
                         "entity_sprite" => {self.update_entity_property_with_prompt(EntityProperty::Sprite, "New Entity Sprite");},
-                        // "entity_archetype" => {
-                        //     let new_archetype_potentially = command_line_input::prompt_string("New Entity Archetype");
-                        //     if new_archetype_potentially.is_none(){
-                        //         return;
-                        //     }
-                        //     let new_archetype = new_archetype_potentially.unwrap();
-                        //     let entity_id = self.last_query.clone().unwrap().1[self.clicked_query_element.unwrap()];
-                        //     let descriptor = self.object_descriptor_hash.get_mut(&entity_id).unwrap();
-                        //     match descriptor {
-                        //         ObjectJSON::Entity(entity) => {
-                        //             entity.archetype = new_archetype.clone();
-                        //         },
-                        //         _ => {}
-                        //     }
-                        //     let new_archetype_json_potentially = self.parser.get_archetype(&new_archetype);
-                        //     if (new_archetype_json_potentially.is_none()){
-                        //         println!("Archetype not found");
-                        //         return;
-                        //     }
-                        //     let new_archetype_json = new_archetype_json_potentially.unwrap();
-                        //     let new_archetype_vec = self.parser.convert_archetype(new_archetype_json, &self.parsed_data);
-                        //     self.world.entity_tags_lookup.insert(entity_id, new_archetype_vec.clone());
-                        // }
+                        "entity_archetype" => {self.update_entity_property_with_prompt(EntityProperty::Archetype, "New Entity Archetype");},
                         _ => {}
                     }
                 }
