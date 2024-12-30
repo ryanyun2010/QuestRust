@@ -5,7 +5,7 @@
         "sprite": "player",
         "health": 100.0,
         "max_health": 100,
-        "movement_speed": 2.8284
+        "movement_speed": 3.5
     },
     "entities": [
         {

@@ -76,32 +76,9 @@ impl Camera{
     pub fn get_ui_element_mut(&mut self, element: usize) -> &mut crate::game_engine::ui::UIElement{
         self.ui_elements.get_mut(&element).unwrap()
     }
-    pub fn update_camera_position(&mut self, world: &World){
-        let player = world.player.borrow().clone();
-        let mut direction = [player.x - (self.viewpoint_width / 2) as f32 - self.camera_x, player.y - (self.viewpoint_height / 2) as f32 - self.camera_y];
-        if self.camera_x < 4.0 && direction[0] < 0.0{
-            direction[0] = 0.0;
-        }
-        if self.camera_y < 4.0 && direction[1] < 0.0{
-            direction[1] = 0.0;
-        }
-
-        
-        let magnitude = (direction[0].powi(2) + direction[1].powi(2)).sqrt();
-
-        
-        if magnitude < 6.0{
-            return;
-        }
-        self.camera_x += (direction[0]/magnitude * 3.0).round();
-        self.camera_y += (direction[1]/magnitude * 3.0).round();
-
-        if self.camera_x < 0.0{
-            self.camera_x = 0.0;
-        }
-        if self.camera_y < 0.0{
-            self.camera_y = 0.0;
-        }
+    pub fn update_camera_position(&mut self, world: &World, player_x: f32, player_y: f32){
+        self.camera_x = player_x - (self.viewpoint_width as f32/ 2.0);
+        self.camera_y = player_y - (self.viewpoint_height as f32/ 2.0);
     }
     pub fn render(&mut self, world: &mut World) -> RenderData{
         let mut render_data = RenderData::new();

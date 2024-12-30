@@ -9,6 +9,8 @@ use super::world::World;
 pub struct Player {
     pub x: f32,
     pub y: f32,
+    pub frac_x: f32,
+    pub frac_y: f32,
     pub texture_index: i32,
     pub health: f32,
     pub max_health: i32,
@@ -29,6 +31,8 @@ impl Player {
         Self {
             x: x,
             y: y,
+            frac_x: 0.0,
+            frac_y: 0.0,
             health: health,
             max_health: max_health,
             texture_index: texture_index,

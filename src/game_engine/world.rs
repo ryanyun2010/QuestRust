@@ -6,6 +6,8 @@ use crate::game_engine::inventory::ItemContainer;
 use crate::game_engine::player::Player;
 use crate::game_engine::terrain::{Terrain, TerrainTags};
 
+use super::camera::Camera;
+
 
 #[derive(Debug, Clone, Copy)]
 pub enum EntityDirectionOptions{
@@ -298,7 +300,7 @@ impl World{
 
     pub fn attempt_move_player(&self, player: &mut Player, movement: [f32; 2]){
         
-        if self.check_collision(true, None,(player.x + movement[0]).floor() as usize, (player.y + movement[1]).floor() as usize, 32, 32, true, Some(self.entities.borrow().clone())){
+        if self.check_collision(true, None,(player.x + movement[0] + player.frac_x).floor() as usize, (player.y + movement[1] + player.frac_y).floor() as usize, 32, 32, true, Some(self.entities.borrow().clone())){
             return;
         }
         player.x += movement[0];
@@ -335,7 +337,7 @@ impl World{
         self.sprite_lookup.get(&element_id).copied()
     }
 
-    pub fn process_input(&mut self, keys: HashMap<String,bool>){
+    pub fn process_input(&mut self, keys: HashMap<String,bool>, camera: &mut Camera){
         let mut direction: [f32; 2] = [0.0,0.0];
         let mut player: std::cell::RefMut<'_, Player> = self.player.borrow_mut();
         if *keys.get("w").unwrap_or(&false) || *keys.get("ArrowUp").unwrap_or(&false){
@@ -354,13 +356,13 @@ impl World{
         let magnitude: f32 = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
         
         if magnitude > 0.0{
-            let movement = [(direction[0] / magnitude * player.movement_speed).round(), (direction[1] / magnitude * player.movement_speed).round()];
+            let movement = [(direction[0] / magnitude * player.movement_speed), (direction[1] / magnitude * player.movement_speed)];
             let player_movement_speed = player.movement_speed.clone();
             
             if !self.can_move_player(&mut player, [movement[0], 0.0]){
-                self.attempt_move_player(&mut player, [0.0, (direction[1] * player_movement_speed).round()]);
+                self.attempt_move_player(&mut player, [0.0, (direction[1] * player_movement_speed)]);
             }else if !self.can_move_player(&mut player, [0.0, movement[1]]){
-                self.attempt_move_player(&mut player, [(direction[0] * player_movement_speed).round(), 0.0]);
+                self.attempt_move_player(&mut player, [(direction[0] * player_movement_speed), 0.0]);
             }else{
                 self.attempt_move_player(&mut player, movement);
             }
@@ -372,6 +374,20 @@ impl World{
         if player.x < 3.0 {
             player.x = 3.0;
         }
+        player.frac_x += player.x % 1.0;
+        player.x = player.x.floor();
+        player.frac_y += player.y % 1.0;
+        player.y = player.y.floor();
+
+        if player.frac_x > 1.0{
+            player.x += player.frac_x.floor();
+            player.frac_x = player.frac_x % 1.0;
+        }
+        if player.frac_y > 1.0{
+            player.y += player.frac_y.floor();
+            player.frac_y = player.frac_y % 1.0;
+        }
+        camera.update_camera_position(self, player.x, player.y);
     }
 
     pub fn add_entity_tags(&mut self, element_id: usize, tags: Vec<EntityTags>){ //Change this to allow an enum of a vector of tags of various types.
