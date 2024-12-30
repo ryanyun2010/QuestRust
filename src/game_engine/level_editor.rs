@@ -839,7 +839,12 @@ impl State<'_>{
                         if self.level_editor{
                             level_editor.key_down("Enter".to_string());
                         }
-                    }
+                    },
+                    NamedKey::Backspace => {
+                        if self.level_editor{
+                            level_editor.key_down("Delete".to_string());
+                        }
+                    },
                     _ => {}
                 }
             },
