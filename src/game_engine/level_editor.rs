@@ -1,5 +1,6 @@
 use core::arch;
 use std::collections::HashMap;
+use std::error::Error;
 use std::fmt::format;
 use std::vec;
 use wgpu::util::DeviceExt;
@@ -103,14 +104,14 @@ macro_rules! update_terrain_property_json {
         match terrain_object.object.clone(){
             ObjectJSONContainer::Terrain(terrain) => {
                 let parser_id = terrain.1;
-                $self.parser.starting_level_json.terrain[parser_id].x = new_property.clone();
+                $self.parser.starting_level_json.terrain[parser_id].$property = new_property.clone();
             }
             _ => {}
         }
 
         match &mut terrain_object.object{
             ObjectJSONContainer::Terrain(ref mut terrain) => {
-                terrain.0.x = new_property.clone();
+                terrain.0.$property = new_property.clone();
             }
             _ => {}
         }
@@ -243,8 +244,8 @@ impl LevelEditor{
         camera.add_text("Save".to_string(), 1028.0, 45.0,60.0, 22.0, 22.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Center);
         self.query_at_text = Some(camera.add_text("".to_string(), 942.0, 70.0,180.0, 25.0, 25.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
     }
-    pub fn save_edits(&self){
-        self.parser.write("src/game_data/entity_archetypes.json", "src/game_data/entity_attack_patterns.json", "src/game_data/entity_attacks.json", "src/game_data/sprites.json", "src/game_data/starting_level.json").expect("d");
+    pub fn save_edits(&self) -> Result<(), Box<dyn Error>>{
+        self.parser.write("src/game_data/entity_archetypes.json", "src/game_data/entity_attack_patterns.json", "src/game_data/entity_attacks.json", "src/game_data/sprites.json", "src/game_data/starting_level.json")
     }
     pub fn query_stuff_at(&self, x: usize, y: usize) -> QueryResult{
         println!("Query at {}, {}", x, y);
@@ -296,6 +297,46 @@ impl LevelEditor{
                     _ => {}
                 }
                 update_terrain_property_json!(self, x, nv, usize); 
+            },
+            EditableProperty::TerrainY => {
+                let mut nv = 0;
+                match new_value{
+                    TerrainPropertyValue::Y(f) => {
+                        nv = f;
+                    },
+                    _ => {}
+                }
+                update_terrain_property_json!(self, y, nv, usize);
+            },
+            EditableProperty::TerrainW => {
+                let mut nv = 0;
+                match new_value{
+                    TerrainPropertyValue::W(f) => {
+                        nv = f;
+                    },
+                    _ => {}
+                }
+                update_terrain_property_json!(self, width, nv, usize);
+            },
+            EditableProperty::TerrainH => {
+                let mut nv = 0;
+                match new_value{
+                    TerrainPropertyValue::H(f) => {
+                        nv = f;
+                    },
+                    _ => {}
+                }
+                update_terrain_property_json!(self, height, nv, usize);
+            },
+            EditableProperty::TerrainArchetype => {
+                let mut nv = String::new();
+                match new_value{
+                    TerrainPropertyValue::Archetype(f) => {
+                        nv = f;
+                    },
+                    _ => {}
+                }
+                update_terrain_property_json!(self, terrain_archetype, nv.clone(), String);
             },
             _ => {}
         }
@@ -407,7 +448,41 @@ impl LevelEditor{
                                 return;
                             }
                             self.update_terrain_property(self.cur_editing.clone().unwrap(), TerrainPropertyValue::X(self.typed.parse::<usize>().unwrap()));
-
+                        },
+                        EditableProperty::TerrainY => {
+                            let potential_new_value = self.typed.parse::<usize>();
+                            if potential_new_value.is_err(){
+                                self.typed = String::new();
+                                self.cur_editing = None;
+                                return;
+                            }
+                            self.update_terrain_property(self.cur_editing.clone().unwrap(), TerrainPropertyValue::Y(self.typed.parse::<usize>().unwrap()));
+                        },
+                        EditableProperty::TerrainW => {
+                            let potential_new_value = self.typed.parse::<usize>();
+                            if potential_new_value.is_err(){
+                                self.typed = String::new();
+                                self.cur_editing = None;
+                                return;
+                            }
+                            self.update_terrain_property(self.cur_editing.clone().unwrap(), TerrainPropertyValue::W(self.typed.parse::<usize>().unwrap()));
+                        },
+                        EditableProperty::TerrainH => {
+                            let potential_new_value = self.typed.parse::<usize>();
+                            if potential_new_value.is_err(){
+                                self.typed = String::new();
+                                self.cur_editing = None;
+                                return;
+                            }
+                            self.update_terrain_property(self.cur_editing.clone().unwrap(), TerrainPropertyValue::H(self.typed.parse::<usize>().unwrap()));
+                        },
+                        EditableProperty::TerrainArchetype => {
+                            if self.parser.get_terrain_archetype_json(&self.typed).is_none(){
+                                self.typed = String::new();
+                                self.cur_editing = None;
+                                return;
+                            }
+                            self.update_terrain_property(self.cur_editing.clone().unwrap(), TerrainPropertyValue::Archetype(self.typed.clone()));
                         },
                         _ => {}
                     }
@@ -427,9 +502,7 @@ impl LevelEditor{
                             }
                         },
                         EditableProperty::EntitySprite | EditableProperty::EntityArchetype | EditableProperty::TerrainArchetype => {
-                            if key.chars().all(char::is_alphanumeric) {
-                                self.typed.push_str(key.as_str());
-                            }
+                            self.typed.push_str(key.as_str());
                         }
                     }
                     
@@ -470,6 +543,16 @@ impl LevelEditor{
                         "terrain_h" => self.cur_editing = Some(EditableProperty::TerrainH),
                         "terrain_archetype" => self.cur_editing = Some(EditableProperty::TerrainArchetype),
                         _ => {}
+                    }
+                }
+                if element_name == "save_button"{
+                    match self.save_edits(){
+                        Ok(_) => {
+                            println!("Saved");
+                        },
+                        Err(e) => {
+                            println!("Error saving: {}", e);
+                        }
                     }
                 }
             }
@@ -970,8 +1053,11 @@ pub async fn run(mut level_editor: &mut LevelEditor, camera: &mut Camera, sprite
                     }
                 },
                 WindowEvent::CloseRequested => {
-                    level_editor.save_edits();
-                    control_flow.exit()
+                    let response = command_line_input::prompt_string("Save changes? (y/n)");
+                    if response.unwrap_or(String::from("n")) == "y"{
+                        level_editor.save_edits();
+                    }
+                    control_flow.exit();
                 },
                 WindowEvent::Resized(physical_size) => {
                     state_obj.resize(physical_size);
