@@ -92,6 +92,44 @@ macro_rules! update_entity_property_json {
         entity_id
     }
 }}
+macro_rules! update_terrain_property_json {
+    ($self:ident, $property:ident, $new_value:expr, $type:ty) => {{
+        let new_property: $type = $new_value;
+        let last_query = $self.last_query.clone().unwrap();
+        if last_query.query_type != QueryType::FollowingObject{
+            return;
+        }
+        let mut terrain_object = last_query.objects[0].clone();
+        match terrain_object.object.clone(){
+            ObjectJSONContainer::Terrain(terrain) => {
+                let parser_id = terrain.1;
+                $self.parser.starting_level_json.terrain[parser_id].x = new_property.clone();
+            }
+            _ => {}
+        }
+
+        match &mut terrain_object.object{
+            ObjectJSONContainer::Terrain(ref mut terrain) => {
+                terrain.0.x = new_property.clone();
+            }
+            _ => {}
+        }
+        let (world, sprites, hash) = level_editor_generate_world_from_json_parsed_data(&$self.parser.convert());
+        $self.object_descriptor_hash = hash;
+        let player_x = $self.world.player.borrow().x.floor();
+        let player_y = $self.world.player.borrow().y.floor();
+        $self.world = world;
+        $self.sprites = sprites;
+        $self.last_query = Some(QueryResult{
+            query_type: QueryType::FollowingObject,
+            position: None,
+            objects: vec![terrain_object]
+        });
+        $self.world.set_level_editor();
+        $self.world.player.borrow_mut().x = player_x;
+        $self.world.player.borrow_mut().y = player_y;
+    }
+}}
 
 #[derive(Debug, Copy, Clone)]
 pub struct MousePosition{
@@ -257,36 +295,7 @@ impl LevelEditor{
                     },
                     _ => {}
                 }
-                let mut terrain_object = self.last_query.clone().unwrap().objects[0].clone();
-                match terrain_object.object.clone(){
-                    ObjectJSONContainer::Terrain(terrain) => {
-                        let parser_id = terrain.1;
-                        self.parser.starting_level_json.terrain[parser_id].x = nv;
-                    }
-                    _ => {}
-                }
-
-                match &mut terrain_object.object{
-                    ObjectJSONContainer::Terrain(ref mut terrain) => {
-                        terrain.0.x = nv;
-                    }
-                    _ => {}
-                }
-
-                let (world, sprites, hash) = level_editor_generate_world_from_json_parsed_data(&self.parser.convert());
-                self.object_descriptor_hash = hash;
-                let player_x = self.world.player.borrow().x.floor();
-                let player_y = self.world.player.borrow().y.floor();
-                self.world = world;
-                self.sprites = sprites;
-                self.world.set_level_editor();
-                self.last_query = Some(QueryResult{
-                    query_type: QueryType::FollowingObject,
-                    position: None,
-                    objects: vec![terrain_object]
-                });
-                self.world.player.borrow_mut().x = player_x;
-                self.world.player.borrow_mut().y = player_y;
+                update_terrain_property_json!(self, x, nv, usize); 
             },
             _ => {}
         }
@@ -658,7 +667,6 @@ impl LevelEditor{
         }
         return (unique_ui, unique_text);
     }
-
     pub fn process_input(&mut self, keys: HashMap<String,bool>, camera: &mut Camera){
         if self.cur_editing.is_some(){
             return;
@@ -708,7 +716,6 @@ impl LevelEditor{
         camera.update_camera_position(&self.world, player.x.floor(), player.y.floor());
 
     }
-
 }
 
 
