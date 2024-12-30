@@ -36,7 +36,7 @@ impl Ord for PathfindingNode {
 
 pub fn pathfind_by_block(entity_id: usize, world: &World, entity: &Entity, entitiesref: HashMap<usize, Entity>) -> EntityDirectionOptions {
     let player = world.player.borrow();
-    let (player_x, player_y) = ((player.x / 32.0).floor() as usize, (player.y / 32.0).floor() as usize);
+    let (player_x, player_y) = ((player.x.floor() / 32.0).floor() as usize, (player.y.floor() / 32.0).floor() as usize);
     let (entity_x, entity_y) = ((entity.x / 32.0).floor() as usize, (entity.y / 32.0).floor() as usize);
     let entity_x_offset = entity.x - entity_x as f32 * 32.0;
     let entity_y_offset = entity.y - entity_y as f32 * 32.0;
@@ -121,7 +121,7 @@ pub fn pathfind_by_block(entity_id: usize, world: &World, entity: &Entity, entit
 
 pub fn pathfind_high_granularity(entity_id: usize, world: &World, entity: &Entity, entitiesref: HashMap<usize, Entity>) -> EntityDirectionOptions {
     let player = world.player.borrow();
-    let (player_x, player_y) = ((player.x / 4.0).floor() as usize, (player.y / 4.0).floor() as usize);
+    let (player_x, player_y) = ((player.x.floor() / 4.0).floor() as usize, (player.y.floor() / 4.0).floor() as usize);
     let (entity_x, entity_y) = ((entity.x / 4.0).floor() as usize, (entity.y / 4.0).floor() as usize);
     let entity_x_offset = entity.x - entity_x as f32 * 4.0;
     let entity_y_offset = entity.y - entity_y as f32 * 4.0;

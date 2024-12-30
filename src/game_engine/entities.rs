@@ -87,7 +87,7 @@ impl World {
         for chunk in self.loaded_chunks.iter() {
             let chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>> = &mut self.chunks.borrow_mut();
             for entity_id in chunkref[*chunk].clone().entities_ids.iter() {
-                self.update_entity(entity_id, player.x, player.y, chunkref);
+                self.update_entity(entity_id, player.x.floor(), player.y.floor(), chunkref);
             }
         }
     }

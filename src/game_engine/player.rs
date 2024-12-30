@@ -9,8 +9,6 @@ use super::world::World;
 pub struct Player {
     pub x: f32,
     pub y: f32,
-    pub frac_x: f32,
-    pub frac_y: f32,
     pub texture_index: i32,
     pub health: f32,
     pub max_health: i32,
@@ -31,8 +29,6 @@ impl Player {
         Self {
             x: x,
             y: y,
-            frac_x: 0.0,
-            frac_y: 0.0,
             health: health,
             max_health: max_health,
             texture_index: texture_index,
@@ -59,8 +55,8 @@ impl Player {
         let w: f32 = 32 as f32 * screen_to_render_ratio_x;
         let h: f32 = 32 as f32 * screen_to_render_ratio_y;
 
-        let x: f32 = ((self.x as f32) + (vertex_offset_x as f32)) * screen_to_render_ratio_x - 1.0;
-        let y: f32 = -1.0 * (((self.y as f32) + (vertex_offset_y as f32)) * screen_to_render_ratio_y - 1.0) - h;
+        let x: f32 = ((self.x.floor() as f32) + (vertex_offset_x as f32)) * screen_to_render_ratio_x - 1.0;
+        let y: f32 = -1.0 * (((self.y.floor() as f32) + (vertex_offset_y as f32)) * screen_to_render_ratio_y - 1.0) - h;
 
 
         let mut vertex: Vec<Vertex> = vec![
@@ -76,7 +72,7 @@ impl Player {
             return RenderData { vertex, index }
         }else{
             let sprite = world.sprites[self.holding_texture_sprite.unwrap() as usize];
-            let d = sprite.draw_data(self.x + 16.0, self.y + 8.0, 24, 24,window_size_width, window_size_height, index_offset + 4, vertex_offset_x, vertex_offset_y);
+            let d = sprite.draw_data(self.x.floor() + 16.0, self.y.floor() + 8.0, 24, 24,window_size_width, window_size_height, index_offset + 4, vertex_offset_x, vertex_offset_y);
             index.extend(d.index);
             vertex.extend(d.vertex);
             return RenderData { vertex, index }

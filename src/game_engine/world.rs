@@ -251,7 +251,7 @@ impl World{
         
         if !player {
             let p = self.player.borrow();
-            if p.x - 1.0 < (x + w) as f32 && p.x + 33.0 > x as f32 && p.y - 1.0 < (y + h) as f32 && p.y + 33.0 > y as f32{
+            if p.x.floor() - 1.0 < (x + w) as f32 && p.x.floor() + 33.0 > x as f32 && p.y.floor() - 1.0 < (y + h) as f32 && p.y.floor() + 33.0 > y as f32{
                 return true;
             }
         }
@@ -300,7 +300,7 @@ impl World{
 
     pub fn attempt_move_player(&self, player: &mut Player, movement: [f32; 2]){
         
-        if self.check_collision(true, None,(player.x + movement[0] + player.frac_x).floor() as usize, (player.y + movement[1] + player.frac_y).floor() as usize, 32, 32, true, Some(self.entities.borrow().clone())){
+        if self.check_collision(true, None,(player.x + movement[0]).floor() as usize, (player.y + movement[1]).floor() as usize, 32, 32, true, Some(self.entities.borrow().clone())){
             return;
         }
         player.x += movement[0];
@@ -308,7 +308,7 @@ impl World{
     }
 
     pub fn can_move_player(&self, player: &mut Player, movement: [f32; 2]) -> bool{
-        if self.check_collision(true, None,(player.x + movement[0]).floor() as usize, (player.y + movement[1]).floor() as usize, 32, 32, true, Some(self.entities.borrow().clone())){
+        if self.check_collision(true, None,(player.x.floor() + movement[0]).floor() as usize, (player.y.floor() + movement[1]).floor() as usize, 32, 32, true, Some(self.entities.borrow().clone())){
             return false;
         }
         true
@@ -368,24 +368,11 @@ impl World{
             }
         }
 
-        if player.y < 3.0 {
+        if player.y.floor() < 3.0 {
             player.y = 3.0;
         }
-        if player.x < 3.0 {
+        if player.x.floor() < 3.0 {
             player.x = 3.0;
-        }
-        player.frac_x += player.x % 1.0;
-        player.x = player.x.floor();
-        player.frac_y += player.y % 1.0;
-        player.y = player.y.floor();
-
-        if player.frac_x > 1.0{
-            player.x += player.frac_x.floor();
-            player.frac_x = player.frac_x % 1.0;
-        }
-        if player.frac_y > 1.0{
-            player.y += player.frac_y.floor();
-            player.frac_y = player.frac_y % 1.0;
         }
         camera.update_camera_position(self, player.x, player.y);
     }

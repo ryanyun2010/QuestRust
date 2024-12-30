@@ -275,8 +275,8 @@ impl LevelEditor{
 
                 let (world, sprites, hash) = level_editor_generate_world_from_json_parsed_data(&self.parser.convert());
                 self.object_descriptor_hash = hash;
-                let player_x = self.world.player.borrow().x;
-                let player_y = self.world.player.borrow().y;
+                let player_x = self.world.player.borrow().x.floor();
+                let player_y = self.world.player.borrow().y.floor();
                 self.world = world;
                 self.sprites = sprites;
                 self.world.set_level_editor();
@@ -659,7 +659,7 @@ impl LevelEditor{
         return (unique_ui, unique_text);
     }
 
-    pub fn process_input(&mut self, keys: HashMap<String,bool>){
+    pub fn process_input(&mut self, keys: HashMap<String,bool>, camera: &mut Camera){
         if self.cur_editing.is_some(){
             return;
         }
@@ -681,13 +681,13 @@ impl LevelEditor{
         let magnitude: f32 = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
         if magnitude > 0.0 {
             let movement = [(direction[0] / magnitude * player.movement_speed).round(), (direction[1] / magnitude * player.movement_speed).round()];
-            if player.x + movement[0] < 576.0 && player.y + movement[1] < 360.0 {
+            if player.x.floor() + movement[0] < 576.0 && player.y.floor() + movement[1] < 360.0 {
                 
-            }else if player.x + movement[0] < 576.0{
+            }else if player.x.floor() + movement[0] < 576.0{
                 if direction[1].abs() > 0.0{
                     player.y += (direction[1]/ direction[1].abs() * player.movement_speed).round();
                 }
-            } else if player.y + movement[1] < 360.0{
+            } else if player.y.floor() + movement[1] < 360.0{
                 if direction[0].abs() > 0.0{
                     player.x += (direction[0]/ direction[0].abs() * player.movement_speed).round();
                 }
@@ -703,6 +703,9 @@ impl LevelEditor{
         if player.x < 576.0 {
             player.x = 576.0;
         }
+        self.mouse_position.x_world = camera.camera_x + self.mouse_position.x_screen;
+        self.mouse_position.y_world = camera.camera_y + self.mouse_position.y_screen;
+        camera.update_camera_position(&self.world, player.x.floor(), player.y.floor());
 
     }
 
@@ -718,35 +721,6 @@ impl World {
 impl Camera{
     pub fn set_level_editor(&mut self){
         self.level_editor = true;
-    }
-    pub fn level_editor_update_camera_position(&mut self, level_editor: &mut LevelEditor){
-        let player = level_editor.world.player.borrow().clone();
-        let mut direction = [player.x - (self.viewpoint_width / 2) as f32 - self.camera_x, player.y - (self.viewpoint_height / 2) as f32 - self.camera_y];
-        if self.camera_x < 4.0 && direction[0] < 0.0{
-            direction[0] = 0.0;
-        }
-        if self.camera_y < 4.0 && direction[1] < 0.0{
-            direction[1] = 0.0;
-        }
-
-        
-        let magnitude = (direction[0].powi(2) + direction[1].powi(2)).sqrt();
-
-        
-        if magnitude < 10.0{
-            return;
-        }
-        self.camera_x += (direction[0]/magnitude * 5.0).round();
-        self.camera_y += (direction[1]/magnitude * 5.0).round();
-
-        if self.camera_x < 0.0{
-            self.camera_x = 0.0;
-        }
-        if self.camera_y < 0.0{
-            self.camera_y = 0.0;
-        }
-        level_editor.mouse_position.x_world = level_editor.mouse_position.x_screen + self.camera_x;
-        level_editor.mouse_position.y_world = level_editor.mouse_position.y_screen + self.camera_y;
     }
     pub fn level_editor_render(&mut self, level_editor: &mut LevelEditor) -> RenderData{
         let world = &level_editor.world;
@@ -884,9 +858,8 @@ impl State<'_>{
         }
     }
     pub fn level_editor_update(&mut self, level_editor: &mut LevelEditor, camera: &mut Camera){
-        level_editor.process_input(self.keys_down.clone());
+        level_editor.process_input(self.keys_down.clone(), camera);
         level_editor.process_mouse_input(self.left_mouse_button_down, self.right_mouse_button_down);
-        camera.level_editor_update_camera_position(level_editor);
         self.level_editor_highlight_square(level_editor);
         level_editor.update_camera_ui(camera);
     }

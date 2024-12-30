@@ -4,7 +4,7 @@ use super::lib::headless::HeadlessGame;
 
 #[tokio::test]
 async fn test_nothing_happens_in_blank_world(){
-    let world = basic_world().await;
+    let mut world = basic_world().await;
     let camera = basic_camera().await;
     let starting_x = world.player.borrow().x;
     let starting_y = world.player.borrow().y;
