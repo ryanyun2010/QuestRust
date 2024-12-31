@@ -259,25 +259,25 @@ impl LevelEditor{
             };
         }
         let chunk_id = chunk_to_query.unwrap();
-        let chunk = self.world.chunks.borrow()[chunk_id].clone();
-        for entity_id in chunk.entities_ids{
-            let entity = &self.world.get_entity(entity_id).unwrap();
+        let chunk = &self.world.chunks.borrow()[chunk_id];
+        for entity_id in chunk.entities_ids.iter(){
+            let entity = &self.world.get_entity(*entity_id).unwrap();
             if entity.x <= x as f32 && entity.x + 32.0 >= x as f32 && entity.y <= y as f32 && entity.y + 32.0 >= y as f32 {
-                let descriptor = self.object_descriptor_hash.get(&entity_id).unwrap().clone();
-                vec_objects.push(QueriedObject{element_id: entity_id, object: descriptor});
+                let descriptor = self.object_descriptor_hash.get(entity_id).unwrap().clone();
+                vec_objects.push(QueriedObject{element_id: *entity_id, object: descriptor});
             }
         }
 
-        for terrain_id in chunk.terrain_ids{
-            let terrain = self.world.get_terrain(terrain_id).unwrap();
+        for terrain_id in chunk.terrain_ids.iter(){
+            let terrain = self.world.get_terrain(*terrain_id).unwrap();
             if *self.not_real_elements.get(&terrain_id).unwrap_or(&false){
                 continue;
             }
             let x_for_terrain = (x as f32 / 32.0).floor() as usize * 32 + 16;
             let y_for_terrain = (y as f32 / 32.0).floor() as usize * 32 + 16;
             if terrain.x <= x_for_terrain && terrain.x + 32 >= x && terrain.y <= y_for_terrain && terrain.y + 32 >= y{
-                let descriptor = self.object_descriptor_hash.get(&terrain_id).unwrap().clone();
-                vec_objects.push(QueriedObject{element_id: terrain_id, object: descriptor});
+                let descriptor = self.object_descriptor_hash.get(terrain_id).unwrap().clone();
+                vec_objects.push(QueriedObject{element_id: *terrain_id, object: descriptor});
             }
         }   
         return QueryResult{
@@ -336,7 +336,7 @@ impl LevelEditor{
                     },
                     _ => {}
                 }
-                update_terrain_property_json!(self, terrain_archetype, nv.clone(), String);
+                update_terrain_property_json!(self, terrain_archetype, nv, String);
             },
             _ => {}
         }
@@ -388,7 +388,7 @@ impl LevelEditor{
                 let entity_id = self.last_query.clone().unwrap().objects[0].element_id;
                 let new_archetype_json = self.parser.get_entity_archetype_json(&nv).expect(format!("Could not find archetype {}", nv).as_str());
                 let new_archetype_vec = self.parser.convert_archetype(new_archetype_json, &self.parsed_data);
-                update_entity_property_json!(self, archetype, nv.clone(), String);
+                update_entity_property_json!(self, archetype, nv, String);
                 self.world.entity_tags_lookup.insert(entity_id, new_archetype_vec.clone());
             }
             _ => {}
