@@ -337,7 +337,7 @@ impl World{
         self.sprite_lookup.get(&element_id).copied()
     }
 
-    pub fn process_input(&mut self, keys: HashMap<String,bool>, camera: &mut Camera){
+    pub fn process_player_input(&mut self, keys: &HashMap<String,bool>){
         let mut direction: [f32; 2] = [0.0,0.0];
         let mut player: std::cell::RefMut<'_, Player> = self.player.borrow_mut();
         if *keys.get("w").unwrap_or(&false) || *keys.get("ArrowUp").unwrap_or(&false){
@@ -368,12 +368,17 @@ impl World{
             }
         }
 
-        if player.y.floor() < 3.0 {
-            player.y = 3.0;
+        if player.y.floor() < player.movement_speed {
+            player.y = player.movement_speed;
         }
-        if player.x.floor() < 3.0 {
-            player.x = 3.0;
+        if player.x.floor() < player.movement_speed {
+            player.x = player.movement_speed;
         }
+    }
+
+    pub fn process_input(&mut self, keys: HashMap<String,bool>, camera: &mut Camera){
+        self.process_player_input(&keys);
+        let player = self.player.borrow();
         camera.update_camera_position(self, player.x, player.y);
     }
 

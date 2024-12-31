@@ -754,40 +754,8 @@ impl LevelEditor{
         if self.cur_editing.is_some(){
             return;
         }
-        let mut direction: [f32; 2] = [0.0,0.0];
-        let mut player: std::cell::RefMut<'_, Player> = self.world.player.borrow_mut();
-        if *keys.get("w").unwrap_or(&false) || *keys.get("ArrowUp").unwrap_or(&false){
-            direction[1] -= 1.0;
-        }
-        if *keys.get("a").unwrap_or(&false) || *keys.get("ArrowLeft").unwrap_or(&false){
-            direction[0] -= 1.0;
-        }
-        if *keys.get("s").unwrap_or(&false) || *keys.get("ArrowDown").unwrap_or(&false){
-            direction[1] += 1.0;
-        }
-        if *keys.get("d").unwrap_or(&false) || *keys.get("ArrowRight").unwrap_or(&false){
-            direction[0] += 1.0;
-        }
-
-        let magnitude: f32 = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
-        if magnitude > 0.0 {
-            let movement = [(direction[0] / magnitude * player.movement_speed).round(), (direction[1] / magnitude * player.movement_speed).round()];
-            if player.x.floor() + movement[0] < 576.0 && player.y.floor() + movement[1] < 360.0 {
-                
-            }else if player.x.floor() + movement[0] < 576.0{
-                if direction[1].abs() > 0.0{
-                    player.y += (direction[1]/ direction[1].abs() * player.movement_speed).round();
-                }
-            } else if player.y.floor() + movement[1] < 360.0{
-                if direction[0].abs() > 0.0{
-                    player.x += (direction[0]/ direction[0].abs() * player.movement_speed).round();
-                }
-            } else {
-                player.x += movement[0];
-                player.y += movement[1];
-            }
-        }
-
+        self.world.process_player_input(&keys);
+        let mut player = self.world.player.borrow_mut();
         if player.y < 360.0 {
             player.y = 360.0;
         }
