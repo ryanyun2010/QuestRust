@@ -33,7 +33,6 @@ pub enum EditableProperty{
     TerrainH,
     TerrainArchetype
 }
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum EntityPropertyValue{
     X(f32),
@@ -41,7 +40,6 @@ pub enum EntityPropertyValue{
     Archetype(String),
     Sprite(String)
 }
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum TerrainPropertyValue{
     X(usize),
@@ -49,6 +47,68 @@ pub enum TerrainPropertyValue{
     W(usize),
     H(usize),
     Archetype(String),
+}
+#[derive(Debug, Copy, Clone)]
+pub struct MousePosition{
+    pub x_world: f32,
+    pub y_world: f32,
+    pub x_screen: f32,
+    pub y_screen: f32,
+}
+impl MousePosition{
+    pub fn default() -> Self{
+        Self {
+            x_world: 0.0,
+            y_world: 0.0,
+            x_screen: 0.0,
+            y_screen: 0.0,
+        }
+    }
+}
+#[derive(Debug, Clone, PartialEq)]
+pub enum QueryType{
+    Position,
+    FollowingObject
+}
+#[derive(Debug, Clone)]
+pub struct QueryResult{
+    pub query_type: QueryType,
+    pub position: Option<(usize, usize)>,
+    pub objects: Vec<QueriedObject>,
+}
+#[derive(Debug, Clone)]
+pub struct QueriedObject{
+    pub object: ObjectJSONContainer,
+    pub element_id: usize
+}
+pub struct LevelEditor{
+    pub highlighted: Option<usize>,
+    pub grid: Vec<Terrain>,
+    pub grid_sprite: Option<usize>,
+    pub parser: JSON_parser,
+    pub parsed_data: ParsedData,
+    pub world: World,
+    pub sprites: SpriteIDContainer,
+    pub not_real_elements: HashMap<usize, bool>,
+    pub object_descriptor_hash: HashMap<usize, ObjectJSONContainer>,
+    pub mouse_position: MousePosition,
+    pub query_at_text: Option<usize>,
+    pub last_query: Option<QueryResult>,
+    pub cur_editing: Option<EditableProperty>,
+    pub typed: String,
+    pub query_unique_ui_elements: Vec<usize>,
+    pub query_unique_text_elements: Vec<usize>
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum MouseClick{
+    Left,
+    Right
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum ObjectJSONContainer { // usize here is the index in the starting_level_json entity/json
+    Entity((entity_json, usize)),
+    Terrain((terrain_json, usize))
 }
 
 macro_rules! update_entity_property_json {
@@ -131,72 +191,6 @@ macro_rules! update_terrain_property_json {
         $self.world.player.borrow_mut().y = player_y;
     }
 }}
-
-#[derive(Debug, Copy, Clone)]
-pub struct MousePosition{
-    pub x_world: f32,
-    pub y_world: f32,
-    pub x_screen: f32,
-    pub y_screen: f32,
-}
-
-impl MousePosition{
-    pub fn default() -> Self{
-        Self {
-            x_world: 0.0,
-            y_world: 0.0,
-            x_screen: 0.0,
-            y_screen: 0.0,
-        }
-    }
-}
-#[derive(Debug, Clone, PartialEq)]
-pub enum QueryType{
-    Position,
-    FollowingObject
-}
-#[derive(Debug, Clone)]
-pub struct QueryResult{
-    pub query_type: QueryType,
-    pub position: Option<(usize, usize)>,
-    pub objects: Vec<QueriedObject>,
-}
-
-#[derive(Debug, Clone)]
-pub struct QueriedObject{
-    pub object: ObjectJSONContainer,
-    pub element_id: usize
-}
-
-pub struct LevelEditor{
-    pub highlighted: Option<usize>,
-    pub grid: Vec<Terrain>,
-    pub grid_sprite: Option<usize>,
-    pub parser: JSON_parser,
-    pub parsed_data: ParsedData,
-    pub world: World,
-    pub sprites: SpriteIDContainer,
-    pub not_real_elements: HashMap<usize, bool>,
-    pub object_descriptor_hash: HashMap<usize, ObjectJSONContainer>,
-    pub mouse_position: MousePosition,
-    pub query_at_text: Option<usize>,
-    pub last_query: Option<QueryResult>,
-    pub cur_editing: Option<EditableProperty>,
-    pub typed: String,
-    pub query_unique_ui_elements: Vec<usize>,
-    pub query_unique_text_elements: Vec<usize>
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-enum MouseClick{
-    Left,
-    Right
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum ObjectJSONContainer { // usize here is the index in the starting_level_json entity/json
-    Entity((entity_json, usize)),
-    Terrain((terrain_json, usize))
-}
 
 impl LevelEditor{
     pub fn new(world: World, sprites: SpriteIDContainer, parser: JSON_parser, hash: HashMap<usize, ObjectJSONContainer>) -> Self{
@@ -765,10 +759,8 @@ impl LevelEditor{
         self.mouse_position.x_world = camera.camera_x + self.mouse_position.x_screen;
         self.mouse_position.y_world = camera.camera_y + self.mouse_position.y_screen;
         camera.update_camera_position(&self.world, player.x.floor(), player.y.floor());
-
     }
 }
-
 
 impl World {
     pub fn set_level_editor(&mut self){
@@ -776,6 +768,7 @@ impl World {
         self.player.borrow_mut().movement_speed = 5.0;
     }
 }
+
 impl Camera{
     pub fn set_level_editor(&mut self){
         self.level_editor = true;
@@ -878,6 +871,7 @@ impl Camera{
         render_data
     }
 }
+
 impl State<'_>{
     pub fn set_level_editor(&mut self){
         self.level_editor = true;
