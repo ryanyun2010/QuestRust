@@ -54,8 +54,6 @@ pub struct World{
     pub level_editor: bool,
     pub highlighted: Option<usize>,
 }
-// OKAY RYAN WE NEED MAJOR REFORMS.
-// OVER TIME, LET'S MOVE THESE INTO MULTIPLE IMPL STATEMENTS IN THEIR RESPECTIVE MODULES.
 impl World{ 
     pub fn new(player: Player) -> Self{
         let chunks: RefCell<Vec<Chunk>> = RefCell::new(Vec::new());
@@ -101,7 +99,6 @@ impl World{
             highlighted
         }
     }
-    
     pub fn new_chunk(&self, chunk_x: usize, chunk_y: usize, chunkref: Option<&mut std::cell::RefMut<'_, Vec<Chunk>>>) -> usize{
         if chunkref.is_none(){
             let new_chunk_id = self.chunks.borrow().len() as usize; 
@@ -138,11 +135,9 @@ impl World{
         self.terrain.remove(&element_id);
         self.terrain_lookup.remove(&element_id);
     }
-
     pub fn set_loaded_chunks(&mut self, chunk_ids: Vec<usize>){
         self.loaded_chunks = chunk_ids;
     }
-
     pub fn get_terrain(&self, element_id: usize) -> Option<&Terrain>{
         self.terrain.get(&element_id)
     }
@@ -157,7 +152,6 @@ impl World{
     pub fn get_chunk_from_chunk_xy(&self, x: usize, y: usize) -> Option<usize>{
         self.chunk_lookup.borrow().get(&[x, y]).copied()
     }
-
     pub fn add_terrain(&mut self, x: usize, y: usize) -> usize{
         
         let new_terrain: Terrain = Terrain{ element_id: self.element_id, x: x, y: y };
@@ -177,7 +171,6 @@ impl World{
         self.terrain_lookup.insert(self.element_id - 1, chunk_id);
         self.element_id - 1
     }
-
     pub fn add_entity_tag(&mut self, element_id: usize, tag: EntityTags){
         let mut tags: Vec<EntityTags> = self.entity_tags_lookup.get(&element_id).unwrap_or(&Vec::new()).clone();
         tags.push(tag);
@@ -246,7 +239,6 @@ impl World{
             }
         }  
     }
-
     pub fn check_collision(&self, player: bool, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, entity: bool, entity_hash: Option<HashMap<usize, Entity>>) -> bool{
         
         if !player {
@@ -294,10 +286,6 @@ impl World{
         }
         false
     }
-
-   
-    
-
     pub fn attempt_move_player(&self, player: &mut Player, movement: [f32; 2]){
         
         if self.check_collision(true, None,(player.x + movement[0]).floor() as usize, (player.y + movement[1]).floor() as usize, 32, 32, true, Some(self.entities.borrow().clone())){
@@ -306,37 +294,30 @@ impl World{
         player.x += movement[0];
         player.y += movement[1];
     }
-
     pub fn can_move_player(&self, player: &mut Player, movement: [f32; 2]) -> bool{
         if self.check_collision(true, None,(player.x.floor() + movement[0]).floor() as usize, (player.y.floor() + movement[1]).floor() as usize, 32, 32, true, Some(self.entities.borrow().clone())){
             return false;
         }
         true
     }
-
     pub fn add_terrain_tag(&mut self, element_id: usize, tag: TerrainTags){
         let mut tags: Vec<TerrainTags> = self.terrain_tags_lookup.get(&element_id).unwrap_or(&Vec::new()).clone();
         tags.push(tag);
         self.terrain_tags_lookup.insert(element_id, tags);
     }
-
     pub fn lookup_terrain_chunk(&self, element_id: usize) -> Option<usize>{
         self.terrain_lookup.get(&element_id).copied()
     }
-
     pub fn add_sprite(&mut self, texture_index: i32) -> usize{
         self.sprites.push(Sprite{ texture_index: texture_index });
         self.sprites.len() - 1
     }
-
     pub fn set_sprite(&mut self, element_id: usize, sprite_id: usize){
         self.sprite_lookup.insert(element_id, sprite_id);
     }
-
     pub fn get_sprite(&self, element_id: usize) -> Option<usize>{
         self.sprite_lookup.get(&element_id).copied()
     }
-
     pub fn process_player_input(&mut self, keys: &HashMap<String,bool>){
         let mut direction: [f32; 2] = [0.0,0.0];
         let mut player: std::cell::RefMut<'_, Player> = self.player.borrow_mut();
@@ -375,13 +356,11 @@ impl World{
             player.x = player.movement_speed;
         }
     }
-
     pub fn process_input(&mut self, keys: HashMap<String,bool>, camera: &mut Camera){
         self.process_player_input(&keys);
         let player = self.player.borrow();
         camera.update_camera_position(self, player.x, player.y);
     }
-
     pub fn add_entity_tags(&mut self, element_id: usize, tags: Vec<EntityTags>){ //Change this to allow an enum of a vector of tags of various types.
         let mut d = self.entity_tags_lookup.get(&element_id).unwrap_or(&Vec::new()).clone(); 
         d.extend(tags);
@@ -392,6 +371,5 @@ impl World{
         d.extend(tags);
         self.terrain_tags_lookup.insert(element_id, d);
     }
-    
 }
 
