@@ -29,17 +29,12 @@ pub struct Renderer<'a> {
     pub size: winit::dpi::PhysicalSize<u32>,
     pub render_pipeline: wgpu::RenderPipeline,
     pub diffuse_bind_group: wgpu::BindGroup,
-    pub keys_down: HashMap<String, bool>,
-    pub level_editor: bool,
-    pub left_mouse_button_down: bool,
-    pub right_mouse_button_down: bool,
     pub text_brush: TextBrush<FontRef<'a>>,
     window: &'a Window,
 }
 impl<'a> Renderer<'a> { 
     pub async fn new(window: &'a Window, sprites_to_load_json: Vec<String>) -> Renderer<'a> {
         let size = window.inner_size();
-        let keys_down = HashMap::new();
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,
             ..Default::default()
@@ -152,10 +147,6 @@ impl<'a> Renderer<'a> {
             size: size,
             render_pipeline: render_pipeline,
             diffuse_bind_group: diffuse_bind_group,
-            keys_down: keys_down,
-            level_editor: false,
-            left_mouse_button_down: false,
-            right_mouse_button_down: false,
             text_brush: brush,
         }
  

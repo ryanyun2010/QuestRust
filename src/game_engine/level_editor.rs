@@ -936,23 +936,13 @@ impl Camera{
     }
 }
 
-impl Renderer<'_>{
-    pub fn set_level_editor(&mut self){
-        self.level_editor = true;
-    }
-}
-
 pub async fn run(world: World, sprites: SpriteIDContainer,parser: JSON_parser, hash: HashMap<usize, ObjectJSONContainer>, camera: Camera, sprites_json_to_load: Vec<String>) {
     let event_loop = EventLoop::new().unwrap();
     let title = "Level Editor";
     let window = WindowBuilder::new().with_title(title).with_inner_size(winit::dpi::LogicalSize::new(1152, 720)).build(&event_loop).unwrap();
     let mut renderer = Renderer::new(&window, sprites_json_to_load.clone()).await;
-    renderer.set_level_editor();
     let mut level_editor = LevelEditor::new(world, renderer, camera, sprites, parser, hash);
     level_editor.init();
-
-
-
 
     event_loop.run(move |event, control_flow| match event {
         
