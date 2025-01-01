@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::hash::Hash;
 
 use crate::world::World;
-use crate::rendering_engine::abstractions::{RenderData, TextSprite};
+use crate::rendering_engine::abstractions::{RenderData, RenderDataFull, TextSprite};
 use crate::game_engine::ui::UIElement;
 use wgpu_text::glyph_brush::{HorizontalAlign, Section as TextSection};
 #[derive(Debug, Clone)]
@@ -80,8 +80,8 @@ impl Camera{
         self.camera_x = player_x - (self.viewpoint_width as f32/ 2.0);
         self.camera_y = player_y - (self.viewpoint_height as f32/ 2.0);
     }
-    pub fn render(&mut self, world: &mut World) -> RenderData{
-        let mut render_data = RenderData::new();
+    pub fn render(&mut self, world: &mut World) -> RenderDataFull{
+        let mut render_data = RenderDataFull::new();
         let mut terrain_data: RenderData = RenderData::new();
         let mut entity_data: RenderData = RenderData::new();
         let mut index_offset: u16 = 0;
@@ -163,7 +163,7 @@ impl Camera{
             render_data.vertex.extend(draw_data.vertex);
             render_data.index.extend(draw_data.index);
         }
-        
+        render_data.sections = self.get_sections(self.viewpoint_width as f32, self.viewpoint_height as f32);
         render_data
     }
     pub fn add_text(&mut self, text: String, x: f32, y: f32, w: f32, h: f32, font_size: f32, color: [f32; 4], align: HorizontalAlign) -> usize{

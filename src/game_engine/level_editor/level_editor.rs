@@ -2,28 +2,27 @@ use core::arch;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fmt::format;
-use std::hash::Hash;
 use std::vec;
 use wgpu::util::DeviceExt;
 use wgpu_text::glyph_brush::HorizontalAlign;
-use winit::dpi::PhysicalSize;
 use winit::event::{ElementState, MouseButton, *};
 use winit::event_loop::EventLoop;
 use winit::keyboard::{Key, NamedKey};
-use winit::window::{Window, WindowBuilder};
-use super::entities::Entity;
-use super::game::InputState;
-use super::json_parsing::{entity_json, terrain_json, JSON_parser, ParsedData};
-use super::starting_level_generator::match_terrain_tags;
-use super::terrain::Terrain;
-use super::ui::UIElementDescriptor;
-use super::world::World;
-use super::camera::{self, Camera};
-use crate::rendering_engine::abstractions::{RenderData, RenderDataFull, Sprite, SpriteIDContainer};
-use crate::rendering_engine::renderer::Renderer;
-use super::player::Player;
-use super::command_line_input;
-use crate::renderer::BACKGROUND_COLOR;
+use winit::window::WindowBuilder;
+use crate::game_engine::entities::Entity;
+use crate::game_engine::json_parsing::{entity_json, terrain_json, JSON_parser, ParsedData};
+use crate::game_engine::starting_level_generator::match_terrain_tags;
+use crate::game_engine::terrain::Terrain;
+use crate::game_engine::ui::UIElementDescriptor;
+use crate::game_engine::world::World;
+use crate::game_engine::camera::{self, Camera};
+use crate::game_engine::input_handling::{self, InputEvent, InputState};
+use super::input_handling_layer::LevelEditorInputLayer;
+use crate::rendering_engine::abstractions::{RenderData, SpriteIDContainer};
+use crate::rendering_engine::state::State;
+use crate::game_engine::player::Player;
+use crate::game_engine::command_line_input;
+use crate::state::BACKGROUND_COLOR;
 #[derive(Debug, Clone, PartialEq)]
 pub enum EditableProperty{
     EntityX,
@@ -83,6 +82,29 @@ pub struct QueryResult{
 pub struct QueriedObject{
     pub object: ObjectJSONContainer,
     pub element_id: usize
+}
+pub struct LevelEditor{
+    pub highlighted: Option<usize>,
+    pub grid: Vec<Terrain>,
+    pub grid_sprite: Option<usize>,
+    pub parser: JSON_parser,
+    pub parsed_data: ParsedData,
+    pub world: World,
+    pub sprites: SpriteIDContainer,
+    pub not_real_elements: HashMap<usize, bool>,
+    pub object_descriptor_hash: HashMap<usize, ObjectJSONContainer>,
+    pub mouse_position: MousePosition,
+    pub query_at_text: Option<usize>,
+    pub last_query: Option<QueryResult>,
+    pub cur_editing: Option<EditableProperty>,
+    pub typed: String,
+    pub query_unique_ui_elements: Vec<usize>,
+    pub query_unique_text_elements: Vec<usize>
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum MouseClick{
+    Left,
+    Right
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -155,7 +177,7 @@ macro_rules! update_terrain_property_json {
             }
             _ => {}
         }
-        let (world, sprites, hash) = level_editor_generate_world_from_json_parsed_data(&$self.parser.convert());
+        let (world, sprites, hash) = super::generate_world::generate_world_from_json_parsed_data(&$self.parser.convert());
         $self.object_descriptor_hash = hash;
         let player_x = $self.world.player.borrow().x.floor();
         let player_y = $self.world.player.borrow().y.floor();
@@ -172,28 +194,10 @@ macro_rules! update_terrain_property_json {
     }
 }}
 
-pub struct LevelEditor<'a>{
-    pub highlighted: Option<usize>,
-    pub grid: Vec<Terrain>,
-    pub grid_sprite: Option<usize>,
-    pub parser: JSON_parser,
-    pub parsed_data: ParsedData,
-    pub world: World,
-    pub sprites: SpriteIDContainer,
-    pub not_real_elements: HashMap<usize, bool>,
-    pub object_descriptor_hash: HashMap<usize, ObjectJSONContainer>,
-    pub query_at_text: Option<usize>,
-    pub last_query: Option<QueryResult>,
-    pub cur_editing: Option<EditableProperty>,
-    pub typed: String,
-    pub query_unique_ui_elements: Vec<usize>,
-    pub query_unique_text_elements: Vec<usize>,
-    pub camera: Camera,
-    pub input: InputState,
-    pub renderer: Renderer<'a>,
-}
-impl<'a> LevelEditor<'a>{
-    pub fn new(world: World, renderer: Renderer<'a>, camera: Camera, sprites: SpriteIDContainer, parser: JSON_parser, hash: HashMap<usize, ObjectJSONContainer>) -> Self{
+
+
+impl LevelEditor{
+    pub fn new(world: World, sprites: SpriteIDContainer, parser: JSON_parser, hash: HashMap<usize, ObjectJSONContainer>) -> Self{
         let parsed_data = parser.clone().convert();
         Self {
             highlighted: None,
@@ -201,31 +205,24 @@ impl<'a> LevelEditor<'a>{
             parser: parser,
             grid: Vec::new(),
             grid_sprite: None,
-            camera: camera,
             parsed_data: parsed_data,
             sprites: sprites,
             not_real_elements: HashMap::new(),
             object_descriptor_hash: hash,
             last_query: None,
+            mouse_position: MousePosition::default(),
             query_at_text: None,
             typed: String::new(),
             cur_editing: None,
             query_unique_ui_elements: Vec::new(),
-            query_unique_text_elements: Vec::new(),
-            renderer: renderer,
-            input: InputState {
-                keys_down: HashMap::new(),
-                mouse_position: MousePosition::default(),
-                mouse_left: false,
-                mouse_right: false,
-            }
+            query_unique_text_elements: Vec::new()
         }
     }
-    pub fn init(&mut self){
+    pub fn init(&mut self, camera: &mut Camera, input_handling_layer: &mut LevelEditorInputLayer){
         self.world.set_level_editor();
         self.add_level_editor_grid(self.sprites.get_sprite("grid").unwrap());
         self.grid_sprite = Some(self.sprites.get_sprite("grid").unwrap());
-        self.camera.add_ui_element("menu".to_string(), super::ui::UIElementDescriptor {
+        camera.add_ui_element("menu".to_string(), crate::game_engine::ui::UIElementDescriptor {
             x: 932.0,
             y: 40.0,
             width: 200.0,
@@ -233,8 +230,8 @@ impl<'a> LevelEditor<'a>{
             texture_id: self.sprites.get_texture_id("level_editor_menu_background").unwrap(),
             visible: true
         });
-        self.camera.add_text("Level Editor".to_string(), 938.0, 45.0,60.0, 24.5, 24.5, [0.7,0.7,0.7,1.0], HorizontalAlign::Left);
-        self.camera.add_ui_element("save_button".to_string(), super::ui::UIElementDescriptor {
+        camera.add_text("Level Editor".to_string(), 938.0, 45.0,60.0, 24.5, 24.5, [0.7,0.7,0.7,1.0], HorizontalAlign::Left);
+        camera.add_ui_element("save_button".to_string(), crate::game_engine::ui::UIElementDescriptor {
             x: 1008.0,
             y: 45.0,
             width: 40.0,
@@ -242,8 +239,26 @@ impl<'a> LevelEditor<'a>{
             texture_id: self.sprites.get_texture_id("level_editor_button_background").unwrap(),
             visible: true
         });
-        self.camera.add_text("Save".to_string(), 1028.0, 45.0,60.0, 22.0, 22.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Center);
-        self.query_at_text = Some(self.camera.add_text("".to_string(), 942.0, 70.0,180.0, 25.0, 25.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+        camera.add_text("Save".to_string(), 1028.0, 45.0,60.0, 22.0, 22.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Center);
+        self.query_at_text = Some(camera.add_text("".to_string(), 942.0, 70.0,180.0, 25.0, 25.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+        input_handling_layer.add_key_down_callback(Box::new(|state: &InputState, event: &InputEvent, level_editor: &mut LevelEditor, camera: &mut Camera, state_obj: &State |{
+            level_editor.key_down(event);
+        }));
+        input_handling_layer.add_mouse_click_callback(Box::new(|state: &InputState, event: &InputEvent, level_editor: &mut LevelEditor, camera: &mut Camera, state_obj: &State|{
+            level_editor.on_click(event, camera);
+        }));
+        input_handling_layer.add_mouse_move_callback(Box::new(|state: &InputState, event: &InputEvent, level_editor: &mut LevelEditor, camera: &mut Camera, state_obj: &State|{
+            level_editor.on_mouse_move(state, camera, state_obj);
+        }));
+
+    }
+    pub fn on_mouse_move(&mut self, state: &InputState, camera: &mut Camera, state_obj: &State){
+        let x = state.mouse_position.0;
+        let y = state.mouse_position.1;
+        self.mouse_position.x_screen = x as f32/state_obj.config.width as f32 * camera.viewpoint_width as f32;
+        self.mouse_position.y_screen = y as f32 /state_obj.config.height as f32 * camera.viewpoint_height as f32;
+        self.mouse_position.x_world = self.mouse_position.x_screen + camera.camera_x;
+        self.mouse_position.y_world = self.mouse_position.y_screen + camera.camera_y;
     }
     pub fn save_edits(&self) -> Result<(), Box<dyn Error>>{
         self.parser.write("src/game_data/entity_archetypes.json", "src/game_data/entity_attack_patterns.json", "src/game_data/entity_attacks.json", "src/game_data/sprites.json", "src/game_data/starting_level.json")
@@ -401,31 +416,8 @@ impl<'a> LevelEditor<'a>{
         }
         return false;
     }
-    pub fn process_key_input(&mut self, event: KeyEvent){
-        let mut key = event.logical_key.to_text();
-        match event.logical_key{
-            Key::Named(NamedKey::Enter) => {
-                key = Some("Enter");
-            },
-            Key::Named(NamedKey::Backspace) => {
-                key = Some("Delete");
-            },
-            _ => {}
-        }
-        if key.is_none(){
-            return;
-        }
-        let string_key = key.unwrap().to_string().to_lowercase();
-        let press = match event.state {
-            ElementState::Pressed => true,
-            ElementState::Released => false,
-        };
-        self.input.keys_down.insert(string_key.clone(), press);
-        if press {
-            self.key_down(string_key.clone());
-        }
-    }
-    pub fn key_down(&mut self, key: String){
+    pub fn key_down(&mut self, event: &InputEvent){
+        let key = event.key_down.clone().unwrap_or("".to_string());
         if self.cur_editing.is_some(){
             match key.to_lowercase().as_str(){
                 "enter" => {
@@ -535,28 +527,11 @@ impl<'a> LevelEditor<'a>{
             }
         }
     }
-    pub fn key_update(&mut self){
-        let keys = self.input.keys_down.clone();
-        if self.cur_editing.is_some(){
-            return;
-        }
-        self.world.process_player_input(&keys);
-        let mut player = self.world.player.borrow_mut();
-        if player.y < 360.0 {
-            player.y = 360.0;
-        }
-        if player.x < 576.0 {
-            player.x = 576.0;
-        }
-        self.input.mouse_position.x_world = self.camera.camera_x + self.input.mouse_position.x_screen;
-        self.input.mouse_position.y_world = self.camera.camera_y + self.input.mouse_position.y_screen;
-        self.camera.update_camera_position(&self.world, player.x.floor(), player.y.floor());
-    }
-    pub fn on_click(&mut self, mouse: MouseButton){
-        if mouse == MouseButton::Left {
-            let elements = self.camera.get_ui_elements_at(self.input.mouse_position.x_screen as usize, self.input.mouse_position.y_screen as usize);
-            if (!LevelEditor::check_click_on_menu(self.input.mouse_position.x_screen, self.input.mouse_position.y_screen)){
-                self.last_query = Some(self.query_stuff_at(self.input.mouse_position.x_world.floor() as usize, self.input.mouse_position.y_world.floor() as usize));
+    pub fn on_click(&mut self, event: &InputEvent, camera: &Camera){
+        if event.left_clicked {
+            let elements = camera.get_ui_elements_at(self.mouse_position.x_screen as usize, self.mouse_position.y_screen as usize);
+            if (!LevelEditor::check_click_on_menu(self.mouse_position.x_screen, self.mouse_position.y_screen)){
+                self.last_query = Some(self.query_stuff_at(self.mouse_position.x_world.floor() as usize, self.mouse_position.y_world.floor() as usize));
                 self.cur_editing = None;
             }
             for element_name in elements.iter() {
@@ -598,13 +573,13 @@ impl<'a> LevelEditor<'a>{
                     }
                 }
             }
-        } else if mouse == MouseButton::Right{
+        } else if event.right_clicked{
             if self.highlighted.is_some(){
                 let terrain_id = self.highlighted.unwrap();
                 let terrain = self.world.get_terrain(terrain_id).unwrap();
                 let x = terrain.x;
                 let y = terrain.y;
-                let terrain_json = super::json_parsing::terrain_json {
+                let terrain_json = crate::game_engine::json_parsing::terrain_json {
                     x: x/32,
                     y: y/32,
                     width: 1,
@@ -620,10 +595,10 @@ impl<'a> LevelEditor<'a>{
         }
     }
     pub fn highlight_square(&mut self){
-        if (!LevelEditor::check_click_on_menu(self.input.mouse_position.x_screen, self.input.mouse_position.y_screen)){
+        if (!LevelEditor::check_click_on_menu(self.mouse_position.x_screen, self.mouse_position.y_screen)){
             let sprite_id = self.sprites.get_sprite("highlight").unwrap();
-            let tx = (self.input.mouse_position.x_world as f32 / 32.0).floor() as usize * 32;
-            let ty = (self.input.mouse_position.y_world as f32 / 32.0).floor() as usize * 32;
+            let tx = (self.mouse_position.x_world as f32 / 32.0).floor() as usize * 32;
+            let ty = (self.mouse_position.y_world as f32 / 32.0).floor() as usize * 32;
             let terrain = self.world.add_terrain(tx, ty);
             self.world.set_sprite(terrain, sprite_id); 
             if self.highlighted.is_some(){
@@ -650,38 +625,38 @@ impl<'a> LevelEditor<'a>{
             }
         }
     }
-    pub fn update_ui(&mut self){
+    pub fn update_camera_ui(&mut self, camera: &mut Camera){
         if self.query_at_text.is_none() || self.last_query.is_none(){
             return;
         }
         let lq = self.last_query.as_ref().unwrap();
     
         for ui in self.query_unique_ui_elements.clone(){
-            self.camera.remove_ui_element(ui);
+            camera.remove_ui_element(ui);
         }
         for text in self.query_unique_text_elements.clone(){
-            self.camera.remove_text(text);
+            camera.remove_text(text);
         }
         match lq.query_type{
             QueryType::FollowingObject => {
                 let queried_object = self.last_query.clone().unwrap().objects[0].clone();
                 match queried_object.object.clone(){
                     ObjectJSONContainer::Entity(entity) => {
-                        self.camera.text.get_mut(&self.query_at_text.unwrap()).unwrap().text = format!("Following Entity");
+                        camera.text.get_mut(&self.query_at_text.unwrap()).unwrap().text = format!("Following Entity");
                     },
                     ObjectJSONContainer::Terrain(terrain) => {
-                        self.camera.text.get_mut(&self.query_at_text.unwrap()).unwrap().text = format!("Following Terrain");
+                        camera.text.get_mut(&self.query_at_text.unwrap()).unwrap().text = format!("Following Terrain");
                     }
                 }
-                let (unique_ui, unique_text) = self.display_query_element(queried_object.object);
+                let (unique_ui, unique_text) = self.display_query_element(camera, queried_object.object);
                 self.query_unique_ui_elements.extend(unique_ui);
                 self.query_unique_text_elements.extend(unique_text);
             },
             QueryType::Position => {
-                self.camera.text.get_mut(&self.query_at_text.unwrap()).unwrap().text = format!("Query at: {}, {}", lq.position.unwrap().0, lq.position.unwrap().1);
+                camera.text.get_mut(&self.query_at_text.unwrap()).unwrap().text = format!("Query at: {}, {}", lq.position.unwrap().0, lq.position.unwrap().1);
                 let mut i = 0;
                 for element in self.last_query.clone().unwrap().objects{
-                    self.query_unique_ui_elements.push(self.camera.add_ui_element(format!("level_editor_query_button_{}", i), UIElementDescriptor{
+                    self.query_unique_ui_elements.push(camera.add_ui_element(format!("level_editor_query_button_{}", i), UIElementDescriptor{
                         x: 942.0 + 45.0 * i as f32,
                         y: 90.0,
                         width: 40.0,
@@ -697,13 +672,13 @@ impl<'a> LevelEditor<'a>{
                             format!("{}. Terrain", i + 1)
                         }
                     };
-                    self.query_unique_text_elements.push(self.camera.add_text(text, 962.0 + 45.0 * i as f32, 93.0, 40.0, 18.0, 18.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Center));
+                    self.query_unique_text_elements.push(camera.add_text(text, 962.0 + 45.0 * i as f32, 93.0, 40.0, 18.0, 18.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Center));
                     i+= 1;
                 }
             }
         }
     }
-    pub fn display_query_element(&mut self, element: ObjectJSONContainer) -> (Vec<usize>, Vec<usize>){
+    pub fn display_query_element(&self, camera: &mut Camera, element: ObjectJSONContainer) -> (Vec<usize>, Vec<usize>){
         let mut unique_ui = Vec::new();
         let mut unique_text = Vec::new();
 
@@ -732,97 +707,80 @@ impl<'a> LevelEditor<'a>{
         match element {
             ObjectJSONContainer::Entity(ej) => {
                 let entity = ej.0;
-                unique_text.push(self.camera.add_text(format!("Entity:"), 945.0, 115.0, 50.0, 25.0, 25.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                unique_text.push(camera.add_text(format!("Entity:"), 945.0, 115.0, 50.0, 25.0, 25.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
                 potentially_editable_button_display(
                     "x", "entity_x", self.cur_editing == Some(EditableProperty::EntityX), 
-                    entity.x.to_string(), 946.0, 140.0, 20.0, &mut unique_ui, &mut unique_text, &mut self.camera);
+                    entity.x.to_string(), 946.0, 140.0, 20.0, &mut unique_ui, &mut unique_text, camera);
 
                 potentially_editable_button_display(
                     "y", "entity_y", self.cur_editing == Some(EditableProperty::EntityY), 
-                    entity.y.to_string(), 1036.0, 140.0, 20.0, &mut unique_ui, &mut unique_text, &mut self.camera);
+                    entity.y.to_string(), 1036.0, 140.0, 20.0, &mut unique_ui, &mut unique_text, camera);
 
                 potentially_editable_button_display(
                     "sprite", "entity_sprite", self.cur_editing == Some(EditableProperty::EntitySprite), 
-                    entity.sprite.to_string(), 946.0, 165.0, 20.0, &mut unique_ui, &mut unique_text, &mut self.camera);
+                    entity.sprite.to_string(), 946.0, 165.0, 20.0, &mut unique_ui, &mut unique_text, camera);
 
                 potentially_editable_button_display(
                     "Archetype", "entity_archetype", self.cur_editing == Some(EditableProperty::EntityArchetype), 
-                    entity.archetype.to_string(), 945.0, 195.0, 25.0, &mut unique_ui, &mut unique_text, &mut self.camera);
+                    entity.archetype.to_string(), 945.0, 195.0, 25.0, &mut unique_ui, &mut unique_text, camera);
 
                 let archetype = self.parser.get_entity_archetype_json(&entity.archetype).unwrap();
-                unique_text.push(self.camera.add_text(format!("Monster Type: {}", archetype.monster_type), 945.0, 225.0, 100.0, 15.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
-                unique_text.push(self.camera.add_text(format!("Range: {}", archetype.range), 1036.0, 225.0, 100.0, 15.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
-                unique_text.push(self.camera.add_text(format!("Aggro Range: {}", archetype.aggro_range), 945.0, 240.0, 100.0, 15.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
-                unique_text.push(self.camera.add_text(format!("Movement Speed: {}", archetype.movement_speed), 1036.0, 240.0, 100.0, 15.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
-                unique_text.push(self.camera.add_text(format!("Attack Type: {}", archetype.attack_type), 945.0, 255.0, 100.0, 15.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
-                unique_text.push(self.camera.add_text(format!("Attack Pattern: {}", archetype.attack_pattern), 945.0, 270.0, 290.0, 30.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
-                unique_text.push(self.camera.add_text(format!("Basic Tags: {:?}", archetype.basic_tags), 945.0, 285.0, 200.0, 30.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                unique_text.push(camera.add_text(format!("Monster Type: {}", archetype.monster_type), 945.0, 225.0, 100.0, 15.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                unique_text.push(camera.add_text(format!("Range: {}", archetype.range), 1036.0, 225.0, 100.0, 15.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                unique_text.push(camera.add_text(format!("Aggro Range: {}", archetype.aggro_range), 945.0, 240.0, 100.0, 15.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                unique_text.push(camera.add_text(format!("Movement Speed: {}", archetype.movement_speed), 1036.0, 240.0, 100.0, 15.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                unique_text.push(camera.add_text(format!("Attack Type: {}", archetype.attack_type), 945.0, 255.0, 100.0, 15.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                unique_text.push(camera.add_text(format!("Attack Pattern: {}", archetype.attack_pattern), 945.0, 270.0, 290.0, 30.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                unique_text.push(camera.add_text(format!("Basic Tags: {:?}", archetype.basic_tags), 945.0, 285.0, 200.0, 30.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
             },
             ObjectJSONContainer::Terrain(tj) => {
                 let terrain = tj.0;
-                unique_text.push(self.camera.add_text(format!("Terrain Block:"), 945.0, 115.0, 200.0, 25.0, 25.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                unique_text.push(camera.add_text(format!("Terrain Block:"), 945.0, 115.0, 200.0, 25.0, 25.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
                 potentially_editable_button_display(
                     "x", "terrain_x", self.cur_editing == Some(EditableProperty::TerrainX), 
-                    terrain.x.to_string(), 946.0, 140.0, 20.0, &mut unique_ui, &mut unique_text, &mut self.camera);
+                    terrain.x.to_string(), 946.0, 140.0, 20.0, &mut unique_ui, &mut unique_text, camera);
                 potentially_editable_button_display(
                     "y", "terrain_y", self.cur_editing == Some(EditableProperty::TerrainY), 
-                    terrain.y.to_string(), 1036.0, 140.0, 20.0, &mut unique_ui, &mut unique_text, &mut self.camera);
+                    terrain.y.to_string(), 1036.0, 140.0, 20.0, &mut unique_ui, &mut unique_text, camera);
                 potentially_editable_button_display(
                     "w", "terrain_w", self.cur_editing == Some(EditableProperty::TerrainW), 
-                    terrain.width.to_string(), 946.0, 165.0, 20.0, &mut unique_ui, &mut unique_text, &mut self.camera);
+                    terrain.width.to_string(), 946.0, 165.0, 20.0, &mut unique_ui, &mut unique_text, camera);
                 potentially_editable_button_display(
                     "h", "terrain_h", self.cur_editing == Some(EditableProperty::TerrainH), 
-                    terrain.height.to_string(), 1036.0, 165.0, 20.0, &mut unique_ui, &mut unique_text, &mut self.camera);
+                    terrain.height.to_string(), 1036.0, 165.0, 20.0, &mut unique_ui, &mut unique_text, camera);
                 let descriptor = self.parsed_data.get_terrain_archetype(&terrain.terrain_archetype).expect(format!("Could not find terrain archetype: {}", terrain.terrain_archetype).as_str()).clone();
                 potentially_editable_button_display(
                     "Archetype", "terrain_archetype", self.cur_editing == Some(EditableProperty::TerrainArchetype), 
-                    terrain.terrain_archetype.to_string(), 946.0, 190.0, 25.0, &mut unique_ui, &mut unique_text, &mut self.camera);
-                unique_text.push(self.camera.add_text(format!("Type: {:?}", descriptor.r#type), 946.0, 220.0, 200.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                    terrain.terrain_archetype.to_string(), 946.0, 190.0, 25.0, &mut unique_ui, &mut unique_text, camera);
+                unique_text.push(camera.add_text(format!("Type: {:?}", descriptor.r#type), 946.0, 220.0, 200.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
                 if (descriptor.random_chances.is_some()){
-                    unique_text.push(self.camera.add_text(format!("Random Chances: {:?}", descriptor.random_chances.unwrap_or(Vec::new())), 946.0, 235.0, 200.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
-                    unique_text.push(self.camera.add_text(format!("Sprites: {:?}", descriptor.sprites), 946.0, 250.0, 200.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
-                    unique_text.push(self.camera.add_text(format!("Basic Tags: {:?}", descriptor.basic_tags), 946.0, 265.0, 200.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                    unique_text.push(camera.add_text(format!("Random Chances: {:?}", descriptor.random_chances.unwrap_or(Vec::new())), 946.0, 235.0, 200.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                    unique_text.push(camera.add_text(format!("Sprites: {:?}", descriptor.sprites), 946.0, 250.0, 200.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                    unique_text.push(camera.add_text(format!("Basic Tags: {:?}", descriptor.basic_tags), 946.0, 265.0, 200.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
                 }else{
-                    unique_text.push(self.camera.add_text(format!("Sprites: {:?}", descriptor.sprites), 946.0, 235.0, 200.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
-                    unique_text.push(self.camera.add_text(format!("Basic Tags: {:?}", descriptor.basic_tags), 946.0, 250.0, 200.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                    unique_text.push(camera.add_text(format!("Sprites: {:?}", descriptor.sprites), 946.0, 235.0, 200.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+                    unique_text.push(camera.add_text(format!("Basic Tags: {:?}", descriptor.basic_tags), 946.0, 250.0, 200.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
                 }
             }
         }
         return (unique_ui, unique_text);
     }
-    pub fn process_mouse_position(&mut self, x: f64, y: f64){
-        self.input.mouse_position.x_screen = x as f32/self.renderer.config.width as f32 * self.camera.viewpoint_width as f32;
-        self.input.mouse_position.y_screen = y as f32 /self.renderer.config.height as f32 * self.camera.viewpoint_height as f32;
-        self.input.mouse_position.x_world = self.input.mouse_position.x_screen + self.camera.camera_x;
-        self.input.mouse_position.y_world = self.input.mouse_position.y_screen + self.camera.camera_y;
-    }
-    pub fn process_mouse_input(&mut self, state: ElementState, button: MouseButton){
-        if state == ElementState::Pressed && button == MouseButton::Left{
-            self.input.mouse_left = true;
-        } else if state == ElementState::Released && button == MouseButton::Left{
-            self.input.mouse_left = false;
-        } else if state == ElementState::Pressed && button == MouseButton::Right{
-            self.input.mouse_right = true;
-        } else if state == ElementState::Released && button == MouseButton::Right{
-            self.input.mouse_right = false;
+    pub fn process_input(&mut self, state: &InputState, camera: &mut Camera){
+        if self.cur_editing.is_some(){
+            return;
         }
-        if state == ElementState::Pressed{
-            self.on_click(button);
-        } 
-    }
-    pub fn update(&mut self){
-        self.key_update();
-        self.highlight_square();
-        self.update_ui();
-    }
-    pub fn render(&mut self) -> Result<(), wgpu::SurfaceError>{
-        self.renderer.render(self.camera.level_editor_render(&mut self.world, &self.sprites, &self.grid, self.renderer.config.width as f32, self.renderer.config.height as f32))
-    }
-    pub fn resize(&mut self, size: PhysicalSize<u32>){
-        self.renderer.resize(size);
-    }
-    pub fn window(&self) -> &Window{
-        self.renderer.window()
+        let keys = state.keys_down.clone();
+        self.world.process_player_input(&keys);
+        let mut player = self.world.player.borrow_mut();
+        if player.y < 360.0 {
+            player.y = 360.0;
+        }
+        if player.x < 576.0 {
+            player.x = 576.0;
+        }
+        self.mouse_position.x_world = camera.camera_x + self.mouse_position.x_screen;
+        self.mouse_position.y_world = camera.camera_y + self.mouse_position.y_screen;
+        camera.update_camera_position(&self.world, player.x.floor(), player.y.floor());
     }
 }
 
@@ -833,164 +791,100 @@ impl World {
     }
 }
 
-impl Camera{
-    pub fn set_level_editor(&mut self){
-        self.level_editor = true;
-    }
-    pub fn level_editor_render(&mut self, world: &mut World, sprites: &SpriteIDContainer, grid: &Vec<Terrain>, screen_width: f32, screen_height: f32) -> RenderDataFull{
-        let mut render_data = RenderDataFull::new();
-        let mut terrain_data: RenderData = RenderData::new();
-        let mut entity_data: RenderData = RenderData::new();
-        let mut index_offset: u16 = 0;
-        let player = world.player.borrow().clone(); 
-
-
-        let camera_left_chunk_x = World::coord_to_chunk_coord(self.camera_x.floor() as usize);
-        let camera_right_chunk_x = World::coord_to_chunk_coord((self.camera_x + self.viewpoint_width as f32).floor() as usize) + 1;
-
-        let camera_top_chunk_y = World::coord_to_chunk_coord(self.camera_y.floor() as usize);
-        let camera_bot_chunk_y = World::coord_to_chunk_coord((self.camera_y + self.viewpoint_height as f32).floor() as usize) + 1; 
-
-        let mut chunks_loaded = Vec::new();
-        for x in camera_left_chunk_x..camera_right_chunk_x{
-            for y in camera_top_chunk_y..camera_bot_chunk_y{
-                
-                let chunk_id = world.get_chunk_from_chunk_xy(x,y);
-                
-                if chunk_id.is_none(){
-                    continue;
-                }
-                let chunk = &world.chunks.borrow()[chunk_id.unwrap()];
-
-                chunks_loaded.push(chunk_id.unwrap());
-                for terrain_id in chunk.terrain_ids.iter(){
-                    let potentially_sprite_id = world.get_sprite(*terrain_id);
-                    if potentially_sprite_id.is_none(){
-                        continue;
-                    }
-                    let sprite_id = potentially_sprite_id.unwrap();
-                    let sprite = &world.sprites[sprite_id];
-
-                    
-                    let vertex_offset_x = -1 * self.camera_x as i32;
-                    let vertex_offset_y = -1 * self.camera_y as i32;
-                    let terrain = world.get_terrain(*terrain_id).unwrap();
-                    let draw_data = sprite.draw_data(terrain.x as f32, terrain.y as f32, 32, 32, self.viewpoint_width, self.viewpoint_height, index_offset, vertex_offset_x, vertex_offset_y);
-                    index_offset += 4;
-                    terrain_data.vertex.extend(draw_data.vertex);
-                    terrain_data.index.extend(draw_data.index);
-                }
-
-                for entity_id in chunk.entities_ids.iter(){
-                    let potentially_sprite_id = world.get_sprite(*entity_id);
-                    if potentially_sprite_id.is_none(){
-                        continue;
-                    }
-                    let sprite_id = potentially_sprite_id.unwrap();
-                    let sprite = &world.sprites[sprite_id];
-                    
-                    let vertex_offset_x = -1 * self.camera_x as i32;
-                    let vertex_offset_y = -1 * self.camera_y as i32;
-
-                    let entity = world.get_entity(*entity_id).unwrap();
-
-                    let draw_data = sprite.draw_data(entity.x, entity.y, 32, 32, self.viewpoint_width, self.viewpoint_height, index_offset, vertex_offset_x, vertex_offset_y);
-                    index_offset += 4;
-                    entity_data.vertex.extend(draw_data.vertex);
-                    entity_data.index.extend(draw_data.index);
-                }
-            }
-        }
-        render_data.vertex.extend(terrain_data.vertex);
-        render_data.vertex.extend(entity_data.vertex);
-        render_data.index.extend(terrain_data.index);
-        render_data.index.extend(entity_data.index);
-
-        for (id, element) in self.ui_elements.iter(){
-            if !element.visible{
-                continue;
-            }
-            let index_offset = render_data.vertex.len() as u16;
-            let draw_data = element.draw_data(self.viewpoint_width, self.viewpoint_height, index_offset);
-            render_data.vertex.extend(draw_data.vertex);
-            render_data.index.extend(draw_data.index);
-        }
-        let grid_sprite_id = sprites.get_sprite("grid");
-        if grid_sprite_id.is_none(){
-            return render_data;
-        }
-        let grid_sprite = &world.sprites[grid_sprite_id.unwrap()];
-        for grid_cell in grid.iter(){
-            if(grid_cell.x > self.camera_x as usize + self.viewpoint_width || grid_cell.x + 32 < self.camera_x as usize || grid_cell.y > self.camera_y as usize + self.viewpoint_height || grid_cell.y + 32 < self.camera_y as usize){
-                continue;
-            }
-            let vertex_offset_x = -1 * self.camera_x as i32;
-            let vertex_offset_y = -1 * self.camera_y as i32;
-            let draw_data = grid_sprite.draw_data(grid_cell.x as f32, grid_cell.y as f32, 32, 32, self.viewpoint_width, self.viewpoint_height, render_data.vertex.len() as u16, vertex_offset_x, vertex_offset_y);
-            render_data.vertex.extend(draw_data.vertex);
-            render_data.index.extend(draw_data.index);
-        }
-        render_data.sections = self.get_sections(screen_width, screen_height);
-        
-        render_data
-    }
-}
-
-impl Renderer<'_>{
+impl State<'_>{
     pub fn set_level_editor(&mut self){
         self.level_editor = true;
     }
     pub fn level_editor_highlight_square(&mut self, level_editor: &mut LevelEditor){
         level_editor.highlight_square();
     }
-    pub fn key_down(&mut self, event: &winit::event::KeyEvent, level_editor: &mut LevelEditor){
-        let key = event.clone().logical_key;
-        match key{
-            Key::Character(key) => {
-                level_editor.key_down(key.to_string());
-            },
-            Key::Named(key) => {
-                match key{
-                    NamedKey::Enter => {
-                        if self.level_editor{
-                            level_editor.key_down("Enter".to_string());
-                        }
-                    },
-                    NamedKey::Backspace => {
-                        if self.level_editor{
-                            level_editor.key_down("Delete".to_string());
-                        }
-                    },
-                    _ => {}
-                }
-            },
-            _ => {}
-        }
+    pub fn level_editor_update(&mut self, level_editor: &mut LevelEditor, camera: &mut Camera, state: &InputState){
+        level_editor.process_input(state, camera);
+        self.level_editor_highlight_square(level_editor);
+        level_editor.update_camera_ui(camera);
     }
-    
+    pub fn level_editor_render(&mut self, level_editor: &mut LevelEditor, camera: &mut Camera) -> Result<(), wgpu::SurfaceError>{
+        let render_data = &camera.level_editor_render(level_editor);
+        
+        let vertices = &render_data.vertex;
+        if vertices.len() < 1 {
+            return Ok(());
+        }
+        let vertex_buffer = self.device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Vertex Buffer"),
+                contents: bytemuck::cast_slice(&vertices),
+                usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+            }
+        );
+
+        let indicies = &render_data.index;
+        let num_indicies = indicies.len() as u32;
+
+        let index_buffer = self.device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Index Buffer"),
+                contents: bytemuck::cast_slice(&indicies),
+                usage: wgpu::BufferUsages::INDEX,
+            }
+        );
+
+        let output = self.surface.get_current_texture()?;
+        let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: Some("Render Encoder"),
+        });
+
+        {
+            let sections = camera.get_sections(self.config.width as f32, self.config.height as f32);
+            self.text_brush.queue(&self.device, &self.queue, sections).unwrap();
+            
+            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("Render Pass"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(BACKGROUND_COLOR),
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None,
+                        occlusion_query_set: None,
+                        timestamp_writes: None,
+            });
+
+            render_pass.set_pipeline(&self.render_pipeline);
+            render_pass.set_bind_group(0, &self.diffuse_bind_group, &[0]);
+            render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
+            render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+            render_pass.draw_indexed(0..num_indicies,0, 0..1);
+            self.text_brush.draw(&mut render_pass)
+        }
+
+        self.queue.submit(std::iter::once(encoder.finish()));
+        output.present();
+        Ok(())
+    }
 }
 
-pub async fn run(world: World, sprites: SpriteIDContainer,parser: JSON_parser, hash: HashMap<usize, ObjectJSONContainer>, camera: Camera, sprites_json_to_load: Vec<String>) {
+pub async fn run(mut level_editor: &mut LevelEditor, camera: &mut Camera, sprites_json_to_load: Vec<String>, input_handling_layer: &mut LevelEditorInputLayer) {
     let event_loop = EventLoop::new().unwrap();
     let title = "Level Editor";
     let window = WindowBuilder::new().with_title(title).with_inner_size(winit::dpi::LogicalSize::new(1152, 720)).build(&event_loop).unwrap();
-    let mut renderer = Renderer::new(&window, sprites_json_to_load.clone()).await;
-    renderer.set_level_editor();
-    let mut level_editor = LevelEditor::new(world, renderer, camera, sprites, parser, hash);
-    level_editor.init();
-
-
-
+    let mut state_obj = State::new(&window, sprites_json_to_load.clone()).await;
+    state_obj.set_level_editor();
 
     event_loop.run(move |event, control_flow| match event {
-        
         Event::WindowEvent {
             event,
             window_id,
-        } if window_id == level_editor.window().id() =>{
+        } if window_id == state_obj.window().id() =>{
             match event {
                 WindowEvent::KeyboardInput {  event,.. } => { 
-                    level_editor.process_key_input(event.clone());
+                    let event = event.clone();
+                    input_handling_layer.key_event(event, level_editor, camera, &state_obj);
                 },
                 WindowEvent::CloseRequested => {
                     let response = command_line_input::prompt_string("Save changes? (y/n)");
@@ -1000,22 +894,22 @@ pub async fn run(world: World, sprites: SpriteIDContainer,parser: JSON_parser, h
                     control_flow.exit();
                 },
                 WindowEvent::Resized(physical_size) => {
-                    level_editor.resize(physical_size);
+                    state_obj.resize(physical_size);
                 },
                 WindowEvent::CursorMoved {position, ..} => {
-                    level_editor.process_mouse_position(position.x, position.y);
+                    input_handling_layer.mouse_move(position, level_editor, camera, &state_obj);
                 },
                 WindowEvent::MouseInput { state, button, .. } => {
-                    level_editor.process_mouse_input(state, button);
+                    input_handling_layer.mouse_click(state, button, level_editor, camera, &state_obj);
                 },
                 WindowEvent::RedrawRequested => {
-                    level_editor.window().request_redraw();
-                    level_editor.update();
-                    match level_editor.render() {
+                    state_obj.window().request_redraw();
+                    state_obj.level_editor_update(&mut level_editor, camera, &input_handling_layer.state);
+                    match state_obj.level_editor_render(&mut level_editor, camera) {
                         Ok(_) => {}
                         Err(
                             wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated,
-                        ) => level_editor.resize(level_editor.renderer.size),
+                        ) => state_obj.resize(state_obj.size),
                         Err(wgpu::SurfaceError::OutOfMemory) => {
                             log::error!("OutOfMemory");
                             control_flow.exit();
@@ -1033,71 +927,3 @@ pub async fn run(world: World, sprites: SpriteIDContainer,parser: JSON_parser, h
     }).unwrap();
 }
 
-pub fn level_editor_generate_world_from_json_parsed_data(data: &ParsedData) -> (World, SpriteIDContainer, HashMap<usize, ObjectJSONContainer>) {
-
-    
-    let starting_level_descriptor = data.starting_level_descriptor.clone();
-    let player_descriptor = starting_level_descriptor.player;
-    let mut world = World::new(Player::new(player_descriptor.x, player_descriptor.y, player_descriptor.health, player_descriptor.max_health, player_descriptor.movement_speed, data.get_texture_id(&player_descriptor.sprite)));
-    let sprites = SpriteIDContainer::generate_from_json_parsed_data(data, &mut world);
-    let mut hash = HashMap::new();
-    let mut i = 0;
-    for entity_descriptor in starting_level_descriptor.entities.iter(){
-        let entity = world.create_entity_from_json_archetype(entity_descriptor.x, entity_descriptor.y, &entity_descriptor.archetype, data);
-        world.set_sprite(entity, sprites.get_sprite(&entity_descriptor.sprite).expect(format!("Could not find sprite: {}", entity_descriptor.sprite).as_str()));
-        hash.insert(entity, ObjectJSONContainer::Entity((entity_descriptor.clone(), i.clone())));
-        i += 1;
-    }
-    i = 0;
-    for terrain_json in starting_level_descriptor.terrain.iter(){
-        let start_x = terrain_json.x;
-        let start_y = terrain_json.y;
-        let width = terrain_json.width;
-        let height = terrain_json.height;
-        let archetype = data.get_terrain_archetype(terrain_json.terrain_archetype.clone().as_str()).expect(format!("Could not find terrain archetype: {}", terrain_json.terrain_archetype).as_str());
-        let tags = archetype.basic_tags.clone();
-        match archetype.r#type.as_str() {
-            "basic" => {
-                for x in start_x..start_x + width{
-                    for y in start_y..start_y + height{
-                        let terrain = world.add_terrain(x * 32, y * 32);
-                        world.set_sprite(terrain, sprites.get_sprite(&archetype.sprites[0]).expect(format!("Could not find sprite: {}", archetype.sprites[0]).as_str()));
-                        hash.insert(terrain, ObjectJSONContainer::Terrain((terrain_json.clone(), i.clone())));
-                        match_terrain_tags(&tags, terrain, &mut world);
-                    }
-                }
-            },
-            "randomness" => {
-                println!("Randomness {:?}", archetype);
-                let random_chances = archetype.random_chances.clone().expect("Randomness archetype must have random chances");
-                let mut random_chances_adjusted = Vec::new();
-                let mut sum_so_far = 0.0;
-                for chance in random_chances{
-                    random_chances_adjusted.push(chance + sum_so_far);
-                    sum_so_far += chance;
-                }
-                for x in start_x..start_x + width{
-                    for y in start_y..start_y + height{
-                        let terrain = world.add_terrain(x * 32, y * 32);
-                        let random_number = rand::random::<f32>();
-                        for (index, chance) in random_chances_adjusted.iter().enumerate(){
-                            if random_number < *chance{
-                                world.set_sprite(terrain, sprites.get_sprite(&archetype.sprites[index]).expect(format!("Could not find sprite: {}", archetype.sprites[index]).as_str()));
-                                break;
-                            }
-                        }
-                        hash.insert(terrain, ObjectJSONContainer::Terrain((terrain_json.clone(), i.clone())));
-                        match_terrain_tags(&tags, terrain, &mut world);
-                    }
-                }
-            },
-            _ => {
-                panic!("Unknown terrain type: {}", archetype.r#type);
-            }
-        }
-        i += 1;
-
-
-    }
-    (world, sprites, hash)
-}

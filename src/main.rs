@@ -1,9 +1,9 @@
 #![allow(warnings)]
 use std::time::Instant;
 pub mod rendering_engine;
-use rendering_engine::{window, state, vertex, texture};
+use rendering_engine::{window, renderer, vertex, texture};
 pub mod game_engine;
-use game_engine::{world, camera, loot, entities, stat, ui::UIElement, ui::UIElementDescriptor, json_parsing, starting_level_generator, level_editor};
+use game_engine::{world, camera, loot, entities, stat, ui::UIElement, ui::UIElementDescriptor, json_parsing, starting_level_generator, level_editor, game};
 pub mod tests;
 use std::env;
 
@@ -14,10 +14,8 @@ fn main() {
         let parsed_data = parser.parse_and_convert_game_data("src/game_data/entity_archetypes.json", "src/game_data/entity_attack_patterns.json", "src/game_data/entity_attacks.json", "src/game_data/sprites.json", "src/game_data/starting_level.json", "src/game_data/terrain_archetypes.json");
         let mut camera = camera::Camera::new(1152,720);
         let (world, sprites, hash) = level_editor::level_editor_generate_world_from_json_parsed_data(&parsed_data);
-        let mut level_editor = level_editor::LevelEditor::new(world, sprites, parser, hash);
         camera.set_level_editor();
-        level_editor.init(&mut camera);
-        pollster::block_on(level_editor::run(&mut level_editor, &mut camera, parsed_data.sprites_to_load_json));
+        pollster::block_on(level_editor::run(world, sprites, parser, hash, camera, parsed_data.sprites_to_load_json));
         return;
     }
     
@@ -54,6 +52,6 @@ fn main() {
 
     world.player.borrow_mut().holding_texture_sprite = Some(sprites.get_sprite("sword").unwrap());
     println!("Time to load: {:?} ms", load_time.elapsed().as_millis());
-
-    pollster::block_on(window::run(&mut world, &mut camera, parsed_data.sprites_to_load_json));
+    
+    pollster::block_on(window::run(world, camera, sprites, parsed_data.sprites_to_load_json));
 }

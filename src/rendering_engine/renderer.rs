@@ -10,6 +10,8 @@ use crate::camera::Camera;
 use std::num::{NonZeroU64, NonZeroU32};
 use std::fs;
 
+use super::abstractions::RenderDataFull;
+
 
 pub const BACKGROUND_COLOR: wgpu::Color = wgpu::Color {
     r: 1.0,
@@ -19,7 +21,7 @@ pub const BACKGROUND_COLOR: wgpu::Color = wgpu::Color {
 };
 
 
-pub struct State<'a> {
+pub struct Renderer<'a> {
     pub surface: wgpu::Surface<'a>,
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
@@ -34,8 +36,8 @@ pub struct State<'a> {
     pub text_brush: TextBrush<FontRef<'a>>,
     window: &'a Window,
 }
-impl<'a> State<'a> { 
-    pub async fn new(window: &'a Window, sprites_to_load_json: Vec<String>) -> State<'a> {
+impl<'a> Renderer<'a> { 
+    pub async fn new(window: &'a Window, sprites_to_load_json: Vec<String>) -> Renderer<'a> {
         let size = window.inner_size();
         let keys_down = HashMap::new();
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
@@ -172,45 +174,9 @@ impl<'a> State<'a> {
             self.text_brush.resize_view(self.config.width as f32, self.config.height as f32, &self.queue);
         }
     }
-    pub fn update(&self, world: &mut World, camera: &mut Camera) {
-        camera.update_ui(world);
-        world.generate_collision_cache();
-        world.process_input(self.keys_down.clone(), camera);
-        world.update_entities();
-    }
 
-    pub fn input(&mut self, event: winit::event::KeyEvent) {
-        match event.logical_key {
-            Key::Named(NamedKey::ArrowLeft) => {
-                self.keys_down.insert("ArrowLeft".to_string(), event.state == event::ElementState::Pressed);
-            },
-            Key::Named(NamedKey::ArrowRight) => {
-                self.keys_down.insert("ArrowRight".to_string(), event.state == event::ElementState::Pressed);
-            },
-            Key::Named(NamedKey::ArrowUp) => {
-                self.keys_down.insert("ArrowUp".to_string(), event.state == event::ElementState::Pressed);
-            },
-            Key::Named(NamedKey::ArrowDown) => {
-                self.keys_down.insert("ArrowDown".to_string(), event.state == event::ElementState::Pressed);
-            }
-            _ => {}
-        }
-        let key = event.logical_key.to_text();
-        if key.is_none(){
-            return;
-        }
-        let string_key = key.unwrap().to_string().to_lowercase();
-        let press = match event.state {
-            event::ElementState::Pressed => true,
-            event::ElementState::Released => false,
-        };
-        
-        self.keys_down.insert(string_key, press);
-    }
 
-    pub fn render(&mut self, world: &mut World, camera: &mut Camera) -> Result<(), wgpu::SurfaceError> {
-        let render_data = &camera.render(world);
-        
+    pub fn render(&mut self, render_data: RenderDataFull) -> Result<(), wgpu::SurfaceError> {
         let vertices = &render_data.vertex;
         if vertices.len() < 1 {
             return Ok(());
@@ -242,7 +208,7 @@ impl<'a> State<'a> {
         });
 
         {
-            let sections = camera.get_sections(self.config.width as f32, self.config.height as f32);
+            let sections = render_data.sections;
             self.text_brush.queue(&self.device, &self.queue, sections).unwrap();
             
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {

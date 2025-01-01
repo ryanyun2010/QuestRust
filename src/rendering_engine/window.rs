@@ -2,17 +2,20 @@
 use winit::{
     event::*, event_loop::EventLoop, window::WindowBuilder
 };
-use crate::state::State;
+use crate::game_engine::game::Game;
+use crate::renderer::Renderer;
 use crate::world::World;
 use crate::camera::Camera;
 
+use super::abstractions::SpriteIDContainer;
 
-pub async fn run(world: &mut World, camera: &mut Camera, sprites_json_to_load: Vec<String>) {
+
+pub async fn run(world: World, camera: Camera, sprites: SpriteIDContainer, sprites_json_to_load: Vec<String>) {
     let event_loop = EventLoop::new().unwrap();
     let title = "Rust Game";
     let window = WindowBuilder::new().with_title(title).with_inner_size(winit::dpi::LogicalSize::new(1152, 720)).build(&event_loop).unwrap();
-    let mut state_obj = State::new(&window, sprites_json_to_load.clone()).await;
-
+    let mut renderer = Renderer::new(&window, sprites_json_to_load.clone()).await;
+    let mut game = Game::new(world, camera, renderer, sprites);
     let mut focused: bool = false;
 
     event_loop.run(move |event, control_flow| match event {
@@ -20,15 +23,15 @@ pub async fn run(world: &mut World, camera: &mut Camera, sprites_json_to_load: V
         Event::WindowEvent {
             event,
             window_id,
-        } if window_id == state_obj.window().id() =>{
+        } if window_id == game.window().id() =>{
             match event {
                 WindowEvent::KeyboardInput {  event,.. } => { 
                     let event = event.clone();
-                    state_obj.input(event);
+                    game.key_input(event);
                 },
                 WindowEvent::CloseRequested => control_flow.exit(),
                 WindowEvent::Resized(physical_size) => {
-                    state_obj.resize(physical_size);
+                    game.resize(physical_size);
                 },
                 WindowEvent::CursorMoved {position, ..} => {
                 },
@@ -37,19 +40,19 @@ pub async fn run(world: &mut World, camera: &mut Camera, sprites_json_to_load: V
                 WindowEvent::Focused(bool) => {
                     focused = bool;
                     if focused {
-                        state_obj.window().request_redraw();
+                        game.window().request_redraw();
                     }
                 },
                 WindowEvent::RedrawRequested => {
                     if focused{
-                        state_obj.window().request_redraw();
+                        game.window().request_redraw();
                     }
-                    state_obj.update(world, camera);
-                    match state_obj.render(world, camera) {
+                    game.update();
+                    match game.render() {
                         Ok(_) => {}
                         Err(
                             wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated,
-                        ) => state_obj.resize(state_obj.size),
+                        ) => game.resize(game.renderer.size),
                         Err(wgpu::SurfaceError::OutOfMemory) => {
                             log::error!("OutOfMemory");
                             control_flow.exit();

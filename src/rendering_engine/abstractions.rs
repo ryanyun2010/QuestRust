@@ -45,6 +45,18 @@ impl RenderData{
     }
 }
 
+pub struct RenderDataFull<'a>{
+    pub vertex: Vec<Vertex>,
+    pub index: Vec<u16>,
+    pub sections: Vec<TextSection<'a>>
+}
+
+impl RenderDataFull<'_>{
+    pub fn new() -> Self{
+        Self{ vertex: Vec::new(), index: Vec::new(), sections: Vec::new() }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct SpriteIDContainer{
     pub sprites: HashMap<String, usize>,
