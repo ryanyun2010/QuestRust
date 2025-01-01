@@ -940,34 +940,6 @@ impl Renderer<'_>{
     pub fn set_level_editor(&mut self){
         self.level_editor = true;
     }
-    pub fn level_editor_highlight_square(&mut self, level_editor: &mut LevelEditor){
-        level_editor.highlight_square();
-    }
-    pub fn key_down(&mut self, event: &winit::event::KeyEvent, level_editor: &mut LevelEditor){
-        let key = event.clone().logical_key;
-        match key{
-            Key::Character(key) => {
-                level_editor.key_down(key.to_string());
-            },
-            Key::Named(key) => {
-                match key{
-                    NamedKey::Enter => {
-                        if self.level_editor{
-                            level_editor.key_down("Enter".to_string());
-                        }
-                    },
-                    NamedKey::Backspace => {
-                        if self.level_editor{
-                            level_editor.key_down("Delete".to_string());
-                        }
-                    },
-                    _ => {}
-                }
-            },
-            _ => {}
-        }
-    }
-    
 }
 
 pub async fn run(world: World, sprites: SpriteIDContainer,parser: JSON_parser, hash: HashMap<usize, ObjectJSONContainer>, camera: Camera, sprites_json_to_load: Vec<String>) {
