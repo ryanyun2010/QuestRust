@@ -1,15 +1,16 @@
 use std::collections::HashMap;
 use std::cell::RefCell;
 use crate::rendering_engine::abstractions::Sprite;
-use crate::entities::{Entity, EntityTags};
+use crate::entities::EntityTags;
 use crate::game_engine::inventory::ItemContainer;
 use crate::game_engine::player::Player;
 use crate::game_engine::terrain::{Terrain, TerrainTags};
 
 use super::camera::Camera;
+use super::entity_components::{self, EntityComponentHolder};
 
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum EntityDirectionOptions{
     Up,
     Down,
@@ -41,8 +42,8 @@ pub struct World{
     pub chunk_lookup: RefCell<HashMap<[usize; 2],usize>>, // corresponds chunk x,y to id
     pub terrain_lookup: HashMap<usize,usize>, // corresponds element_ids of terrain to chunk_ids
     pub terrain: HashMap<usize, Terrain>, // corresponds element id to Terrain element
-    pub entities: RefCell<HashMap<usize, Entity>>, // corresponds element id to Entity element
     pub item_containers: RefCell<HashMap<usize, ItemContainer>>, // corresponds element id to Entity element
+    pub entity_components_lookup: HashMap<usize, EntityComponentHolder>, // corresponds element_ids of entities to the entity's components 
     pub entity_lookup: RefCell<HashMap<usize,usize>>, // corresponds element_ids of entities to chunk_ids
     pub entity_tags_lookup: HashMap<usize,Vec<EntityTags>>, // corresponds element_ids of entities to the entity's tags
     pub terrain_tags_lookup: HashMap<usize,Vec<TerrainTags>>, // corresponds element_ids of entities to the entity's tags
@@ -65,9 +66,9 @@ impl World{
         let terrain_lookup: HashMap<usize, usize> = HashMap::new();
         let entity_lookup: RefCell<HashMap<usize, usize>> = RefCell::new(HashMap::new());
         let entity_tags_lookup: HashMap<usize, Vec<EntityTags>> = HashMap::new();
+        let entity_components_lookup: HashMap<usize, EntityComponentHolder> = HashMap::new();
         let terrain_tags_lookup: HashMap<usize, Vec<TerrainTags>> = HashMap::new();
         let terrain: HashMap<usize, Terrain> = HashMap::new();
-        let entities: RefCell<HashMap<usize, Entity>> = RefCell::new(HashMap::new());
         let item_containers: RefCell<HashMap<usize, ItemContainer>> = RefCell::new(HashMap::new());
         let loaded_chunks: Vec<usize> = Vec::new(); 
         let collision_cache: RefCell<HashMap<[usize; 2], Vec<usize>>> = RefCell::new(HashMap::new());
@@ -88,7 +89,7 @@ impl World{
             entity_tags_lookup,
             terrain_tags_lookup,
             terrain,
-            entities,
+            entity_components_lookup,
             item_containers,
             loaded_chunks,
             collision_cache,
@@ -217,7 +218,8 @@ impl World{
             }
 
             for entity_id in chunk.entities_ids.iter(){
-                let entity = self.entities.borrow().get(entity_id).unwrap().clone();
+                let position_component = self.entity_components_lookup.get(entity_id).unwrap().position.borrow().expect("All entities should have a Position component");
+                
                 let entity_tags_potentially = self.entity_tags_lookup.get(entity_id);
                 if entity_tags_potentially.is_none(){
                     continue;
@@ -226,7 +228,8 @@ impl World{
                 for tag in entity_tags.iter(){
                     match tag{
                         EntityTags::HasCollision => {
-                            let tiles_blocked: Vec<[usize; 2]> = World::get_terrain_tiles(entity.x as usize, entity.y as usize, 32, 32);
+                            let collision_component = self.entity_components_lookup.get(entity_id).unwrap().collision_box.borrow().expect("All entities which have a Collision tag should have a CollisionBox component");
+                            let tiles_blocked: Vec<[usize; 2]> = World::get_terrain_tiles(position_component.x as usize, position_component.y as usize, collision_component.w as usize, collision_component.h as usize);
                             for tile in tiles_blocked.iter(){
                                 let mut collision_cache_entry = collision_cache_ref.get(&[tile[0],tile[1]]).unwrap_or(&Vec::new()).clone();
                                 collision_cache_entry.push(*entity_id);
@@ -239,8 +242,7 @@ impl World{
             }
         }  
     }
-    pub fn check_collision(&self, player: bool, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, entity: bool, entity_hash: Option<HashMap<usize, Entity>>) -> bool{
-        
+    pub fn check_collision(&self, player: bool, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, entity: bool) -> bool{
         if !player {
             let p = self.player.borrow();
             if p.x.floor() - 1.0 < (x + w) as f32 && p.x.floor() + 33.0 > x as f32 && p.y.floor() - 1.0 < (y + h) as f32 && p.y.floor() + 33.0 > y as f32{
@@ -256,12 +258,6 @@ impl World{
                 ids_to_check.extend(self.collision_cache.borrow().get(&[tile[0],tile[1]]).unwrap());
             }
         }
-        let eh;
-        if entity {
-            eh = entity_hash.unwrap();
-        }else{
-            eh = HashMap::new();
-        }
         let idti: usize = id_to_ignore.unwrap_or(usize::MAX);
         for id in ids_to_check{
             if id == idti{
@@ -271,8 +267,13 @@ impl World{
             
             if terrain_potentially.is_none(){
                 if entity{
-                    let entity = eh.get(&id).unwrap();
-                    if entity.x < (x + w) as f32 && entity.x + 32.0 > x as f32 && entity.y < (y + h) as f32 && entity.y + 32.0 > y as f32{
+                    let entity_collision_box = self.entity_components_lookup.get(&id).unwrap().collision_box.borrow().unwrap();
+                    let entity_position = self.entity_components_lookup.get(&id).unwrap().position.borrow().unwrap();
+                    let ex = entity_position.x + entity_collision_box.x_offset;
+                    let ey = entity_position.y + entity_collision_box.y_offset;
+                    let ew = entity_collision_box.w;
+                    let eh = entity_collision_box.h;
+                    if ex < (x + w) as f32 && ex + ew > x as f32 && ey < (y + h) as f32 && ey + eh > y as f32{
                         return true;
                     }
                 }
@@ -288,14 +289,14 @@ impl World{
     }
     pub fn attempt_move_player(&self, player: &mut Player, movement: [f32; 2]){
         
-        if self.check_collision(true, None,(player.x + movement[0]).floor() as usize, (player.y + movement[1]).floor() as usize, 32, 32, true, Some(self.entities.borrow().clone())){
+        if self.check_collision(true, None,(player.x + movement[0]).floor() as usize, (player.y + movement[1]).floor() as usize, 32, 32, true){
             return;
         }
         player.x += movement[0];
         player.y += movement[1];
     }
     pub fn can_move_player(&self, player: &mut Player, movement: [f32; 2]) -> bool{
-        if self.check_collision(true, None,(player.x.floor() + movement[0]).floor() as usize, (player.y.floor() + movement[1]).floor() as usize, 32, 32, true, Some(self.entities.borrow().clone())){
+        if self.check_collision(true, None,(player.x.floor() + movement[0]).floor() as usize, (player.y.floor() + movement[1]).floor() as usize, 32, 32, true){
             return false;
         }
         true

@@ -3,7 +3,7 @@ use std::time::Instant;
 pub mod rendering_engine;
 use rendering_engine::{window, renderer, vertex, texture};
 pub mod game_engine;
-use game_engine::{world, camera, loot, entities, stat, ui::UIElement, ui::UIElementDescriptor, json_parsing, starting_level_generator, level_editor, game};
+use game_engine::{world, camera, loot, entities, entity_components, stat, ui::UIElement, ui::UIElementDescriptor, json_parsing, starting_level_generator, level_editor, game};
 pub mod tests;
 use std::env;
 

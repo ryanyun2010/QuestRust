@@ -4,6 +4,7 @@ use std::hash::Hash;
 use crate::world::World;
 use crate::rendering_engine::abstractions::{RenderData, RenderDataFull, TextSprite};
 use crate::game_engine::ui::UIElement;
+use crate::game_engine::entity_components::PositionComponent;
 use wgpu_text::glyph_brush::{HorizontalAlign, Section as TextSection};
 #[derive(Debug, Clone)]
 pub struct Camera{
@@ -135,9 +136,9 @@ impl Camera{
                     let vertex_offset_x = -1 * self.camera_x as i32;
                     let vertex_offset_y = -1 * self.camera_y as i32;
 
-                    let entity = world.get_entity(*entity_id).unwrap();
+                    let entity_position_component = world.entity_components_lookup.get(entity_id).unwrap().position.borrow().clone().expect("All entities should have a Position component");
 
-                    let draw_data = sprite.draw_data(entity.x, entity.y, 32, 32, self.viewpoint_width, self.viewpoint_height, index_offset, vertex_offset_x, vertex_offset_y);
+                    let draw_data = sprite.draw_data(entity_position_component.x, entity_position_component.y, 32, 32, self.viewpoint_width, self.viewpoint_height, index_offset, vertex_offset_x, vertex_offset_y);
                     index_offset += 4;
                     entity_data.vertex.extend(draw_data.vertex);
                     entity_data.index.extend(draw_data.index);

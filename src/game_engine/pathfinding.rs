@@ -1,6 +1,6 @@
 use std::collections::{BinaryHeap, HashMap};
 use std::cmp::Ordering;
-use super::entities::Entity;
+use super::entity_components::{CollisionBox, PositionComponent};
 use super::world::{EntityDirectionOptions, World};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -34,12 +34,17 @@ impl Ord for PathfindingNode {
     }
 }
 
-pub fn pathfind_by_block(entity_id: usize, world: &World, entity: &Entity, entitiesref: HashMap<usize, Entity>) -> EntityDirectionOptions {
+pub fn pathfind_by_block(position_component: PositionComponent, collision_component: CollisionBox, entity_id: usize, world: &World) -> EntityDirectionOptions {
     let player = world.player.borrow();
+    let ex = (position_component.x + collision_component.x_offset);
+    let ey = (position_component.y + collision_component.y_offset);
+    let ew = collision_component.w;
+    let eh = collision_component.h;
+
     let (player_x, player_y) = ((player.x.floor() / 32.0).floor() as usize, (player.y.floor() / 32.0).floor() as usize);
-    let (entity_x, entity_y) = ((entity.x / 32.0).floor() as usize, (entity.y / 32.0).floor() as usize);
-    let entity_x_offset = entity.x - entity_x as f32 * 32.0;
-    let entity_y_offset = entity.y - entity_y as f32 * 32.0;
+    let (entity_x, entity_y) = ((ex / 32.0).floor() as usize, (ey / 32.0).floor() as usize);
+    let entity_x_offset = ex - entity_x as f32 * 32.0;
+    let entity_y_offset = ey - entity_y as f32 * 32.0;
 
     let distance = ((player_x as isize - entity_x as isize).abs() + (player_y as isize - entity_y as isize).abs()) as f32;
 
@@ -98,7 +103,7 @@ pub fn pathfind_by_block(entity_id: usize, world: &World, entity: &Entity, entit
             if nx > 100000000 || ny > 100000000 {
                 continue;
             }
-            if world.check_collision(true, Some(entity_id), ((nx * 32) as f32 + entity_x_offset).floor() as usize, ((ny * 32) as f32 + entity_y_offset).floor() as usize, 32, 32, true, Some(entitiesref.clone())) {
+            if world.check_collision(true, Some(entity_id), ((nx * 32) as f32 + entity_x_offset).floor() as usize, ((ny * 32) as f32 + entity_y_offset).floor() as usize, ew as usize, eh as usize, true) {
                 continue;
             }
 
@@ -118,13 +123,19 @@ pub fn pathfind_by_block(entity_id: usize, world: &World, entity: &Entity, entit
 
     EntityDirectionOptions::None
 }
-
-pub fn pathfind_high_granularity(entity_id: usize, world: &World, entity: &Entity, entitiesref: HashMap<usize, Entity>) -> EntityDirectionOptions {
+pub fn pathfind_high_granularity(position_component: PositionComponent, collision_component: CollisionBox, entity_id: usize, world: &World) -> EntityDirectionOptions {
     let player = world.player.borrow();
+
+    let ex = (position_component.x + collision_component.x_offset);
+    let ey = (position_component.y + collision_component.y_offset);
+    let ew = collision_component.w;
+    let eh = collision_component.h;
+
+
     let (player_x, player_y) = ((player.x.floor() / 4.0).floor() as usize, (player.y.floor() / 4.0).floor() as usize);
-    let (entity_x, entity_y) = ((entity.x / 4.0).floor() as usize, (entity.y / 4.0).floor() as usize);
-    let entity_x_offset = entity.x - entity_x as f32 * 4.0;
-    let entity_y_offset = entity.y - entity_y as f32 * 4.0;
+    let (entity_x, entity_y) = ((ex / 4.0).floor() as usize, (ey / 4.0).floor() as usize);
+    let entity_x_offset = ex - entity_x as f32 * 4.0;
+    let entity_y_offset = ey - entity_y as f32 * 4.0;
 
 
     let distance = ((player_x as isize - entity_x as isize).abs() + (player_y as isize - entity_y as isize).abs()) as f32;
@@ -182,7 +193,7 @@ pub fn pathfind_high_granularity(entity_id: usize, world: &World, entity: &Entit
                 continue;
             }
 
-            if world.check_collision(false, Some(entity_id), (nx as f32 * 4.0 + entity_x_offset).floor() as usize, (ny as f32 * 4.0 + entity_y_offset).floor() as usize, 32, 32, true, Some(entitiesref.clone())) {
+            if world.check_collision(false, Some(entity_id), (nx as f32 * 4.0 + entity_x_offset).floor() as usize, (ny as f32 * 4.0 + entity_y_offset).floor() as usize, ew as usize, eh as usize, true) {
                 continue;
             }
 
