@@ -1,5 +1,6 @@
 use std::collections::HashMap;
-use std::cell::RefCell;
+use std::cell::{Ref, RefCell};
+use std::hash::Hash;
 use crate::rendering_engine::abstractions::Sprite;
 use crate::entities::EntityTags;
 use crate::game_engine::inventory::ItemContainer;
@@ -37,67 +38,59 @@ pub struct World{
     pub chunks: RefCell<Vec<Chunk>>,
     pub player: RefCell<Player>,
     pub element_id: usize,
-    pub sprites: Vec<Sprite>,
-    pub sprite_lookup: HashMap<usize,usize>, // corresponds element_ids to sprite_ids ie. to get the sprite for element_id x, just do sprite_lookup[x]
     pub chunk_lookup: RefCell<HashMap<[usize; 2],usize>>, // corresponds chunk x,y to id
-    pub terrain_lookup: HashMap<usize,usize>, // corresponds element_ids of terrain to chunk_ids
-    pub terrain: HashMap<usize, Terrain>, // corresponds element id to Terrain element
+    
     pub item_containers: RefCell<HashMap<usize, ItemContainer>>, // corresponds element id to Entity element
-    pub entity_components_lookup: HashMap<usize, EntityComponentHolder>, // corresponds element_ids of entities to the entity's components 
-    pub entity_lookup: RefCell<HashMap<usize,usize>>, // corresponds element_ids of entities to chunk_ids
-    pub entity_tags_lookup: HashMap<usize,Vec<EntityTags>>, // corresponds element_ids of entities to the entity's tags
-    pub terrain_tags_lookup: HashMap<usize,Vec<TerrainTags>>, // corresponds element_ids of entities to the entity's tags
-    pub loaded_chunks: Vec<usize>, // chunk ids that are currently loaded
+
     pub collision_cache: RefCell<HashMap<[usize; 2], Vec<usize>>>, // collision x,y, to element id, collision tiles are 64x64
+   
     pub pathfinding_frames: HashMap<usize, usize>, // entity id to frame of pathfinding
     pub next_pathfinding_frame_for_entity: usize,
     pub pathfinding_frame: usize,
+    
     pub level_editor: bool,
-    pub highlighted: Option<usize>,
+
+    pub loaded_chunks: Vec<usize>, // DANGEROUS: chunk ids that are currently loaded, this is created as a SIDE EFFECT of the camera, and should not be edited in the world
+    
+    pub terrain_lookup: HashMap<usize,usize>, // corresponds element_ids of terrain to chunk_ids
+    pub terrain: HashMap<usize, Terrain>, // corresponds element id to Terrain element
+    pub terrain_tags_lookup: HashMap<usize,Vec<TerrainTags>>, // corresponds element_ids of entities to the entity's tags
+
+    pub entity_tags_lookup: HashMap<usize,Vec<EntityTags>>,
+    pub entity_position_components: HashMap<usize, RefCell<entity_components::PositionComponent>>,
+    pub entity_attack_components: HashMap<usize, RefCell<entity_components::EntityAttackComponent>>,
+    pub entity_collision_box_components: HashMap<usize, RefCell<entity_components::CollisionBox>>,
+    pub entity_health_components: HashMap<usize, RefCell<entity_components::HealthComponent>>,
+    pub entity_pathfinding_components: HashMap<usize, RefCell<entity_components::PathfindingComponent>>,
+
+    pub sprites: Vec<Sprite>,
+    pub sprite_lookup: HashMap<usize,usize>, // corresponds element_ids to sprite_ids ie. to get the sprite for element_id x, just do sprite_lookup[x]
 }
 impl World{ 
     pub fn new(player: Player) -> Self{
-        let chunks: RefCell<Vec<Chunk>> = RefCell::new(Vec::new());
-        let player: RefCell<Player> = RefCell::new(player);
-        let element_id: usize = 0;
-        let sprites: Vec<Sprite> = Vec::new();
-        let sprite_lookup: HashMap<usize, usize> = HashMap::new();
-        let chunk_lookup: RefCell<HashMap<[usize; 2], usize>> = RefCell::new(HashMap::new());
-        let terrain_lookup: HashMap<usize, usize> = HashMap::new();
-        let entity_lookup: RefCell<HashMap<usize, usize>> = RefCell::new(HashMap::new());
-        let entity_tags_lookup: HashMap<usize, Vec<EntityTags>> = HashMap::new();
-        let entity_components_lookup: HashMap<usize, EntityComponentHolder> = HashMap::new();
-        let terrain_tags_lookup: HashMap<usize, Vec<TerrainTags>> = HashMap::new();
-        let terrain: HashMap<usize, Terrain> = HashMap::new();
-        let item_containers: RefCell<HashMap<usize, ItemContainer>> = RefCell::new(HashMap::new());
-        let loaded_chunks: Vec<usize> = Vec::new(); 
-        let collision_cache: RefCell<HashMap<[usize; 2], Vec<usize>>> = RefCell::new(HashMap::new());
-        let pathfinding_frames: HashMap<usize, usize> = HashMap::new();
-        let next_pathfinding_frame_for_entity: usize = 0;
-        let pathfinding_frame: usize = 0;
-        let level_editor: bool = false;
-        let highlighted = None;
         Self{
-            chunks,
-            player,
-            element_id,
-            sprites,
-            sprite_lookup,
-            chunk_lookup,
-            terrain_lookup,
-            entity_lookup,
-            entity_tags_lookup,
-            terrain_tags_lookup,
-            terrain,
-            entity_components_lookup,
-            item_containers,
-            loaded_chunks,
-            collision_cache,
-            pathfinding_frames,
-            next_pathfinding_frame_for_entity,
-            pathfinding_frame,
-            level_editor,
-            highlighted
+            chunks: RefCell::new(Vec::new()),
+            player: RefCell::new(player),
+            element_id: 0,
+            sprites: Vec::new(),
+            sprite_lookup: HashMap::new(),
+            chunk_lookup: RefCell::new(HashMap::new()),
+            terrain_lookup: HashMap::new(),
+            entity_tags_lookup: HashMap::new(),
+            terrain_tags_lookup: HashMap::new(),
+            terrain: HashMap::new(),
+            item_containers: RefCell::new(HashMap::new()),
+            loaded_chunks: Vec::new(),
+            collision_cache: RefCell::new(HashMap::new()),
+            pathfinding_frames: HashMap::new(),
+            next_pathfinding_frame_for_entity: 0,
+            pathfinding_frame: 0,
+            level_editor: false,
+            entity_attack_components: HashMap::new(),
+            entity_collision_box_components: HashMap::new(),
+            entity_health_components: HashMap::new(),
+            entity_position_components: HashMap::new(),
+            entity_pathfinding_components: HashMap::new(),
         }
     }
     pub fn new_chunk(&self, chunk_x: usize, chunk_y: usize, chunkref: Option<&mut std::cell::RefMut<'_, Vec<Chunk>>>) -> usize{
@@ -218,7 +211,7 @@ impl World{
             }
 
             for entity_id in chunk.entities_ids.iter(){
-                let position_component = self.entity_components_lookup.get(entity_id).unwrap().position.borrow().expect("All entities should have a Position component");
+                let position_component = self.entity_position_components.get(entity_id).unwrap().borrow();
                 
                 let entity_tags_potentially = self.entity_tags_lookup.get(entity_id);
                 if entity_tags_potentially.is_none(){
@@ -228,7 +221,7 @@ impl World{
                 for tag in entity_tags.iter(){
                     match tag{
                         EntityTags::HasCollision => {
-                            let collision_component = self.entity_components_lookup.get(entity_id).unwrap().collision_box.borrow().expect("All entities which have a Collision tag should have a CollisionBox component");
+                            let collision_component = self.entity_collision_box_components.get(entity_id).unwrap().borrow();
                             let tiles_blocked: Vec<[usize; 2]> = World::get_terrain_tiles(position_component.x as usize, position_component.y as usize, collision_component.w as usize, collision_component.h as usize);
                             for tile in tiles_blocked.iter(){
                                 let mut collision_cache_entry = collision_cache_ref.get(&[tile[0],tile[1]]).unwrap_or(&Vec::new()).clone();
@@ -267,8 +260,8 @@ impl World{
             
             if terrain_potentially.is_none(){
                 if entity{
-                    let entity_collision_box = self.entity_components_lookup.get(&id).unwrap().collision_box.borrow().unwrap();
-                    let entity_position = self.entity_components_lookup.get(&id).unwrap().position.borrow().unwrap();
+                    let entity_collision_box = self.entity_collision_box_components.get(&id).unwrap().borrow();
+                    let entity_position = self.entity_position_components.get(&id).unwrap().borrow();
                     let ex = entity_position.x + entity_collision_box.x_offset;
                     let ey = entity_position.y + entity_collision_box.y_offset;
                     let ew = entity_collision_box.w;

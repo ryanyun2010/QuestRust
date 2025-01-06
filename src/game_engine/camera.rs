@@ -136,7 +136,7 @@ impl Camera{
                     let vertex_offset_x = -1 * self.camera_x as i32;
                     let vertex_offset_y = -1 * self.camera_y as i32;
 
-                    let entity_position_component = world.entity_components_lookup.get(entity_id).unwrap().position.borrow().clone().expect("All entities should have a Position component");
+                    let entity_position_component = world.entity_position_components.get(entity_id).expect("All entities with sprites should have a position component").borrow().clone();
 
                     let draw_data = sprite.draw_data(entity_position_component.x, entity_position_component.y, 32, 32, self.viewpoint_width, self.viewpoint_height, index_offset, vertex_offset_x, vertex_offset_y);
                     index_offset += 4;

@@ -261,7 +261,7 @@ impl<'a> LevelEditor<'a>{
         let chunk_id = chunk_to_query.unwrap();
         let chunk = &self.world.chunks.borrow()[chunk_id];
         for entity_id in chunk.entities_ids.iter(){
-            let position_component = self.world.entity_components_lookup.get(entity_id).unwrap().position.borrow().clone().expect("All entities should have a Position component");
+            let position_component = self.world.entity_position_components.get(entity_id).expect("All entities should have a position component").borrow();
             if position_component.x <= x as f32 && position_component.x + 32.0 >= x as f32 && position_component.y <= y as f32 && position_component.y + 32.0 >= y as f32 {
                 let descriptor = self.object_descriptor_hash.get(entity_id).unwrap().clone();
                 vec_objects.push(QueriedObject{element_id: *entity_id, object: descriptor});
@@ -353,7 +353,7 @@ impl<'a> LevelEditor<'a>{
                 }
 
                 let entity_id = update_entity_property_json!(self, x, nv, f32);
-                self.world.entity_components_lookup.get(&entity_id).unwrap().position.borrow_mut().as_mut().expect("All Entities should have a position component").x = nv;
+                self.world.entity_position_components.get(&entity_id).expect("All Entities should have a position component").borrow_mut().x = nv;
             },
             EditableProperty::EntityY => {
                 let mut nv = 0.0;
@@ -364,7 +364,7 @@ impl<'a> LevelEditor<'a>{
                     _ => {}
                 }
                 let entity_id = update_entity_property_json!(self, y, nv, f32);
-                self.world.entity_components_lookup.get(&entity_id).unwrap().position.borrow_mut().as_mut().expect("All Entities should have a position component").y = nv;
+                self.world.entity_position_components.get(&entity_id).expect("All Entities should have a position component").borrow_mut().y = nv;
             },
             EditableProperty::EntitySprite => {
                 let mut nv = String::new();
@@ -841,7 +841,7 @@ impl Camera{
         let mut terrain_data: RenderData = RenderData::new();
         let mut entity_data: RenderData = RenderData::new();
         let mut index_offset: u16 = 0;
-        let player = world.player.borrow().clone(); 
+        let player = world.player.borrow(); 
 
 
         let camera_left_chunk_x = World::coord_to_chunk_coord(self.camera_x.floor() as usize);
@@ -891,7 +891,7 @@ impl Camera{
                     let vertex_offset_x = -1 * self.camera_x as i32;
                     let vertex_offset_y = -1 * self.camera_y as i32;
 
-                    let position_component = world.entity_components_lookup.get(&entity_id).unwrap().position.borrow().clone().expect("All Entities should have a position component");
+                    let position_component = world.entity_position_components.get(entity_id).expect("All entities with sprites should have a position component").borrow();
 
                     let draw_data = sprite.draw_data(position_component.x, position_component.y, 32, 32, self.viewpoint_width, self.viewpoint_height, index_offset, vertex_offset_x, vertex_offset_y);
                     index_offset += 4;
