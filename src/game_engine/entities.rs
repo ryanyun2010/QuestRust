@@ -264,31 +264,65 @@ impl World {
     pub fn add_health_component(&mut self, entity_id: usize, new_entity_health: entity_components::HealthComponent){
         self.entity_health_components.insert(entity_id, RefCell::new(new_entity_health));
     }   
-    pub fn create_entity_from_json_archetype(&mut self, x: f32, y: f32, archetype: &str, parser: &ParsedData) -> usize{
-        let archetype = parser.get_entity_archetype(archetype).expect(&format!("Archetype {} not found", archetype));
+    pub fn create_entity_with_archetype(&mut self, x: f32, y: f32, archetype: String) -> usize{
         let entity = self.add_entity(x, y);
-        self.add_entity_tags(entity, archetype.clone());
+        self.set_entity_archetype(entity, archetype.clone());
+        let archetype = self.entity_archetype_tags_lookup.get(&archetype).expect("Archetype not found");
+        let mut needs_attack_component = false;
+        let mut needs_collision_box_component = false;
+        let mut needs_pathfinding_component = false;
+        let mut needs_health_component = false;
         for tag in archetype.iter(){
             match tag.clone(){
                 EntityTags::Attacks(_) => {
-                    self.add_attack_component(entity, EntityAttackComponent::default());
+                    needs_attack_component = true;
                 },
                 EntityTags::HasCollision => {
-                    self.add_collision_box_component(entity, entity_components::CollisionBox{w:32.0, h:32.0, x_offset: 0.0, y_offset: 0.0});
+                    needs_collision_box_component = true;
                 },
                 EntityTags::FollowsPlayer => {
-                    self.add_pathfinding_component(entity, PathfindingComponent::default());
+                    needs_pathfinding_component = true;
                 },
                 EntityTags::BaseHealth(health) => {
-                    self.add_health_component(entity, entity_components::HealthComponent::new(health));
+                    needs_health_component = true;
                 },
                 _ => {}
             }
         }
+        if needs_attack_component{
+            self.add_attack_component(entity, entity_components::EntityAttackComponent::default());
+        }
+        if needs_collision_box_component{
+            self.add_collision_box_component(entity, entity_components::CollisionBox{
+                w: 32.0,
+                h: 32.0,
+                x_offset: 0.0,
+                y_offset: 0.0
+            });
+        }
+        if needs_pathfinding_component{
+            self.add_pathfinding_component(entity, entity_components::PathfindingComponent::default());
+        }
+        if needs_health_component{
+            self.add_health_component(entity, entity_components::HealthComponent{health: 100.0, max_health: 100});
+        }
         entity
     }
+    pub fn add_entity_archetype(&mut self, name: String, archetype: Vec<EntityTags>){
+        self.entity_archetype_tags_lookup.insert(name, archetype);
+    }
+    pub fn get_entity_archetype(&self, element_id: &usize) -> Option<&String>{
+        self.entity_archetype_lookup.get(element_id)
+    }
     pub fn get_entity_tags(&self, element_id: usize) -> Option<&Vec<EntityTags>>{
-        self.entity_tags_lookup.get(&element_id)
+        let entity_archetype_id = self.get_entity_archetype(&element_id);
+        if entity_archetype_id.is_none(){
+            return None;
+        }
+        return self.entity_archetype_tags_lookup.get(entity_archetype_id.unwrap());
+    }
+    pub fn set_entity_archetype(&mut self, element_id: usize, archetype_id: String){
+        self.entity_archetype_lookup.insert(element_id, archetype_id);
     }
 }
 

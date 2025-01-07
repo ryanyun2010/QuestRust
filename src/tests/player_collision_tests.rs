@@ -78,7 +78,13 @@ async fn test_player_entity_collision_moving_down(){
     let camera = basic_camera().await;
     let entity_blocker = world.add_entity(576.0, 442.0);
     world.set_sprite(entity_blocker, 0);
-    world.add_entity_tag(entity_blocker, EntityTags::HasCollision);
+    world.add_entity_archetype(
+        String::from("Test"),
+        vec![
+            EntityTags::HasCollision,
+        ]
+    );
+    world.set_entity_archetype(entity_blocker, String::from("Test"));
     world.add_collision_box_component(entity_blocker, entity_components::CollisionBox{
         w: 32.0,
         h: 32.0,
@@ -101,7 +107,13 @@ async fn test_player_entity_collision_moving_up(){
     let camera = basic_camera().await;
     let entity_blocker = world.add_entity(576.0, 358.0);
     world.set_sprite(entity_blocker, 0);
-    world.add_entity_tag(entity_blocker, EntityTags::HasCollision);
+    world.add_entity_archetype(
+        String::from("Test"),
+        vec![
+            EntityTags::HasCollision,
+        ]
+    );
+    world.set_entity_archetype(entity_blocker, String::from("Test"));
     world.add_collision_box_component(entity_blocker, entity_components::CollisionBox{
         w: 32.0,
         h: 32.0,
@@ -124,7 +136,13 @@ async fn test_player_entity_collision_moving_left(){
     let camera = basic_camera().await;
     let entity_blocker = world.add_entity(554.0, 384.0);
     world.set_sprite(entity_blocker, 0);
-    world.add_entity_tag(entity_blocker, EntityTags::HasCollision);
+    world.add_entity_archetype(
+        String::from("Test"),
+        vec![
+            EntityTags::HasCollision,
+        ]
+    );
+    world.set_entity_archetype(entity_blocker, String::from("Test"));
     world.add_collision_box_component(entity_blocker, entity_components::CollisionBox{
         w: 32.0,
         h: 32.0,
@@ -147,7 +165,13 @@ async fn test_player_entity_collision_moving_right(){
     let camera = basic_camera().await;
     let entity_blocker = world.add_entity(638.0, 384.0);
     world.set_sprite(entity_blocker, 0);
-    world.add_entity_tag(entity_blocker, EntityTags::HasCollision);
+    world.add_entity_archetype(
+        String::from("Test"),
+        vec![
+            EntityTags::HasCollision,
+        ]
+    );
+    world.set_entity_archetype(entity_blocker, String::from("Test"));
     world.add_collision_box_component(entity_blocker, entity_components::CollisionBox{
         w: 32.0,
         h: 32.0,

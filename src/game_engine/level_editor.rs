@@ -386,10 +386,8 @@ impl<'a> LevelEditor<'a>{
                     _ => {}
                 } 
                 let entity_id = self.last_query.clone().unwrap().objects[0].element_id;
-                let new_archetype_json = self.parser.get_entity_archetype_json(&nv).expect(format!("Could not find archetype {}", nv).as_str());
-                let new_archetype_vec = self.parser.convert_archetype(new_archetype_json, &self.parsed_data);
-                update_entity_property_json!(self, archetype, nv, String);
-                self.world.entity_tags_lookup.insert(entity_id, new_archetype_vec.clone());
+                update_entity_property_json!(self, archetype, nv.clone(), String);
+                self.world.entity_archetype_lookup.insert(entity_id, nv);
             }
             _ => {}
         }
@@ -1003,8 +1001,11 @@ pub fn level_editor_generate_world_from_json_parsed_data(data: &ParsedData) -> (
     let sprites = SpriteIDContainer::generate_from_json_parsed_data(data, &mut world);
     let mut hash = HashMap::new();
     let mut i = 0;
+    for archetype in data.entity_archetypes.iter(){
+        world.add_entity_archetype(archetype.0.clone(), archetype.1.clone());
+    }
     for entity_descriptor in starting_level_descriptor.entities.iter(){
-        let entity = world.create_entity_from_json_archetype(entity_descriptor.x, entity_descriptor.y, &entity_descriptor.archetype, data);
+        let entity = world.create_entity_with_archetype(entity_descriptor.x, entity_descriptor.y, entity_descriptor.archetype.clone());
         world.set_sprite(entity, sprites.get_sprite(&entity_descriptor.sprite).expect(format!("Could not find sprite: {}", entity_descriptor.sprite).as_str()));
         hash.insert(entity, ObjectJSONContainer::Entity((entity_descriptor.clone(), i.clone())));
         i += 1;

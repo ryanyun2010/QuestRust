@@ -11,11 +11,17 @@ async fn test_entity_can_kill_player(){
     let mut world = basic_world().await;
     let entity = world.add_entity(900.0, 405.0);
     world.set_sprite(entity, 0);
-    world.add_entity_tag(entity, EntityTags::MovementSpeed(2.0));
-    world.add_entity_tag(entity, EntityTags::Range(47));
-    world.add_entity_tag(entity, EntityTags::AggroRange(1000));
-    world.add_entity_tag(entity, EntityTags::Aggressive);
-    world.add_entity_tag(entity, EntityTags::FollowsPlayer);
+    let attack = EntityAttack::new(100.0);
+    let attack_pattern = EntityAttackPattern::new(vec![attack], vec![0.1]);
+    world.add_entity_archetype(String::from("Test"), vec![
+        EntityTags::MovementSpeed(2.0),
+        EntityTags::Range(47),
+        EntityTags::AggroRange(1000),
+        EntityTags::Aggressive,
+        EntityTags::FollowsPlayer,
+        EntityTags::Attacks(attack_pattern),
+    ]);
+    world.set_entity_archetype(entity, String::from("Test"));
     world.add_attack_component(entity, entity_components::EntityAttackComponent::default());
     world.add_health_component(entity, entity_components::HealthComponent{health: 100.0, max_health: 100});
     world.add_collision_box_component(entity, entity_components::CollisionBox{
@@ -25,9 +31,7 @@ async fn test_entity_can_kill_player(){
         y_offset: 0.0
     });
     world.add_pathfinding_component(entity, entity_components::PathfindingComponent::default());
-    let attack = EntityAttack::new(100.0);
-    let attack_pattern = EntityAttackPattern::new(vec![attack], vec![0.1]);
-    world.add_entity_tag(entity, EntityTags::Attacks(attack_pattern));
+    
     let camera = basic_camera().await;
     let player_starting_position_x = world.player.borrow().x;
     let player_starting_position_y = world.player.borrow().y;

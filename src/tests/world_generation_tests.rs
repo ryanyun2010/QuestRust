@@ -2,8 +2,6 @@
 
 use crate::game_engine::{entities::AttackType, json_parsing::{self, entity_attack_pattern_json}, world::EntityDirectionOptions};
 
-
-
 #[tokio::test]
 async fn json_parsing_test(){
     let mut parser = json_parsing::JSON_parser::new();
@@ -136,7 +134,9 @@ async fn world_generation_test(){
     let entity_attack = world.entity_attack_components.get(&entity_id).expect("There should be an entity attack component").borrow().clone();
     assert!(entity_attack.cur_attack == 0, "The entity should start at attack 0");
     assert!(entity_attack.cur_attack_cooldown == 0.0, "The entity should start with a cooldown of 0.0");
-    let entity_tags = world.entity_tags_lookup.get(&entity_id).expect("There should be entity tags").clone();
+    let entity_archetype = world.get_entity_archetype(&entity_id).expect("There should be an entity archetype").clone();
+    assert!(entity_archetype == "ghost", "The entity archetype should be ghost");
+    let entity_tags = world.get_entity_tags(entity_id).expect("There should be entity tags").clone();
     let mut found_aggressive = false;
     let mut found_follows_player = false;
     let mut found_movement_speed = false;

@@ -56,7 +56,9 @@ pub struct World{
     pub terrain: HashMap<usize, Terrain>, // corresponds element id to Terrain element
     pub terrain_tags_lookup: HashMap<usize,Vec<TerrainTags>>, // corresponds element_ids of entities to the entity's tags
 
-    pub entity_tags_lookup: HashMap<usize,Vec<EntityTags>>,
+    pub entity_archetype_tags_lookup: HashMap<String,Vec<EntityTags>>, // corresponds entity_archetype name to the entity's tags
+    pub entity_archetype_lookup: HashMap<usize,String>, // corresponds element_ids to entity_archetype
+
     pub entity_position_components: HashMap<usize, RefCell<entity_components::PositionComponent>>,
     pub entity_attack_components: HashMap<usize, RefCell<entity_components::EntityAttackComponent>>,
     pub entity_collision_box_components: HashMap<usize, RefCell<entity_components::CollisionBox>>,
@@ -76,7 +78,8 @@ impl World{
             sprite_lookup: HashMap::new(),
             chunk_lookup: RefCell::new(HashMap::new()),
             terrain_lookup: HashMap::new(),
-            entity_tags_lookup: HashMap::new(),
+            entity_archetype_lookup: HashMap::new(),
+            entity_archetype_tags_lookup: HashMap::new(),
             terrain_tags_lookup: HashMap::new(),
             terrain: HashMap::new(),
             item_containers: RefCell::new(HashMap::new()),
@@ -165,11 +168,6 @@ impl World{
         self.terrain_lookup.insert(self.element_id - 1, chunk_id);
         self.element_id - 1
     }
-    pub fn add_entity_tag(&mut self, element_id: usize, tag: EntityTags){
-        let mut tags: Vec<EntityTags> = self.entity_tags_lookup.get(&element_id).unwrap_or(&Vec::new()).clone();
-        tags.push(tag);
-        self.entity_tags_lookup.insert(element_id, tags);
-    }
     pub fn get_terrain_tiles(x: usize, y: usize, w: usize, h: usize) -> Vec<[usize; 2]>{
         let mut tiles: Vec<[usize; 2]> = Vec::new();
         let left_x = (x as f32 / 32.0).floor() as usize;
@@ -213,7 +211,7 @@ impl World{
             for entity_id in chunk.entities_ids.iter(){
                 let position_component = self.entity_position_components.get(entity_id).unwrap().borrow();
                 
-                let entity_tags_potentially = self.entity_tags_lookup.get(entity_id);
+                let entity_tags_potentially = self.get_entity_tags(*entity_id);
                 if entity_tags_potentially.is_none(){
                     continue;
                 }
@@ -354,11 +352,6 @@ impl World{
         self.process_player_input(&keys);
         let player = self.player.borrow();
         camera.update_camera_position(self, player.x, player.y);
-    }
-    pub fn add_entity_tags(&mut self, element_id: usize, tags: Vec<EntityTags>){ //Change this to allow an enum of a vector of tags of various types.
-        let mut d = self.entity_tags_lookup.get(&element_id).unwrap_or(&Vec::new()).clone(); 
-        d.extend(tags);
-        self.entity_tags_lookup.insert(element_id, d);
     }
     pub fn add_terrain_tags(&mut self, element_id: usize, tags: Vec<TerrainTags>){ //Change this to allow an enum of a vector of tags of various types.
         let mut d: Vec<TerrainTags> = self.terrain_tags_lookup.get(&element_id).unwrap_or(&Vec::new()).clone(); 
