@@ -3,6 +3,7 @@ use crate::game_engine::entities::{EntityAttack, EntityAttackPattern, EntityTags
 use crate::game_engine::terrain::TerrainTags;
 use crate::tests::tests::{basic_camera, basic_world};
 use crate::tests::lib::headless::HeadlessGame;
+use crate::game_engine::entity_components;
 
 #[tokio::test]
 async fn test_terrain_should_block_entities(){
@@ -22,6 +23,15 @@ async fn test_terrain_should_block_entities(){
     world.add_entity_tag(entity, EntityTags::FollowsPlayer);
     world.add_entity_tag(entity, EntityTags::RespectsCollision);
     world.add_entity_tag(entity, EntityTags::HasCollision);
+    world.add_attack_component(entity, entity_components::EntityAttackComponent::default());
+    world.add_health_component(entity, entity_components::HealthComponent{health: 100.0, max_health: 100});
+    world.add_collision_box_component(entity, entity_components::CollisionBox{
+        w: 32.0,
+        h: 32.0,
+        x_offset: 0.0,
+        y_offset: 0.0
+    });
+    world.add_pathfinding_component(entity, entity_components::PathfindingComponent::default());
     let attack = EntityAttack::new(10.0);
     let attack_pattern = EntityAttackPattern::new(vec![attack], vec![0.1]);
     world.add_entity_tag(entity, EntityTags::Attacks(attack_pattern));
@@ -62,6 +72,15 @@ async fn test_entities_should_pathfind_around_terrain(){
     world.add_entity_tag(entity, EntityTags::FollowsPlayer);
     world.add_entity_tag(entity, EntityTags::RespectsCollision);
     world.add_entity_tag(entity, EntityTags::HasCollision);
+    world.add_attack_component(entity, entity_components::EntityAttackComponent::default());
+    world.add_health_component(entity, entity_components::HealthComponent{health: 100.0, max_health: 100});
+    world.add_collision_box_component(entity, entity_components::CollisionBox{
+        w: 32.0,
+        h: 32.0,
+        x_offset: 0.0,
+        y_offset: 0.0
+    });
+    world.add_pathfinding_component(entity, entity_components::PathfindingComponent::default());
     let attack = EntityAttack::new(10.0);
     let attack_pattern = EntityAttackPattern::new(vec![attack], vec![0.1]);
     world.add_entity_tag(entity, EntityTags::Attacks(attack_pattern));

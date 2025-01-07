@@ -236,34 +236,55 @@ impl World {
         }
     }
     pub fn add_entity(&mut self, x: f32, y: f32) -> usize{
-        let new_entity_position = entity_components::PositionComponent {
-            x: x,
-            y: y,
-        };
         let new_entity_pathfinding_frame = self.next_pathfinding_frame_for_entity;
         self.next_pathfinding_frame_for_entity += 1;
         self.next_pathfinding_frame_for_entity = self.next_pathfinding_frame_for_entity % 5;
-        let chunk_id_potentially: Option<usize> = self.get_chunk_from_xy(new_entity_position.x.floor() as usize, new_entity_position.y.floor() as usize);
+        let chunk_id_potentially: Option<usize> = self.get_chunk_from_xy(x.floor() as usize, y.floor() as usize);
         let chunk_id: usize;
         if chunk_id_potentially.is_none() {
-            chunk_id = self.new_chunk(World::coord_to_chunk_coord(new_entity_position.x.floor() as usize), World::coord_to_chunk_coord(new_entity_position.y.floor() as usize), None);
+            chunk_id = self.new_chunk(World::coord_to_chunk_coord(x.floor() as usize), World::coord_to_chunk_coord(y.floor() as usize), None);
         } else{
             chunk_id = chunk_id_potentially.unwrap();
         }
         self.element_id += 1;
         self.chunks.borrow_mut()[chunk_id].entities_ids.push(self.element_id - 1);
-        self.entity_position_components.insert(self.element_id - 1, RefCell::new(new_entity_position));
-        self.entity_collision_box_components.insert(self.element_id - 1, RefCell::new(entity_components::CollisionBox{w:32.0, h:32.0, x_offset: 0.0, y_offset: 0.0}));
-        self.entity_pathfinding_components.insert(self.element_id - 1, RefCell::new(PathfindingComponent::default()));
-        self.entity_attack_components.insert(self.element_id - 1, RefCell::new(EntityAttackComponent::default()));
-
+        self.entity_position_components.insert(self.element_id - 1, RefCell::new(PositionComponent{x: x, y: y}));
         self.pathfinding_frames.insert(self.element_id - 1, new_entity_pathfinding_frame);
         self.element_id - 1
     }
+    pub fn add_collision_box_component(&mut self, entity_id: usize, new_entity_collision_box: entity_components::CollisionBox){
+        self.entity_collision_box_components.insert(entity_id, RefCell::new(new_entity_collision_box));
+    }
+    pub fn add_pathfinding_component(&mut self, entity_id: usize, new_entity_pathfinding: PathfindingComponent){
+        self.entity_pathfinding_components.insert(entity_id, RefCell::new(new_entity_pathfinding));
+    }
+    pub fn add_attack_component(&mut self, entity_id: usize, new_entity_attack: EntityAttackComponent){
+        self.entity_attack_components.insert(entity_id, RefCell::new(new_entity_attack));
+    }
+    pub fn add_health_component(&mut self, entity_id: usize, new_entity_health: entity_components::HealthComponent){
+        self.entity_health_components.insert(entity_id, RefCell::new(new_entity_health));
+    }   
     pub fn create_entity_from_json_archetype(&mut self, x: f32, y: f32, archetype: &str, parser: &ParsedData) -> usize{
         let archetype = parser.get_entity_archetype(archetype).expect(&format!("Archetype {} not found", archetype));
         let entity = self.add_entity(x, y);
         self.add_entity_tags(entity, archetype.clone());
+        for tag in archetype.iter(){
+            match tag.clone(){
+                EntityTags::Attacks(_) => {
+                    self.add_attack_component(entity, EntityAttackComponent::default());
+                },
+                EntityTags::HasCollision => {
+                    self.add_collision_box_component(entity, entity_components::CollisionBox{w:32.0, h:32.0, x_offset: 0.0, y_offset: 0.0});
+                },
+                EntityTags::FollowsPlayer => {
+                    self.add_pathfinding_component(entity, PathfindingComponent::default());
+                },
+                EntityTags::BaseHealth(health) => {
+                    self.add_health_component(entity, entity_components::HealthComponent::new(health));
+                },
+                _ => {}
+            }
+        }
         entity
     }
     pub fn get_entity_tags(&self, element_id: usize) -> Option<&Vec<EntityTags>>{

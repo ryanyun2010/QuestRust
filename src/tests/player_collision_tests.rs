@@ -1,4 +1,5 @@
 #![cfg(test)]
+use crate::game_engine::entity_components;
 use crate::tests::tests::{basic_camera, basic_world};
 use crate::tests::lib::headless::HeadlessGame;
 use crate::game_engine::{terrain::TerrainTags, entities::EntityTags};
@@ -78,6 +79,12 @@ async fn test_player_entity_collision_moving_down(){
     let entity_blocker = world.add_entity(576.0, 442.0);
     world.set_sprite(entity_blocker, 0);
     world.add_entity_tag(entity_blocker, EntityTags::HasCollision);
+    world.add_collision_box_component(entity_blocker, entity_components::CollisionBox{
+        w: 32.0,
+        h: 32.0,
+        x_offset: 0.0,
+        y_offset: 0.0
+    });
     let player_starting_y = world.player.borrow().y;
     let mut headless = HeadlessGame::new(world, camera);
     headless.state.keys_down.insert(String::from("s"), true);
@@ -95,6 +102,12 @@ async fn test_player_entity_collision_moving_up(){
     let entity_blocker = world.add_entity(576.0, 358.0);
     world.set_sprite(entity_blocker, 0);
     world.add_entity_tag(entity_blocker, EntityTags::HasCollision);
+    world.add_collision_box_component(entity_blocker, entity_components::CollisionBox{
+        w: 32.0,
+        h: 32.0,
+        x_offset: 0.0,
+        y_offset: 0.0
+    });
     let player_starting_y = world.player.borrow().y;
     let mut headless = HeadlessGame::new(world, camera);
     headless.state.keys_down.insert(String::from("w"), true);
@@ -112,6 +125,12 @@ async fn test_player_entity_collision_moving_left(){
     let entity_blocker = world.add_entity(554.0, 384.0);
     world.set_sprite(entity_blocker, 0);
     world.add_entity_tag(entity_blocker, EntityTags::HasCollision);
+    world.add_collision_box_component(entity_blocker, entity_components::CollisionBox{
+        w: 32.0,
+        h: 32.0,
+        x_offset: 0.0,
+        y_offset: 0.0
+    });
     let player_starting_x = world.player.borrow().x;
     let mut headless = HeadlessGame::new(world, camera);
     headless.state.keys_down.insert(String::from("a"), true);
@@ -129,6 +148,12 @@ async fn test_player_entity_collision_moving_right(){
     let entity_blocker = world.add_entity(638.0, 384.0);
     world.set_sprite(entity_blocker, 0);
     world.add_entity_tag(entity_blocker, EntityTags::HasCollision);
+    world.add_collision_box_component(entity_blocker, entity_components::CollisionBox{
+        w: 32.0,
+        h: 32.0,
+        x_offset: 0.0,
+        y_offset: 0.0
+    });
     let player_starting_x = world.player.borrow().x;
     let mut headless = HeadlessGame::new(world, camera);
     headless.state.keys_down.insert(String::from("d"), true);

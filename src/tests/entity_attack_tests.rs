@@ -1,4 +1,6 @@
 #![cfg(test)]
+use crate::game_engine::entity_components;
+use crate::game_engine::json_parsing::entity_attack_json;
 use crate::tests::tests::{basic_world, basic_camera};
 use crate::tests::lib::headless::HeadlessGame;
 use crate::game_engine::entities::{EntityAttack, EntityAttackPattern};
@@ -14,6 +16,15 @@ async fn test_entity_can_kill_player(){
     world.add_entity_tag(entity, EntityTags::AggroRange(1000));
     world.add_entity_tag(entity, EntityTags::Aggressive);
     world.add_entity_tag(entity, EntityTags::FollowsPlayer);
+    world.add_attack_component(entity, entity_components::EntityAttackComponent::default());
+    world.add_health_component(entity, entity_components::HealthComponent{health: 100.0, max_health: 100});
+    world.add_collision_box_component(entity, entity_components::CollisionBox{
+        w: 32.0,
+        h: 32.0,
+        x_offset: 0.0,
+        y_offset: 0.0
+    });
+    world.add_pathfinding_component(entity, entity_components::PathfindingComponent::default());
     let attack = EntityAttack::new(100.0);
     let attack_pattern = EntityAttackPattern::new(vec![attack], vec![0.1]);
     world.add_entity_tag(entity, EntityTags::Attacks(attack_pattern));

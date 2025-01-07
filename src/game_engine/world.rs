@@ -221,7 +221,7 @@ impl World{
                 for tag in entity_tags.iter(){
                     match tag{
                         EntityTags::HasCollision => {
-                            let collision_component = self.entity_collision_box_components.get(entity_id).unwrap().borrow();
+                            let collision_component = self.entity_collision_box_components.get(entity_id).expect("All Entities with the Has Collision tag should have a collision box component").borrow();
                             let tiles_blocked: Vec<[usize; 2]> = World::get_terrain_tiles(position_component.x as usize, position_component.y as usize, collision_component.w as usize, collision_component.h as usize);
                             for tile in tiles_blocked.iter(){
                                 let mut collision_cache_entry = collision_cache_ref.get(&[tile[0],tile[1]]).unwrap_or(&Vec::new()).clone();

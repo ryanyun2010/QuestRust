@@ -1,0 +1,8 @@
+[
+    {
+        "name": "test_player_projectile",
+        "damage": 10.0,
+        "lifetime": 70,
+        "speed": 10.0
+    }
+]

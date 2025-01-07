@@ -16,6 +16,7 @@ pub fn generate_world_from_json_parsed_data(data: &ParsedData) -> (World, Sprite
     let sprites = SpriteIDContainer::generate_from_json_parsed_data(data, &mut world);
     for entity_descriptor in starting_level_descriptor.entities.iter(){
         let entity = world.create_entity_from_json_archetype(entity_descriptor.x, entity_descriptor.y, &entity_descriptor.archetype, data);
+
         world.set_sprite(entity, sprites.get_sprite(&entity_descriptor.sprite).expect(format!("Could not find sprite: {}", entity_descriptor.sprite).as_str()));
     }
     for terrain_json in starting_level_descriptor.terrain.iter(){
