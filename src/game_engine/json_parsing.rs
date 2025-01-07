@@ -225,6 +225,7 @@ impl JSON_parser {
     pub fn convert_archetype(&self, entity_archetype: &entity_archetype_json, data: &ParsedData) -> Vec<EntityTags> {
         let mut tags = Vec::new();
         from_JSON_entity_tag_parsing_basic!(tags, &entity_archetype.basic_tags);
+        tags.push(EntityTags::BaseHealth(100));
         match entity_archetype.monster_type.as_str() {
             "Undead" => {
                 tags.push(EntityTags::MonsterType(crate::game_engine::entities::MonsterType::Undead));

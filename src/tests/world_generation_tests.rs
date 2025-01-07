@@ -113,7 +113,7 @@ async fn world_generation_test(){
     let sprite_texture_id = player_sprite.texture_index;
     assert!(world.player.borrow().texture_index == sprite_texture_id, "The player should have the player sprite");
     assert!(world.terrain.len() == 1, "There should be one terrain block");
-    assert!(sprites.sprites.len() == 3, "There should be three sprites");
+    assert!(sprites.sprites.len() == 4, "There should be four sprites");
 
     let chunk_id = world.get_chunk_from_chunk_xy(0, 0).expect("There should be a chunk at 0,0");
     let chunks_ref = world.chunks.borrow();

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::cell::{Ref, RefCell};
 use std::hash::Hash;
-use crate::rendering_engine::abstractions::Sprite;
+use crate::rendering_engine::abstractions::{Sprite, SpriteIDContainer};
 use crate::entities::EntityTags;
 use crate::game_engine::inventory::ItemContainer;
 use crate::game_engine::player::Player;

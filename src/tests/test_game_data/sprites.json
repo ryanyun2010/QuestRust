@@ -10,6 +10,10 @@
     {
         "name": "outside",
         "path": "src/rendering_engine/img/outside.png"
+    },
+    {
+        "name": "health_bar_back",
+        "path": "src/rendering_engine/img/health_bar_back.png"
     }
 ]
 

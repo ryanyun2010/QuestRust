@@ -46,7 +46,7 @@ impl<'a> Game<'a> {
         self.world.process_input(self.input.keys_down.clone(), &mut self.camera);
     }
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
-        self.renderer.render(self.camera.render(&mut self.world))
+        self.renderer.render(self.camera.render(&mut self.world, &self.sprites))
     }
     pub fn update(&mut self){
         self.camera.update_ui(&mut self.world);
