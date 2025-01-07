@@ -1,0 +1,18 @@
+[
+    {
+        "name": "player",
+        "path": "src/rendering_engine/img/player.png"
+    },
+    {
+        "name": "ghost",
+        "path": "src/rendering_engine/img/ghost.png"
+    },  
+    {
+        "name": "outside",
+        "path": "src/rendering_engine/img/outside.png"
+    }
+]
+
+
+
+

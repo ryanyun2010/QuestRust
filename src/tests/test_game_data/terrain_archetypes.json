@@ -1,0 +1,8 @@
+[
+    {
+        "name": "basic_outside",
+        "type": "basic",
+        "sprites": ["outside"],
+        "basic_tags": ["blocksMovement"]
+    }
+]

@@ -4,7 +4,7 @@ pub struct Terrain{ // terrain is always 32x32 pixels
     pub x: usize,
     pub y: usize
 }
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum TerrainTags {
     HeightLevel(usize),
     BlocksMovement,

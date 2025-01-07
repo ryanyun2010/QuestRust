@@ -292,7 +292,7 @@ impl World {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum AttackType {
     Melee,
     Ranged,
@@ -300,7 +300,7 @@ pub enum AttackType {
 }
 
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum MonsterType {
     Undead,
     Uruk,
@@ -358,7 +358,7 @@ impl EntityAttackPattern{
 
 #[derive(Copy, Clone, Debug)]
 pub struct EntityAttack{
-    damage: f32
+    pub damage: f32
 }
 
 impl EntityAttack{

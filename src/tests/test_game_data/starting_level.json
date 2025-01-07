@@ -1,0 +1,28 @@
+{
+    "player": {
+        "x": 596.0,
+        "y": 400.0,
+        "sprite": "player",
+        "health": 100.0,
+        "max_health": 100,
+        "movement_speed": 3.5
+    },
+    "entities": [
+        {
+            "x": 900.0,
+            "y": 405.0,
+            "archetype": "ghost",
+            "sprite": "ghost"
+        }
+    ],
+    "terrain": [
+        {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 1,
+            "terrain_archetype": "basic_outside"
+        }
+    ]
+}
+
