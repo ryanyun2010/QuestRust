@@ -47,7 +47,6 @@ impl World {
 
         if new_chunk != prev_chunk {
             println!("Moving entity from chunk: {} to chunk: {}", prev_chunk, new_chunk);
-            println!("prev chunk: {:?}, new chunk: {:?}", chunkref[prev_chunk].entities_ids, chunkref[new_chunk].entities_ids);
             chunkref[prev_chunk].entities_ids.retain(|x| *x != *entity_id);
             chunkref[new_chunk].entities_ids.push(*entity_id);
         } 
