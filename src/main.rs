@@ -9,15 +9,15 @@ use std::env;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    if args.contains(&String::from("level-editor")){
-        let mut parser = json_parsing::JSON_parser::new();
-        let parsed_data = parser.parse_and_convert_game_data(PATH_BUNDLE);
-        let mut camera = camera::Camera::new(1152,720);
-        let (world, sprites, hash) = level_editor::level_editor_generate_world_from_json_parsed_data(&parsed_data);
-        camera.set_level_editor();
-        pollster::block_on(level_editor::run(world, sprites, parser, hash, camera, parsed_data.sprites_to_load_json));
-        return;
-    }
+    // if args.contains(&String::from("level-editor")){
+    //     let mut parser = json_parsing::JSON_parser::new();
+    //     let parsed_data = parser.parse_and_convert_game_data(PATH_BUNDLE);
+    //     let mut camera = camera::Camera::new(1152,720);
+    //     let (world, sprites, hash) = level_editor::level_editor_generate_world_from_json_parsed_data(&parsed_data);
+    //     camera.set_level_editor();
+    //     pollster::block_on(level_editor::run(world, sprites, parser, hash, camera, parsed_data.sprites_to_load_json));
+    //     return;
+    // }
     
     let mut parser = json_parsing::JSON_parser::new();
     let load_time = Instant::now();
