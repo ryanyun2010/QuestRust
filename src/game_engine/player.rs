@@ -79,3 +79,23 @@ impl Player {
         }
     }
 }
+
+#[derive(Clone, Debug)]
+pub struct PlayerEffect{
+    pub archetype: String,
+    pub time_alive: f32,
+    pub x: f32,
+    pub y: f32,
+    pub direction: [f32; 2]
+}
+impl PlayerEffect{
+    pub fn new(archetype: String, time_alive: f32, x: f32, y: f32, direction: [f32; 2]) -> Self{
+        Self{
+            archetype,
+            time_alive,
+            x,
+            y,
+            direction
+        }
+    }
+}

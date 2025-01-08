@@ -1,11 +1,21 @@
 #![cfg(test)]
 
-use crate::game_engine::{entities::AttackType, json_parsing::{self, entity_attack_pattern_json}, world::EntityDirectionOptions};
+use crate::game_engine::{entities::AttackType, json_parsing::{self, entity_attack_pattern_json, PathBundle}, world::EntityDirectionOptions};
+pub const TEST_PATH_BUNDLE: PathBundle = PathBundle{
+    entity_archetypes_path: "src/tests/test_game_data/entity_archetypes.json",
+    entity_attack_patterns_path: "src/tests/test_game_data/entity_attack_patterns.json",
+    entity_attacks_path: "src/tests/test_game_data/entity_attacks.json",
+    sprites_path: "src/tests/test_game_data/sprites.json",
+    starting_level_path: "src/tests/test_game_data/starting_level.json",
+    terrain_archetypes_path: "src/tests/test_game_data/terrain_archetypes.json",
+    player_attacks_path: "src/tests/test_game_data/player_attacks.json",
+};
+
 
 #[tokio::test]
 async fn json_parsing_test(){
     let mut parser = json_parsing::JSON_parser::new();
-    let parsed_data = parser.parse_and_convert_game_data("src/tests/test_game_data/entity_archetypes.json", "src/tests/test_game_data/entity_attack_patterns.json", "src/tests/test_game_data/entity_attacks.json", "src/tests/test_game_data/sprites.json", "src/tests/test_game_data/starting_level.json", "src/tests/test_game_data/terrain_archetypes.json");
+    let parsed_data = parser.parse_and_convert_game_data(TEST_PATH_BUNDLE);
     assert!(parsed_data.starting_level_descriptor.player.x == 596.0, "Player x should be 596.0");
     assert!(parsed_data.starting_level_descriptor.player.y == 400.0, "Player y should be 400.0");
     assert!(parsed_data.starting_level_descriptor.terrain.len() == 1, "There should be one terrain block");
@@ -101,7 +111,7 @@ async fn json_parsing_test(){
 #[tokio::test]
 async fn world_generation_test(){
     let mut parser = json_parsing::JSON_parser::new();
-    let parsed_data = parser.parse_and_convert_game_data("src/tests/test_game_data/entity_archetypes.json", "src/tests/test_game_data/entity_attack_patterns.json", "src/tests/test_game_data/entity_attacks.json", "src/tests/test_game_data/sprites.json", "src/tests/test_game_data/starting_level.json", "src/tests/test_game_data/terrain_archetypes.json");
+    let parsed_data = parser.parse_and_convert_game_data(TEST_PATH_BUNDLE);
     let (world, sprites) = crate::game_engine::starting_level_generator::generate_world_from_json_parsed_data(&parsed_data);
     assert!(world.player.borrow().x == 596.0, "Player x should be 596.0");
     assert!(world.player.borrow().y == 400.0, "Player y should be 400.0");

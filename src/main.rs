@@ -3,7 +3,7 @@ use std::time::Instant;
 pub mod rendering_engine;
 use rendering_engine::{window, renderer, vertex, texture};
 pub mod game_engine;
-use game_engine::{world, camera, loot, entities, entity_components, stat, ui::UIElement, ui::UIElementDescriptor, json_parsing, starting_level_generator, level_editor, game};
+use game_engine::{camera, entities, entity_components, game, json_parsing::{self, PATH_BUNDLE}, level_editor, loot, starting_level_generator, stat, ui::{UIElement, UIElementDescriptor}, world};
 pub mod tests;
 use std::env;
 
@@ -11,7 +11,7 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     if args.contains(&String::from("level-editor")){
         let mut parser = json_parsing::JSON_parser::new();
-        let parsed_data = parser.parse_and_convert_game_data("src/game_data/entity_archetypes.json", "src/game_data/entity_attack_patterns.json", "src/game_data/entity_attacks.json", "src/game_data/sprites.json", "src/game_data/starting_level.json", "src/game_data/terrain_archetypes.json");
+        let parsed_data = parser.parse_and_convert_game_data(PATH_BUNDLE);
         let mut camera = camera::Camera::new(1152,720);
         let (world, sprites, hash) = level_editor::level_editor_generate_world_from_json_parsed_data(&parsed_data);
         camera.set_level_editor();
@@ -21,7 +21,7 @@ fn main() {
     
     let mut parser = json_parsing::JSON_parser::new();
     let load_time = Instant::now();
-    let parsed_data = parser.parse_and_convert_game_data("src/game_data/entity_archetypes.json", "src/game_data/entity_attack_patterns.json", "src/game_data/entity_attacks.json", "src/game_data/sprites.json", "src/game_data/starting_level.json", "src/game_data/terrain_archetypes.json");
+    let parsed_data = parser.parse_and_convert_game_data(PATH_BUNDLE);
     
     let mut camera = camera::Camera::new(1152,720);
     let (mut world, sprites) = starting_level_generator::generate_world_from_json_parsed_data(&parsed_data);

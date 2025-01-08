@@ -9,6 +9,7 @@ use crate::game_engine::terrain::{Terrain, TerrainTags};
 
 use super::camera::Camera;
 use super::entity_components::{self, EntityComponentHolder};
+use super::player::PlayerEffect;
 
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -67,6 +68,8 @@ pub struct World{
 
     pub sprites: Vec<Sprite>,
     pub sprite_lookup: HashMap<usize,usize>, // corresponds element_ids to sprite_ids ie. to get the sprite for element_id x, just do sprite_lookup[x]
+
+    pub player_effects: Vec<PlayerEffect>
 }
 impl World{ 
     pub fn new(player: Player) -> Self{
@@ -94,6 +97,7 @@ impl World{
             entity_health_components: HashMap::new(),
             entity_position_components: HashMap::new(),
             entity_pathfinding_components: HashMap::new(),
+            player_effects: Vec::new()
         }
     }
     pub fn new_chunk(&self, chunk_x: usize, chunk_y: usize, chunkref: Option<&mut std::cell::RefMut<'_, Vec<Chunk>>>) -> usize{

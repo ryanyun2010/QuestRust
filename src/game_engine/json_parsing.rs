@@ -7,6 +7,29 @@ use crate::game_engine::entities::{EntityTags, EntityAttack, EntityAttackPattern
 
 use super::terrain;
 
+
+pub struct PathBundle{
+    pub entity_archetypes_path: &'static str,
+    pub entity_attack_patterns_path: &'static str,
+    pub entity_attacks_path: &'static str,
+    pub terrain_archetypes_path: &'static str,
+    pub sprites_path: &'static str,
+    pub starting_level_path: &'static str,
+    pub player_attacks_path: &'static str
+}
+
+pub const PATH_BUNDLE: PathBundle = PathBundle{
+    entity_archetypes_path: "src/game_data/entity_archetypes.json",
+    entity_attack_patterns_path: "src/game_data/entity_attack_patterns.json",
+    entity_attacks_path: "src/game_data/entity_attacks.json",
+    terrain_archetypes_path: "src/game_data/terrain_archetypes.json",
+    sprites_path: "src/game_data/sprites.json",
+    starting_level_path: "src/game_data/starting_level.json",
+    player_attacks_path: "src/game_data/player_attacks.json"
+};
+
+
+
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct entity_archetype_json {
     pub name: String,
@@ -76,6 +99,29 @@ pub struct starting_level_json{
 pub struct item_json {
 
 }
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct player_projectile_descriptor_json{
+    pub name: String,
+    pub damage: f32,
+    pub speed: f32,
+    pub lifetime: f32,
+    pub AOE: f32,
+    pub cooldown: f32,
+    pub sprite: String
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct player_attacks_descriptor_json {
+    pub ranged_projectiles: Vec<player_projectile_descriptor_json>,
+}
+impl player_attacks_descriptor_json {
+    pub fn new() -> Self {
+        Self {
+            ranged_projectiles: Vec::new()
+        }
+    }
+}
 #[derive(Debug, Clone)]
 pub struct JSON_parser {
     pub entity_archetypes_json: HashMap<String, entity_archetype_json>,
@@ -85,6 +131,7 @@ pub struct JSON_parser {
     pub sprites_json: HashMap<String, sprite_json>,
     pub item_json: HashMap<String, item_json>,
     pub starting_level_json: starting_level_json,
+    pub player_attacks: player_attacks_descriptor_json
 }
 
 #[macro_export]
@@ -136,7 +183,8 @@ impl JSON_parser {
                 },
                 entities: Vec::new(),
                 terrain: Vec::new()
-            }
+            },
+            player_attacks: player_attacks_descriptor_json::new()
         }
     }
 
@@ -185,6 +233,13 @@ impl JSON_parser {
         let reader = BufReader::new(file);
         let data: starting_level_json = serde_json::from_reader(reader).expect("JSON was not well-formatted");
         self.starting_level_json = data;
+    }
+
+    pub fn parse_player_attacks(&mut self, path: &str) {
+        let file = File::open(path).expect("Could not open file");
+        let reader = BufReader::new(file);
+        let data: player_attacks_descriptor_json = serde_json::from_reader(reader).expect("JSON was not well-formatted");
+        self.player_attacks = data;
     }
     
     pub fn convert(&self) -> ParsedData {
@@ -275,18 +330,19 @@ impl JSON_parser {
         tags.push(EntityTags::Attacks(data.entity_attack_patterns.get(&entity_archetype.attack_pattern).expect(&format!("When parsing entity archetypes, attack pattern: {} in archetype: {} was not found", entity_archetype.attack_pattern, entity_archetype.name)).clone()));
         return tags;
     }
-    pub fn parse_and_convert_game_data(&mut self, entity_archetypes_path: &str, entity_attack_patterns_path: &str, entity_attacks_path: &str, sprites_path: &str, starting_level_path: &str, terrain_archetypes_path: &str) -> ParsedData{
-        self.parse_entity_archetypes(entity_archetypes_path);
-        self.parse_entity_attack_patterns(entity_attack_patterns_path);
-        self.parse_entity_attacks(entity_attacks_path);
-        self.parse_terrain_archetypes(terrain_archetypes_path);
-        self.parse_sprites(sprites_path);
-        self.parse_starting_level(starting_level_path);
+    pub fn parse_and_convert_game_data(&mut self, paths: PathBundle) -> ParsedData{
+        self.parse_entity_archetypes(paths.entity_archetypes_path);
+        self.parse_entity_attack_patterns(paths.entity_attack_patterns_path);
+        self.parse_entity_attacks(paths.entity_attacks_path);
+        self.parse_terrain_archetypes(paths.terrain_archetypes_path);
+        self.parse_sprites(paths.sprites_path);
+        self.parse_starting_level(paths.starting_level_path);
+        self.parse_player_attacks(paths.player_attacks_path);
         self.convert()
     }
 
-    pub fn write(&self, entity_archetypes_path: &str, entity_attack_patterns_path: &str, entity_attacks_path: &str, sprites_path: &str, starting_level_path: &str) -> Result<(), Box<dyn std::error::Error>> {
-        let file = File::create(starting_level_path)?;
+    pub fn write(&self, paths: PathBundle) -> Result<(), Box<dyn std::error::Error>> {
+        let file = File::create(paths.starting_level_path)?;
         let mut writer = BufWriter::new(file);
         write!(writer, "{}", serde_json::to_string(&self.starting_level_json)?)?;
         Ok(())

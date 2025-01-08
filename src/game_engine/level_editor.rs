@@ -23,6 +23,7 @@ use crate::rendering_engine::renderer::Renderer;
 use super::player::Player;
 use super::command_line_input;
 use crate::renderer::BACKGROUND_COLOR;
+use super::json_parsing::PATH_BUNDLE;
 #[derive(Debug, Clone, PartialEq)]
 pub enum EditableProperty{
     EntityX,
@@ -245,7 +246,7 @@ impl<'a> LevelEditor<'a>{
         self.query_at_text = Some(self.camera.add_text("".to_string(), 942.0, 70.0,180.0, 25.0, 25.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
     }
     pub fn save_edits(&self) -> Result<(), Box<dyn Error>>{
-        self.parser.write("src/game_data/entity_archetypes.json", "src/game_data/entity_attack_patterns.json", "src/game_data/entity_attacks.json", "src/game_data/sprites.json", "src/game_data/starting_level.json")
+        self.parser.write(PATH_BUNDLE)
     }
     pub fn query_stuff_at(&self, x: usize, y: usize) -> QueryResult{
         println!("Query at {}, {}", x, y);
