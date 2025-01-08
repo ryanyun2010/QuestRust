@@ -43,6 +43,11 @@ impl RenderData{
     pub fn new() -> Self{
         Self{ vertex: Vec::new(), index: Vec::new() }
     }
+    pub fn offset(&mut self, index_offset: u16){
+        for index in self.index.iter_mut(){
+            *index += index_offset;
+        }
+    }
 }
 
 pub struct RenderDataFull<'a>{

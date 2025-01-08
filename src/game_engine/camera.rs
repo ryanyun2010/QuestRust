@@ -81,7 +81,7 @@ impl Camera{
         self.camera_x = player_x - (self.viewpoint_width as f32/ 2.0);
         self.camera_y = player_y - (self.viewpoint_height as f32/ 2.0);
     }
-    pub fn render_entity(&self, world: &World, entity_id: usize, index_offset: u16, sprites: &SpriteIDContainer) -> (RenderData, RenderData) {
+    pub fn render_entity(&self, world: &World, entity_id: usize, entity_index_offset: u16, extra_index_offset: u16, sprites: &SpriteIDContainer) -> (RenderData, RenderData) {
         let potentially_sprite_id = world.get_sprite(entity_id);
         if potentially_sprite_id.is_none(){
             return (RenderData::new(), RenderData::new());
@@ -95,7 +95,7 @@ impl Camera{
 
         let entity_position_component = world.entity_position_components.get(&entity_id).expect("All entities with sprites should have a position component").borrow().clone();
 
-        let draw_data_main = sprite.draw_data(entity_position_component.x, entity_position_component.y, 32, 32, self.viewpoint_width, self.viewpoint_height, index_offset, vertex_offset_x, vertex_offset_y);
+        let draw_data_main = sprite.draw_data(entity_position_component.x, entity_position_component.y, 32, 32, self.viewpoint_width, self.viewpoint_height, entity_index_offset, vertex_offset_x, vertex_offset_y);
         let mut draw_data_other = RenderData::new();
 
         let potentially_health_component = world.entity_health_components.get(&entity_id);
@@ -107,7 +107,7 @@ impl Camera{
                 return (draw_data_main, draw_data_other);
             }
             let entity_health_bar_sprite = world.sprites[potentially_health_bar_back_id.unwrap()];
-            let health_bar_draw_data = entity_health_bar_sprite.draw_data(entity_position_component.x - 4.0, entity_position_component.y - 15.0, 40, 12, self.viewpoint_width, self.viewpoint_height, index_offset + 4 + draw_data_other.vertex.len() as u16, vertex_offset_x, vertex_offset_y);
+            let health_bar_draw_data = entity_health_bar_sprite.draw_data(entity_position_component.x - 4.0, entity_position_component.y - 15.0, 40, 12, self.viewpoint_width, self.viewpoint_height, extra_index_offset + draw_data_other.vertex.len() as u16, vertex_offset_x, vertex_offset_y);
             draw_data_other.vertex.extend(health_bar_draw_data.vertex);
             draw_data_other.index.extend(health_bar_draw_data.index);
             let potentially_health_bar_id = sprites.get_sprite("health");
@@ -116,7 +116,7 @@ impl Camera{
                 return (draw_data_main, draw_data_other);
             }
             let entity_health_sprite = world.sprites[potentially_health_bar_id.unwrap()];
-            let health_bar_inner_draw_data = entity_health_sprite.draw_data(entity_position_component.x - 3.0, entity_position_component.y - 14.0, (38.0 * health_component.health/health_component.max_health as f32).floor() as usize, 10, self.viewpoint_width, self.viewpoint_height, index_offset + 4 + draw_data_other.vertex.len() as u16, vertex_offset_x, vertex_offset_y);
+            let health_bar_inner_draw_data = entity_health_sprite.draw_data(entity_position_component.x - 3.0, entity_position_component.y - 14.0, (38.0 * health_component.health/health_component.max_health as f32).floor() as usize, 10, self.viewpoint_width, self.viewpoint_height, extra_index_offset + draw_data_other.vertex.len() as u16, vertex_offset_x, vertex_offset_y);
             draw_data_other.vertex.extend(health_bar_inner_draw_data.vertex);
             draw_data_other.index.extend(health_bar_inner_draw_data.index);
         }
@@ -127,7 +127,9 @@ impl Camera{
         let mut terrain_data: RenderData = RenderData::new();
         let mut entity_data: RenderData = RenderData::new();
         let mut extra_data: RenderData = RenderData::new();
-        let mut index_offset: u16 = 0;
+        let mut terrain_index_offset: u16 = 0;
+        let mut entity_index_offset: u16 = 0;
+        let mut extra_index_offset: u16 = 0;
         let player = world.player.borrow().clone(); 
 
 
@@ -161,8 +163,8 @@ impl Camera{
                     let vertex_offset_y = -1 * self.camera_y as i32;
 
                     let terrain = world.get_terrain(*terrain_id).unwrap();
-                    let draw_data = sprite.draw_data(terrain.x as f32, terrain.y as f32, 32, 32, self.viewpoint_width, self.viewpoint_height, index_offset, vertex_offset_x, vertex_offset_y);
-                    index_offset += 4;
+                    let draw_data = sprite.draw_data(terrain.x as f32, terrain.y as f32, 32, 32, self.viewpoint_width, self.viewpoint_height, terrain_index_offset, vertex_offset_x, vertex_offset_y);
+                    terrain_index_offset += 4;
                     terrain_data.vertex.extend(draw_data.vertex);
                     terrain_data.index.extend(draw_data.index);
                 }
@@ -170,29 +172,35 @@ impl Camera{
                 for entity_id in chunk.entities_ids.iter(){
 
                     
-                    let (draw_data, other_draw_data) = self.render_entity(world, *entity_id, index_offset, sprites);
-                    index_offset += draw_data.vertex.len() as u16;
-                    index_offset += other_draw_data.vertex.len() as u16;
+                    let (draw_data, other_draw_data) = self.render_entity(world, *entity_id, entity_index_offset, extra_index_offset, sprites);
                     entity_data.vertex.extend(draw_data.vertex);
                     entity_data.index.extend(draw_data.index);
                     extra_data.vertex.extend(other_draw_data.vertex);
                     extra_data.index.extend(other_draw_data.index);
+                    entity_index_offset += 4;
+                    extra_index_offset += extra_data.vertex.len() as u16;
         
 
                 }
             }
         }
         render_data.vertex.extend(terrain_data.vertex);
-        render_data.vertex.extend(entity_data.vertex);
-        render_data.vertex.extend(extra_data.vertex);
         render_data.index.extend(terrain_data.index);
+        entity_data.offset(render_data.vertex.len() as u16);
+        render_data.vertex.extend(entity_data.vertex);
         render_data.index.extend(entity_data.index);
-        render_data.index.extend(extra_data.index);
+
+
 
         let player_draw_data = player.draw_data(world, self.viewpoint_width, self.viewpoint_height, render_data.vertex.len() as u16, -1 * self.camera_x as i32, -1 * self.camera_y as i32);
     
         render_data.vertex.extend(player_draw_data.vertex);
         render_data.index.extend(player_draw_data.index);
+
+        extra_data.offset(render_data.vertex.len() as u16);    
+
+        render_data.vertex.extend(extra_data.vertex);
+        render_data.index.extend(extra_data.index);
         world.set_loaded_chunks(chunks_loaded);
         for (id, element) in self.ui_elements.iter(){
             if !element.visible{
