@@ -51,23 +51,8 @@
 //     H(usize),
 //     Archetype(String),
 // }
-// #[derive(Debug, Copy, Clone)]
-// pub struct MousePosition{
-//     pub x_world: f32,
-//     pub y_world: f32,
-//     pub x_screen: f32,
-//     pub y_screen: f32,
-// }
-// impl MousePosition{
-//     pub fn default() -> Self{
-//         Self {
-//             x_world: 0.0,
-//             y_world: 0.0,
-//             x_screen: 0.0,
-//             y_screen: 0.0,
-//         }
-//     }
-// }
+
+
 // #[derive(Debug, Clone, PartialEq)]
 // pub enum QueryType{
 //     Position,

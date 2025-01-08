@@ -4,8 +4,25 @@ use winit::{event, keyboard::{Key, NamedKey}};
 
 use crate::rendering_engine::{abstractions::{RenderDataFull, SpriteIDContainer}, renderer::Renderer};
 
-use super::{camera::Camera, level_editor::MousePosition, world::World};
+use super::{camera::Camera, world::World};
+#[derive(Debug, Copy, Clone)]
+pub struct MousePosition{
+    pub x_world: f32,
+    pub y_world: f32,
+    pub x_screen: f32,
+    pub y_screen: f32,
+}
 
+impl MousePosition{
+    pub fn default() -> Self{
+        Self {
+            x_world: 0.0,
+            y_world: 0.0,
+            x_screen: 0.0,
+            y_screen: 0.0,
+        }
+    }
+}
 pub struct InputState {
     pub keys_down: HashMap<String, bool>,
     pub mouse_position: MousePosition,
