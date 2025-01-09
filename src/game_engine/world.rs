@@ -10,6 +10,7 @@ use crate::game_engine::terrain::{Terrain, TerrainTags};
 use super::camera::Camera;
 use super::entity_components::{self, EntityComponentHolder};
 use super::game::MousePosition;
+use super::item::ItemTags;
 use super::json_parsing::player_projectile_descriptor_json;
 use super::player_attacks::{melee_attack_descriptor, player_projectile_descriptor, PlayerAttack, PlayerAttackDescriptor};
 
@@ -30,7 +31,8 @@ pub struct World{
     pub element_id: usize,
     pub chunk_lookup: RefCell<HashMap<[usize; 2],usize>>, // corresponds chunk x,y to id
     
-    pub item_containers: RefCell<HashMap<usize, ItemContainer>>, // corresponds element id to Entity element
+    pub item_containers: RefCell<HashMap<usize, ItemContainer>>, // corresponds element id to item container element
+    pub item_tag_lookup: RefCell<HashMap<usize, Vec<ItemTags>>>, // corresponds element id to item archetype
 
     pub collision_cache: RefCell<HashMap<[usize; 2], Vec<usize>>>, // collision x,y, to element id, collision tiles are 64x64
    
@@ -77,6 +79,7 @@ impl World{
             terrain_tags_lookup: HashMap::new(),
             terrain: HashMap::new(),
             item_containers: RefCell::new(HashMap::new()),
+            item_tag_lookup: RefCell::new(HashMap::new()),
             loaded_chunks: Vec::new(),
             collision_cache: RefCell::new(HashMap::new()),
             pathfinding_frames: HashMap::new(),

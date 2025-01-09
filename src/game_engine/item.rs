@@ -13,8 +13,8 @@ use crate::rendering_engine::abstractions::Sprite;
 //They also have a Vec of components that will be largely unique. It's stackability will not be judged by the components, but instead by the tags.
 #[derive(Clone, Debug)]
 pub struct Item {
-    item_type_id: usize,
-    component_list: Vec<ItemComponent>,
+    item_type_id: usize, //Where tag lookup is stored
+    component_list: Vec<ItemComponent>, //Components are stored here
 }
 //---THIS IS WHERE TAGS START---
 #[derive(Clone, Debug)]
