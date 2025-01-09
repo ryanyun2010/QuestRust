@@ -95,8 +95,8 @@ impl World{
         let mut player_effect_archetypes_test = HashMap::new();
         player_effect_archetypes_test.insert(String::from("test_projectile"), PlayerAttackDescriptor::Projectile(player_projectile_descriptor{
             AOE: 2.0,
-            lifetime: 60.0,
-            speed: 10.0,
+            lifetime: 40.0,
+            speed: 9.0,
             damage: 10.0,
             sprite: String::from("ghost"),
         }));
@@ -442,13 +442,19 @@ impl World{
                 PlayerAttackDescriptor::Projectile(descriptor) => {
                     effect.x += effect.direction[0] * descriptor.speed;
                     effect.y += effect.direction[1] * descriptor.speed;
+                    effect.time_alive += 1.0;
+                    if effect.time_alive > descriptor.lifetime{
+                        effects_to_be_deleted.push(i);
+                        continue;
+                    }
 
                     let potential_collision = self.get_colliding(true, None, effect.x as usize, effect.y as usize, 32, 32, true);
                     if potential_collision.is_some(){
                         if self.entity_health_components.get(&potential_collision.unwrap()).is_some(){
                             let mut health_component = self.entity_health_components.get(&potential_collision.unwrap()).unwrap().borrow_mut();
                             health_component.health -= descriptor.damage;
-                            effects_to_be_deleted.push(i)
+                            effects_to_be_deleted.push(i);
+                            continue;
                         }
                     }
                 },
