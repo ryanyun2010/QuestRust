@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{game_engine::{camera, world}, rendering_engine::abstractions::SpriteIDContainer};
+use crate::{game_engine::{camera, world}, rendering_engine::abstractions::SpriteContainer};
 use super::headless_state::HeadlessState;
 
 pub struct HeadlessGame {
@@ -20,10 +20,7 @@ impl HeadlessGame{
     }
     pub async fn run(&mut self, frames: usize){
         for _i in 0..frames{
-            self.camera.render(&mut self.world, &SpriteIDContainer{
-                sprites: HashMap::new(),
-                texture_ids: HashMap::new(),
-            });
+            self.camera.render(&mut self.world);
             self.state.update(&mut self.world, &mut self.camera);    
         }  
     }

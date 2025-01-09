@@ -50,11 +50,11 @@ impl<'a> Renderer<'a> {
             },
         ).await.unwrap();
         let vertex_size = size_of::<Vertex>();
-
+        let mut limits = wgpu::Limits::default();
         let (device, queue) = adapter.request_device(
             &wgpu::DeviceDescriptor {
                 required_features: wgpu::Features::TEXTURE_BINDING_ARRAY |  wgpu::Features::SAMPLED_TEXTURE_AND_STORAGE_BUFFER_ARRAY_NON_UNIFORM_INDEXING,
-                required_limits: wgpu::Limits::default(),
+                required_limits: limits,
                 label: None,
                 memory_hints: Default::default(),
             },

@@ -1,70 +1,101 @@
-[
-    {
-        "name": "player",
-        "path": "src/rendering_engine/img/panda.png"
-    },
-    {
-        "name": "dirt",
-        "path": "src/rendering_engine/img/dirt.png"
-    },
-    {
-        "name": "dirt2",
-        "path": "src/rendering_engine/img/dirt2.png"
-    },
-    {
-        "name": "outside",
-        "path": "src/rendering_engine/img/outside.png"
-    },
-    {
-        "name": "wall",
-        "path": "src/rendering_engine/img/wall.png"
-    },
-    {
-        "name": "ghost",
-        "path": "src/rendering_engine/img/ghost.png"
-    },
-    {
-        "name": "health_bar_back",
-        "path": "src/rendering_engine/img/health_bar_back.png"
-    },
-    {
-        "name": "health",
-        "path": "src/rendering_engine/img/health.png"
-    },
-    {
-        "name": "inventory",
-        "path": "src/rendering_engine/img/inventory.png"
-    },
-    {
-        "name": "sword",
-        "path": "src/rendering_engine/img/sword.png"
-    },
-    {
-        "name": "wall2",
-        "path": "src/rendering_engine/img/wall2.png"
-    },
-    {
-        "name": "wall3",
-        "path": "src/rendering_engine/img/wall3.png"
-    },
-    {
-        "name": "grid",
-        "path": "src/rendering_engine/img/grid.png"
-    },
-    {
-        "name": "highlight",
-        "path": "src/rendering_engine/img/highlight.png"
-    },
-    {
-        "name": "level_editor_menu_background",
-        "path": "src/rendering_engine/img/background.png"
-    },
-    {
-        "name": "level_editor_button_background",
-        "path": "src/rendering_engine/img/button.png"
-    }
+{
+    "basic_sprites": [
+        {
+            "name": "player",
+            "path": "src/rendering_engine/img/panda.png"
+        },
+        {
+            "name": "health_bar_back",
+            "path": "src/rendering_engine/img/health_bar_back.png"
+        },
+        {
+            "name": "health",
+            "path": "src/rendering_engine/img/health.png"
+        },
+        {
+            "name": "inventory",
+            "path": "src/rendering_engine/img/inventory.png"
+        },
+        {
+            "name": "sword",
+            "path": "src/rendering_engine/img/sword.png"
+        },
+        {
+            "name": "grid",
+            "path": "src/rendering_engine/img/grid.png"
+        },
+        {
+            "name": "highlight",
+            "path": "src/rendering_engine/img/highlight.png"
+        },
+        {
+            "name": "level_editor_menu_background",
+            "path": "src/rendering_engine/img/background.png"
+        },
+        {
+            "name": "level_editor_button_background",
+            "path": "src/rendering_engine/img/button.png"
+        },
+        {
+            "name": "melee_attack",
+            "path": "src/rendering_engine/img/attack.png"
+        }
+    ],
+    "spritesheets": [
+        {
+            "name": "main_sheet",
+            "path": "src/rendering_engine/img/main_sheet.png",
+            "width": 128,
+            "height": 16,
+            "sprite_width": 16,
+            "sprite_height": 16,
+            "sprite_padding": 0,
+            "sprites": [
+                {
+                    "name": "dirt",
+                    "x": 0,
+                    "y": 0
+                },
+                {
+                    "name": "dirt2",
+                    "x": 1,
+                    "y": 0
+                },
+                {
+                    "name": "outside",
+                    "x": 2,
+                    "y": 0
+                },
+                {
+                    "name": "grass",
+                    "x": 3,
+                    "y": 0
+                },
+                {
+                    "name": "ghost",
+                    "x": 4,
+                    "y": 0
+                },
+                {
+                    "name": "wall",
+                    "x": 5,
+                    "y": 0
+                },
+                {
+                    "name": "wall2",
+                    "x": 6,
+                    "y": 0
+                },
+                {
+                    "name": "wall3",
+                    "x": 7,
+                    "y": 0
+                }
+            ]
+        }
+    ]
 
-]
+}
 
 
 

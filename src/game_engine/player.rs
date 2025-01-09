@@ -71,7 +71,7 @@ impl Player {
         if self.holding_texture_sprite.is_none(){
             return RenderData { vertex, index }
         }else{
-            let sprite = world.sprites[self.holding_texture_sprite.unwrap() as usize];
+            let sprite = world.sprites.get_sprite(self.holding_texture_sprite.unwrap() as usize).expect("Could not find player sprite?");
             let d = sprite.draw_data(self.x.floor() + 16.0, self.y.floor() + 8.0, 24, 24,window_size_width, window_size_height, index_offset + 4, vertex_offset_x, vertex_offset_y);
             index.extend(d.index);
             vertex.extend(d.vertex);

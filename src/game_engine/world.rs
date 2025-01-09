@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::cell::{Ref, RefCell};
 use std::hash::Hash;
-use crate::rendering_engine::abstractions::{Sprite, SpriteIDContainer};
+use crate::rendering_engine::abstractions::{Sprite, SpriteContainer};
 use crate::entities::EntityTags;
 use crate::game_engine::inventory::ItemContainer;
 use crate::game_engine::player::Player;
@@ -55,20 +55,20 @@ pub struct World{
     pub entity_health_components: HashMap<usize, RefCell<entity_components::HealthComponent>>,
     pub entity_pathfinding_components: HashMap<usize, RefCell<entity_components::PathfindingComponent>>,
 
-    pub sprites: Vec<Sprite>,
-    pub sprite_lookup: HashMap<usize,usize>, // corresponds element_ids to sprite_ids ie. to get the sprite for element_id x, just do sprite_lookup[x]
+    pub sprites: SpriteContainer,
+    pub sprite_lookup: HashMap<usize, usize>, // corresponds element id to sprite id
 
     pub player_attacks: RefCell<Vec<PlayerAttack>>,
     pub player_archetype_descriptor_lookup: HashMap<String, PlayerAttackDescriptor>,
     pub entities_to_be_killed_at_end_of_frame: RefCell<Vec<usize>>
 }
 impl World{ 
-    pub fn new(player: Player) -> Self{
+    pub fn new(player: Player, spriteContainer: SpriteContainer) -> Self{
         Self{
             chunks: RefCell::new(Vec::new()),
             player: RefCell::new(player),
             element_id: 0,
-            sprites: Vec::new(),
+            sprites: spriteContainer,
             sprite_lookup: HashMap::new(),
             chunk_lookup: RefCell::new(HashMap::new()),
             terrain_lookup: HashMap::new(),
@@ -336,10 +336,6 @@ impl World{
     }
     pub fn lookup_terrain_chunk(&self, element_id: usize) -> Option<usize>{
         self.terrain_lookup.get(&element_id).copied()
-    }
-    pub fn add_sprite(&mut self, texture_index: i32) -> usize{
-        self.sprites.push(Sprite{ texture_index: texture_index });
-        self.sprites.len() - 1
     }
     pub fn set_sprite(&mut self, element_id: usize, sprite_id: usize){
         self.sprite_lookup.insert(element_id, sprite_id);

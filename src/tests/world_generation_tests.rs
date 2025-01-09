@@ -112,18 +112,18 @@ async fn json_parsing_test(){
 async fn world_generation_test(){
     let mut parser = json_parsing::JSON_parser::new();
     let parsed_data = parser.parse_and_convert_game_data(TEST_PATH_BUNDLE);
-    let (world, sprites) = crate::game_engine::starting_level_generator::generate_world_from_json_parsed_data(&parsed_data);
+    let world = crate::game_engine::starting_level_generator::generate_world_from_json_parsed_data(&parsed_data);
     assert!(world.player.borrow().x == 596.0, "Player x should be 596.0");
     assert!(world.player.borrow().y == 400.0, "Player y should be 400.0");
     assert!(world.player.borrow().health == 100.0, "Player health should be 100.0");
     assert!(world.player.borrow().max_health == 100, "Player max health should be 100");
     assert!(world.player.borrow().movement_speed == 3.5, "Player movement speed should be 3.5");
-    let player_sprite_id_expected = sprites.get_sprite("player").expect("There should be a player sprite");
-    let player_sprite = world.sprites.get(player_sprite_id_expected).expect("There should be a player sprite");
+    let player_sprite_id_expected = world.sprites.get_sprite_id("player").expect("There should be a player sprite");
+    let player_sprite = world.sprites.get_sprite(player_sprite_id_expected).expect("There should be a player sprite");
     let sprite_texture_id = player_sprite.texture_index;
     assert!(world.player.borrow().texture_index == sprite_texture_id, "The player should have the player sprite");
     assert!(world.terrain.len() == 1, "There should be one terrain block");
-    assert!(sprites.sprites.len() == 4, "There should be four sprites");
+    assert!(world.sprites.sprites.len() == 4, "There should be four sprites");
 
     let chunk_id = world.get_chunk_from_chunk_xy(0, 0).expect("There should be a chunk at 0,0");
     let chunks_ref = world.chunks.borrow();
@@ -210,14 +210,14 @@ async fn world_generation_test(){
     assert!(found_attack, "Attack tag should be found");
     assert!(found_attack_type, "AttackType tag should be found");
     assert!(found_monster_type, "MonsterType tag should be found"); 
-    let ghost_sprite_id_expected = sprites.get_sprite("ghost").expect("There should be a ghost sprite");
+    let ghost_sprite_id_expected = world.sprites.get_sprite_id("ghost").expect("There should be a ghost sprite");
     let ghost_sprite_id = world.sprite_lookup.get(&entity_id).expect("There should be a sprite id for the entity");
     assert!(*ghost_sprite_id == ghost_sprite_id_expected, "The entity should have the ghost sprite");
     let terrain_id = chunk.terrain_ids[0];
     let terrain = world.terrain.get(&terrain_id).expect("There should be a terrain");
     assert!(terrain.x == 0, "Terrain x should be 0");
     assert!(terrain.y == 0, "Terrain y should be 0");
-    let terrain_sprite_id_expected = sprites.get_sprite("outside").expect("There should be an outside sprite");
+    let terrain_sprite_id_expected = world.sprites.get_sprite_id("outside").expect("There should be an outside sprite");
     let terrain_sprite_id = world.sprite_lookup.get(&terrain_id).expect("There should be a sprite id for the terrain");
     assert!(*terrain_sprite_id == terrain_sprite_id_expected, "The terrain should have the outside sprite");
     let terrain_tags = world.terrain_tags_lookup.get(&terrain_id).expect("There should be terrain tags").clone();

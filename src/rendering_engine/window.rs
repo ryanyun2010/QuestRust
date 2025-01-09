@@ -7,15 +7,15 @@ use crate::renderer::Renderer;
 use crate::world::World;
 use crate::camera::Camera;
 
-use super::abstractions::SpriteIDContainer;
+use super::abstractions::SpriteContainer;
 
 
-pub async fn run(world: World, camera: Camera, sprites: SpriteIDContainer, sprites_json_to_load: Vec<String>) {
+pub async fn run(world: World, camera: Camera, sprites_json_to_load: Vec<String>) {
     let event_loop = EventLoop::new().unwrap();
     let title = "Rust Game";
     let window = WindowBuilder::new().with_title(title).with_inner_size(winit::dpi::LogicalSize::new(1152, 720)).build(&event_loop).unwrap();
     let mut renderer = Renderer::new(&window, sprites_json_to_load.clone()).await;
-    let mut game = Game::new(world, camera, renderer, sprites);
+    let mut game = Game::new(world, camera, renderer);
     let mut focused: bool = false;
 
     event_loop.run(move |event, control_flow| match event {

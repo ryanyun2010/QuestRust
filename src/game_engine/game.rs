@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use winit::{event, keyboard::{Key, NamedKey}};
 
-use crate::rendering_engine::{abstractions::{RenderDataFull, SpriteIDContainer}, renderer::Renderer};
+use crate::rendering_engine::{abstractions::{RenderDataFull, SpriteContainer}, renderer::Renderer};
 
 use super::{camera::Camera, stat, world::World};
 #[derive(Debug, Copy, Clone)]
@@ -32,20 +32,18 @@ pub struct InputState {
 pub struct Game<'a> {
     pub world: World,
     pub camera: Camera,
-    pub sprites: SpriteIDContainer,
     pub renderer: Renderer<'a>,
     pub input: InputState,
 }
 
 impl<'a> Game<'a> {
-    pub fn new(world: World, camera: Camera, renderer: Renderer<'a>, sprites: SpriteIDContainer) -> Game<'a> {
+    pub fn new(world: World, camera: Camera, renderer: Renderer<'a>) -> Game<'a> {
         let cx = camera.camera_x;
         let cy = camera.camera_y;
         Self {
             world: world,
             camera: camera,
             renderer: renderer,
-            sprites: sprites,
             input: InputState {
                 keys_down: HashMap::new(),
                 mouse_position: MousePosition { 
@@ -85,7 +83,7 @@ impl<'a> Game<'a> {
         self.world.process_mouse_input(self.input.mouse_position, self.input.mouse_left, self.input.mouse_right);
     }
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
-        self.renderer.render(self.camera.render(&mut self.world, &self.sprites))
+        self.renderer.render(self.camera.render(&mut self.world))
     }
     pub fn update(&mut self){
         self.camera.update_ui(&mut self.world);

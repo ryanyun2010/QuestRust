@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::hash::Hash;
 
 use crate::world::World;
-use crate::rendering_engine::abstractions::{RenderData, RenderDataFull, SpriteIDContainer, TextSprite};
+use crate::rendering_engine::abstractions::{RenderData, RenderDataFull, SpriteContainer, TextSprite};
 use crate::game_engine::ui::UIElement;
 use crate::game_engine::entity_components::PositionComponent;
 use wgpu_text::glyph_brush::{HorizontalAlign, Section as TextSection};
@@ -83,13 +83,13 @@ impl Camera{
         self.camera_x = player_x - (self.viewpoint_width as f32/ 2.0);
         self.camera_y = player_y - (self.viewpoint_height as f32/ 2.0);
     }
-    pub fn render_entity(&self, world: &World, entity_id: usize, entity_index_offset: u16, extra_index_offset: u16, sprites: &SpriteIDContainer) -> (RenderData, RenderData) {
+    pub fn render_entity(&self, world: &World, entity_id: usize, entity_index_offset: u16, extra_index_offset: u16) -> (RenderData, RenderData) {
         let potentially_sprite_id = world.get_sprite(entity_id);
         if potentially_sprite_id.is_none(){
             return (RenderData::new(), RenderData::new());
         }
         let sprite_id = potentially_sprite_id.unwrap();
-        let sprite = &world.sprites[sprite_id];
+        let sprite = world.sprites.get_sprite(sprite_id).expect(format!("Could not find sprite {} while processing entity_id {}", sprite_id, entity_id).as_str());
         
         let vertex_offset_x = -1 * self.camera_x as i32;
         let vertex_offset_y = -1 * self.camera_y as i32;
@@ -103,28 +103,28 @@ impl Camera{
         let potentially_health_component = world.entity_health_components.get(&entity_id);
         if potentially_health_component.is_some(){
             let health_component = potentially_health_component.unwrap().borrow();
-            let potentially_health_bar_back_id = sprites.get_sprite("health_bar_back");
+            let potentially_health_bar_back_id = world.sprites.get_sprite_id("health_bar_back");
             if(potentially_health_bar_back_id.is_none()){
                 println!("WARNING: No Health Bar Back Sprite");
                 return (draw_data_main, draw_data_other);
             }
-            let entity_health_bar_sprite = world.sprites[potentially_health_bar_back_id.unwrap()];
+            let entity_health_bar_sprite = world.sprites.get_sprite(potentially_health_bar_back_id.unwrap()).expect("Could not find health bar back sprite");
             let health_bar_draw_data = entity_health_bar_sprite.draw_data(entity_position_component.x - 4.0, entity_position_component.y - 15.0, 40, 12, self.viewpoint_width, self.viewpoint_height, extra_index_offset + draw_data_other.vertex.len() as u16, vertex_offset_x, vertex_offset_y);
             draw_data_other.vertex.extend(health_bar_draw_data.vertex);
             draw_data_other.index.extend(health_bar_draw_data.index);
-            let potentially_health_bar_id = sprites.get_sprite("health");
+            let potentially_health_bar_id = world.sprites.get_sprite_id("health");
             if(potentially_health_bar_id.is_none()){
                 println!("WARNING: No Health Bar Sprite");
                 return (draw_data_main, draw_data_other);
             }
-            let entity_health_sprite = world.sprites[potentially_health_bar_id.unwrap()];
+            let entity_health_sprite = world.sprites.get_sprite(potentially_health_bar_id.unwrap()).expect("Could not find health bar sprite");
             let health_bar_inner_draw_data = entity_health_sprite.draw_data(entity_position_component.x - 3.0, entity_position_component.y - 14.0, (38.0 * health_component.health/health_component.max_health as f32).floor() as usize, 10, self.viewpoint_width, self.viewpoint_height, extra_index_offset + draw_data_other.vertex.len() as u16, vertex_offset_x, vertex_offset_y);
             draw_data_other.vertex.extend(health_bar_inner_draw_data.vertex);
             draw_data_other.index.extend(health_bar_inner_draw_data.index);
         }
         (draw_data_main, draw_data_other)
     }
-    pub fn render(&mut self, world: &mut World, sprites: &SpriteIDContainer) -> RenderDataFull{
+    pub fn render(&mut self, world: &mut World) -> RenderDataFull{
         let mut render_data = RenderDataFull::new();
         let mut terrain_data: RenderData = RenderData::new();
         let mut entity_data: RenderData = RenderData::new();
@@ -159,7 +159,7 @@ impl Camera{
                         continue;
                     }
                     let sprite_id = potentially_sprite_id.unwrap();
-                    let sprite = &world.sprites[sprite_id];
+                    let sprite = world.sprites.get_sprite(sprite_id).expect("Could not find sprite while processing terrain");
 
                     let vertex_offset_x = -1 * self.camera_x as i32;
                     let vertex_offset_y = -1 * self.camera_y as i32;
@@ -174,7 +174,7 @@ impl Camera{
                 for entity_id in chunk.entities_ids.iter(){
 
                     
-                    let (draw_data, other_draw_data) = self.render_entity(world, *entity_id, entity_index_offset, extra_index_offset, sprites);
+                    let (draw_data, other_draw_data) = self.render_entity(world, *entity_id, entity_index_offset, extra_index_offset);
                     entity_data.vertex.extend(draw_data.vertex);
                     entity_data.index.extend(draw_data.index);
                     extra_data.vertex.extend(other_draw_data.vertex);
@@ -213,8 +213,8 @@ impl Camera{
                 PlayerAttackDescriptor::Projectile(projectile_descriptor) => {
                     width = Some(projectile_descriptor.size);
                     height = Some(projectile_descriptor.size);
-                    let sprite_id = sprites.get_sprite(projectile_descriptor.sprite.as_str()).expect(format!("Could not find projectile sprite {}", projectile_descriptor.sprite).as_str());
-                    sprite = Some(world.sprites[sprite_id]);
+                    let sprite_id = world.sprites.get_sprite_id(projectile_descriptor.sprite.as_str()).expect(format!("Could not find projectile sprite {}", projectile_descriptor.sprite).as_str());
+                    sprite = Some(world.sprites.get_sprite(sprite_id).expect(format!("Could not find projectile sprite {}", projectile_descriptor.sprite.as_str()).as_str()).clone());
                 }
                 PlayerAttackDescriptor::Melee(melee_descriptor) => {
                     match effect.direction {
@@ -229,8 +229,8 @@ impl Camera{
                         _ => {}
                     }
                     
-                    let sprite_id = sprites.get_sprite(melee_descriptor.sprite.as_str()).expect(format!("Could not find melee sprite {}", melee_descriptor.sprite).as_str());
-                    sprite = Some(world.sprites[sprite_id]);
+                    let sprite_id = world.sprites.get_sprite_id(melee_descriptor.sprite.as_str()).expect(format!("Could not find melee sprite {}", melee_descriptor.sprite).as_str());
+                    sprite = Some(world.sprites.get_sprite(sprite_id).expect(format!("Could not find melee attack sprite {}", melee_descriptor.sprite.as_str()).as_str()).clone());
 
                 }
             }

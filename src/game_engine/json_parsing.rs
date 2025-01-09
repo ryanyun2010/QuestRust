@@ -4,6 +4,7 @@ use std::io::{BufReader, BufWriter, Write};
 use std::fs::File;
 use std::collections::HashMap;
 use crate::game_engine::entities::{EntityTags, EntityAttack, EntityAttackPattern};
+use crate::rendering_engine::abstractions::SpriteContainer;
 
 use super::terrain;
 use super::player_attacks::{PlayerAttackDescriptor, player_projectile_descriptor};
@@ -54,9 +55,31 @@ pub struct entity_attack_json{
     damage: f32,
 }
 #[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct sprites_json_descriptor {
+    pub basic_sprites: Vec<sprite_json>,
+    pub spritesheets: Vec<sprite_sheet_json>
+}
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct sprite_sheet_json{
+    pub name: String,
+    pub path: String,
+    pub width: usize,
+    pub height: usize,
+    pub sprite_width: usize,
+    pub sprite_height: usize,
+    pub sprite_padding: usize,
+    pub sprites: Vec<sprite_sheet_sprite_json>
+}
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct sprite_sheet_sprite_json {
+    pub name: String,
+    pub x: usize,
+    pub y: usize
+}
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct sprite_json {
-    name: String,
-    path: String,
+    pub name: String,
+    pub path: String,
 }
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct player_json{
@@ -141,7 +164,7 @@ pub struct JSON_parser {
     pub entity_attack_patterns_json: HashMap<String, entity_attack_pattern_json>,
     pub entity_attacks_json: HashMap<String, entity_attack_json>,
     pub terrain_archetypes_json: HashMap<String, terrain_archetype_json>,
-    pub sprites_json: HashMap<String, sprite_json>,
+    pub sprites_json: sprites_json_descriptor,
     pub item_json: HashMap<String, item_json>,
     pub starting_level_json: starting_level_json,
     pub player_attacks: player_attacks_descriptor_json
@@ -184,7 +207,10 @@ impl JSON_parser {
             entity_attack_patterns_json: HashMap::new(),
             terrain_archetypes_json: HashMap::new(),
             entity_attacks_json: HashMap::new(),
-            sprites_json: HashMap::new(),
+            sprites_json: sprites_json_descriptor {
+                basic_sprites: Vec::new(),
+                spritesheets: Vec::new()
+            },
             item_json: HashMap::new(),
             starting_level_json: starting_level_json {
                 player: player_json {
@@ -237,10 +263,8 @@ impl JSON_parser {
     pub fn parse_sprites(&mut self, path: &str) {
         let file = File::open(path).expect("Could not open file");
         let reader = BufReader::new(file);
-        let data: Vec<sprite_json> = serde_json::from_reader(reader).expect("JSON was not well-formatted");
-        for sprite in data {
-            self.sprites_json.insert(sprite.name.clone(), sprite);
-        }
+        let data: sprites_json_descriptor = serde_json::from_reader(reader).expect("JSON was not well-formatted");
+        self.sprites_json = data;
     }
     pub fn parse_starting_level(&mut self, path: &str) {
         let file = File::open(path).expect("Could not open file");
@@ -276,14 +300,8 @@ impl JSON_parser {
             data.entity_archetypes.insert(entity_archetype.name.clone(), tags);
             
         }
-        let mut sprites_to_load = Vec::new();
         let mut i = 0;
-        for (_, sprite) in &self.sprites_json {
-            sprites_to_load.push(sprite.path.clone());
-            data.texture_ids.insert(sprite.name.clone(), i);
-            i += 1;
-        }
-        data.sprites_to_load_json = sprites_to_load;
+        (data.sprites_to_load_json, data.sprites) = SpriteContainer::create_from_json(&self.sprites_json);
         data.starting_level_descriptor = self.starting_level_json.clone();
 
         for (.., terrain_archetype) in &self.terrain_archetypes_json {
@@ -405,8 +423,8 @@ pub struct ParsedData{
     pub entity_attack_patterns: HashMap<String, EntityAttackPattern>,
     pub entity_attacks: HashMap<String, EntityAttack>,
     pub terrain_archetypes: HashMap<String, terrain_archetype_json>,
-    pub texture_ids: HashMap<String, i32>,
     pub sprites_to_load_json: Vec<String>,
+    pub sprites: SpriteContainer,
     pub starting_level_descriptor: starting_level_json,
     pub player_attack_archetypes: HashMap<String, PlayerAttackDescriptor>
 }
@@ -418,8 +436,8 @@ impl ParsedData{
             entity_attack_patterns: HashMap::new(),
             entity_attacks: HashMap::new(),
             terrain_archetypes: HashMap::new(),
-            texture_ids: HashMap::new(),
             sprites_to_load_json: Vec::new(),
+            sprites: SpriteContainer::new(),
             starting_level_descriptor: starting_level_json {
                 player: player_json {
                     x: 0.0,
@@ -432,14 +450,11 @@ impl ParsedData{
                 entities: Vec::new(),
                 terrain: Vec::new()
             },
-            player_attack_archetypes: HashMap::new()
+            player_attack_archetypes: HashMap::new(),
         }
     }
     pub fn get_entity_archetype(&self, name: &str) -> Option<&Vec<EntityTags>> {
         self.entity_archetypes.get(name)
-    }
-    pub fn get_texture_id(&self, name: &str) -> i32 {
-        self.texture_ids.get(name).expect(&format!("Texture with name: {} was not found", name)).clone()
     }
     pub fn get_terrain_archetype(&self, name: &str) -> Option<&terrain_archetype_json> {
         self.terrain_archetypes.get(name)

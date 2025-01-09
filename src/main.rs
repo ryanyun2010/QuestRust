@@ -1,7 +1,7 @@
 #![allow(warnings)]
 use std::time::Instant;
 pub mod rendering_engine;
-use rendering_engine::{window, renderer, vertex, texture};
+use rendering_engine::{abstractions::SpriteSheet, renderer, texture, vertex, window};
 pub mod game_engine;
 use game_engine::{camera, entities, entity_components, game, json_parsing::{self, PATH_BUNDLE}, level_editor, loot, starting_level_generator, stat, ui::{UIElement, UIElementDescriptor}, world, player_attacks};
 pub mod tests;
@@ -15,13 +15,13 @@ fn main() {
     let parsed_data = parser.parse_and_convert_game_data(PATH_BUNDLE);
     
     let mut camera = camera::Camera::new(1152,720);
-    let (mut world, sprites) = starting_level_generator::generate_world_from_json_parsed_data(&parsed_data);
+    let mut world = starting_level_generator::generate_world_from_json_parsed_data(&parsed_data);
     camera.add_ui_element(String::from("health_bar_background"), UIElementDescriptor {
         x: 32.0,
         y: 32.0,
         width: 256.0,
         height: 32.0,
-        texture_id: parsed_data.get_texture_id("health_bar_back"),
+        texture_id: world.sprites.get_texture_index_by_name("health_bar_back").expect("couldn't find health_bar_back sprite"),
         visible: true
     });
     camera.add_ui_element(String::from("health_bar_inside"), UIElementDescriptor {
@@ -29,7 +29,7 @@ fn main() {
         y: 35.0,
         width: 250.0,
         height: 26.0,
-        texture_id: parsed_data.get_texture_id("health"),
+        texture_id: world.sprites.get_texture_index_by_name("health").expect("couldn't find health sprite"),
         visible: true
     });
     camera.add_ui_element(String::from("inventory_button"), UIElementDescriptor {
@@ -37,14 +37,12 @@ fn main() {
         y: 650.0,
         width: 75.0,
         height: 25.0,
-        texture_id: parsed_data.get_texture_id("inventory"),
+        texture_id: world.sprites.get_texture_index_by_name("inventory").expect("couldn't find inventory sprite"),
         visible: true
     });
 
 
-    world.player.borrow_mut().holding_texture_sprite = Some(sprites.get_sprite("sword").unwrap());
+    world.player.borrow_mut().holding_texture_sprite = Some(world.sprites.get_sprite_id("sword").unwrap());
     println!("Time to load: {:?} ms", load_time.elapsed().as_millis());
-
-    
-    pollster::block_on(window::run(world, camera, sprites, parsed_data.sprites_to_load_json));
+    pollster::block_on(window::run(world, camera, parsed_data.sprites_to_load_json));
 }

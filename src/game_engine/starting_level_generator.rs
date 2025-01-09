@@ -1,26 +1,26 @@
 use core::panic;
 
-use crate::rendering_engine::abstractions::SpriteIDContainer;
+use crate::rendering_engine::abstractions::SpriteContainer;
 use crate::game_engine::terrain::TerrainTags;
 use crate::game_engine::world::World;
 use crate::json_parsing::ParsedData;
 use crate::game_engine::player::Player;
 
-pub fn generate_world_from_json_parsed_data(data: &ParsedData) -> (World, SpriteIDContainer) {
+pub fn generate_world_from_json_parsed_data(data: &ParsedData) -> World {
 
     
     let starting_level_descriptor = data.starting_level_descriptor.clone();
     let player_descriptor = starting_level_descriptor.player;
-    let mut world = World::new(Player::new(player_descriptor.x, player_descriptor.y, player_descriptor.health, player_descriptor.max_health, player_descriptor.movement_speed, data.get_texture_id(&player_descriptor.sprite)));
+    println!("Player descriptor: {:?}", player_descriptor.sprite);
+    println!("{:?}", data.sprites);
+    let mut world = World::new(Player::new(player_descriptor.x, player_descriptor.y, player_descriptor.health, player_descriptor.max_health, player_descriptor.movement_speed, data.sprites.get_texture_index_by_name(&player_descriptor.sprite).expect("Player sprite not found")), data.sprites.clone());
     world.player_init();
-    let sprites = SpriteIDContainer::generate_from_json_parsed_data(data, &mut world);
     for archetype in data.entity_archetypes.iter(){
         world.add_entity_archetype(archetype.0.clone(), archetype.1.clone());
     }
     for entity_descriptor in starting_level_descriptor.entities.iter(){
         let entity = world.create_entity_with_archetype(entity_descriptor.x, entity_descriptor.y, entity_descriptor.archetype.clone());
-
-        world.set_sprite(entity, sprites.get_sprite(&entity_descriptor.sprite).expect(format!("Could not find sprite: {}", entity_descriptor.sprite).as_str()));
+        world.set_sprite(entity, world.sprites.get_sprite_id(&entity_descriptor.sprite).expect(format!("Could not find sprite: {}", entity_descriptor.sprite).as_str()));
     }
     for terrain_json in starting_level_descriptor.terrain.iter(){
         let start_x = terrain_json.x;
@@ -34,7 +34,7 @@ pub fn generate_world_from_json_parsed_data(data: &ParsedData) -> (World, Sprite
                 for x in start_x..start_x + width{
                     for y in start_y..start_y + height{
                         let terrain = world.add_terrain(x * 32, y * 32);
-                        world.set_sprite(terrain, sprites.get_sprite(&descriptor.sprites[0]).expect(format!("Could not find sprite: {}", descriptor.sprites[0]).as_str()));
+                        world.set_sprite(terrain, world.sprites.get_sprite_id(&descriptor.sprites[0]).expect(format!("Could not find sprite: {}", descriptor.sprites[0]).as_str()));
                         match_terrain_tags(&tags, terrain, &mut world);
                     }
                 }
@@ -54,7 +54,7 @@ pub fn generate_world_from_json_parsed_data(data: &ParsedData) -> (World, Sprite
                         let random_number = rand::random::<f32>();
                         for (index, chance) in random_chances_adjusted.iter().enumerate(){
                             if random_number < *chance{
-                                world.set_sprite(terrain, sprites.get_sprite(&descriptor.sprites[index]).expect(format!("Could not find sprite: {}", descriptor.sprites[index]).as_str()));
+                                world.set_sprite(terrain, world.sprites.get_sprite_id(&descriptor.sprites[index]).expect(format!("Could not find sprite: {}", descriptor.sprites[index]).as_str()));
                                 break;
                             }
                         }
@@ -70,7 +70,7 @@ pub fn generate_world_from_json_parsed_data(data: &ParsedData) -> (World, Sprite
     for (name, descriptor) in data.player_attack_archetypes.iter(){
         world.add_player_attack_archetype(name.clone(), descriptor.clone());
     }
-    (world, sprites)
+    world
 }
 
 
