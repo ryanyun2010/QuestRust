@@ -109,6 +109,7 @@ pub struct player_projectile_descriptor_json{
     pub speed: f32,
     pub lifetime: f32,
     pub AOE: f32,
+    pub size: f32,
     pub sprite: String
 }
 
@@ -287,6 +288,7 @@ impl JSON_parser {
                         speed: ranged_projectile.speed, 
                         lifetime: ranged_projectile.lifetime, 
                         AOE: ranged_projectile.AOE, 
+                        size: ranged_projectile.size,
                         sprite: ranged_projectile.sprite.clone()
                     }
                 )

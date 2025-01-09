@@ -49,6 +49,7 @@ pub struct player_projectile_descriptor{
     pub speed: f32,
     pub lifetime: f32,
     pub AOE: f32,
+    pub size: f32,
     pub sprite: String
 }
 #[derive(Debug, Clone)]
@@ -448,7 +449,7 @@ impl World{
                         continue;
                     }
 
-                    let potential_collision = self.get_colliding(true, None, effect.x as usize, effect.y as usize, 32, 32, true);
+                    let potential_collision = self.get_colliding(true, None, effect.x as usize, effect.y as usize, descriptor.size.floor() as usize, descriptor.size.floor() as usize, true);
                     if potential_collision.is_some(){
                         if self.entity_health_components.get(&potential_collision.unwrap()).is_some(){
                             let mut health_component = self.entity_health_components.get(&potential_collision.unwrap()).unwrap().borrow_mut();
@@ -464,7 +465,8 @@ impl World{
             i += 1;
         }
         let mut offset = 0;
-        for index in effects_to_be_deleted.iter().rev(){
+        for index in effects_to_be_deleted.iter(){
+
             effects.remove(*index - offset);
             offset += 1;
         }
