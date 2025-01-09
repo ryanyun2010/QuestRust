@@ -11,7 +11,7 @@ use super::camera::Camera;
 use super::entity_components::{self, EntityComponentHolder};
 use super::game::MousePosition;
 use super::json_parsing::player_projectile_descriptor_json;
-use super::player_attacks::{PlayerAttack, PlayerAttackDescriptor, player_projectile_descriptor};
+use super::player_attacks::{melee_attack_descriptor, player_projectile_descriptor, PlayerAttack, PlayerAttackDescriptor};
 
 #[derive(Debug, Clone)]
 pub struct Chunk{  
@@ -413,6 +413,9 @@ impl World{
                         i += 1;
                         continue;
                     }
+                    if (attack.dealt_damage){
+                        continue;
+                    }
 
                     let collisions = self.get_colliding(true, None, attack.x as usize, attack.y as usize, descriptor.size.floor() as usize, descriptor.size.floor() as usize, true);
                     let mut hit = false;
@@ -420,6 +423,7 @@ impl World{
                         if self.entity_health_components.get(&collision).is_some(){
                             hit = true;
                             attacks_to_be_deleted.push(i);
+                            attack.dealt_damage = true;
                             break;
                         }
                     }
@@ -434,7 +438,40 @@ impl World{
                     }
 
                 },
-                PlayerAttackDescriptor::Melee => {
+                PlayerAttackDescriptor::Melee(melee_attack_descriptor) => {
+                        
+                    attack.time_alive += 1.0;
+                    if attack.time_alive > melee_attack_descriptor.lifetime{
+                        attacks_to_be_deleted.push(i);
+                        i += 1;
+                        continue;
+                    }
+                    if attack.dealt_damage {
+                        continue;
+                    }
+                    if attack.time_alive < 2.0 {   
+                        let mut height = 0.0;
+                        let mut width = 0.0;
+                        match attack.direction {
+                            [-1.0, 0.0] | [1.0, 0.0] => {
+                                height = melee_attack_descriptor.width;
+                                width = melee_attack_descriptor.reach;
+                            },
+                            [0.0, 1.0] | [0.0, -1.0] => {
+                                width = melee_attack_descriptor.width;
+                                height = melee_attack_descriptor.reach;
+                            },
+                            _ => {}
+                        }
+                        let collisions = self.get_colliding(true, None, attack.x as usize, attack.y as usize, width.floor() as usize, height.floor() as usize, true);
+                        for collision in collisions.iter(){
+                            if self.entity_health_components.get(&collision).is_some(){
+                                let mut health_component = self.entity_health_components.get(&collision).unwrap().borrow_mut();
+                                attack.dealt_damage = true;
+                                health_component.health -= melee_attack_descriptor.damage;
+                            }
+                        }
+                    }
                 }
             }
             i += 1;
@@ -475,7 +512,7 @@ impl World{
     pub fn on_key_down(&mut self, key: String){
 
     }
-    pub fn on_mouse_click(&mut self, mouse_position: MousePosition, mouse_left: bool, mouse_right: bool){
+    pub fn on_mouse_click(&mut self, mouse_position: MousePosition, mouse_left: bool, mouse_right: bool, camera_width: f32, camera_height: f32){
         println!("Mouse clicked at: {}, {}", mouse_position.x_world, mouse_position.y_world);
         let mouse_direction_unnormalized = [(mouse_position.x_world - self.player.borrow().x), (mouse_position.y_world - self.player.borrow().y)];
         let magnitude = f32::sqrt(mouse_direction_unnormalized[0].powf(2.0) + mouse_direction_unnormalized[1].powf(2.0));
@@ -483,13 +520,50 @@ impl World{
             mouse_direction_unnormalized[0] / magnitude,
             mouse_direction_unnormalized[1] / magnitude
         ];
-        self.player_attacks.borrow_mut().push(
-            PlayerAttack::new(
-                String::from("test_projectile"),
-                0.0, 
-                self.player.borrow().x + 10.0,
-                self.player.borrow().y + 10.0,
-                mouse_direction_normalized));
+
+        let W = camera_width;
+        let H = camera_height;
+        let x = mouse_position.x_screen;
+        let y = mouse_position.y_screen;
+        if y/H > x/W {
+            if y < H - x * H/W{    
+                self.player_attacks.borrow_mut().push(
+                    PlayerAttack::new(
+                        String::from("test_melee_attack"),
+                        0.0, 
+                        self.player.borrow().x - 16.0,
+                        self.player.borrow().y,
+                        [-1.0, 0.0]));
+            }else{
+                self.player_attacks.borrow_mut().push(
+                    PlayerAttack::new(
+                        String::from("test_melee_attack"),
+                        0.0, 
+                        self.player.borrow().x,
+                        self.player.borrow().y + 32.0,
+                        [0.0, 1.0]));
+            }
+        }else{
+            if y < H - x * H/W{    
+                self.player_attacks.borrow_mut().push(
+                    PlayerAttack::new(
+                        String::from("test_melee_attack"),
+                        0.0, 
+                        self.player.borrow().x,
+                        self.player.borrow().y - 16.0,
+                        [0.0, -1.0])); 
+            } else{
+                    
+                self.player_attacks.borrow_mut().push(
+                    PlayerAttack::new(
+                        String::from("test_melee_attack"),
+                        0.0, 
+                        self.player.borrow().x + 32.0,
+                        self.player.borrow().y,
+                        [1.0, 0.0]));
+            }
+
+        }
     }
     pub fn process_mouse_input(&mut self, mouse_position: MousePosition, mouse_left: bool, mouse_right: bool){
 

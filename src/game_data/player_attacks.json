@@ -9,5 +9,15 @@
             "AOE": 15.0,
             "sprite": "ghost"
         }
+    ],
+    "melee_attacks": [
+        {
+            "name": "test_melee_attack",
+            "width": 40.0,
+            "reach": 20.0,
+            "damage": 15.0,
+            "lifetime": 5.0,
+            "sprite": "ghost"
+        }
     ]
 }

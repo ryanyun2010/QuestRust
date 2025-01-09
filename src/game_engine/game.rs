@@ -76,7 +76,7 @@ impl<'a> Game<'a> {
             _ => {}
         }
         if state == event::ElementState::Pressed {
-            self.world.on_mouse_click(self.input.mouse_position, self.input.mouse_left, self.input.mouse_right);
+            self.world.on_mouse_click(self.input.mouse_position, self.input.mouse_left, self.input.mouse_right, self.camera.viewpoint_width as f32, self.camera.viewpoint_height as f32);
         }
 
     }

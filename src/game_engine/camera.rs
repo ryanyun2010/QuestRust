@@ -207,26 +207,42 @@ impl Camera{
         for effect in world.player_attacks.borrow().iter(){
             let effect_archetype = world.player_archetype_descriptor_lookup.get(&effect.archetype).expect(format!("Could not find effect archetype {}", effect.archetype).as_str());
             let mut sprite = None;
-            let mut size = None;
+            let mut width = None;
+            let mut height = None;
             match effect_archetype {
                 PlayerAttackDescriptor::Projectile(projectile_descriptor) => {
-                    size = Some(projectile_descriptor.size);
+                    width = Some(projectile_descriptor.size);
+                    height = Some(projectile_descriptor.size);
                     let sprite_id = sprites.get_sprite(projectile_descriptor.sprite.as_str()).expect(format!("Could not find projectile sprite {}", projectile_descriptor.sprite).as_str());
                     sprite = Some(world.sprites[sprite_id]);
                 }
-                _ => {
+                PlayerAttackDescriptor::Melee(melee_descriptor) => {
+                    match effect.direction {
+                        [-1.0, 0.0] | [1.0, 0.0] => {
+                            height = Some(melee_descriptor.width);
+                            width = Some(melee_descriptor.reach);
+                        },
+                        [0.0, 1.0] | [0.0, -1.0] => {
+                            width = Some(melee_descriptor.width);
+                            height = Some(melee_descriptor.reach);
+                        },
+                        _ => {}
+                    }
+                    
+                    let sprite_id = sprites.get_sprite(melee_descriptor.sprite.as_str()).expect(format!("Could not find melee sprite {}", melee_descriptor.sprite).as_str());
+                    sprite = Some(world.sprites[sprite_id]);
 
                 }
             }
             if sprite.is_none(){
                 continue;
             }
-            if size.is_none(){
+            if width.is_none() || height.is_none(){
                 continue;
             }
             
             
-            let draw_data = sprite.unwrap().draw_data(effect.x, effect.y, size.unwrap().floor() as usize, size.unwrap().floor() as usize, self.viewpoint_width, self.viewpoint_height, player_effect_draw_data.vertex.len() as u16, -1 * self.camera_x as i32, -1 * self.camera_y as i32);
+            let draw_data = sprite.unwrap().draw_data(effect.x, effect.y, width.unwrap().floor() as usize, height.unwrap().floor() as usize, self.viewpoint_width, self.viewpoint_height, player_effect_draw_data.vertex.len() as u16, -1 * self.camera_x as i32, -1 * self.camera_y as i32);
             player_effect_draw_data.vertex.extend(draw_data.vertex);
             player_effect_draw_data.index.extend(draw_data.index);
         }

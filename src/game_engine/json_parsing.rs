@@ -113,13 +113,25 @@ pub struct player_projectile_descriptor_json{
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct melee_attack_descriptor_json{
+    pub name: String,
+    pub damage: f32,
+    pub width: f32,
+    pub reach: f32,
+    pub lifetime: f32,
+    pub sprite: String
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct player_attacks_descriptor_json {
     pub ranged_projectiles: Vec<player_projectile_descriptor_json>,
+    pub melee_attacks: Vec<melee_attack_descriptor_json>
 }
 impl player_attacks_descriptor_json {
     pub fn new() -> Self {
         Self {
-            ranged_projectiles: Vec::new()
+            ranged_projectiles: Vec::new(),
+            melee_attacks: Vec::new()
         }
     }
 }
@@ -291,6 +303,18 @@ impl JSON_parser {
                         sprite: ranged_projectile.sprite.clone()
                     }
                 )
+            );
+        }
+        for melee_attack in self.player_attacks.melee_attacks.iter() {
+            data.player_attack_archetypes.insert(
+                melee_attack.name.clone(),
+                PlayerAttackDescriptor::Melee(super::player_attacks::melee_attack_descriptor {
+                    width: melee_attack.width,
+                    reach: melee_attack.reach,
+                    lifetime: melee_attack.lifetime,
+                    damage: melee_attack.damage,
+                    sprite: melee_attack.sprite.clone()
+                })
             );
         }
         data

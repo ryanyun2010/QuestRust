@@ -44,6 +44,7 @@ fn main() {
 
     world.player.borrow_mut().holding_texture_sprite = Some(sprites.get_sprite("sword").unwrap());
     println!("Time to load: {:?} ms", load_time.elapsed().as_millis());
+
     
     pollster::block_on(window::run(world, camera, sprites, parsed_data.sprites_to_load_json));
 }
