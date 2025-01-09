@@ -525,13 +525,26 @@ impl World{
         let H = camera_height;
         let x = mouse_position.x_screen;
         let y = mouse_position.y_screen;
+        let melee_attack_reach = self.player_archetype_descriptor_lookup.get("test_melee_attack").expect("Could not find player attack archetype: test_melee_attack").clone();
+        let mut reach = 0;
+        match melee_attack_reach{
+            PlayerAttackDescriptor::Melee(melee_attack_descriptor) => {
+                if mouse_left {
+                    reach = melee_attack_descriptor.reach.floor() as usize;
+                }
+            },
+            PlayerAttackDescriptor::Projectile(projectile_descriptor) => {
+                if mouse_right {
+                }
+            }
+        }
         if y/H > x/W {
             if y < H - x * H/W{    
                 self.player_attacks.borrow_mut().push(
                     PlayerAttack::new(
                         String::from("test_melee_attack"),
                         0.0, 
-                        self.player.borrow().x - 16.0,
+                        self.player.borrow().x - reach as f32,
                         self.player.borrow().y,
                         [-1.0, 0.0]));
             }else{
@@ -550,7 +563,7 @@ impl World{
                         String::from("test_melee_attack"),
                         0.0, 
                         self.player.borrow().x,
-                        self.player.borrow().y - 16.0,
+                        self.player.borrow().y - reach as f32,
                         [0.0, -1.0])); 
             } else{
                     
