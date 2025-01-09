@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::cell::{Ref, RefCell};
 use std::hash::Hash;
 use crate::rendering_engine::abstractions::{Sprite, SpriteIDContainer};
@@ -9,7 +9,9 @@ use crate::game_engine::terrain::{Terrain, TerrainTags};
 
 use super::camera::Camera;
 use super::entity_components::{self, EntityComponentHolder};
-use super::player::PlayerEffect;
+use super::game::MousePosition;
+use super::json_parsing::player_projectile_descriptor_json;
+use super::player::{self, PlayerEffect};
 
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -33,7 +35,22 @@ pub struct Chunk{  // 32x32 blocks of 32x32 = chunks are 1024x1024 pixels but 10
 impl Chunk{
 }
 // TODO: ENTITY CHUNKING HAS A CRAZY AMOUNT OF BUGS HERE
+#[derive(Clone, Debug, PartialEq)]
+pub enum PlayerAttackDescriptor{
+    Projectile(player_projectile_descriptor),
+    Melee
+}
 
+
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct player_projectile_descriptor{
+    pub damage: f32,
+    pub speed: f32,
+    pub lifetime: f32,
+    pub AOE: f32,
+    pub sprite: String
+}
 #[derive(Debug, Clone)]
 pub struct World{
     pub chunks: RefCell<Vec<Chunk>>,
@@ -69,10 +86,19 @@ pub struct World{
     pub sprites: Vec<Sprite>,
     pub sprite_lookup: HashMap<usize,usize>, // corresponds element_ids to sprite_ids ie. to get the sprite for element_id x, just do sprite_lookup[x]
 
-    pub player_effects: Vec<PlayerEffect>
+    pub player_effects: RefCell<Vec<PlayerEffect>>,
+    pub player_archetype_descriptor_lookup: HashMap<String, PlayerAttackDescriptor>,
 }
 impl World{ 
     pub fn new(player: Player) -> Self{
+        let mut player_effect_archetypes_test = HashMap::new();
+        player_effect_archetypes_test.insert(String::from("test_projectile"), PlayerAttackDescriptor::Projectile(player_projectile_descriptor{
+            AOE: 2.0,
+            lifetime: 60.0,
+            speed: 10.0,
+            damage: 10.0,
+            sprite: String::from("ghost"),
+        }));
         Self{
             chunks: RefCell::new(Vec::new()),
             player: RefCell::new(player),
@@ -97,7 +123,8 @@ impl World{
             entity_health_components: HashMap::new(),
             entity_position_components: HashMap::new(),
             entity_pathfinding_components: HashMap::new(),
-            player_effects: Vec::new()
+            player_effects: RefCell::new(Vec::new()),
+            player_archetype_descriptor_lookup: player_effect_archetypes_test,
         }
     }
     pub fn new_chunk(&self, chunk_x: usize, chunk_y: usize, chunkref: Option<&mut std::cell::RefMut<'_, Vec<Chunk>>>) -> usize{
@@ -282,6 +309,45 @@ impl World{
         }
         false
     }
+    pub fn get_colliding(&self, player: bool, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, entity: bool) -> Option<usize>{
+        let tiles_to_check = World::get_terrain_tiles(x, y, w, h);
+        let mut ids_to_check: Vec<usize> = Vec::new();
+        for tile in tiles_to_check.iter(){
+            if self.collision_cache.borrow().get(&[tile[0],tile[1]]).is_none(){
+                continue;
+            }else{
+                ids_to_check.extend(self.collision_cache.borrow().get(&[tile[0],tile[1]]).unwrap());
+            }
+        }
+        let idti: usize = id_to_ignore.unwrap_or(usize::MAX);
+        for id in ids_to_check{
+            if id == idti{
+                continue;
+            }
+            let terrain_potentially = self.terrain.get(&id);
+            
+            if terrain_potentially.is_none(){
+                if entity{
+                    let entity_collision_box = self.entity_collision_box_components.get(&id).unwrap().borrow();
+                    let entity_position = self.entity_position_components.get(&id).unwrap().borrow();
+                    let ex = entity_position.x + entity_collision_box.x_offset;
+                    let ey = entity_position.y + entity_collision_box.y_offset;
+                    let ew = entity_collision_box.w;
+                    let eh = entity_collision_box.h;
+                    if ex < (x + w) as f32 && ex + ew > x as f32 && ey < (y + h) as f32 && ey + eh > y as f32{
+                        return Some(id);
+                    }
+                }
+                
+            }else{
+                let terrain = terrain_potentially.unwrap();
+                if terrain.x < x + w && terrain.x + 32 > x && terrain.y < y + h && terrain.y + 32 > y{
+                    return Some(id);
+                }
+            }
+        }
+        return None;
+    }
     pub fn attempt_move_player(&self, player: &mut Player, movement: [f32; 2]){
         
         if self.check_collision(true, None,(player.x + movement[0]).floor() as usize, (player.y + movement[1]).floor() as usize, 32, 32, true){
@@ -352,15 +418,77 @@ impl World{
             player.x = player.movement_speed;
         }
     }
-    pub fn process_input(&mut self, keys: HashMap<String,bool>, camera: &mut Camera){
-        self.process_player_input(&keys);
-        let player = self.player.borrow();
-        camera.update_camera_position(self, player.x, player.y);
-    }
+   
     pub fn add_terrain_tags(&mut self, element_id: usize, tags: Vec<TerrainTags>){ //Change this to allow an enum of a vector of tags of various types.
         let mut d: Vec<TerrainTags> = self.terrain_tags_lookup.get(&element_id).unwrap_or(&Vec::new()).clone(); 
         d.extend(tags);
         self.terrain_tags_lookup.insert(element_id, d);
     }
+    pub fn add_player_effect(&self, archetype_name: String, x: f32, y: f32, direction: [f32;2]) {    
+        self.player_effects.borrow_mut().push(PlayerEffect::new(archetype_name,0.0, x,y,direction));
+    }
+    pub fn add_player_effect_archetype(&mut self, archetype_name: String, descriptor: PlayerAttackDescriptor){
+        self.player_archetype_descriptor_lookup.insert(archetype_name, descriptor);
+    }
+    pub fn update_player_effects(&self){
+        let mut effects = self.player_effects.borrow_mut();
+        let mut effects_to_be_deleted = Vec::new();
+        let mut i = 0;
+        for effect in effects.iter_mut(){
+            let descriptor = self.player_archetype_descriptor_lookup.get(&effect.archetype).expect(format!("Could not find player effect archetype: {}", effect.archetype).as_str());
+            match descriptor{
+                PlayerAttackDescriptor::Projectile(descriptor) => {
+                    effect.x += effect.direction[0] * descriptor.speed;
+                    effect.y += effect.direction[1] * descriptor.speed;
+
+                    let potential_collision = self.get_colliding(true, None, effect.x as usize, effect.y as usize, 32, 32, true);
+                    if potential_collision.is_some(){
+                        if self.entity_health_components.get(&potential_collision.unwrap()).is_some(){
+                            let mut health_component = self.entity_health_components.get(&potential_collision.unwrap()).unwrap().borrow_mut();
+                            health_component.health -= descriptor.damage;
+                            effects_to_be_deleted.push(i)
+                        }
+                    }
+                },
+                PlayerAttackDescriptor::Melee => {
+                }
+            }
+            i += 1;
+        }
+        let mut offset = 0;
+        for index in effects_to_be_deleted.iter().rev(){
+            effects.remove(*index - offset);
+            offset += 1;
+        }
+    }
+    
+    pub fn on_key_down(&mut self, key: String){
+
+    }
+    pub fn on_mouse_click(&mut self, mouse_position: MousePosition, mouse_left: bool, mouse_right: bool){
+        println!("Mouse clicked at: {}, {}", mouse_position.x_world, mouse_position.y_world);
+        let mouse_direction_unnormalized = [(mouse_position.x_world - self.player.borrow().x), (mouse_position.y_world - self.player.borrow().y)];
+        let magnitude = f32::sqrt(mouse_direction_unnormalized[0].powf(2.0) + mouse_direction_unnormalized[1].powf(2.0));
+        let mouse_direction_normalized = [
+            mouse_direction_unnormalized[0] / magnitude,
+            mouse_direction_unnormalized[1] / magnitude
+        ];
+        self.player_effects.borrow_mut().push(
+            PlayerEffect::new(
+                String::from("test_projectile"),
+                0.0, 
+                self.player.borrow().x + 10.0,
+                self.player.borrow().y + 10.0,
+                mouse_direction_normalized));
+    }
+    pub fn process_mouse_input(&mut self, mouse_position: MousePosition, mouse_left: bool, mouse_right: bool){
+
+    }
+    pub fn process_input(&mut self, keys: HashMap<String,bool>, camera: &mut Camera){
+        self.process_player_input(&keys);
+        let player = self.player.borrow();
+        camera.update_camera_position(self, player.x, player.y);
+    }
 }
+
 

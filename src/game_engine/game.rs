@@ -4,7 +4,7 @@ use winit::{event, keyboard::{Key, NamedKey}};
 
 use crate::rendering_engine::{abstractions::{RenderDataFull, SpriteIDContainer}, renderer::Renderer};
 
-use super::{camera::Camera, world::World};
+use super::{camera::Camera, stat, world::World};
 #[derive(Debug, Copy, Clone)]
 pub struct MousePosition{
     pub x_world: f32,
@@ -59,8 +59,30 @@ impl<'a> Game<'a> {
             },
         }
     }
+    pub fn process_mouse_move(&mut self, x: f64, y: f64){
+        self.input.mouse_position.x_screen = x as f32 / self.renderer.size.width as f32 * self.camera.viewpoint_width as f32;
+        self.input.mouse_position.y_screen = y as f32 / self.renderer.size.height as f32 * self.camera.viewpoint_height as f32;
+        self.input.mouse_position.x_world = self.camera.camera_x + self.input.mouse_position.x_screen;
+        self.input.mouse_position.y_world = self.camera.camera_y + self.input.mouse_position.y_screen;
+    }
+    pub fn process_mouse_click(&mut self, state: event::ElementState, button: event::MouseButton){
+        match button {
+            event::MouseButton::Left => {
+                self.input.mouse_left = state == event::ElementState::Pressed;
+            },
+            event::MouseButton::Right => {
+                self.input.mouse_right = state == event::ElementState::Pressed;
+            },
+            _ => {}
+        }
+        if state == event::ElementState::Pressed {
+            self.world.on_mouse_click(self.input.mouse_position, self.input.mouse_left, self.input.mouse_right);
+        }
+
+    }
     pub fn process_input(&mut self){
         self.world.process_input(self.input.keys_down.clone(), &mut self.camera);
+        self.world.process_mouse_input(self.input.mouse_position, self.input.mouse_left, self.input.mouse_right);
     }
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         self.renderer.render(self.camera.render(&mut self.world, &self.sprites))
@@ -70,6 +92,7 @@ impl<'a> Game<'a> {
         self.world.generate_collision_cache();
         self.process_input();
         self.world.update_entities();
+        self.world.update_player_effects();
     }
     pub fn key_input(&mut self, event: winit::event::KeyEvent) {
         let mut key = event.logical_key.to_text();
@@ -109,7 +132,7 @@ impl<'a> Game<'a> {
 
 
     pub fn on_key_down(&mut self, key: String){
-       
+       self.world.on_key_down(key);
     }
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {

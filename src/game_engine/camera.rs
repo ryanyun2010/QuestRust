@@ -6,6 +6,8 @@ use crate::rendering_engine::abstractions::{RenderData, RenderDataFull, SpriteID
 use crate::game_engine::ui::UIElement;
 use crate::game_engine::entity_components::PositionComponent;
 use wgpu_text::glyph_brush::{HorizontalAlign, Section as TextSection};
+
+use super::world::PlayerAttackDescriptor;
 #[derive(Debug, Clone)]
 pub struct Camera{
     pub viewpoint_width: usize,
@@ -198,9 +200,35 @@ impl Camera{
         render_data.index.extend(player_draw_data.index);
 
         extra_data.offset(render_data.vertex.len() as u16);    
-
         render_data.vertex.extend(extra_data.vertex);
         render_data.index.extend(extra_data.index);
+
+        let mut player_effect_draw_data = RenderData::new();
+        for effect in world.player_effects.borrow().iter(){
+            let effect_archetype = world.player_archetype_descriptor_lookup.get(&effect.archetype).expect(format!("Could not find effect archetype {}", effect.archetype).as_str());
+            let mut sprite = None;
+            match effect_archetype {
+                PlayerAttackDescriptor::Projectile(projectile_descriptor) => {
+                    let sprite_id = sprites.get_sprite(projectile_descriptor.sprite.as_str()).expect(format!("Could not find projectile sprite {}", projectile_descriptor.sprite).as_str());
+                    sprite = Some(world.sprites[sprite_id]);
+                }
+                _ => {
+
+                }
+            }
+            if sprite.is_none(){
+                continue;
+            }
+            
+            
+            let draw_data = sprite.unwrap().draw_data(effect.x, effect.y, 32, 32, self.viewpoint_width, self.viewpoint_height, player_effect_draw_data.vertex.len() as u16, -1 * self.camera_x as i32, -1 * self.camera_y as i32);
+            player_effect_draw_data.vertex.extend(draw_data.vertex);
+            player_effect_draw_data.index.extend(draw_data.index);
+        }
+        player_effect_draw_data.offset(render_data.vertex.len() as u16);
+        render_data.vertex.extend(player_effect_draw_data.vertex);
+        render_data.index.extend(player_effect_draw_data.index);
+
         world.set_loaded_chunks(chunks_loaded);
         for (id, element) in self.ui_elements.iter(){
             if !element.visible{

@@ -183,6 +183,11 @@ pub fn pathfind_high_granularity(position_component: PositionComponent, collisio
             let nx = current.x.wrapping_add_signed(dx);
             let ny = current.y.wrapping_add_signed(dy);
 
+            if nx > 100000000 || ny > 100000000 {
+                continue;
+            }
+
+
             let distance_from_goal = ((player_x as isize - nx as isize).abs() + (player_y as isize - ny as isize).abs()) as f32;
             
             if distance_from_goal > distance + 10.0 {

@@ -80,7 +80,7 @@ impl Player {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct PlayerEffect{
     pub archetype: String,
     pub time_alive: f32,

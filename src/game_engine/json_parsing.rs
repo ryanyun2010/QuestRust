@@ -100,7 +100,7 @@ pub struct item_json {
 
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct player_projectile_descriptor_json{
     pub name: String,
     pub damage: f32,
@@ -141,7 +141,8 @@ macro_rules! from_JSON_entity_tag_parsing_basic {
             "aggressive", Aggressive,
             "respectsCollision", RespectsCollision,
             "hasCollision", HasCollision,
-            "followsPlayer", FollowsPlayer
+            "followsPlayer", FollowsPlayer,
+            "damageable", Damageable
         ]
     }
 }

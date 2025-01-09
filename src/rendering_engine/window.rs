@@ -34,8 +34,10 @@ pub async fn run(world: World, camera: Camera, sprites: SpriteIDContainer, sprit
                     game.resize(physical_size);
                 },
                 WindowEvent::CursorMoved {position, ..} => {
+                    game.process_mouse_move(position.x, position.y);
                 },
                 WindowEvent::MouseInput { state, button, .. } => {
+                    game.process_mouse_click(state, button);
                 },
                 WindowEvent::Focused(bool) => {
                     focused = bool;
