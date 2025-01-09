@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::cell::{Ref, RefCell};
 use std::hash::Hash;
 use crate::rendering_engine::abstractions::{Sprite, SpriteIDContainer};
@@ -312,9 +312,9 @@ impl World{
         }
         false
     }
-    pub fn get_colliding(&self, player: bool, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, entity: bool) -> Option<usize>{
+    pub fn get_colliding(&self, player: bool, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, entity: bool) -> Vec<usize>{
         let tiles_to_check = World::get_terrain_tiles(x, y, w, h);
-        let mut ids_to_check: Vec<usize> = Vec::new();
+        let mut ids_to_check = HashSet::new();
         for tile in tiles_to_check.iter(){
             if self.collision_cache.borrow().get(&[tile[0],tile[1]]).is_none(){
                 continue;
@@ -323,6 +323,7 @@ impl World{
             }
         }
         let idti: usize = id_to_ignore.unwrap_or(usize::MAX);
+        let mut colliding = Vec::new();
         for id in ids_to_check{
             if id == idti{
                 continue;
@@ -338,18 +339,18 @@ impl World{
                     let ew = entity_collision_box.w;
                     let eh = entity_collision_box.h;
                     if ex < (x + w) as f32 && ex + ew > x as f32 && ey < (y + h) as f32 && ey + eh > y as f32{
-                        return Some(id);
+                        colliding.push(id);
                     }
                 }
                 
             }else{
                 let terrain = terrain_potentially.unwrap();
                 if terrain.x < x + w && terrain.x + 32 > x && terrain.y < y + h && terrain.y + 32 > y{
-                    return Some(id);
+                    colliding.push(id);
                 }
             }
         }
-        return None;
+        return colliding;
     }
     pub fn attempt_move_player(&self, player: &mut Player, movement: [f32; 2]){
         
@@ -446,18 +447,29 @@ impl World{
                     effect.time_alive += 1.0;
                     if effect.time_alive > descriptor.lifetime{
                         effects_to_be_deleted.push(i);
+                        i += 1;
                         continue;
                     }
 
-                    let potential_collision = self.get_colliding(true, None, effect.x as usize, effect.y as usize, descriptor.size.floor() as usize, descriptor.size.floor() as usize, true);
-                    if potential_collision.is_some(){
-                        if self.entity_health_components.get(&potential_collision.unwrap()).is_some(){
-                            let mut health_component = self.entity_health_components.get(&potential_collision.unwrap()).unwrap().borrow_mut();
-                            health_component.health -= descriptor.damage;
+                    let collisions = self.get_colliding(true, None, effect.x as usize, effect.y as usize, descriptor.size.floor() as usize, descriptor.size.floor() as usize, true);
+                    let mut hit = false;
+                    for collision in collisions.iter(){
+                        if self.entity_health_components.get(&collision).is_some(){
+                            hit = true;
                             effects_to_be_deleted.push(i);
-                            continue;
+                            break;
                         }
                     }
+                    if hit {
+                        let AOECollisions = self.get_colliding(true, None, effect.x as usize, effect.y as usize, descriptor.AOE.floor() as usize + descriptor.size.floor() as usize, descriptor.AOE.floor() as usize + descriptor.size.floor() as usize, true);
+                        for collision in AOECollisions.iter(){
+                            if self.entity_health_components.get(&collision).is_some(){
+                                let mut health_component = self.entity_health_components.get(&collision).unwrap().borrow_mut();
+                                health_component.health -= descriptor.damage;
+                            }
+                        }
+                    }
+
                 },
                 PlayerAttackDescriptor::Melee => {
                 }
@@ -466,7 +478,6 @@ impl World{
         }
         let mut offset = 0;
         for index in effects_to_be_deleted.iter(){
-
             effects.remove(*index - offset);
             offset += 1;
         }
