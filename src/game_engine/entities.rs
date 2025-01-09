@@ -111,6 +111,14 @@ impl World {
             }
         }
 
+        let health_component = self.entity_health_components.get(entity_id);
+        if health_component.is_some() {
+            let health_component = health_component.unwrap().borrow();
+            if health_component.health <= 0.0 {
+                self.entities_to_be_killed_at_end_of_frame.borrow_mut().push(*entity_id);
+                return;
+            }
+        }
         
         if follows_player {
             let position_component = self.entity_position_components.get(entity_id).expect("Entities with tag: FollowsPlayer must have a PositionComponent").borrow().clone();

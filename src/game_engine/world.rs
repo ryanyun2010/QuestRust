@@ -88,6 +88,7 @@ pub struct World{
 
     pub player_effects: RefCell<Vec<PlayerEffect>>,
     pub player_archetype_descriptor_lookup: HashMap<String, PlayerAttackDescriptor>,
+    pub entities_to_be_killed_at_end_of_frame: RefCell<Vec<usize>>
 }
 impl World{ 
     pub fn new(player: Player) -> Self{
@@ -125,6 +126,7 @@ impl World{
             entity_pathfinding_components: HashMap::new(),
             player_effects: RefCell::new(Vec::new()),
             player_archetype_descriptor_lookup: player_effect_archetypes_test,
+            entities_to_be_killed_at_end_of_frame: RefCell::new(Vec::new())
         }
     }
     pub fn new_chunk(&self, chunk_x: usize, chunk_y: usize, chunkref: Option<&mut std::cell::RefMut<'_, Vec<Chunk>>>) -> usize{
@@ -462,6 +464,29 @@ impl World{
         }
     }
     
+    pub fn kill_entity(&mut self, entity_id: usize){
+        let entity_position = self.entity_position_components.get(&entity_id).expect("All entities should have position components").borrow().clone();
+        let chunk_id = self.get_chunk_from_xy(entity_position.x as usize, entity_position.y as usize);
+        if chunk_id.is_some(){
+            let chunk_id = chunk_id.unwrap();
+            let chunk = &mut self.chunks.borrow_mut()[chunk_id];
+            let index = chunk.entities_ids.iter().position(|&x| x == entity_id).unwrap();
+            chunk.entities_ids.remove(index);
+        }
+        self.entity_attack_components.remove(&entity_id);
+        self.entity_collision_box_components.remove(&entity_id);
+        self.entity_position_components.remove(&entity_id);
+        self.entity_pathfinding_components.remove(&entity_id);
+        self.entity_health_components.remove(&entity_id);
+        self.entity_archetype_lookup.remove(&entity_id);
+    }
+    pub fn kill_entities_to_be_killed(&mut self){
+        let entities = self.entities_to_be_killed_at_end_of_frame.borrow().clone();
+        for entity in entities{
+            self.kill_entity(entity);
+        }
+        self.entities_to_be_killed_at_end_of_frame.borrow_mut().clear();
+    }
     pub fn on_key_down(&mut self, key: String){
 
     }

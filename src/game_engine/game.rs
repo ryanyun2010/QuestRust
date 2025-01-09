@@ -93,6 +93,7 @@ impl<'a> Game<'a> {
         self.process_input();
         self.world.update_entities();
         self.world.update_player_effects();
+        self.world.kill_entities_to_be_killed();
         self.input.mouse_position.x_world = self.camera.camera_x + self.input.mouse_position.x_screen;
         self.input.mouse_position.y_world = self.camera.camera_y + self.input.mouse_position.y_screen;
     }
