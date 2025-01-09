@@ -92,14 +92,14 @@ pub struct World{
 }
 impl World{ 
     pub fn new(player: Player) -> Self{
-        let mut player_effect_archetypes_test = HashMap::new();
-        player_effect_archetypes_test.insert(String::from("test_projectile"), PlayerAttackDescriptor::Projectile(player_projectile_descriptor{
-            AOE: 2.0,
-            lifetime: 40.0,
-            speed: 9.0,
-            damage: 10.0,
-            sprite: String::from("ghost"),
-        }));
+        // let mut player_effect_archetypes_test = HashMap::new();
+        // player_effect_archetypes_test.insert(String::from("test_projectile"), PlayerAttackDescriptor::Projectile(player_projectile_descriptor{
+        //     AOE: 2.0,
+        //     lifetime: 40.0,
+        //     speed: 9.0,
+        //     damage: 10.0,
+        //     sprite: String::from("ghost"),
+        // }));
         Self{
             chunks: RefCell::new(Vec::new()),
             player: RefCell::new(player),
@@ -125,7 +125,7 @@ impl World{
             entity_position_components: HashMap::new(),
             entity_pathfinding_components: HashMap::new(),
             player_effects: RefCell::new(Vec::new()),
-            player_archetype_descriptor_lookup: player_effect_archetypes_test,
+            player_archetype_descriptor_lookup: HashMap::new(),
             entities_to_be_killed_at_end_of_frame: RefCell::new(Vec::new())
         }
     }

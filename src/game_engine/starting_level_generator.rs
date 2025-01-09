@@ -66,8 +66,9 @@ pub fn generate_world_from_json_parsed_data(data: &ParsedData) -> (World, Sprite
                 panic!("Unknown terrain type: {}", descriptor.r#type);
             }
         }
-
-
+    }
+    for (name, descriptor) in data.player_effect_archetypes.iter(){
+        world.add_player_effect_archetype(name.clone(), descriptor.clone());
     }
     (world, sprites)
 }

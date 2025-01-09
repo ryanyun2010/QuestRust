@@ -4,8 +4,10 @@ use std::io::{BufReader, BufWriter, Write};
 use std::fs::File;
 use std::collections::HashMap;
 use crate::game_engine::entities::{EntityTags, EntityAttack, EntityAttackPattern};
+use crate::game_engine::world::player_projectile_descriptor;
 
 use super::terrain;
+use super::world::PlayerAttackDescriptor;
 
 
 pub struct PathBundle{
@@ -107,7 +109,6 @@ pub struct player_projectile_descriptor_json{
     pub speed: f32,
     pub lifetime: f32,
     pub AOE: f32,
-    pub cooldown: f32,
     pub sprite: String
 }
 
@@ -276,6 +277,21 @@ impl JSON_parser {
         for (.., terrain_archetype) in &self.terrain_archetypes_json {
             data.terrain_archetypes.insert(terrain_archetype.name.clone(), terrain_archetype.clone());
         }
+
+        for ranged_projectile in self.player_attacks.ranged_projectiles.iter() {
+            data.player_effect_archetypes.insert(
+                ranged_projectile.name.clone(),
+                PlayerAttackDescriptor::Projectile(
+                    player_projectile_descriptor{ 
+                        damage: ranged_projectile.damage, 
+                        speed: ranged_projectile.speed, 
+                        lifetime: ranged_projectile.lifetime, 
+                        AOE: ranged_projectile.AOE, 
+                        sprite: ranged_projectile.sprite.clone()
+                    }
+                )
+            );
+        }
         data
     }
     pub fn convert_archetype(&self, entity_archetype: &entity_archetype_json, data: &ParsedData) -> Vec<EntityTags> {
@@ -366,7 +382,8 @@ pub struct ParsedData{
     pub terrain_archetypes: HashMap<String, terrain_archetype_json>,
     pub texture_ids: HashMap<String, i32>,
     pub sprites_to_load_json: Vec<String>,
-    pub starting_level_descriptor: starting_level_json
+    pub starting_level_descriptor: starting_level_json,
+    pub player_effect_archetypes: HashMap<String, PlayerAttackDescriptor>
 }
 
 impl ParsedData{
@@ -389,7 +406,8 @@ impl ParsedData{
                 },
                 entities: Vec::new(),
                 terrain: Vec::new()
-            }
+            },
+            player_effect_archetypes: HashMap::new()
         }
     }
     pub fn get_entity_archetype(&self, name: &str) -> Option<&Vec<EntityTags>> {

@@ -1,14 +1,13 @@
 {
     "ranged_projectiles": [
         {
-            "name": "test_player_projectile",
+            "name": "test_projectile",
             "size": 10.0,
             "damage": 10.0,
             "speed": 10.0,
             "lifetime": 70.0,
-            "cooldown": 1.0,
             "AOE": 2.0,
-            "sprite": "player_projectile"
+            "sprite": "ghost"
         }
     ]
 }
