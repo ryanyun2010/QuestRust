@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use crate::game_engine::{entities::AttackType, json_parsing::{self, entity_attack_pattern_json, PathBundle}, world::EntityDirectionOptions};
+use crate::game_engine::{entities::AttackType, json_parsing::{self, entity_attack_pattern_json, PathBundle}, pathfinding::EntityDirectionOptions};
 pub const TEST_PATH_BUNDLE: PathBundle = PathBundle{
     entity_archetypes_path: "src/tests/test_game_data/entity_archetypes.json",
     entity_attack_patterns_path: "src/tests/test_game_data/entity_attack_patterns.json",

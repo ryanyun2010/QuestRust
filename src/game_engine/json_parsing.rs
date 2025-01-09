@@ -4,10 +4,9 @@ use std::io::{BufReader, BufWriter, Write};
 use std::fs::File;
 use std::collections::HashMap;
 use crate::game_engine::entities::{EntityTags, EntityAttack, EntityAttackPattern};
-use crate::game_engine::world::player_projectile_descriptor;
 
 use super::terrain;
-use super::world::PlayerAttackDescriptor;
+use super::player_attacks::{PlayerAttackDescriptor, player_projectile_descriptor};
 
 
 pub struct PathBundle{
@@ -280,7 +279,7 @@ impl JSON_parser {
         }
 
         for ranged_projectile in self.player_attacks.ranged_projectiles.iter() {
-            data.player_effect_archetypes.insert(
+            data.player_attack_archetypes.insert(
                 ranged_projectile.name.clone(),
                 PlayerAttackDescriptor::Projectile(
                     player_projectile_descriptor{ 
@@ -385,7 +384,7 @@ pub struct ParsedData{
     pub texture_ids: HashMap<String, i32>,
     pub sprites_to_load_json: Vec<String>,
     pub starting_level_descriptor: starting_level_json,
-    pub player_effect_archetypes: HashMap<String, PlayerAttackDescriptor>
+    pub player_attack_archetypes: HashMap<String, PlayerAttackDescriptor>
 }
 
 impl ParsedData{
@@ -409,7 +408,7 @@ impl ParsedData{
                 entities: Vec::new(),
                 terrain: Vec::new()
             },
-            player_effect_archetypes: HashMap::new()
+            player_attack_archetypes: HashMap::new()
         }
     }
     pub fn get_entity_archetype(&self, name: &str) -> Option<&Vec<EntityTags>> {

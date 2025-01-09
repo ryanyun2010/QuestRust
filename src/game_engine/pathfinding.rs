@@ -1,7 +1,16 @@
 use std::collections::{BinaryHeap, HashMap};
 use std::cmp::Ordering;
 use super::entity_components::{CollisionBox, PositionComponent};
-use super::world::{EntityDirectionOptions, World};
+use super::world::World;
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum EntityDirectionOptions{
+    Up,
+    Down,
+    Left,
+    Right,
+    None
+}
 
 #[derive(Debug, Clone, PartialEq)]
 struct PathfindingNode {

@@ -4,9 +4,9 @@ use std::borrow::BorrowMut;
 use std::cell::{Ref, RefCell, RefMut};
 use std::collections::HashMap;
 use super::entity_components::{self, EntityAttackComponent, EntityComponentHolder, PathfindingComponent, PositionComponent};
-use super::world::{Chunk, EntityDirectionOptions, World};
+use super::world::{Chunk, World};
 use super::player::Player;
-use super::pathfinding;
+use super::pathfinding::{self, EntityDirectionOptions};
 use super::json_parsing::ParsedData;
 
 impl World {

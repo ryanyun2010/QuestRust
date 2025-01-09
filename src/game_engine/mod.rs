@@ -16,3 +16,4 @@ pub mod inventory;
 pub mod command_line_input;
 pub mod game;
 pub mod entity_components;
+pub mod player_attacks;

@@ -1,4 +1,5 @@
-use super::world::{EntityDirectionOptions, World};
+use super::world::World;
+use super::pathfinding::EntityDirectionOptions;
 use super::entities::EntityAttack;
 use std::collections::HashMap;
 use std::cell::{RefCell, RefMut};

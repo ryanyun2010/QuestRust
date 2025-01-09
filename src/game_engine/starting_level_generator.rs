@@ -67,8 +67,8 @@ pub fn generate_world_from_json_parsed_data(data: &ParsedData) -> (World, Sprite
             }
         }
     }
-    for (name, descriptor) in data.player_effect_archetypes.iter(){
-        world.add_player_effect_archetype(name.clone(), descriptor.clone());
+    for (name, descriptor) in data.player_attack_archetypes.iter(){
+        world.add_player_attack_archetype(name.clone(), descriptor.clone());
     }
     (world, sprites)
 }

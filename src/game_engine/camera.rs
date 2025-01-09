@@ -7,7 +7,7 @@ use crate::game_engine::ui::UIElement;
 use crate::game_engine::entity_components::PositionComponent;
 use wgpu_text::glyph_brush::{HorizontalAlign, Section as TextSection};
 
-use super::world::PlayerAttackDescriptor;
+use super::player_attacks::PlayerAttackDescriptor;
 #[derive(Debug, Clone)]
 pub struct Camera{
     pub viewpoint_width: usize,
@@ -204,7 +204,7 @@ impl Camera{
         render_data.index.extend(extra_data.index);
 
         let mut player_effect_draw_data = RenderData::new();
-        for effect in world.player_effects.borrow().iter(){
+        for effect in world.player_attacks.borrow().iter(){
             let effect_archetype = world.player_archetype_descriptor_lookup.get(&effect.archetype).expect(format!("Could not find effect archetype {}", effect.archetype).as_str());
             let mut sprite = None;
             let mut size = None;

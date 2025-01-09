@@ -11,19 +11,10 @@ use super::camera::Camera;
 use super::entity_components::{self, EntityComponentHolder};
 use super::game::MousePosition;
 use super::json_parsing::player_projectile_descriptor_json;
-use super::player::{self, PlayerEffect};
+use super::player_attacks::{PlayerAttack, PlayerAttackDescriptor, player_projectile_descriptor};
 
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum EntityDirectionOptions{
-    Up,
-    Down,
-    Left,
-    Right,
-    None
-}
 #[derive(Debug, Clone)]
-pub struct Chunk{  // 32x32 blocks of 32x32 = chunks are 1024x1024 pixels but 1024 * RETINA SCALE accounting for retina, so a chunk with x =0, y =0, is pixels 0-1023, 0-1023
+pub struct Chunk{  
     pub chunk_id: usize,
     x: usize,
     y: usize,
@@ -32,26 +23,6 @@ pub struct Chunk{  // 32x32 blocks of 32x32 = chunks are 1024x1024 pixels but 10
     
 }
 
-impl Chunk{
-}
-// TODO: ENTITY CHUNKING HAS A CRAZY AMOUNT OF BUGS HERE
-#[derive(Clone, Debug, PartialEq)]
-pub enum PlayerAttackDescriptor{
-    Projectile(player_projectile_descriptor),
-    Melee
-}
-
-
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct player_projectile_descriptor{
-    pub damage: f32,
-    pub speed: f32,
-    pub lifetime: f32,
-    pub AOE: f32,
-    pub size: f32,
-    pub sprite: String
-}
 #[derive(Debug, Clone)]
 pub struct World{
     pub chunks: RefCell<Vec<Chunk>>,
@@ -87,20 +58,12 @@ pub struct World{
     pub sprites: Vec<Sprite>,
     pub sprite_lookup: HashMap<usize,usize>, // corresponds element_ids to sprite_ids ie. to get the sprite for element_id x, just do sprite_lookup[x]
 
-    pub player_effects: RefCell<Vec<PlayerEffect>>,
+    pub player_attacks: RefCell<Vec<PlayerAttack>>,
     pub player_archetype_descriptor_lookup: HashMap<String, PlayerAttackDescriptor>,
     pub entities_to_be_killed_at_end_of_frame: RefCell<Vec<usize>>
 }
 impl World{ 
     pub fn new(player: Player) -> Self{
-        // let mut player_effect_archetypes_test = HashMap::new();
-        // player_effect_archetypes_test.insert(String::from("test_projectile"), PlayerAttackDescriptor::Projectile(player_projectile_descriptor{
-        //     AOE: 2.0,
-        //     lifetime: 40.0,
-        //     speed: 9.0,
-        //     damage: 10.0,
-        //     sprite: String::from("ghost"),
-        // }));
         Self{
             chunks: RefCell::new(Vec::new()),
             player: RefCell::new(player),
@@ -125,7 +88,7 @@ impl World{
             entity_health_components: HashMap::new(),
             entity_position_components: HashMap::new(),
             entity_pathfinding_components: HashMap::new(),
-            player_effects: RefCell::new(Vec::new()),
+            player_attacks: RefCell::new(Vec::new()),
             player_archetype_descriptor_lookup: HashMap::new(),
             entities_to_be_killed_at_end_of_frame: RefCell::new(Vec::new())
         }
@@ -428,40 +391,40 @@ impl World{
         d.extend(tags);
         self.terrain_tags_lookup.insert(element_id, d);
     }
-    pub fn add_player_effect(&self, archetype_name: String, x: f32, y: f32, direction: [f32;2]) {    
-        self.player_effects.borrow_mut().push(PlayerEffect::new(archetype_name,0.0, x,y,direction));
+    pub fn add_player_attacks(&self, archetype_name: String, x: f32, y: f32, direction: [f32;2]) {    
+        self.player_attacks.borrow_mut().push(PlayerAttack::new(archetype_name,0.0, x,y,direction));
     }
-    pub fn add_player_effect_archetype(&mut self, archetype_name: String, descriptor: PlayerAttackDescriptor){
+    pub fn add_player_attack_archetype(&mut self, archetype_name: String, descriptor: PlayerAttackDescriptor){
         self.player_archetype_descriptor_lookup.insert(archetype_name, descriptor);
     }
-    pub fn update_player_effects(&self){
-        let mut effects = self.player_effects.borrow_mut();
-        let mut effects_to_be_deleted = Vec::new();
+    pub fn update_player_attacks(&self){
+        let mut attacks = self.player_attacks.borrow_mut();
+        let mut attacks_to_be_deleted = Vec::new();
         let mut i = 0;
-        for effect in effects.iter_mut(){
-            let descriptor = self.player_archetype_descriptor_lookup.get(&effect.archetype).expect(format!("Could not find player effect archetype: {}", effect.archetype).as_str());
+        for attack in attacks.iter_mut(){
+            let descriptor = self.player_archetype_descriptor_lookup.get(&attack.archetype).expect(format!("Could not find player attack archetype: {}", attack.archetype).as_str());
             match descriptor{
                 PlayerAttackDescriptor::Projectile(descriptor) => {
-                    effect.x += effect.direction[0] * descriptor.speed;
-                    effect.y += effect.direction[1] * descriptor.speed;
-                    effect.time_alive += 1.0;
-                    if effect.time_alive > descriptor.lifetime{
-                        effects_to_be_deleted.push(i);
+                    attack.x += attack.direction[0] * descriptor.speed;
+                    attack.y += attack.direction[1] * descriptor.speed;
+                    attack.time_alive += 1.0;
+                    if attack.time_alive > descriptor.lifetime{
+                        attacks_to_be_deleted.push(i);
                         i += 1;
                         continue;
                     }
 
-                    let collisions = self.get_colliding(true, None, effect.x as usize, effect.y as usize, descriptor.size.floor() as usize, descriptor.size.floor() as usize, true);
+                    let collisions = self.get_colliding(true, None, attack.x as usize, attack.y as usize, descriptor.size.floor() as usize, descriptor.size.floor() as usize, true);
                     let mut hit = false;
                     for collision in collisions.iter(){
                         if self.entity_health_components.get(&collision).is_some(){
                             hit = true;
-                            effects_to_be_deleted.push(i);
+                            attacks_to_be_deleted.push(i);
                             break;
                         }
                     }
                     if hit {
-                        let AOECollisions = self.get_colliding(true, None, effect.x as usize, effect.y as usize, descriptor.AOE.floor() as usize + descriptor.size.floor() as usize, descriptor.AOE.floor() as usize + descriptor.size.floor() as usize, true);
+                        let AOECollisions = self.get_colliding(true, None, attack.x as usize, attack.y as usize, descriptor.AOE.floor() as usize + descriptor.size.floor() as usize, descriptor.AOE.floor() as usize + descriptor.size.floor() as usize, true);
                         for collision in AOECollisions.iter(){
                             if self.entity_health_components.get(&collision).is_some(){
                                 let mut health_component = self.entity_health_components.get(&collision).unwrap().borrow_mut();
@@ -477,8 +440,8 @@ impl World{
             i += 1;
         }
         let mut offset = 0;
-        for index in effects_to_be_deleted.iter(){
-            effects.remove(*index - offset);
+        for index in attacks_to_be_deleted.iter(){
+            attacks.remove(*index - offset);
             offset += 1;
         }
     }
@@ -520,8 +483,8 @@ impl World{
             mouse_direction_unnormalized[0] / magnitude,
             mouse_direction_unnormalized[1] / magnitude
         ];
-        self.player_effects.borrow_mut().push(
-            PlayerEffect::new(
+        self.player_attacks.borrow_mut().push(
+            PlayerAttack::new(
                 String::from("test_projectile"),
                 0.0, 
                 self.player.borrow().x + 10.0,
