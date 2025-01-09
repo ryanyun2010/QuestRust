@@ -1,7 +1,7 @@
 [
     {
         "name": "player",
-        "path": "src/rendering_engine/img/player.png"
+        "path": "src/rendering_engine/img/panda.png"
     },
     {
         "name": "dirt",

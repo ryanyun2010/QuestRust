@@ -52,11 +52,11 @@ impl Player {
         let screen_to_render_ratio_x: f32 = 2.0 / window_size_width as f32;
         let screen_to_render_ratio_y: f32 = 2.0 / window_size_height as f32;
         
-        let w: f32 = 32 as f32 * screen_to_render_ratio_x;
-        let h: f32 = 32 as f32 * screen_to_render_ratio_y;
+        let w: f32 = 38 as f32 * screen_to_render_ratio_x;
+        let h: f32 = 52 as f32 * screen_to_render_ratio_y;
 
-        let x: f32 = ((self.x.floor() as f32) + (vertex_offset_x as f32)) * screen_to_render_ratio_x - 1.0;
-        let y: f32 = -1.0 * (((self.y.floor() as f32) + (vertex_offset_y as f32)) * screen_to_render_ratio_y - 1.0) - h;
+        let x: f32 = ((self.x.floor() as f32 - 8.0) + (vertex_offset_x as f32)) * screen_to_render_ratio_x - 1.0;
+        let y: f32 = -1.0 * (((self.y.floor() as f32 - 20.0) + (vertex_offset_y as f32)) * screen_to_render_ratio_y - 1.0) - h;
 
 
         let mut vertex: Vec<Vertex> = vec![
