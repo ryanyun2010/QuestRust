@@ -79,6 +79,7 @@ impl World{
             terrain_tags_lookup: HashMap::new(),
             terrain: HashMap::new(),
             item_containers: RefCell::new(HashMap::new()),
+            item_tag_lookup: RefCell::new(HashMap::new()),
             loaded_chunks: Vec::new(),
             collision_cache: RefCell::new(HashMap::new()),
             pathfinding_frames: HashMap::new(),
