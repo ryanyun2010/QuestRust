@@ -464,7 +464,7 @@ impl World{
         }
     }
     
-    pub fn kill_entity(&mut self, entity_id: usize){
+    pub fn remove_entity(&mut self, entity_id: usize){
         let entity_position = self.entity_position_components.get(&entity_id).expect("All entities should have position components").borrow().clone();
         let chunk_id = self.get_chunk_from_xy(entity_position.x as usize, entity_position.y as usize);
         if chunk_id.is_some(){
@@ -480,10 +480,13 @@ impl World{
         self.entity_health_components.remove(&entity_id);
         self.entity_archetype_lookup.remove(&entity_id);
     }
+    pub fn kill_entity(&self, entity_id: usize){
+        self.entities_to_be_killed_at_end_of_frame.borrow_mut().push(entity_id);
+    }
     pub fn kill_entities_to_be_killed(&mut self){
         let entities = self.entities_to_be_killed_at_end_of_frame.borrow().clone();
         for entity in entities{
-            self.kill_entity(entity);
+            self.remove_entity(entity);
         }
         self.entities_to_be_killed_at_end_of_frame.borrow_mut().clear();
     }

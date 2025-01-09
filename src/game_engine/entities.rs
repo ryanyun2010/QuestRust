@@ -115,7 +115,7 @@ impl World {
         if health_component.is_some() {
             let health_component = health_component.unwrap().borrow();
             if health_component.health <= 0.0 {
-                self.entities_to_be_killed_at_end_of_frame.borrow_mut().push(*entity_id);
+                self.kill_entity(*entity_id);
                 return;
             }
         }
