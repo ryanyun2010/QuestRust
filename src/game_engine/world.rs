@@ -1,5 +1,7 @@
+use core::f32;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::cell::{Ref, RefCell};
+use std::f32::consts::PI;
 use std::hash::Hash;
 use crate::rendering_engine::abstractions::{Sprite, SpriteContainer};
 use crate::entities::EntityTags;
@@ -13,6 +15,7 @@ use super::game::MousePosition;
 use super::item::ItemTags;
 use super::json_parsing::player_projectile_descriptor_json;
 use super::player_attacks::{melee_attack_descriptor, player_projectile_descriptor, PlayerAttack, PlayerAttackDescriptor};
+use super::utils::Rectangle;
 
 #[derive(Debug, Clone)]
 pub struct Chunk{  
@@ -34,7 +37,7 @@ pub struct World{
     pub item_containers: RefCell<HashMap<usize, ItemContainer>>, // corresponds element id to item container element
     pub item_tag_lookup: RefCell<HashMap<usize, Vec<ItemTags>>>, // corresponds element id to item archetype
 
-    pub collision_cache: RefCell<HashMap<[usize; 2], Vec<usize>>>, // collision x,y, to element id, collision tiles are 64x64
+    pub collision_cache: RefCell<HashMap<[usize; 2], Vec<usize>>>, // collision x,y, to element id, collision tiles are 32x32
    
     pub pathfinding_frames: HashMap<usize, usize>, // entity id to frame of pathfinding
     pub next_pathfinding_frame_for_entity: usize,
@@ -181,6 +184,28 @@ impl World{
         }
         tiles
     }
+    pub fn get_collision_tiles_rotated_rect(x: usize, y:usize, w:usize, h:usize, rotation: f32) -> Vec<[usize; 2]> {
+        let corners = super::utils::get_rotated_corners(&Rectangle { x: x as f32, y: y as f32, width: w as f32, height: h as f32, rotation });
+        let mut left_most_x = None;
+        let mut right_most_x = None;
+        let mut top_most_y = None;
+        let mut bot_most_y = None;
+        for corner in corners {
+            if corner.0 < left_most_x.unwrap_or(f32::MAX){
+                left_most_x = Some(corner.0);
+            }
+            if corner.0 > right_most_x.unwrap_or(f32::MIN) {
+                right_most_x = Some(corner.0);
+            }
+            if corner.1 > bot_most_y.unwrap_or(f32::MIN) {
+                bot_most_y = Some(corner.1);
+            }
+            if corner.1 < top_most_y.unwrap_or(f32::MAX) || top_most_y.is_none() {
+                top_most_y = Some(corner.1);
+            }
+        }
+        return World::get_terrain_tiles(left_most_x.unwrap().floor() as usize, top_most_y.unwrap().floor() as usize, (right_most_x.unwrap() - left_most_x.unwrap()).ceil() as usize, (bot_most_y.unwrap() - top_most_y.unwrap()).ceil() as usize);
+    }
     pub fn generate_collision_cache(&mut self){
         let mut collision_cache_ref = self.collision_cache.borrow_mut();
         collision_cache_ref.clear();
@@ -277,6 +302,56 @@ impl World{
             }
         }
         false
+    }
+    pub fn get_colliding_rotated_rect(&self, player: bool, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, rotation: f32, entity: bool) -> Vec<usize>{
+        let tiles_to_check = World::get_collision_tiles_rotated_rect(x, y, w, h, rotation);
+        let mut ids_to_check = HashSet::new();
+        for tile in tiles_to_check.iter(){
+            if self.collision_cache.borrow().get(&[tile[0],tile[1]]).is_none(){
+                continue;
+            }else{
+                ids_to_check.extend(self.collision_cache.borrow().get(&[tile[0],tile[1]]).unwrap());
+            }
+        }
+        let idti: usize = id_to_ignore.unwrap_or(usize::MAX);
+        let mut colliding = Vec::new();
+        for id in ids_to_check{
+            if id == idti{
+                continue;
+            }
+            let terrain_potentially = self.terrain.get(&id);
+            
+            if terrain_potentially.is_none(){
+                if entity{
+                    let entity_collision_box = self.entity_collision_box_components.get(&id).unwrap().borrow();
+                    let entity_position = self.entity_position_components.get(&id).unwrap().borrow();
+                    let ex = entity_position.x + entity_collision_box.x_offset;
+                    let ey = entity_position.y + entity_collision_box.y_offset;
+                    let ew = entity_collision_box.w;
+                    let eh = entity_collision_box.h;
+                    if super::utils::check_collision(&Rectangle {
+                        x: x as f32, y: y as f32, width: w as f32, height: h as f32, rotation: rotation },
+                        &Rectangle {
+                            x: ex, y: ey, width: ew, height: eh, rotation: 0.0
+                        }
+                    ){
+                        colliding.push(id);
+                    }
+                }
+                
+            }else{
+                let terrain = terrain_potentially.unwrap();
+                if super::utils::check_collision(&Rectangle {
+                    x: x as f32, y: y as f32, width: w as f32, height: h as f32, rotation: rotation },
+                    &Rectangle {
+                        x: terrain.x as f32, y: terrain.y as f32, width: 32.0, height: 32.0, rotation: 0.0
+                    }
+                ){
+                    colliding.push(id);
+                }
+            }
+        }
+        return colliding;
     }
     pub fn get_colliding(&self, player: bool, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, entity: bool) -> Vec<usize>{
         let tiles_to_check = World::get_terrain_tiles(x, y, w, h);
@@ -449,20 +524,10 @@ impl World{
                         continue;
                     }
                     if attack.time_alive < 2.0 {   
-                        let mut height = 0.0;
-                        let mut width = 0.0;
-                        match attack.direction {
-                            [-1.0, 0.0] | [1.0, 0.0] => {
-                                height = melee_attack_descriptor.width;
-                                width = melee_attack_descriptor.reach;
-                            },
-                            [0.0, 1.0] | [0.0, -1.0] => {
-                                width = melee_attack_descriptor.width;
-                                height = melee_attack_descriptor.reach;
-                            },
-                            _ => {}
-                        }
-                        let collisions = self.get_colliding(true, None, attack.x as usize, attack.y as usize, width.floor() as usize, height.floor() as usize, true);
+                        let mut height = melee_attack_descriptor.reach;
+                        let mut width = melee_attack_descriptor.width;
+                        let angle = f32::atan2(attack.direction[1], attack.direction[0]) * 180.0/PI;
+                        let collisions = self.get_colliding_rotated_rect(true, None, attack.x as usize, attack.y as usize, width.floor() as usize, height.floor() as usize,angle, true);
                         for collision in collisions.iter(){
                             if self.entity_health_components.get(&collision).is_some(){
                                 let mut health_component = self.entity_health_components.get(&collision).unwrap().borrow_mut();
@@ -537,45 +602,17 @@ impl World{
                 }
             }
         }
-        if y/H > x/W {
-            if y < H - x * H/W{    
-                self.player_attacks.borrow_mut().push(
-                    PlayerAttack::new(
-                        String::from("test_melee_attack"),
-                        0.0, 
-                        self.player.borrow().x - 4.0 -  reach as f32,
-                        self.player.borrow().y,
-                        [-1.0, 0.0]));
-            }else{
-                self.player_attacks.borrow_mut().push(
-                    PlayerAttack::new(
-                        String::from("test_melee_attack"),
-                        0.0, 
-                        self.player.borrow().x,
-                        self.player.borrow().y + 32.0,
-                        [0.0, 1.0]));
-            }
-        }else{
-            if y < H - x * H/W{    
-                self.player_attacks.borrow_mut().push(
-                    PlayerAttack::new(
-                        String::from("test_melee_attack"),
-                        0.0, 
-                        self.player.borrow().x,
-                        self.player.borrow().y - 20.0 - reach as f32,
-                        [0.0, -1.0])); 
-            } else{
-                    
-                self.player_attacks.borrow_mut().push(
-                    PlayerAttack::new(
-                        String::from("test_melee_attack"),
-                        0.0, 
-                        self.player.borrow().x + 36.0,
-                        self.player.borrow().y,
-                        [1.0, 0.0]));
-            }
-
-        }
+        
+        let angle = f32::atan2(y - H/2.0, x- W/2.0);
+        println!("Angle: {}", angle * 180.0/PI);
+        self.player_attacks.borrow_mut().push(
+            PlayerAttack::new(
+                "test_melee_attack".to_string(),
+                0.0, 
+                self.player.borrow().x + mouse_direction_normalized[0] * 25.0,
+                self.player.borrow().y + mouse_direction_normalized[1] * 25.0, 
+                mouse_direction_normalized)
+        );
     }
     pub fn process_mouse_input(&mut self, mouse_position: MousePosition, mouse_left: bool, mouse_right: bool){
 

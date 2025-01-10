@@ -20,6 +20,7 @@ pub struct Camera{
     pub level_editor: bool,
     pub text: BTreeMap<usize, TextSprite>,
     pub text_id: usize,
+    pub test: f32,
 }
 
 impl Camera{
@@ -29,6 +30,7 @@ impl Camera{
             viewpoint_height: viewpoint_height,
             camera_x: 20.0,
             camera_y: 40.0,
+            test: 0.0,
             ui_elements: BTreeMap::new(),
             ui_element_names: HashMap::new(),
             ui_element_id: 0,
@@ -125,6 +127,7 @@ impl Camera{
         (draw_data_main, draw_data_other)
     }
     pub fn render(&mut self, world: &mut World) -> RenderDataFull{
+        self.test += 1.0;
         let mut render_data = RenderDataFull::new();
         let mut terrain_data: RenderData = RenderData::new();
         let mut entity_data: RenderData = RenderData::new();
@@ -219,17 +222,8 @@ impl Camera{
                 }
                 PlayerAttackDescriptor::Melee(melee_descriptor) => {
                     melee = true;
-                    match effect.direction {
-                        [-1.0, 0.0] | [1.0, 0.0] => {
-                            height = Some(melee_descriptor.width);
-                            width = Some(melee_descriptor.reach);
-                        },
-                        [0.0, 1.0] | [0.0, -1.0] => {
-                            width = Some(melee_descriptor.width);
-                            height = Some(melee_descriptor.reach);
-                        },
-                        _ => {}
-                    }
+                    height = Some(melee_descriptor.width);
+                    width = Some(melee_descriptor.reach);
                     
                     let sprite_id = world.sprites.get_sprite_id(melee_descriptor.sprite.as_str()).expect(format!("Could not find melee sprite {}", melee_descriptor.sprite).as_str());
                     sprite = Some(world.sprites.get_sprite(sprite_id).expect(format!("Could not find melee attack sprite {}", melee_descriptor.sprite.as_str()).as_str()).clone());
@@ -243,29 +237,12 @@ impl Camera{
                 continue;
             }
             if melee {
-                match effect.direction {
-                    [-1.0, 0.0] => {
-                        let draw_data = sprite.unwrap().draw_data(effect.x, effect.y, width.unwrap().floor() as usize, height.unwrap().floor() as usize, self.viewpoint_width, self.viewpoint_height, player_effect_draw_data.vertex.len() as u16, -1 * self.camera_x as i32, -1 * self.camera_y as i32);
-                        player_effect_draw_data.vertex.extend(draw_data.vertex);
-                        player_effect_draw_data.index.extend(draw_data.index);
-                    },
-                    [1.0, 0.0] => {
-                        let draw_data = sprite.unwrap().draw_data(effect.x, effect.y, width.unwrap().floor() as usize, height.unwrap().floor() as usize, self.viewpoint_width, self.viewpoint_height, player_effect_draw_data.vertex.len() as u16, -1 * self.camera_x as i32, -1 * self.camera_y as i32).flipped_x();
-                        player_effect_draw_data.vertex.extend(draw_data.vertex);
-                        player_effect_draw_data.index.extend(draw_data.index);
-                    },
-                    [0.0, 1.0] => {
-                        let draw_data = sprite.unwrap().draw_data(effect.x, effect.y, width.unwrap().floor() as usize, height.unwrap().floor() as usize, self.viewpoint_width, self.viewpoint_height, player_effect_draw_data.vertex.len() as u16, -1 * self.camera_x as i32, -1 * self.camera_y as i32).rotated_90();
-                        player_effect_draw_data.vertex.extend(draw_data.vertex);
-                        player_effect_draw_data.index.extend(draw_data.index);
-                    },
-                    [0.0, -1.0] => {
-                        let draw_data = sprite.unwrap().draw_data(effect.x, effect.y, width.unwrap().floor() as usize, height.unwrap().floor() as usize, self.viewpoint_width, self.viewpoint_height, player_effect_draw_data.vertex.len() as u16, -1 * self.camera_x as i32, -1 * self.camera_y as i32).rotated_90().flipped_y();
-                        player_effect_draw_data.vertex.extend(draw_data.vertex);
-                        player_effect_draw_data.index.extend(draw_data.index);
-                    },
-                    _ => {}
-                }  
+                println!("Effect {:?}", self.test);
+                let angle = f32::atan2(effect.direction[1], -1.0 * effect.direction[0]);
+                println!("Angle: {}", angle);
+                let draw_data = sprite.unwrap().draw_data(effect.x, effect.y, width.unwrap().floor() as usize, height.unwrap().floor() as usize, self.viewpoint_width, self.viewpoint_height, player_effect_draw_data.vertex.len() as u16, -1 * self.camera_x as i32, -1 * self.camera_y as i32).rotated(angle * 180.0/std::f32::consts::PI);
+                player_effect_draw_data.vertex.extend(draw_data.vertex);
+                player_effect_draw_data.index.extend(draw_data.index);
                 continue;
             }
             let draw_data = sprite.unwrap().draw_data(effect.x, effect.y, width.unwrap().floor() as usize, height.unwrap().floor() as usize, self.viewpoint_width, self.viewpoint_height, player_effect_draw_data.vertex.len() as u16, -1 * self.camera_x as i32, -1 * self.camera_y as i32);

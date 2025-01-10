@@ -83,6 +83,9 @@ impl RenderData{
         }
     }
     pub fn rotated_90(&self) -> RenderData{
+        if self.vertex.len() != 4 {
+            panic!("Rotated only works with 4 vertices");
+        }
         let mut clone = self.clone();
         let first = clone.vertex[0].tex_coords;
         clone.vertex[0].tex_coords = clone.vertex[3].tex_coords;
@@ -91,7 +94,32 @@ impl RenderData{
         clone.vertex[1].tex_coords = first;
         return clone;
     }
+    pub fn rotated(&self, angle: f32) -> RenderData{
+        if self.vertex.len() != 4 {
+            panic!("Rotated only works with 4 vertices");
+        }
+        let mut clone = self.clone();
+        let angle = angle * PI / 180.0;
+        let center = [
+            (clone.vertex[0].position[0] + clone.vertex[1].position[0] + clone.vertex[2].position[0] + clone.vertex[3].position[0])/4.0,
+            (clone.vertex[0].position[1] + clone.vertex[1].position[1] + clone.vertex[2].position[1] + clone.vertex[3].position[1])/4.0
+        ];
+
+        for vertex in clone.vertex.iter_mut(){
+            let vertex_centered = [
+                vertex.position[0] - center[0],
+                vertex.position[1] - center[1]
+            ];
+
+            vertex.position[0] = vertex_centered[0] * angle.cos() - vertex_centered[1] * angle.sin() + center[0];
+            vertex.position[1] = vertex_centered[0] * angle.sin() + vertex_centered[1] * angle.cos() + center[1];
+        }
+        return clone;
+    }
     pub fn flipped_x(&self) -> RenderData {
+        if self.vertex.len() != 4 {
+            panic!("Flip only works with 4 vertices");
+        }
         let mut clone = self.clone();
         let left = [clone.vertex[0].tex_coords,clone.vertex[3].tex_coords];
         clone.vertex[0].tex_coords = clone.vertex[1].tex_coords;
@@ -101,6 +129,9 @@ impl RenderData{
         return clone;
     }
     pub fn flipped_y(&self) -> RenderData {
+        if self.vertex.len() != 4 {
+            panic!("Flip only works with 4 vertices");
+        }
         let mut clone = self.clone();
         let top = [clone.vertex[0].tex_coords,clone.vertex[1].tex_coords];
         clone.vertex[0].tex_coords = clone.vertex[2].tex_coords;
