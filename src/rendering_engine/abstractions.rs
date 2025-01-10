@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, f32::consts::PI};
 use wgpu_text::glyph_brush::{HorizontalAlign, Layout, Section as TextSection, Text};
 use crate::game_engine::{camera::Camera, json_parsing::{sprites_json_descriptor, ParsedData}, world::World};
 
@@ -67,7 +67,7 @@ impl Sprite {
 
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RenderData{
     pub vertex: Vec<Vertex>,
     pub index: Vec<u16>
@@ -81,6 +81,33 @@ impl RenderData{
         for index in self.index.iter_mut(){
             *index += index_offset;
         }
+    }
+    pub fn rotated_90(&self) -> RenderData{
+        let mut clone = self.clone();
+        let first = clone.vertex[0].tex_coords;
+        clone.vertex[0].tex_coords = clone.vertex[3].tex_coords;
+        clone.vertex[3].tex_coords = clone.vertex[2].tex_coords;
+        clone.vertex[2].tex_coords = clone.vertex[1].tex_coords;
+        clone.vertex[1].tex_coords = first;
+        return clone;
+    }
+    pub fn flipped_x(&self) -> RenderData {
+        let mut clone = self.clone();
+        let left = [clone.vertex[0].tex_coords,clone.vertex[3].tex_coords];
+        clone.vertex[0].tex_coords = clone.vertex[1].tex_coords;
+        clone.vertex[3].tex_coords = clone.vertex[2].tex_coords;
+        clone.vertex[1].tex_coords = left[0];
+        clone.vertex[2].tex_coords = left[1];
+        return clone;
+    }
+    pub fn flipped_y(&self) -> RenderData {
+        let mut clone = self.clone();
+        let top = [clone.vertex[0].tex_coords,clone.vertex[1].tex_coords];
+        clone.vertex[0].tex_coords = clone.vertex[2].tex_coords;
+        clone.vertex[1].tex_coords = clone.vertex[3].tex_coords;
+        clone.vertex[2].tex_coords = top[0];
+        clone.vertex[3].tex_coords = top[1];
+        return clone;
     }
 }
 
