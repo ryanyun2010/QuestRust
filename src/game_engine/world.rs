@@ -223,9 +223,12 @@ impl World{
                         TerrainTags::BlocksMovement => {
                             let tiles_blocked: Vec<[usize; 2]> = World::get_terrain_tiles(terrain.x, terrain.y, 32, 32);
                             for tile in tiles_blocked.iter(){
-                                let mut collision_cache_entry = collision_cache_ref.get(&[tile[0],tile[1]]).unwrap_or(&Vec::new()).clone();
-                                collision_cache_entry.push(*terrain_id);
-                                collision_cache_ref.insert([tile[0],tile[1]], collision_cache_entry);
+                                let mut collision_cache_entry = collision_cache_ref.get_mut(&[tile[0],tile[1]]);
+                                if collision_cache_entry.is_some(){    
+                                    collision_cache_entry.unwrap().push(*terrain_id);
+                                }else{
+                                    collision_cache_ref.insert([tile[0],tile[1]], vec![*terrain_id]);
+                                }
                             }
                         }
                         _ => ()
@@ -247,9 +250,12 @@ impl World{
                             let collision_component = self.entity_collision_box_components.get(entity_id).expect("All Entities with the Has Collision tag should have a collision box component").borrow();
                             let tiles_blocked: Vec<[usize; 2]> = World::get_terrain_tiles(position_component.x as usize, position_component.y as usize, collision_component.w as usize, collision_component.h as usize);
                             for tile in tiles_blocked.iter(){
-                                let mut collision_cache_entry = collision_cache_ref.get(&[tile[0],tile[1]]).unwrap_or(&Vec::new()).clone();
-                                collision_cache_entry.push(*entity_id);
-                                collision_cache_ref.insert([tile[0],tile[1]], collision_cache_entry);
+                                let mut collision_cache_entry = collision_cache_ref.get_mut(&[tile[0],tile[1]]);
+                                if collision_cache_entry.is_some(){    
+                                    collision_cache_entry.unwrap().push(*entity_id);
+                                }else{
+                                    collision_cache_ref.insert([tile[0],tile[1]], vec![*entity_id]);
+                                }
                             }
                         }
                         _ => ()
