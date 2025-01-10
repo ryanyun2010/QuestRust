@@ -9,10 +9,15 @@ use crate::game_engine::entity_components;
 async fn test_terrain_should_block_entities(){
     let mut world = basic_world().await;
     let camera = basic_camera().await;
+    let blocker_archetype = world.add_terrain_archetype(
+        vec![
+            TerrainTags::BlocksMovement,
+        ]
+    );
     for y in 0..25{
         let terrain_blocker = world.add_terrain(704, y * 32);
         world.set_sprite(terrain_blocker, 0);
-        world.add_terrain_tag(terrain_blocker, TerrainTags::BlocksMovement);
+        world.set_terrain_archetype(terrain_blocker, blocker_archetype);
     }
     let entity = world.add_entity(900.0, 405.0);
     world.set_sprite(entity, 0);
@@ -64,10 +69,15 @@ async fn test_terrain_should_block_entities(){
 async fn test_entities_should_pathfind_around_terrain(){
     let mut world = basic_world().await;
     let camera = basic_camera().await;
+    let blocker_archetype = world.add_terrain_archetype(
+        vec![
+            TerrainTags::BlocksMovement,
+        ]
+    );
     for y in 5..18{
         let terrain_blocker = world.add_terrain(704, y * 32);
         world.set_sprite(terrain_blocker, 0);
-        world.add_terrain_tag(terrain_blocker, TerrainTags::BlocksMovement);
+        world.set_terrain_archetype(terrain_blocker, blocker_archetype);
     }
     let entity = world.add_entity(900.0, 405.0);
     world.set_sprite(entity, 0);

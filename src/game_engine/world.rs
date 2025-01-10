@@ -1,4 +1,4 @@
-use core::f32;
+use core::{arch, f32};
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::cell::{Ref, RefCell};
 use std::f32::consts::PI;
@@ -47,9 +47,9 @@ pub struct World{
 
     pub loaded_chunks: Vec<usize>, // DANGEROUS: chunk ids that are currently loaded, this is created as a SIDE EFFECT of the camera, and should not be edited in the world
     
-    pub terrain_lookup: HashMap<usize,usize>, // corresponds element_ids of terrain to chunk_ids
     pub terrain: HashMap<usize, Terrain>, // corresponds element id to Terrain element
-    pub terrain_tags_lookup: HashMap<usize,Vec<TerrainTags>>, // corresponds element_ids of entities to the entity's tags
+    pub terrain_archetype_tags_lookup: Vec<Vec<TerrainTags>>,
+    pub terrain_archetype_lookup: HashMap<usize, usize>,
 
     pub entity_archetype_tags_lookup: HashMap<String,Vec<EntityTags>>, // corresponds entity_archetype name to the entity's tags
     pub entity_archetype_lookup: HashMap<usize,String>, // corresponds element_ids to entity_archetype
@@ -76,10 +76,10 @@ impl World{
             sprites: spriteContainer,
             sprite_lookup: HashMap::new(),
             chunk_lookup: RefCell::new(HashMap::new()),
-            terrain_lookup: HashMap::new(),
             entity_archetype_lookup: HashMap::new(),
             entity_archetype_tags_lookup: HashMap::new(),
-            terrain_tags_lookup: HashMap::new(),
+            terrain_archetype_tags_lookup: Vec::new(),
+            terrain_archetype_lookup: HashMap::new(),
             terrain: HashMap::new(),
             item_containers: RefCell::new(HashMap::new()),
             item_tag_lookup: RefCell::new(HashMap::new()),
@@ -128,12 +128,15 @@ impl World{
         }
     }
     pub fn remove_terrain(&mut self, element_id: usize){
-        let chunk_id = self.terrain_lookup.get(&element_id).unwrap();
-        let chunk = &mut self.chunks.borrow_mut()[*chunk_id];
-        let index = chunk.terrain_ids.iter().position(|&x| x == element_id).unwrap();
-        chunk.terrain_ids.remove(index);
+        let terrain = self.terrain.get(&element_id).expect(format!("Tried to remove element_id {} which wasn't terrain or didnt exist", element_id).as_str());
+        let chunk_id = self.get_chunk_from_xy(terrain.x, terrain.y);
+        if chunk_id.is_some(){
+            let chunk = &mut self.chunks.borrow_mut()[chunk_id.unwrap()];
+            let index = chunk.terrain_ids.iter().position(|&x| x == element_id).unwrap();
+            chunk.terrain_ids.remove(index);
+        }
         self.terrain.remove(&element_id);
-        self.terrain_lookup.remove(&element_id);
+        self.terrain_archetype_lookup.remove(&element_id);
     }
     pub fn set_loaded_chunks(&mut self, chunk_ids: Vec<usize>){
         self.loaded_chunks = chunk_ids;
@@ -168,8 +171,27 @@ impl World{
         self.element_id += 1;
         self.chunks.borrow_mut()[chunk_id].terrain_ids.push(self.element_id - 1);
         self.terrain.insert(self.element_id - 1, new_terrain);
-        self.terrain_lookup.insert(self.element_id - 1, chunk_id);
         self.element_id - 1
+    }
+    pub fn add_terrain_archetype(&mut self, tags: Vec<TerrainTags>) -> usize{
+        self.terrain_archetype_tags_lookup.push(tags);
+        return self.terrain_archetype_tags_lookup.len() - 1;
+    }
+    pub fn set_terrain_archetype(&mut self, id: usize, archetype_id: usize){
+        self.terrain_archetype_lookup.insert(id, archetype_id);
+    }
+    pub fn get_terrain_tags(&self, id: usize) -> Option<&Vec<TerrainTags>>{
+        let potential_archetype = self.terrain_archetype_lookup.get(&id);
+        if potential_archetype.is_some(){
+            return Some(&self.terrain_archetype_tags_lookup[*potential_archetype.unwrap()]);
+        }
+        None
+    }
+    pub fn get_terrain_archetype(&self, id: usize) -> Option<&usize> {
+        self.terrain_archetype_lookup.get(&id)
+    }
+    pub fn get_archetype_tags(&self, archetype: usize) -> Option<&Vec<TerrainTags>>{
+        self.terrain_archetype_tags_lookup.get(archetype)
     }
     pub fn get_terrain_tiles(x: usize, y: usize, w: usize, h: usize) -> Vec<[usize; 2]>{
         let mut tiles: Vec<[usize; 2]> = Vec::new();
@@ -213,7 +235,7 @@ impl World{
             let chunk = &self.chunks.borrow()[*chunk];
             for terrain_id in chunk.terrain_ids.iter(){
                 let terrain = self.terrain.get(terrain_id).unwrap();
-                let terrain_tags_potentially = self.terrain_tags_lookup.get(terrain_id);
+                let terrain_tags_potentially = self.get_terrain_tags(*terrain_id);
                 if terrain_tags_potentially.is_none(){
                     continue;
                 }
@@ -413,14 +435,6 @@ impl World{
         }
         true
     }
-    pub fn add_terrain_tag(&mut self, element_id: usize, tag: TerrainTags){
-        let mut tags: Vec<TerrainTags> = self.terrain_tags_lookup.get(&element_id).unwrap_or(&Vec::new()).clone();
-        tags.push(tag);
-        self.terrain_tags_lookup.insert(element_id, tags);
-    }
-    pub fn lookup_terrain_chunk(&self, element_id: usize) -> Option<usize>{
-        self.terrain_lookup.get(&element_id).copied()
-    }
     pub fn set_sprite(&mut self, element_id: usize, sprite_id: usize){
         self.sprite_lookup.insert(element_id, sprite_id);
     }
@@ -466,11 +480,6 @@ impl World{
         }
     }
    
-    pub fn add_terrain_tags(&mut self, element_id: usize, tags: Vec<TerrainTags>){ //Change this to allow an enum of a vector of tags of various types.
-        let mut d: Vec<TerrainTags> = self.terrain_tags_lookup.get(&element_id).unwrap_or(&Vec::new()).clone(); 
-        d.extend(tags);
-        self.terrain_tags_lookup.insert(element_id, d);
-    }
     pub fn add_player_attacks(&self, archetype_name: String, x: f32, y: f32, direction: [f32;2]) {    
         self.player_attacks.borrow_mut().push(PlayerAttack::new(archetype_name,0.0, x,y,direction));
     }

@@ -29,19 +29,21 @@ pub fn generate_world_from_json_parsed_data(data: &ParsedData) -> World {
         let height = terrain_json.height;
         let descriptor = data.get_terrain_archetype(&terrain_json.terrain_archetype).expect(format!("Could not find terrain archetype: {}", terrain_json.terrain_archetype).as_str());
         let tags = descriptor.basic_tags.clone();
+        let archetype = world.add_terrain_archetype(match_terrain_tags(&descriptor.basic_tags));
         match descriptor.r#type.as_str() {
             "basic" => {
                 for x in start_x..start_x + width{
                     for y in start_y..start_y + height{
                         let terrain = world.add_terrain(x * 32, y * 32);
                         world.set_sprite(terrain, world.sprites.get_sprite_id(&descriptor.sprites[0]).expect(format!("Could not find sprite: {}", descriptor.sprites[0]).as_str()));
-                        match_terrain_tags(&tags, terrain, &mut world);
+                        world.set_terrain_archetype(terrain, archetype);
                     }
                 }
             },
             "randomness" => {
                 println!("Randomness {:?}", descriptor);
                 let random_chances = descriptor.random_chances.clone().expect("Randomness terrain must have random_chances");
+                let archetype_tags = match_terrain_tags(&tags);
                 let mut random_chances_adjusted = Vec::new();
                 let mut sum_so_far = 0.0;
                 for chance in random_chances{
@@ -55,10 +57,10 @@ pub fn generate_world_from_json_parsed_data(data: &ParsedData) -> World {
                         for (index, chance) in random_chances_adjusted.iter().enumerate(){
                             if random_number < *chance{
                                 world.set_sprite(terrain, world.sprites.get_sprite_id(&descriptor.sprites[index]).expect(format!("Could not find sprite: {}", descriptor.sprites[index]).as_str()));
+                                world.set_terrain_archetype(terrain, archetype);
                                 break;
                             }
-                        }
-                        match_terrain_tags(&tags, terrain, &mut world);
+                        };
                     }
                 }
             },
@@ -74,15 +76,17 @@ pub fn generate_world_from_json_parsed_data(data: &ParsedData) -> World {
 }
 
 
-pub fn match_terrain_tags (tags: &Vec<String>, terrain_id: usize, world: &mut World){
+pub fn match_terrain_tags (tags: &Vec<String>) -> Vec<TerrainTags> {
+    let mut tags_ = Vec::new();
     for tag in tags{
         match tag.as_str(){
             "blocksMovement" => {
-                world.add_terrain_tag(terrain_id, TerrainTags::BlocksMovement);
+                tags_.push(TerrainTags::BlocksMovement);
             },
             _ => {
                 panic!("Unknown terrain tag: {}", tag);
             }
         }
     }
+    return tags_;
 }

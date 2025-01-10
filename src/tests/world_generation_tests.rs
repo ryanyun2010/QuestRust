@@ -220,7 +220,7 @@ async fn world_generation_test(){
     let terrain_sprite_id_expected = world.sprites.get_sprite_id("outside").expect("There should be an outside sprite");
     let terrain_sprite_id = world.sprite_lookup.get(&terrain_id).expect("There should be a sprite id for the terrain");
     assert!(*terrain_sprite_id == terrain_sprite_id_expected, "The terrain should have the outside sprite");
-    let terrain_tags = world.terrain_tags_lookup.get(&terrain_id).expect("There should be terrain tags").clone();
+    let terrain_tags = world.get_terrain_tags(terrain_id).expect("There should be terrain tags").clone();
     assert!(terrain_tags.len() == 1, "There should be one terrain tag");
     assert!(terrain_tags[0] == crate::game_engine::terrain::TerrainTags::BlocksMovement, "The one terrain tag should be BlocksMovement");
 
