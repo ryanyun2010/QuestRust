@@ -9,7 +9,6 @@ use std::env;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    
     let mut parser = json_parsing::JSON_parser::new();
     let load_time = Instant::now();
     let parsed_data = parser.parse_and_convert_game_data(PATH_BUNDLE);

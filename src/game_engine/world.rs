@@ -541,8 +541,10 @@ impl World{
                     if attack.time_alive < 2.0 {   
                         let mut height = melee_attack_descriptor.reach;
                         let mut width = melee_attack_descriptor.width;
-                        let angle = f32::atan2(attack.direction[1], attack.direction[0]) * 180.0/PI;
-                        let collisions = self.get_colliding_rotated_rect(true, None, attack.x as usize, attack.y as usize, width.floor() as usize, height.floor() as usize,angle, true);
+                        let angle = f32::atan2(attack.direction[1], attack.direction[0]) * 180.0/PI + 180.0;
+                        println!("{}", angle);
+                        let collisions = self.get_colliding_rotated_rect(true, None, attack.x as usize, attack.y as usize, height.floor() as usize, width.floor() as usize,-1.0 * angle, true);
+                        println!("Collisions: {:?}", collisions);
                         for collision in collisions.iter(){
                             if self.entity_health_components.get(&collision).is_some(){
                                 let mut health_component = self.entity_health_components.get(&collision).unwrap().borrow_mut();
@@ -592,7 +594,6 @@ impl World{
 
     }
     pub fn on_mouse_click(&mut self, mouse_position: MousePosition, mouse_left: bool, mouse_right: bool, camera_width: f32, camera_height: f32){
-        println!("Mouse clicked at: {}, {}", mouse_position.x_world, mouse_position.y_world);
         let mouse_direction_unnormalized = [(mouse_position.x_world - self.player.borrow().x), (mouse_position.y_world - self.player.borrow().y)];
         let magnitude = f32::sqrt(mouse_direction_unnormalized[0].powf(2.0) + mouse_direction_unnormalized[1].powf(2.0));
         let mouse_direction_normalized = [
@@ -606,10 +607,12 @@ impl World{
         let y = mouse_position.y_screen;
         let melee_attack_reach = self.player_archetype_descriptor_lookup.get("test_melee_attack").expect("Could not find player attack archetype: test_melee_attack").clone();
         let mut reach = 0;
+        let mut width = 0;
         match melee_attack_reach{
             PlayerAttackDescriptor::Melee(melee_attack_descriptor) => {
                 if mouse_left {
                     reach = melee_attack_descriptor.reach.floor() as usize;
+                    width = melee_attack_descriptor.width.floor() as usize;
                 }
             },
             PlayerAttackDescriptor::Projectile(projectile_descriptor) => {
@@ -619,15 +622,15 @@ impl World{
         }
         
         let angle = f32::atan2(y - H/2.0, x- W/2.0);
-        println!("Angle: {}", angle * 180.0/PI);
         self.player_attacks.borrow_mut().push(
             PlayerAttack::new(
                 "test_melee_attack".to_string(),
                 0.0, 
-                self.player.borrow().x + mouse_direction_normalized[0] * 25.0,
+                self.player.borrow().x + mouse_direction_normalized[0] * 25.0 + 16.0,
                 self.player.borrow().y + mouse_direction_normalized[1] * 25.0, 
                 mouse_direction_normalized)
         );
+        
     }
     pub fn process_mouse_input(&mut self, mouse_position: MousePosition, mouse_left: bool, mouse_right: bool){
 
