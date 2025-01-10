@@ -543,7 +543,7 @@ impl World{
                     PlayerAttack::new(
                         String::from("test_melee_attack"),
                         0.0, 
-                        self.player.borrow().x - reach as f32,
+                        self.player.borrow().x - 4.0 -  reach as f32,
                         self.player.borrow().y,
                         [-1.0, 0.0]));
             }else{
@@ -562,7 +562,7 @@ impl World{
                         String::from("test_melee_attack"),
                         0.0, 
                         self.player.borrow().x,
-                        self.player.borrow().y - reach as f32,
+                        self.player.borrow().y - 20.0 - reach as f32,
                         [0.0, -1.0])); 
             } else{
                     
@@ -570,7 +570,7 @@ impl World{
                     PlayerAttack::new(
                         String::from("test_melee_attack"),
                         0.0, 
-                        self.player.borrow().x + 32.0,
+                        self.player.borrow().x + 36.0,
                         self.player.borrow().y,
                         [1.0, 0.0]));
             }

@@ -16,7 +16,7 @@
             "width": 40.0,
             "reach": 30.0,
             "damage": 15.0,
-            "lifetime": 5.0,
+            "lifetime": 3.0,
             "sprite": "melee_attack"
         }
     ]
