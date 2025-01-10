@@ -13,7 +13,7 @@
     "melee_attacks": [
         {
             "name": "test_melee_attack",
-            "width": 40.0,
+            "width": 30.0,
             "reach": 50.0,
             "damage": 15.0,
             "lifetime": 3.0,

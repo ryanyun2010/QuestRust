@@ -541,7 +541,7 @@ impl World{
                     if attack.time_alive < 2.0 {   
                         let mut height = melee_attack_descriptor.reach;
                         let mut width = melee_attack_descriptor.width;
-                        let angle = f32::atan2(attack.direction[1], attack.direction[0]) * 180.0/PI + 180.0;
+                        let angle = -1.0 * f32::atan2(attack.direction[1], attack.direction[0]) * 180.0/PI + 180.0;
                         println!("{}", angle);
                         let collisions = self.get_colliding_rotated_rect(true, None, attack.x as usize, attack.y as usize, height.floor() as usize, width.floor() as usize,-1.0 * angle, true);
                         println!("Collisions: {:?}", collisions);
