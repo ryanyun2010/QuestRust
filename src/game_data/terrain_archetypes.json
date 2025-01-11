@@ -6,21 +6,51 @@
         "basic_tags": []
     },
     {
-        "name": "wall",
+        "name": "wallr",
         "type": "basic",
-        "sprites": ["wall"],
+        "sprites": ["wallr"],
         "basic_tags": ["blocksMovement"]
     },
     {
-        "name": "wall2",
+        "name": "walll",
         "type": "basic",
-        "sprites": ["wall2"],
+        "sprites": ["walll"],
         "basic_tags": ["blocksMovement"]
     },
     {
-        "name": "wall3",
+        "name": "wallt",
         "type": "basic",
-        "sprites": ["wall3"],
+        "sprites": ["wallt"],
+        "basic_tags": ["blocksMovement"]
+    },
+    {
+        "name": "wallb",
+        "type": "basic",
+        "sprites": ["wallb"],
+        "basic_tags": ["blocksMovement"]
+    },
+    {
+        "name": "wallbl",
+        "type": "basic",
+        "sprites": ["wallbl"],
+        "basic_tags": ["blocksMovement"]
+    },
+    {
+        "name": "wallbr",
+        "type": "basic",
+        "sprites": ["wallbr"],
+        "basic_tags": ["blocksMovement"]
+    },
+    {
+        "name": "walltl",
+        "type": "basic",
+        "sprites": ["walltl"],
+        "basic_tags": ["blocksMovement"]
+    },
+    {
+        "name": "walltr",
+        "type": "basic",
+        "sprites": ["walltr"],
         "basic_tags": ["blocksMovement"]
     },
     {

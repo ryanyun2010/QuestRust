@@ -9,13 +9,13 @@
     },
     "entities": [
         {
-            "x": 900.0,
+            "x": 690.0,
             "y": 405.0,
             "archetype": "ghost",
             "sprite": "ghost"
         },
         {
-            "x": 1184.0,
+            "x": 800.0,
             "y": 608.0,
             "archetype": "ghost",
             "sprite": "ghost"
@@ -26,45 +26,93 @@
             "x": 0,
             "y": 0,
             "width": 17,
-            "height": 70,
+            "height": 40,
             "terrain_archetype": "basic_outside"
         },
         {
             "x": 17,
             "y": 0,
-            "width": 18,
-            "height": 11,
+            "width": 40,
+            "height": 19,
+            "terrain_archetype": "basic_outside"
+        },
+        {
+            "x": 17,
+            "y": 31,
+            "width": 40,
+            "height": 19,
+            "terrain_archetype": "basic_outside"
+        },
+        {
+            "x": 37,
+            "y": 17,
+            "width": 20,
+            "height": 14,
             "terrain_archetype": "basic_outside"
         },
         {
             "x": 18,
             "y": 11,
-            "width": 17,
+            "width": 18,
             "height": 1,
-            "terrain_archetype": "wall2"
+            "terrain_archetype": "wallt"
         },
         {
             "x": 17,
             "y": 11,
             "width": 1,
             "height": 1,
-            "terrain_archetype": "wall3"
+            "terrain_archetype": "walltl"
+        },
+        {
+            "x": 36,
+            "y": 11,
+            "width": 1,
+            "height": 1,
+            "terrain_archetype": "walltr"
         },
         {
             "x": 17,
             "y": 12,
             "width": 1,
-            "height": 58,
-            "terrain_archetype": "wall"
+            "height": 18,
+            "terrain_archetype": "walll"
         },
         {
             "x": 18,
             "y": 12,
-            "width": 17,
-            "height": 58,
+            "width": 18,
+            "height": 18,
             "terrain_archetype": "random_dirt"
+        },
+        {
+            "x": 36,
+            "y": 12,
+            "width": 1,
+            "height": 18,
+            "terrain_archetype": "wallr"
+        },
+        {
+            "x": 18,
+            "y": 30,
+            "width": 18,
+            "height": 1,
+            "terrain_archetype": "wallb"
+        },
+        {
+            "x": 17,
+            "y": 30,
+            "width": 1,
+            "height": 1,
+            "terrain_archetype": "wallbl"
+        },
+        {
+            "x": 36,
+            "y": 30,
+            "width": 1,
+            "height": 1,
+            "terrain_archetype": "wallbr"
         }
-
     ]
 }
 
