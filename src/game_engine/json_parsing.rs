@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use crate::game_engine::entities::{EntityTags, EntityAttack, EntityAttackPattern};
 use crate::rendering_engine::abstractions::SpriteContainer;
 
+use super::entity_components::CollisionBox;
 use super::player_attacks::{PlayerAttackDescriptor, player_projectile_descriptor};
 
 
@@ -34,6 +35,7 @@ pub const PATH_BUNDLE: PathBundle = PathBundle{
 pub struct entity_archetype_json {
     pub name: String,
     pub basic_tags: Vec<String>,
+    pub collision_box: Option<CollisionBox>,
     pub health: usize,
     pub monster_type: String,
     pub movement_speed: f32,
@@ -175,7 +177,6 @@ macro_rules! from_JSON_entity_tag_parsing_basic {
         from_JSON_entity_tag_parsing_under! [$output, $tag_list;
             "aggressive", Aggressive,
             "respectsCollision", RespectsCollision,
-            "hasCollision", HasCollision,
             "followsPlayer", FollowsPlayer,
             "damageable", Damageable
         ]
@@ -338,6 +339,9 @@ impl JSON_parser {
     pub fn convert_archetype(&self, entity_archetype: &entity_archetype_json, data: &ParsedData) -> Vec<EntityTags> {
         let mut tags = Vec::new();
         from_JSON_entity_tag_parsing_basic!(tags, &entity_archetype.basic_tags);
+        if entity_archetype.collision_box.is_some() {
+            tags.push(EntityTags::HasCollision(entity_archetype.collision_box.clone().unwrap()));
+        }
         tags.push(EntityTags::BaseHealth(entity_archetype.health));
         match entity_archetype.monster_type.as_str() {
             "Undead" => {

@@ -1,7 +1,13 @@
 [
     {
         "name": "ghost",
-        "basic_tags": ["aggressive", "followsPlayer", "respectsCollision", "hasCollision", "damageable"],
+        "basic_tags": ["aggressive", "followsPlayer", "respectsCollision", "damageable"],
+        "collision_box": {
+            "w": 25.0,
+            "h": 21.0,
+            "x_offset": 3.5,
+            "y_offset": 5.5
+        },
         "health": 30,
         "monster_type": "Undead",
         "movement_speed": 2.0,

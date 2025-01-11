@@ -32,8 +32,14 @@ async fn json_parsing_test(){
     let mut found_attack = false;
     let mut found_attack_type = false;
     let mut found_monster_type = false;
+    let mut found_health = false;
     for tag in archetype.iter(){
         match tag{
+            crate::game_engine::entities::EntityTags::BaseHealth(health) => {   
+                assert!(!found_health, "BaseHealth tag should only be found once");
+                found_health = true;
+                assert!(*health == 100, "BaseHealth should be 100");
+            }
             crate::game_engine::entities::EntityTags::Aggressive => {
                 assert!(!found_aggressive, "Aggressive tag should only be found once");
                 found_aggressive = true;
@@ -131,7 +137,7 @@ async fn world_generation_test(){
     let enitty_position = world.entity_position_components.get(&entity_id).expect("There should be an entity position component").borrow().clone();
     assert!(enitty_position.x == 900.0, "Entity x should be 900.0");
     assert!(enitty_position.y == 405.0, "Entity y should be 405.0");
-    let entity_collision_box = world.entity_collision_box_components.get(&entity_id).expect("There should be an entity collision box component").borrow().clone();
+    let entity_collision_box = world.get_entity_collision_box(entity_id).expect("There should be an entity collision box component");
     assert!(entity_collision_box.w == 32.0, "Entity collision box width should be 32.0");
     assert!(entity_collision_box.h == 32.0, "Entity collision box height should be 32.0");
     assert!(entity_collision_box.x_offset == 0.0, "Entity collision box x offset should be 0.0");

@@ -9,7 +9,7 @@ use crate::game_engine::player::Player;
 use crate::game_engine::terrain::{Terrain, TerrainTags};
 
 use super::camera::Camera;
-use super::entity_components;
+use super::entity_components::{self, CollisionBox};
 use super::game::MousePosition;
 use super::item::ItemTags;
 use super::player_attacks::{PlayerAttack, PlayerAttackDescriptor};
@@ -54,7 +54,6 @@ pub struct World{
 
     pub entity_position_components: HashMap<usize, RefCell<entity_components::PositionComponent>>,
     pub entity_attack_components: HashMap<usize, RefCell<entity_components::EntityAttackComponent>>,
-    pub entity_collision_box_components: HashMap<usize, RefCell<entity_components::CollisionBox>>,
     pub entity_health_components: HashMap<usize, RefCell<entity_components::HealthComponent>>,
     pub entity_pathfinding_components: HashMap<usize, RefCell<entity_components::PathfindingComponent>>,
 
@@ -88,7 +87,6 @@ impl World{
             pathfinding_frame: 0,
             level_editor: false,
             entity_attack_components: HashMap::new(),
-            entity_collision_box_components: HashMap::new(),
             entity_health_components: HashMap::new(),
             entity_position_components: HashMap::new(),
             entity_pathfinding_components: HashMap::new(),
@@ -266,9 +264,8 @@ impl World{
                 let entity_tags = entity_tags_potentially.unwrap();
                 for tag in entity_tags.iter(){
                     match tag{
-                        EntityTags::HasCollision => {
-                            let collision_component = self.entity_collision_box_components.get(entity_id).expect("All Entities with the Has Collision tag should have a collision box component").borrow();
-                            let tiles_blocked: Vec<[usize; 2]> = World::get_terrain_tiles(position_component.x as usize, position_component.y as usize, collision_component.w as usize, collision_component.h as usize);
+                        EntityTags::HasCollision(cbox) => {
+                            let tiles_blocked: Vec<[usize; 2]> = World::get_terrain_tiles((position_component.x + cbox.x_offset) as usize, (position_component.y + cbox.y_offset) as usize, cbox.w as usize, cbox.h as usize);
                             for tile in tiles_blocked.iter(){
                                 let collision_cache_entry = collision_cache_ref.get_mut(&[tile[0],tile[1]]);
                                 if collision_cache_entry.is_some(){    
@@ -286,8 +283,11 @@ impl World{
     }
     pub fn check_collision(&self, player: bool, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, entity: bool) -> bool{
         if !player {
-            let p = self.player.borrow();
-            if p.x.floor() - 1.0 < (x + w) as f32 && p.x.floor() + 33.0 > x as f32 && p.y.floor() - 1.0 < (y + h) as f32 && p.y.floor() + 33.0 > y as f32{
+            let pw = self.player.borrow().collision_box.w;
+            let ph = self.player.borrow().collision_box.h;
+            let px = self.player.borrow().x + self.player.borrow().collision_box.x_offset;
+            let py = self.player.borrow().y + self.player.borrow().collision_box.y_offset;
+            if px.floor() - 1.0 < (x + w) as f32 && px.floor() + pw + 1.0 > x as f32 && py.floor() - 1.0 < (y + h) as f32 && py.floor() + ph + 1.0 > y as f32{
                 return true;
             }
         }
@@ -309,7 +309,7 @@ impl World{
             
             if terrain_potentially.is_none(){
                 if entity{
-                    let entity_collision_box = self.entity_collision_box_components.get(&id).unwrap().borrow();
+                    let entity_collision_box = self.get_entity_collision_box(id).unwrap();
                     let entity_position = self.entity_position_components.get(&id).unwrap().borrow();
                     let ex = entity_position.x + entity_collision_box.x_offset;
                     let ey = entity_position.y + entity_collision_box.y_offset;
@@ -328,6 +328,22 @@ impl World{
             }
         }
         false
+    }
+    pub fn get_entity_collision_box(&self, id: usize) -> Option<&CollisionBox>{
+        let entity_tags_potentially = self.get_entity_tags(id);
+        if entity_tags_potentially.is_none(){
+            return None;
+        }
+        let entity_tags = entity_tags_potentially.unwrap();
+        for tag in entity_tags.iter(){
+            match tag{
+                EntityTags::HasCollision(cbox) => {
+                    return Some(cbox);
+                }
+                _ => ()
+            }
+        }
+        None
     }
     pub fn get_colliding_rotated_rect(&self, player: bool, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, rotation: f32, entity: bool) -> Vec<usize>{
         if !player {
@@ -352,7 +368,7 @@ impl World{
             
             if terrain_potentially.is_none(){
                 if entity{
-                    let entity_collision_box = self.entity_collision_box_components.get(&id).unwrap().borrow();
+                    let entity_collision_box = self.get_entity_collision_box(id).unwrap();
                     let entity_position = self.entity_position_components.get(&id).unwrap().borrow();
                     let ex = entity_position.x + entity_collision_box.x_offset;
                     let ey = entity_position.y + entity_collision_box.y_offset;
@@ -405,7 +421,7 @@ impl World{
             
             if terrain_potentially.is_none(){
                 if entity{
-                    let entity_collision_box = self.entity_collision_box_components.get(&id).unwrap().borrow();
+                    let entity_collision_box = self.get_entity_collision_box(id).unwrap();
                     let entity_position = self.entity_position_components.get(&id).unwrap().borrow();
                     let ex = entity_position.x + entity_collision_box.x_offset;
                     let ey = entity_position.y + entity_collision_box.y_offset;
@@ -427,14 +443,14 @@ impl World{
     }
     pub fn attempt_move_player(&self, player: &mut Player, movement: [f32; 2]){
         
-        if self.check_collision(true, None,(player.x + movement[0]).floor() as usize, (player.y + movement[1]).floor() as usize, 32, 32, true){
+        if self.check_collision(true, None,(player.x.floor() + movement[0] + player.collision_box.x_offset).floor() as usize, (player.y.floor() + movement[1] + player.collision_box.y_offset).floor() as usize, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true){
             return;
         }
         player.x += movement[0];
         player.y += movement[1];
     }
     pub fn can_move_player(&self, player: &mut Player, movement: [f32; 2]) -> bool{
-        if self.check_collision(true, None,(player.x.floor() + movement[0]).floor() as usize, (player.y.floor() + movement[1]).floor() as usize, 32, 32, true){
+        if self.check_collision(true, None,(player.x.floor() + movement[0] + player.collision_box.x_offset).floor() as usize, (player.y.floor() + movement[1] + player.collision_box.y_offset).floor() as usize, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true){
             return false;
         }
         true
@@ -584,7 +600,6 @@ impl World{
             chunk.entities_ids.remove(index);
         }
         self.entity_attack_components.remove(&entity_id);
-        self.entity_collision_box_components.remove(&entity_id);
         self.entity_position_components.remove(&entity_id);
         self.entity_pathfinding_components.remove(&entity_id);
         self.entity_health_components.remove(&entity_id);

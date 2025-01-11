@@ -1,5 +1,6 @@
 use crate::rendering_engine::abstractions::RenderData;
 
+use super::entity_components::CollisionBox;
 use super::inventory::Hotbar;
 use super::inventory::ItemContainerPointer;
 use super::world::World;
@@ -13,6 +14,7 @@ pub struct Player {
     pub movement_speed: f32,
     pub holding_texture_sprite: Option<usize>,
     pub inventory: [[ItemContainerPointer; 6]; 6],
+    pub collision_box: CollisionBox,
     pub hotbar: Hotbar,
     pub mouse_slot: ItemContainerPointer, //The item your mouse carries
 }
@@ -27,6 +29,11 @@ impl Player {
         Self {
             x: x,
             y: y,
+            collision_box: CollisionBox{
+                w: 32.0, 
+                h: 32.0,
+                x_offset: 3.0,
+                y_offset: 18.0},
             health: health,
             max_health: max_health,
             sprite_id: sprite_id,

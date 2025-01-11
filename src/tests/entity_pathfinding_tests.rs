@@ -32,19 +32,20 @@ async fn test_terrain_should_block_entities(){
             EntityTags::Aggressive,
             EntityTags::FollowsPlayer,
             EntityTags::RespectsCollision,
-            EntityTags::HasCollision,
+            EntityTags::HasCollision(
+                entity_components::CollisionBox{
+                    w: 32.0,
+                    h: 32.0,
+                    x_offset: 0.0,
+                    y_offset: 0.0
+                }
+            ),
             EntityTags::Attacks(attack_pattern),
         ]
     );
     world.set_entity_archetype(entity, String::from("Test"));
     world.add_attack_component(entity, entity_components::EntityAttackComponent::default());
     world.add_health_component(entity, entity_components::HealthComponent{health: 100.0, max_health: 100});
-    world.add_collision_box_component(entity, entity_components::CollisionBox{
-        w: 32.0,
-        h: 32.0,
-        x_offset: 0.0,
-        y_offset: 0.0
-    });
     world.add_pathfinding_component(entity, entity_components::PathfindingComponent::default());
     let player_starting_position_x = world.player.borrow().x;
     let player_starting_position_y = world.player.borrow().y;
@@ -92,19 +93,20 @@ async fn test_entities_should_pathfind_around_terrain(){
             EntityTags::Aggressive,
             EntityTags::FollowsPlayer,
             EntityTags::RespectsCollision,
-            EntityTags::HasCollision,
+            EntityTags::HasCollision(
+                entity_components::CollisionBox{
+                    w: 32.0,
+                    h: 32.0,
+                    x_offset: 0.0,
+                    y_offset: 0.0
+                }
+            ),
             EntityTags::Attacks(attack_pattern),
         ]
     );
     world.set_entity_archetype(entity, String::from("Test"));
     world.add_attack_component(entity, entity_components::EntityAttackComponent::default());
     world.add_health_component(entity, entity_components::HealthComponent{health: 100.0, max_health: 100});
-    world.add_collision_box_component(entity, entity_components::CollisionBox{
-        w: 32.0,
-        h: 32.0,
-        x_offset: 0.0,
-        y_offset: 0.0
-    });
     world.add_pathfinding_component(entity, entity_components::PathfindingComponent::default());
     let player_starting_position_x = world.player.borrow().x;
     let player_starting_position_y = world.player.borrow().y;

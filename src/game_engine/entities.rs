@@ -1,7 +1,7 @@
 use crate::loot::Loot;
 use crate::game_engine::item::Item;
 use std::cell::{RefCell, RefMut};
-use super::entity_components::{self, EntityAttackComponent, PathfindingComponent, PositionComponent};
+use super::entity_components::{self, CollisionBox, EntityAttackComponent, PathfindingComponent, PositionComponent};
 use super::world::{Chunk, World};
 use super::player::Player;
 use super::pathfinding::{self, EntityDirectionOptions};
@@ -75,7 +75,7 @@ impl World {
         let mut attacks = None; 
         let mut can_attack_player = false;
         let mut respects_collision = false;
-        let mut has_collision = false;
+        let mut collision = None;
 
         for tag in entity_tags.iter() {
             // println!("{:?}", entity_tags[tag_id]);
@@ -101,8 +101,9 @@ impl World {
                 EntityTags::RespectsCollision => {
                     respects_collision = true;
                 },
-                EntityTags::HasCollision => {
-                    has_collision = true;
+                EntityTags::HasCollision(collision_box) => {
+                    collision = Some(collision_box);
+
                 },
                 _ => ()
             }
@@ -149,10 +150,15 @@ impl World {
         if aggroed_to_player {
             let pathfinding_component = self.entity_pathfinding_components.get(entity_id).expect("Entities with tag: FollowsPlayer must have a PathfindingComponent").borrow_mut();
             let position_component = self.entity_position_components.get(entity_id).expect("Entities with tag: FollowsPlayer must have a PositionComponent").borrow_mut();
-            self.move_entity_towards_player(entity_id, position_component, pathfinding_component, chunkref,  player_x, player_y, respects_collision, has_collision, movement_speed);
+            self.move_entity_towards_player(entity_id, collision.unwrap_or(&CollisionBox {
+                    w: 0.0,
+                    h: 0.0,
+                    x_offset: 0.0,
+                    y_offset: 0.0
+            }),position_component, pathfinding_component, chunkref,  player_x, player_y, respects_collision, collision.is_some(), movement_speed);
         }
     }
-    pub fn move_entity_towards_player(&self, entity_id: &usize, position_component: RefMut<PositionComponent>, mut pathfinding_component: RefMut<PathfindingComponent>, chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>, player_x: f32, player_y: f32, respects_collision: bool, has_collision: bool, movement_speed: f32){
+    pub fn move_entity_towards_player(&self, entity_id: &usize,collision_box: &CollisionBox, position_component: RefMut<PositionComponent>, mut pathfinding_component: RefMut<PathfindingComponent>, chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>, player_x: f32, player_y: f32, respects_collision: bool, has_collision: bool, movement_speed: f32){
         let direction: [f32; 2] = [player_x - position_component.x, player_y - position_component.y];
         let entity_pathfinding_frame = self.pathfinding_frames.get(entity_id).unwrap();
         if direction[0] == 0.0 && direction[1] == 0.0 {
@@ -183,9 +189,8 @@ impl World {
         }
         let magnitude: f32 = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
         if respects_collision {
-            let collision_component = self.entity_collision_box_components.get(&entity_id).expect("Entities with tag: FollowsPlayer must have a CollisionBox").borrow();
             if magnitude > 128.0{
-                let direction: EntityDirectionOptions = pathfinding::pathfind_by_block(position_component.clone(), *collision_component, *entity_id, self);
+                let direction: EntityDirectionOptions = pathfinding::pathfind_by_block(position_component.clone(), *collision_box, *entity_id, self);
                 match direction {
                     EntityDirectionOptions::Down => {
                         pathfinding_component.cur_direction = EntityDirectionOptions::Down;
@@ -208,7 +213,7 @@ impl World {
                     },
                 }
             }else if magnitude > 60.0{
-                let direction: EntityDirectionOptions = pathfinding::pathfind_high_granularity(position_component.clone(), *collision_component,*entity_id, self);
+                let direction: EntityDirectionOptions = pathfinding::pathfind_high_granularity(position_component.clone(), *collision_box,*entity_id, self);
                 match direction {
                     EntityDirectionOptions::Down => {
                         pathfinding_component.cur_direction = EntityDirectionOptions::Down;
@@ -256,9 +261,6 @@ impl World {
         self.pathfinding_frames.insert(self.element_id - 1, new_entity_pathfinding_frame);
         self.element_id - 1
     }
-    pub fn add_collision_box_component(&mut self, entity_id: usize, new_entity_collision_box: entity_components::CollisionBox){
-        self.entity_collision_box_components.insert(entity_id, RefCell::new(new_entity_collision_box));
-    }
     pub fn add_pathfinding_component(&mut self, entity_id: usize, new_entity_pathfinding: PathfindingComponent){
         self.entity_pathfinding_components.insert(entity_id, RefCell::new(new_entity_pathfinding));
     }
@@ -282,9 +284,6 @@ impl World {
                 EntityTags::Attacks(_) => {
                     needs_attack_component = true;
                 },
-                EntityTags::HasCollision => {
-                    needs_collision_box_component = true;
-                },
                 EntityTags::FollowsPlayer => {
                     needs_pathfinding_component = true;
                 },
@@ -297,14 +296,6 @@ impl World {
         }
         if needs_attack_component{
             self.add_attack_component(entity, entity_components::EntityAttackComponent::default());
-        }
-        if needs_collision_box_component{
-            self.add_collision_box_component(entity, entity_components::CollisionBox{
-                w: 32.0,
-                h: 32.0,
-                x_offset: 0.0,
-                y_offset: 0.0
-            });
         }
         if needs_pathfinding_component{
             self.add_pathfinding_component(entity, entity_components::PathfindingComponent::default());
@@ -358,7 +349,7 @@ pub enum EntityTags {
     FollowsPlayer,
     Range(usize),
     RespectsCollision,
-    HasCollision,
+    HasCollision(CollisionBox),
     AggroRange(usize),
     AttackType(AttackType),
     Attacks(EntityAttackPattern),

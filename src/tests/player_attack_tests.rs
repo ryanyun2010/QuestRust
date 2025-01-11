@@ -1,5 +1,5 @@
 #![cfg(test)]
-use crate::{game_engine::{game::MousePosition, player_attacks::melee_attack_descriptor}, tests::lib::headless::HeadlessGame};
+use crate::{game_engine::{entity_components::CollisionBox, game::MousePosition, player_attacks::melee_attack_descriptor}, tests::lib::headless::HeadlessGame};
 
 use super::tests::{basic_world, basic_camera};
 #[tokio::test]
@@ -10,7 +10,14 @@ pub async fn test_player_attack() {
     world.add_entity_archetype(String::from("test_attackable_entity"), vec![
         crate::game_engine::entities::EntityTags::BaseHealth(100),
         crate::game_engine::entities::EntityTags::Damageable,
-        crate::game_engine::entities::EntityTags::HasCollision
+        crate::game_engine::entities::EntityTags::HasCollision(
+            CollisionBox{
+                x_offset: 0.0,
+                y_offset: 0.0,
+                w: 32.0,
+                h: 32.0
+            }
+        )
     ]);
     world.add_player_attack_archetype(String::from("test_melee_attack"), crate::game_engine::player_attacks::PlayerAttackDescriptor::Melee(melee_attack_descriptor {
         damage: 150.0,

@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use super::pathfinding::EntityDirectionOptions;
 use std::cell::RefCell;
 
@@ -48,7 +50,7 @@ impl HealthComponent{
     }
 }
 
-#[derive(Clone, Debug, Copy, PartialEq)]
+#[derive(Clone, Debug, Copy, PartialEq, Serialize, Deserialize)]
 pub struct CollisionBox{
     pub x_offset: f32,
     pub y_offset: f32,
