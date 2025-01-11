@@ -2,7 +2,7 @@
     "player": {
         "x": 596.0,
         "y": 400.0,
-        "sprite": "player",
+        "sprite": "player_front",
         "health": 100.0,
         "max_health": 100,
         "movement_speed": 3.5

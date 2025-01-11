@@ -11,6 +11,10 @@ pub async fn basic_world() -> world::World {
         texture_index: 0
     }
     );
+    world.sprites.sprite_id_lookup.insert(String::from("player_front"), 0);
+    world.sprites.sprite_id_lookup.insert(String::from("player_right"), 0);
+    world.sprites.sprite_id_lookup.insert(String::from("player_left"), 0);
+    world.sprites.sprite_id_lookup.insert(String::from("player_back"), 0);
     world
 }
 pub async fn basic_camera() -> Camera {

@@ -9,7 +9,7 @@ use super::world::World;
 pub struct Player {
     pub x: f32,
     pub y: f32,
-    pub texture_index: i32,
+    pub sprite_id: usize,
     pub health: f32,
     pub max_health: i32,
     pub movement_speed: f32,
@@ -25,13 +25,13 @@ macro_rules! repeat_token {
     };
 }
 impl Player {
-    pub fn new(x: f32, y: f32, health: f32, max_health: i32, movement_speed: f32, texture_index: i32) -> Self {
+    pub fn new(x: f32, y: f32, health: f32, max_health: i32, movement_speed: f32, sprite_id: usize) -> Self {
         Self {
             x: x,
             y: y,
             health: health,
             max_health: max_health,
-            texture_index: texture_index,
+            sprite_id: sprite_id,
             movement_speed: movement_speed,
             holding_texture_sprite: None,
             inventory: [
@@ -49,33 +49,18 @@ impl Player {
         }
     }
     pub fn draw_data(&self, world: &World, window_size_width: usize, window_size_height: usize, index_offset:u16, vertex_offset_x: i32, vertex_offset_y: i32) -> RenderData{
-        let screen_to_render_ratio_x: f32 = 2.0 / window_size_width as f32;
-        let screen_to_render_ratio_y: f32 = 2.0 / window_size_height as f32;
+        let sprite = world.sprites.sprites[self.sprite_id];
+        let mut dd = sprite.draw_data(self.x.floor(), self.y.floor(), 38, 52,window_size_width, window_size_height, index_offset, vertex_offset_x, vertex_offset_y);
         
-        let w: f32 = 38 as f32 * screen_to_render_ratio_x;
-        let h: f32 = 52 as f32 * screen_to_render_ratio_y;
-
-        let x: f32 = ((self.x.floor() as f32 - 4.0) + (vertex_offset_x as f32)) * screen_to_render_ratio_x - 1.0;
-        let y: f32 = -1.0 * (((self.y.floor() as f32 - 20.0) + (vertex_offset_y as f32)) * screen_to_render_ratio_y - 1.0) - h;
-
-
-        let mut vertex: Vec<Vertex> = vec![
-            Vertex { position: [x, y, 0.0], tex_coords: [0.0, 1.0], index: self.texture_index },
-            Vertex { position: [x + w, y, 0.0], tex_coords: [1.0, 1.0], index: self.texture_index },
-            Vertex { position: [x + w, y + h, 0.0], tex_coords: [1.0, 0.0], index: self.texture_index },
-            Vertex { position: [x, y + h, 0.0], tex_coords: [0.0, 0.0], index: self.texture_index },
-        ];
-
-        let mut index: Vec<u16> = vec![0 + index_offset, 1 + index_offset, 2 + index_offset, 0 + index_offset, 2 + index_offset, 3 + index_offset];
 
         if self.holding_texture_sprite.is_none(){
-            return RenderData { vertex, index }
+            return dd;
         }else{
             let sprite = world.sprites.get_sprite(self.holding_texture_sprite.unwrap() as usize).expect("Could not find player sprite?");
-            let d = sprite.draw_data(self.x.floor() + 16.0, self.y.floor() + 8.0, 24, 24,window_size_width, window_size_height, index_offset + 4, vertex_offset_x, vertex_offset_y);
-            index.extend(d.index);
-            vertex.extend(d.vertex);
-            return RenderData { vertex, index }
+            let d = sprite.draw_data(self.x.floor() + 16.0, self.y.floor() + 8.0, 24, 24,window_size_width, window_size_height, index_offset + dd.vertex.len() as u16, vertex_offset_x, vertex_offset_y);
+            dd.index.extend(d.index);
+            dd.vertex.extend(d.vertex);
+            return dd;
         }
     }
 }

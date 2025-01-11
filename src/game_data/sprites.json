@@ -1,22 +1,6 @@
 {
     "basic_sprites": [
         {
-            "name": "player",
-            "path": "src/rendering_engine/img/panda.png"
-        },
-        {
-            "name": "player_right",
-            "path": "src/rendering_engine/img/playerright.png"
-        },
-        {
-            "name": "player_left",
-            "path": "src/rendering_engine/img/playerleft.png"
-        },
-        {
-            "name": "player_back",
-            "path": "src/rendering_engine/img/playerback.png"
-        },
-        {
             "name": "health_bar_back",
             "path": "src/rendering_engine/img/health_bar_back.png"
         },
@@ -101,6 +85,37 @@
                 {
                     "name": "wall3",
                     "x": 7,
+                    "y": 0
+                }
+            ]
+        },
+        {
+            "name": "player_sheet",
+            "path": "src/rendering_engine/img/player_sheet.png",
+            "width": 152,
+            "height": 52,
+            "sprite_width": 38,
+            "sprite_height": 52,
+            "sprite_padding": 0,
+            "sprites": [
+                {
+                    "name": "player_front",
+                    "x": 0,
+                    "y": 0
+                },
+                {
+                    "name": "player_left",
+                    "x": 1,
+                    "y": 0
+                },
+                {
+                    "name": "player_right",
+                    "x": 2,
+                    "y": 0
+                },
+                {
+                    "name": "player_back",
+                    "x": 3,
                     "y": 0
                 }
             ]

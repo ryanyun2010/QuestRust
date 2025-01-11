@@ -118,12 +118,9 @@ async fn world_generation_test(){
     assert!(world.player.borrow().health == 100.0, "Player health should be 100.0");
     assert!(world.player.borrow().max_health == 100, "Player max health should be 100");
     assert!(world.player.borrow().movement_speed == 3.5, "Player movement speed should be 3.5");
-    let player_sprite_id_expected = world.sprites.get_sprite_id("player").expect("There should be a player sprite");
-    let player_sprite = world.sprites.get_sprite(player_sprite_id_expected).expect("There should be a player sprite");
-    let sprite_texture_id = player_sprite.texture_index;
-    assert!(world.player.borrow().texture_index == sprite_texture_id, "The player should have the player sprite");
+    let player_sprite_id_expected = world.sprites.get_sprite_id("player_front").expect("There should be a player sprite");
+    assert!(world.player.borrow().sprite_id == player_sprite_id_expected, "The player should have the player_front sprite");
     assert!(world.terrain.len() == 1, "There should be one terrain block");
-    assert!(world.sprites.sprites.len() == 4, "There should be four sprites");
 
     let chunk_id = world.get_chunk_from_chunk_xy(0, 0).expect("There should be a chunk at 0,0");
     let chunks_ref = world.chunks.borrow();

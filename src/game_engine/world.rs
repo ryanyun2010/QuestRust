@@ -457,18 +457,14 @@ impl World{
             direction[0] += 1.0;
         }
 
-        if direction[0] > 0.0 && direction[1] == 0.0 {
-            player.texture_index = self.sprites.get_texture_index_by_name("player_right").expect("Could not find texture index for player_right");
-        }else if direction[0] < 0.0 && direction[1] == 0.0{
-            player.texture_index = self.sprites.get_texture_index_by_name("player_left").expect("Could not find texture index for player_right");
-        }else if direction[0] == 0.0 && direction[1] < 0.0{
-            player.texture_index = self.sprites.get_texture_index_by_name("player_back").expect("Could not find texture index for player_back");
+        if direction[0] == 0.0 && direction[1] < 0.0{
+            player.sprite_id = self.sprites.get_sprite_id("player_back").expect("Could not find sprite id for player_back");
         } else if direction[0] == 0.0 && direction[1] > 0.0 {
-            player.texture_index = self.sprites.get_texture_index_by_name("player").expect("Could not find texture index for player");
+            player.sprite_id = self.sprites.get_sprite_id("player_front").expect("Could not find sprite id for player_front");
         } else if direction[0] > 0.0 {
-            player.texture_index = self.sprites.get_texture_index_by_name("player_right").expect("Could not find texture index for player_right");
+            player.sprite_id = self.sprites.get_sprite_id("player_right").expect("Could not find sprite id for player_right");
         } else if direction[0] < 0.0{
-            player.texture_index = self.sprites.get_texture_index_by_name("player_left").expect("Could not find texture index for player_right");
+            player.sprite_id = self.sprites.get_sprite_id("player_left").expect("Could not find sprite id for player_left");
         }
         let magnitude: f32 = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
         
