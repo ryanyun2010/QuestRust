@@ -110,22 +110,6 @@ impl RenderData{
         clone.vertex[1].position = [vert[1].0, vert[1].1, 0.0];
         clone.vertex[2].position = [vert[2].0, vert[2].1, 0.0];
         clone.vertex[3].position = [vert[3].0, vert[3].1, 0.0];
-
-
-        // let center = [
-        //     (clone.vertex[0].position[0] + clone.vertex[1].position[0] + clone.vertex[2].position[0] + clone.vertex[3].position[0])/4.0,
-        //     (clone.vertex[0].position[1] + clone.vertex[1].position[1] + clone.vertex[2].position[1] + clone.vertex[3].position[1])/4.0
-        // ];
-
-        // for vertex in clone.vertex.iter_mut(){
-        //     let vertex_centered = [
-        //         vertex.position[0] - center[0],
-        //         vertex.position[1] - center[1]
-        //     ];
-
-        //     vertex.position[0] = vertex_centered[0] * angle.cos() - vertex_centered[1] * angle.sin() + center[0];
-        //     vertex.position[1] = vertex_centered[0] * angle.sin() + vertex_centered[1] * angle.cos() + center[1];
-        // }
         return clone;
     }
     pub fn flipped_x(&self) -> RenderData {

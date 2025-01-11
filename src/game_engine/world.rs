@@ -600,7 +600,7 @@ impl World{
         }
         self.entities_to_be_killed_at_end_of_frame.borrow_mut().clear();
     }
-    pub fn on_key_down(&mut self, key: String){
+    pub fn on_key_down(&mut self, key: &String){
 
     }
     pub fn on_mouse_click(&mut self, mouse_position: MousePosition, mouse_left: bool, mouse_right: bool, camera_width: f32, camera_height: f32){
@@ -611,18 +611,6 @@ impl World{
             mouse_direction_unnormalized[1] / magnitude
         ];
 
-        let melee_attack_reach = self.player_archetype_descriptor_lookup.get("test_melee_attack").expect("Could not find player attack archetype: test_melee_attack").clone();
-        match melee_attack_reach{
-            PlayerAttackDescriptor::Melee(melee_attack_descriptor) => {
-                if mouse_left {
-                }
-            },
-            PlayerAttackDescriptor::Projectile(projectile_descriptor) => {
-                if mouse_right {
-                }
-            }
-        }
-        
         self.player_attacks.borrow_mut().push(
             PlayerAttack::new(
                 "test_melee_attack".to_string(),
@@ -636,8 +624,8 @@ impl World{
     pub fn process_mouse_input(&mut self, mouse_position: MousePosition, mouse_left: bool, mouse_right: bool){
 
     }
-    pub fn process_input(&mut self, keys: HashMap<String,bool>, camera: &mut Camera){
-        self.process_player_input(&keys);
+    pub fn process_input(&mut self, keys: &HashMap<String,bool>, camera: &mut Camera){
+        self.process_player_input(keys);
         let player = self.player.borrow();
         camera.update_camera_position(player.x, player.y);
     }

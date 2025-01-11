@@ -79,7 +79,7 @@ impl<'a> Game<'a> {
 
     }
     pub fn process_input(&mut self){
-        self.world.process_input(self.input.keys_down.clone(), &mut self.camera);
+        self.world.process_input(&self.input.keys_down, &mut self.camera);
         self.world.process_mouse_input(self.input.mouse_position, self.input.mouse_left, self.input.mouse_right);
     }
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
@@ -123,7 +123,7 @@ impl<'a> Game<'a> {
         };
 
         if press {
-            self.on_key_down(string_key.clone());
+            self.on_key_down(&string_key);
         }
         
         self.input.keys_down.insert(string_key, press);
@@ -131,7 +131,7 @@ impl<'a> Game<'a> {
 
 
 
-    pub fn on_key_down(&mut self, key: String){
+    pub fn on_key_down(&mut self, key: &String){
        self.world.on_key_down(key);
     }
 
