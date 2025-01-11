@@ -276,6 +276,7 @@ impl World {
         let mut needs_collision_box_component = false;
         let mut needs_pathfinding_component = false;
         let mut needs_health_component = false;
+        let mut health = 0;
         for tag in archetype.iter(){
             match tag.clone(){
                 EntityTags::Attacks(_) => {
@@ -287,8 +288,9 @@ impl World {
                 EntityTags::FollowsPlayer => {
                     needs_pathfinding_component = true;
                 },
-                EntityTags::BaseHealth(..) => {
+                EntityTags::BaseHealth(h) => {
                     needs_health_component = true;
+                    health = h;
                 },
                 _ => {}
             }
@@ -308,7 +310,7 @@ impl World {
             self.add_pathfinding_component(entity, entity_components::PathfindingComponent::default());
         }
         if needs_health_component{
-            self.add_health_component(entity, entity_components::HealthComponent{health: 100.0, max_health: 100});
+            self.add_health_component(entity, entity_components::HealthComponent{health: health as f32, max_health: health});
         }
         entity
     }
