@@ -21,7 +21,6 @@ pub struct Camera{
     pub level_editor: bool,
     pub text: BTreeMap<usize, TextSprite>,
     pub text_id: usize,
-    pub test: f32,
 }
 
 impl Camera{
@@ -31,7 +30,6 @@ impl Camera{
             viewpoint_height: viewpoint_height,
             camera_x: 20.0,
             camera_y: 40.0,
-            test: 0.0,
             ui_elements: BTreeMap::new(),
             ui_element_names: HashMap::new(),
             ui_element_id: 0,
@@ -128,7 +126,6 @@ impl Camera{
         (draw_data_main, draw_data_other)
     }
     pub fn render(&mut self, world: &mut World) -> RenderDataFull{
-        self.test += 1.0;
         let mut render_data = RenderDataFull::new();
         let mut terrain_data: RenderData = RenderData::new();
         let mut entity_data: RenderData = RenderData::new();

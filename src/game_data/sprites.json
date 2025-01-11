@@ -5,6 +5,18 @@
             "path": "src/rendering_engine/img/panda.png"
         },
         {
+            "name": "player_right",
+            "path": "src/rendering_engine/img/playerright.png"
+        },
+        {
+            "name": "player_left",
+            "path": "src/rendering_engine/img/playerleft.png"
+        },
+        {
+            "name": "player_back",
+            "path": "src/rendering_engine/img/playerback.png"
+        },
+        {
             "name": "health_bar_back",
             "path": "src/rendering_engine/img/health_bar_back.png"
         },

@@ -457,6 +457,19 @@ impl World{
             direction[0] += 1.0;
         }
 
+        if direction[0] > 0.0 && direction[1] == 0.0 {
+            player.texture_index = self.sprites.get_texture_index_by_name("player_right").expect("Could not find texture index for player_right");
+        }else if direction[0] < 0.0 && direction[1] == 0.0{
+            player.texture_index = self.sprites.get_texture_index_by_name("player_left").expect("Could not find texture index for player_right");
+        }else if direction[0] == 0.0 && direction[1] < 0.0{
+            player.texture_index = self.sprites.get_texture_index_by_name("player_back").expect("Could not find texture index for player_back");
+        } else if direction[0] == 0.0 && direction[1] > 0.0 {
+            player.texture_index = self.sprites.get_texture_index_by_name("player").expect("Could not find texture index for player");
+        } else if direction[0] > 0.0 {
+            player.texture_index = self.sprites.get_texture_index_by_name("player_right").expect("Could not find texture index for player_right");
+        } else if direction[0] < 0.0{
+            player.texture_index = self.sprites.get_texture_index_by_name("player_left").expect("Could not find texture index for player_right");
+        }
         let magnitude: f32 = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
         
         if magnitude > 0.0{
@@ -542,9 +555,7 @@ impl World{
                         let mut height = melee_attack_descriptor.reach;
                         let mut width = melee_attack_descriptor.width;
                         let angle = -1.0 * f32::atan2(attack.direction[1], attack.direction[0]) * 180.0/PI + 180.0;
-                        println!("{}", angle);
                         let collisions = self.get_colliding_rotated_rect(true, None, attack.x as usize, attack.y as usize, height.floor() as usize, width.floor() as usize,-1.0 * angle, true);
-                        println!("Collisions: {:?}", collisions);
                         for collision in collisions.iter(){
                             if self.entity_health_components.get(&collision).is_some(){
                                 let mut health_component = self.entity_health_components.get(&collision).unwrap().borrow_mut();
