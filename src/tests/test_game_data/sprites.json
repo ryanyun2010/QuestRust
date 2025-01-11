@@ -1,36 +1,12 @@
 {
     "basic_sprites": [
         {
-            "name": "health_bar_back",
-            "path": "src/rendering_engine/img/health_bar_back.png"
-        },
-        {
-            "name": "health",
-            "path": "src/rendering_engine/img/health.png"
-        },
-        {
             "name": "inventory",
             "path": "src/rendering_engine/img/inventory.png"
         },
         {
             "name": "sword",
             "path": "src/rendering_engine/img/sword.png"
-        },
-        {
-            "name": "grid",
-            "path": "src/rendering_engine/img/grid.png"
-        },
-        {
-            "name": "highlight",
-            "path": "src/rendering_engine/img/highlight.png"
-        },
-        {
-            "name": "level_editor_menu_background",
-            "path": "src/rendering_engine/img/background.png"
-        },
-        {
-            "name": "level_editor_button_background",
-            "path": "src/rendering_engine/img/button.png"
         },
         {
             "name": "melee_attack",
@@ -115,6 +91,59 @@
                 },
                 {
                     "name": "player_back",
+                    "x": 3,
+                    "y": 0
+                }
+            ]
+        },
+        {
+            "name": "bars_sheet",
+            "path": "src/rendering_engine/img/bars_sheet.png",
+            "width": 512,
+            "height": 32,
+            "sprite_width": 256,
+            "sprite_height": 32,
+            "sprite_padding": 0,
+            "sprites": [
+                    
+                    {
+                        "name": "health_bar_back",
+                        "x": 0,
+                        "y": 0
+                    },
+                    {
+                        "name": "health",
+                        "x": 1,
+                        "y": 0
+                    }
+            ]
+        },
+        {
+            "name": "level_editor_sheet",
+            "path": "src/rendering_engine/img/level_editor_sheet.png",
+            "width": 128,
+            "height": 32,
+            "sprite_width": 32,
+            "sprite_height": 32,
+            "sprite_padding": 0,
+            "sprites": [
+                {
+                    "name": "level_editor_menu_background",
+                    "x": 0,
+                    "y": 0
+                },
+                {
+                    "name": "level_editor_button_background",
+                    "x": 1,
+                    "y": 0
+                },
+                {
+                    "name": "highlight",
+                    "x": 2,
+                    "y": 0
+                },
+                {
+                    "name": "grid",
                     "x": 3,
                     "y": 0
                 }
