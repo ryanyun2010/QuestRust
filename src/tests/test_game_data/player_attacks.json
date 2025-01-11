@@ -1,4 +1,13 @@
 {
     "ranged_projectiles": [],
-    "melee_attacks": []
+    "melee_attacks": [
+        {
+            "name": "test_melee_attack",
+            "width": 30.0,
+            "reach": 50.0,
+            "damage": 150.0,
+            "lifetime": 3.0,
+            "sprite": "melee_attack"
+        }
+    ]
 }

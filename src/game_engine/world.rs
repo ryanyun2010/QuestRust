@@ -541,7 +541,6 @@ impl World{
 
                 },
                 PlayerAttackDescriptor::Melee(melee_attack_descriptor) => {
-                        
                     attack.time_alive += 1.0;
                     if attack.time_alive > melee_attack_descriptor.lifetime{
                         attacks_to_be_deleted.push(i);
