@@ -255,7 +255,8 @@ impl Camera{
                 continue;
             }
             let index_offset = render_data.vertex.len() as u16;
-            let draw_data = element.draw_data(self.viewpoint_width, self.viewpoint_height, index_offset);
+            let element_sprite = world.sprites.sprites[element.sprite_id];
+            let draw_data = element_sprite.draw_data(element.x, element.y, element.width.floor() as usize, element.height.floor() as usize, self.viewpoint_width, self.viewpoint_height, render_data.vertex.len() as u16, 0, 0);
             render_data.vertex.extend(draw_data.vertex);
             render_data.index.extend(draw_data.index);
         }

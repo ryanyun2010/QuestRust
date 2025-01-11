@@ -20,7 +20,7 @@ fn main() {
         y: 32.0,
         width: 256.0,
         height: 32.0,
-        texture_id: world.sprites.get_texture_index_by_name("health_bar_back").expect("couldn't find health_bar_back sprite"),
+        sprite_id: world.sprites.get_sprite_id("health_bar_back").expect("couldn't find health_bar_back sprite"),
         visible: true
     });
     camera.add_ui_element(String::from("health_bar_inside"), UIElementDescriptor {
@@ -28,7 +28,7 @@ fn main() {
         y: 35.0,
         width: 250.0,
         height: 26.0,
-        texture_id: world.sprites.get_texture_index_by_name("health").expect("couldn't find health sprite"),
+        sprite_id: world.sprites.get_sprite_id("health").expect("couldn't find health sprite"),
         visible: true
     });
     camera.add_ui_element(String::from("inventory_button"), UIElementDescriptor {
@@ -36,7 +36,7 @@ fn main() {
         y: 650.0,
         width: 75.0,
         height: 25.0,
-        texture_id: world.sprites.get_texture_index_by_name("inventory").expect("couldn't find inventory sprite"),
+        sprite_id: world.sprites.get_sprite_id("inventory").expect("couldn't find inventory sprite"),
         visible: true
     });
 

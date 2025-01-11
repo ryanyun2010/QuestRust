@@ -1,14 +1,6 @@
 {
     "basic_sprites": [
         {
-            "name": "health_bar_back",
-            "path": "src/rendering_engine/img/health_bar_back.png"
-        },
-        {
-            "name": "health",
-            "path": "src/rendering_engine/img/health.png"
-        },
-        {
             "name": "inventory",
             "path": "src/rendering_engine/img/inventory.png"
         },
@@ -119,6 +111,29 @@
                     "y": 0
                 }
             ]
+        },
+        {
+            "name": "bars_sheet",
+            "path": "src/rendering_engine/img/bars_sheet.png",
+            "width": 512,
+            "height": 32,
+            "sprite_width": 256,
+            "sprite_height": 32,
+            "sprite_padding": 0,
+            "sprites": [
+                    
+                    {
+                        "name": "health_bar_back",
+                        "x": 0,
+                        "y": 0
+                    },
+                    {
+                        "name": "health",
+                        "x": 1,
+                        "y": 0
+                    }
+            ]
+
         }
     ]
 
