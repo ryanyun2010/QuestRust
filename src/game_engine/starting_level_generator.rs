@@ -13,7 +13,7 @@ pub fn generate_world_from_json_parsed_data(data: &ParsedData) -> World {
     let player_descriptor = starting_level_descriptor.player;
     println!("Player descriptor: {:?}", player_descriptor.sprite);
     println!("{:?}", data.sprites);
-    let mut world = World::new(Player::new(player_descriptor.x, player_descriptor.y, player_descriptor.health, player_descriptor.max_health, player_descriptor.movement_speed, data.sprites.get_texture_index_by_name(&player_descriptor.sprite).expect("Player sprite not found")), data.sprites.clone());
+    let mut world = World::new(Player::new(player_descriptor.x, player_descriptor.y, player_descriptor.health, player_descriptor.max_health, player_descriptor.movement_speed, data.sprites.get_sprite_id("player_front").expect("Couldn't find player_front sprite")), data.sprites.clone());
     world.player_init();
     for archetype in data.entity_archetypes.iter(){
         world.add_entity_archetype(archetype.0.clone(), archetype.1.clone());
