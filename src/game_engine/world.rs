@@ -474,7 +474,7 @@ impl World{
         
         if magnitude > 0.0{
             let movement = [(direction[0] / magnitude * player.movement_speed), (direction[1] / magnitude * player.movement_speed)];
-            let player_movement_speed = player.movement_speed.clone();
+            let player_movement_speed = player.movement_speed;
             
             if !self.can_move_player(&mut player, [movement[0], 0.0]){
                 self.attempt_move_player(&mut player, [0.0, (direction[1] * player_movement_speed)]);

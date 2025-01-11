@@ -68,29 +68,29 @@ impl World {
         let mut distance: f64 = f64::MAX;
         let mut follows_player: bool = false;
         let mut aggroed_to_player: bool = false;
-        let mut aggro_range: usize = 0;
-        let mut attack_range: usize = 0;
-        let mut movement_speed: f32 = 1.0;
-        let mut aggressive: bool = false;
-        let mut attacks: Option<EntityAttackPattern>= None; 
-        let mut can_attack_player: bool = false;
-        let mut respects_collision: bool = false;
-        let mut has_collision: bool = false;
+        let mut aggro_range = 0;
+        let mut attack_range = 0;
+        let mut movement_speed = 1.0;
+        let mut aggressive = false;
+        let mut attacks = None; 
+        let mut can_attack_player = false;
+        let mut respects_collision = false;
+        let mut has_collision = false;
 
         for tag in entity_tags.iter() {
             // println!("{:?}", entity_tags[tag_id]);
-            match tag.clone() {
+            match tag {
                 EntityTags::FollowsPlayer => {
                     follows_player = true;
                 },
                 EntityTags::AggroRange(range) => {
-                    aggro_range = range;
+                    aggro_range = *range;
                 },
                 EntityTags::Range(range) => {
-                    attack_range = range;
+                    attack_range = *range;
                 },
                 EntityTags::MovementSpeed(speed) => {
-                    movement_speed = speed;
+                    movement_speed = *speed;
                 },
                 EntityTags::Aggressive => {
                     aggressive = true;
@@ -131,7 +131,7 @@ impl World {
             }
         }
         if can_attack_player && aggressive {
-            let attack_pattern: EntityAttackPattern = attacks.expect("Aggressive entities must have an attack pattern");
+            let attack_pattern: &EntityAttackPattern = attacks.expect("Aggressive entities must have an attack pattern");
 
             let mut attack_component = self.entity_attack_components.get(&entity_id).expect("Aggressive entities must have an attack component").borrow_mut();
 
@@ -183,9 +183,9 @@ impl World {
         }
         let magnitude: f32 = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
         if respects_collision {
-            let collision_component = self.entity_collision_box_components.get(&entity_id).expect("Entities with tag: FollowsPlayer must have a CollisionBox").borrow().clone();
+            let collision_component = self.entity_collision_box_components.get(&entity_id).expect("Entities with tag: FollowsPlayer must have a CollisionBox").borrow();
             if magnitude > 128.0{
-                let direction: EntityDirectionOptions = pathfinding::pathfind_by_block(position_component.clone(), collision_component, *entity_id, self);
+                let direction: EntityDirectionOptions = pathfinding::pathfind_by_block(position_component.clone(), *collision_component, *entity_id, self);
                 match direction {
                     EntityDirectionOptions::Down => {
                         pathfinding_component.cur_direction = EntityDirectionOptions::Down;
@@ -208,7 +208,7 @@ impl World {
                     },
                 }
             }else if magnitude > 60.0{
-                let direction: EntityDirectionOptions = pathfinding::pathfind_high_granularity(position_component.clone(), collision_component,*entity_id, self);
+                let direction: EntityDirectionOptions = pathfinding::pathfind_high_granularity(position_component.clone(), *collision_component,*entity_id, self);
                 match direction {
                     EntityDirectionOptions::Down => {
                         pathfinding_component.cur_direction = EntityDirectionOptions::Down;
