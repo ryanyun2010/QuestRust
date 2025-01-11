@@ -2,7 +2,7 @@
     
     {
         "name": "ghost_attack_pattern",
-        "attacks": ["ghost_attack"],
-        "cooldowns": [0.2]
+        "attacks": ["ghost_attack", "ghost_attack", "ghost_attack", "ghost_attack", "ghost_attack"],
+        "cooldowns": [0.1, 0.1, 0.1, 0.1, 1.0]
     }
 ]
