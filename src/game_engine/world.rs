@@ -35,7 +35,8 @@ pub struct World{
     pub item_containers: RefCell<HashMap<usize, ItemContainer>>, // corresponds element id to item container element
     pub item_tag_lookup: RefCell<HashMap<usize, Vec<ItemTags>>>, // corresponds element id to item archetype
 
-    pub collision_cache: RefCell<HashMap<[usize; 2], Vec<usize>>>, // collision x,y, to element id, collision tiles are 32x32
+    pub collision_cache: RefCell<HashMap<[usize; 2], Vec<usize>>>,
+    pub damage_cache: RefCell<HashMap<[usize; 2], Vec<usize>>>, 
    
     pub pathfinding_frames: HashMap<usize, usize>, // entity id to frame of pathfinding
     pub next_pathfinding_frame_for_entity: usize,
@@ -82,6 +83,7 @@ impl World{
             item_tag_lookup: RefCell::new(HashMap::new()),
             loaded_chunks: Vec::new(),
             collision_cache: RefCell::new(HashMap::new()),
+            damage_cache: RefCell::new(HashMap::new()),
             pathfinding_frames: HashMap::new(),
             next_pathfinding_frame_for_entity: 0,
             pathfinding_frame: 0,
@@ -224,9 +226,11 @@ impl World{
         }
         return World::get_terrain_tiles(left_most_x.unwrap().floor() as usize, top_most_y.unwrap().floor() as usize, (right_most_x.unwrap() - left_most_x.unwrap()).ceil() as usize, (bot_most_y.unwrap() - top_most_y.unwrap()).ceil() as usize);
     }
-    pub fn generate_collision_cache(&mut self){
+    pub fn generate_collision_cache_and_damage_cache(&mut self){
         let mut collision_cache_ref = self.collision_cache.borrow_mut();
+        let mut damage_cache_ref = self.damage_cache.borrow_mut();
         collision_cache_ref.clear();
+        damage_cache_ref.clear();
         for chunk in self.loaded_chunks.iter(){ 
             let chunk = &self.chunks.borrow()[*chunk];
             for terrain_id in chunk.terrain_ids.iter(){
@@ -272,6 +276,17 @@ impl World{
                                     collision_cache_entry.unwrap().push(*entity_id);
                                 }else{
                                     collision_cache_ref.insert([tile[0],tile[1]], vec![*entity_id]);
+                                }
+                            }
+                        },
+                        EntityTags::Damageable(dbox) => {
+                            let tiles_blocked: Vec<[usize; 2]> = World::get_terrain_tiles((position_component.x + dbox.x_offset) as usize, (position_component.y + dbox.y_offset) as usize, dbox.w as usize, dbox.h as usize);
+                            for tile in tiles_blocked.iter(){
+                                let damage_cache_entry = damage_cache_ref.get_mut(&[tile[0],tile[1]]);
+                                if damage_cache_entry.is_some(){    
+                                    damage_cache_entry.unwrap().push(*entity_id);
+                                }else{
+                                    damage_cache_ref.insert([tile[0],tile[1]], vec![*entity_id]);
                                 }
                             }
                         }
@@ -329,6 +344,22 @@ impl World{
         }
         false
     }
+    pub fn get_entity_damage_box(&self, id: usize) -> Option<&CollisionBox> {
+        let entity_tags_potentially = self.get_entity_tags(id);
+        if entity_tags_potentially.is_none(){
+            return None;
+        }
+        let entity_tags = entity_tags_potentially.unwrap();
+        for tag in entity_tags.iter(){
+            match tag{
+                EntityTags::Damageable(dbox) => {
+                    return Some(dbox);
+                }
+                _ => ()
+            }
+        }
+        None
+    }
     pub fn get_entity_collision_box(&self, id: usize) -> Option<&CollisionBox>{
         let entity_tags_potentially = self.get_entity_tags(id);
         if entity_tags_potentially.is_none(){
@@ -345,17 +376,17 @@ impl World{
         }
         None
     }
-    pub fn get_colliding_rotated_rect(&self, player: bool, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, rotation: f32, entity: bool) -> Vec<usize>{
+    pub fn get_attacked_rotated_rect(&self, player: bool, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, rotation: f32, entity: bool) -> Vec<usize>{
         if !player {
-            unimplemented!("non-player get_colliding_rotated_rect not implemented");
+            unimplemented!("non-player get attacks not implemented");
         }
         let tiles_to_check = World::get_collision_tiles_rotated_rect(x, y, w, h, rotation);
         let mut ids_to_check = HashSet::new();
         for tile in tiles_to_check.iter(){
-            if self.collision_cache.borrow().get(&[tile[0],tile[1]]).is_none(){
+            if self.damage_cache.borrow().get(&[tile[0],tile[1]]).is_none(){
                 continue;
             }else{
-                ids_to_check.extend(self.collision_cache.borrow().get(&[tile[0],tile[1]]).unwrap());
+                ids_to_check.extend(self.damage_cache.borrow().get(&[tile[0],tile[1]]).unwrap());
             }
         }
         let idti: usize = id_to_ignore.unwrap_or(usize::MAX);
@@ -368,12 +399,12 @@ impl World{
             
             if terrain_potentially.is_none(){
                 if entity{
-                    let entity_collision_box = self.get_entity_collision_box(id).unwrap();
+                    let entity_damage_box = self.get_entity_damage_box(id).unwrap();
                     let entity_position = self.entity_position_components.get(&id).unwrap().borrow();
-                    let ex = entity_position.x + entity_collision_box.x_offset;
-                    let ey = entity_position.y + entity_collision_box.y_offset;
-                    let ew = entity_collision_box.w;
-                    let eh = entity_collision_box.h;
+                    let ex = entity_position.x + entity_damage_box.x_offset;
+                    let ey = entity_position.y + entity_damage_box.y_offset;
+                    let ew = entity_damage_box.w;
+                    let eh = entity_damage_box.h;
                     if super::utils::check_collision(&Rectangle {
                         x: x as f32, y: y as f32, width: w as f32, height: h as f32, rotation: rotation },
                         &Rectangle {
@@ -398,17 +429,17 @@ impl World{
         }
         return colliding;
     }
-    pub fn get_colliding(&self, player: bool, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, entity: bool) -> Vec<usize>{
+    pub fn get_attacked(&self, player: bool, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, entity: bool) -> Vec<usize>{
         if !player {
-            unimplemented!("non-player get_colliding not implemented");
+            unimplemented!("non-player get_attack not implemented");
         }
         let tiles_to_check = World::get_terrain_tiles(x, y, w, h);
         let mut ids_to_check = HashSet::new();
         for tile in tiles_to_check.iter(){
-            if self.collision_cache.borrow().get(&[tile[0],tile[1]]).is_none(){
+            if self.damage_cache.borrow().get(&[tile[0],tile[1]]).is_none(){
                 continue;
             }else{
-                ids_to_check.extend(self.collision_cache.borrow().get(&[tile[0],tile[1]]).unwrap());
+                ids_to_check.extend(self.damage_cache.borrow().get(&[tile[0],tile[1]]).unwrap());
             }
         }
         let idti: usize = id_to_ignore.unwrap_or(usize::MAX);
@@ -421,12 +452,12 @@ impl World{
             
             if terrain_potentially.is_none(){
                 if entity{
-                    let entity_collision_box = self.get_entity_collision_box(id).unwrap();
+                    let entity_damage_box = self.get_entity_damage_box(id).unwrap();
                     let entity_position = self.entity_position_components.get(&id).unwrap().borrow();
-                    let ex = entity_position.x + entity_collision_box.x_offset;
-                    let ey = entity_position.y + entity_collision_box.y_offset;
-                    let ew = entity_collision_box.w;
-                    let eh = entity_collision_box.h;
+                    let ex = entity_position.x + entity_damage_box.x_offset;
+                    let ey = entity_position.y + entity_damage_box.y_offset;
+                    let ew = entity_damage_box.w;
+                    let eh = entity_damage_box.h;
                     if ex < (x + w) as f32 && ex + ew > x as f32 && ey < (y + h) as f32 && ey + eh > y as f32{
                         colliding.push(id);
                     }
@@ -535,7 +566,7 @@ impl World{
                         continue;
                     }
 
-                    let collisions = self.get_colliding(true, None, attack.x as usize, attack.y as usize, descriptor.size.floor() as usize, descriptor.size.floor() as usize, true);
+                    let collisions = self.get_attacked(true, None, attack.x as usize, attack.y as usize, descriptor.size.floor() as usize, descriptor.size.floor() as usize, true);
                     let mut hit = false;
                     for collision in collisions.iter(){
                         if self.entity_health_components.get(&collision).is_some(){
@@ -546,7 +577,7 @@ impl World{
                         }
                     }
                     if hit {
-                        let aoe_collisions = self.get_colliding(true, None, attack.x as usize, attack.y as usize, descriptor.AOE.floor() as usize + descriptor.size.floor() as usize, descriptor.AOE.floor() as usize + descriptor.size.floor() as usize, true);
+                        let aoe_collisions = self.get_attacked(true, None, attack.x as usize, attack.y as usize, descriptor.AOE.floor() as usize + descriptor.size.floor() as usize, descriptor.AOE.floor() as usize + descriptor.size.floor() as usize, true);
                         for collision in aoe_collisions.iter(){
                             if self.entity_health_components.get(&collision).is_some(){
                                 let mut health_component = self.entity_health_components.get(&collision).unwrap().borrow_mut();
@@ -570,7 +601,7 @@ impl World{
                         let height = melee_attack_descriptor.reach;
                         let width = melee_attack_descriptor.width;
                         let angle = -1.0 * f32::atan2(attack.direction[1], attack.direction[0]) * 180.0/PI + 180.0;
-                        let collisions = self.get_colliding_rotated_rect(true, None, attack.x as usize, attack.y as usize, height.floor() as usize, width.floor() as usize,-1.0 * angle, true);
+                        let collisions = self.get_attacked_rotated_rect(true, None, attack.x as usize, attack.y as usize, height.floor() as usize, width.floor() as usize,-1.0 * angle, true);
                         for collision in collisions.iter(){
                             if self.entity_health_components.get(&collision).is_some(){
                                 let mut health_component = self.entity_health_components.get(&collision).unwrap().borrow_mut();

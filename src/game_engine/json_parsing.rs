@@ -36,6 +36,7 @@ pub struct entity_archetype_json {
     pub name: String,
     pub basic_tags: Vec<String>,
     pub collision_box: Option<CollisionBox>,
+    pub damage_box: Option<CollisionBox>,
     pub health: usize,
     pub monster_type: String,
     pub movement_speed: f32,
@@ -177,8 +178,7 @@ macro_rules! from_JSON_entity_tag_parsing_basic {
         from_JSON_entity_tag_parsing_under! [$output, $tag_list;
             "aggressive", Aggressive,
             "respectsCollision", RespectsCollision,
-            "followsPlayer", FollowsPlayer,
-            "damageable", Damageable
+            "followsPlayer", FollowsPlayer
         ]
     }
 }
@@ -341,6 +341,9 @@ impl JSON_parser {
         from_JSON_entity_tag_parsing_basic!(tags, &entity_archetype.basic_tags);
         if entity_archetype.collision_box.is_some() {
             tags.push(EntityTags::HasCollision(entity_archetype.collision_box.clone().unwrap()));
+        }
+        if entity_archetype.damage_box.is_some() { 
+            tags.push(EntityTags::Damageable(entity_archetype.damage_box.clone().unwrap()));
         }
         tags.push(EntityTags::BaseHealth(entity_archetype.health));
         match entity_archetype.monster_type.as_str() {

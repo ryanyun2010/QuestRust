@@ -57,7 +57,6 @@ pub struct CollisionBox{
     pub w: f32,
     pub h: f32,
 }
-
 macro_rules! setup_components {
     ( $( $name:ident => $component:ty ),* ) => {
         #[derive(Debug, Clone)]
@@ -82,6 +81,5 @@ setup_components!(
     position => PositionComponent,
     attack => EntityAttackComponent, 
     pathfinding => PathfindingComponent,
-    health => HealthComponent, 
-    collision_box => CollisionBox);
+    health => HealthComponent);
     

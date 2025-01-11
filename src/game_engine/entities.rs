@@ -357,7 +357,7 @@ pub enum EntityTags {
     Item(Item),
     Drops(Loot),
     BaseHealth(usize),
-    Damageable
+    Damageable(CollisionBox)
 
 
 }

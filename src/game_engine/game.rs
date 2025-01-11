@@ -87,7 +87,7 @@ impl<'a> Game<'a> {
     }
     pub fn update(&mut self){
         self.camera.update_ui(&mut self.world);
-        self.world.generate_collision_cache();
+        self.world.generate_collision_cache_and_damage_cache();
         self.process_input();
         self.world.update_entities();
         self.world.update_player_attacks();
@@ -128,8 +128,6 @@ impl<'a> Game<'a> {
         
         self.input.keys_down.insert(string_key, press);
     }
-
-
 
     pub fn on_key_down(&mut self, key: &String){
        self.world.on_key_down(key);

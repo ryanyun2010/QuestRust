@@ -4,14 +4,12 @@ use crate::{game_engine::{entity_components::CollisionBox, game::MousePosition, 
 use super::tests::{basic_world, basic_camera};
 #[tokio::test]
 pub async fn test_player_attack() {
-    // todo!("MAKE IT SO COLLISION IS NOT REQUIRED FOR A THING TO BE DAMAGED");
     let mut world = basic_world().await;
     let camera = basic_camera().await;
     world.add_entity_archetype(String::from("test_attackable_entity"), vec![
         crate::game_engine::entities::EntityTags::BaseHealth(100),
-        crate::game_engine::entities::EntityTags::Damageable,
-        crate::game_engine::entities::EntityTags::HasCollision(
-            CollisionBox{
+        crate::game_engine::entities::EntityTags::Damageable(
+            CollisionBox {
                 x_offset: 0.0,
                 y_offset: 0.0,
                 w: 32.0,

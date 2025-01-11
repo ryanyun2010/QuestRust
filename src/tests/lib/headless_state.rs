@@ -18,7 +18,7 @@ impl HeadlessState{
         }
     }
     pub fn update(&self, world: &mut World, camera: &mut Camera) {
-        world.generate_collision_cache();
+        world.generate_collision_cache_and_damage_cache();
         world.process_input(&self.keys_down, camera);
         world.update_entities();
         world.update_player_attacks();
