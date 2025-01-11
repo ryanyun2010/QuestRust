@@ -49,8 +49,10 @@ pub fn pathfind_by_block(position_component: PositionComponent, collision_compon
     let ey = position_component.y + collision_component.y_offset;
     let ew = collision_component.w;
     let eh = collision_component.h;
+    let px = player.x + player.collision_box.x_offset;
+    let py = player.y + player.collision_box.y_offset;
 
-    let (player_x, player_y) = ((player.x.floor() / 32.0).floor() as usize, (player.y.floor() / 32.0).floor() as usize);
+    let (player_x, player_y) = ((px.floor() / 32.0).floor() as usize, (py.floor() / 32.0).floor() as usize);
     let (entity_x, entity_y) = ((ex / 32.0).floor() as usize, (ey / 32.0).floor() as usize);
     let entity_x_offset = ex - entity_x as f32 * 32.0;
     let entity_y_offset = ey - entity_y as f32 * 32.0;
@@ -112,7 +114,7 @@ pub fn pathfind_by_block(position_component: PositionComponent, collision_compon
             if nx > 100000000 || ny > 100000000 {
                 continue;
             }
-            if world.check_collision(true, Some(entity_id), ((nx * 32) as f32 + entity_x_offset).floor() as usize, ((ny * 32) as f32 + entity_y_offset).floor() as usize, ew as usize, eh as usize, true) {
+            if world.check_collision(true, Some(entity_id), ((nx * 32) as f32 + entity_x_offset).floor() as usize - 1, ((ny * 32) as f32 + entity_y_offset).floor() as usize - 1, ew.ceil() as usize + 2, eh.ceil() as usize + 2, true) {
                 continue;
             }
 
@@ -140,8 +142,11 @@ pub fn pathfind_high_granularity(position_component: PositionComponent, collisio
     let ew = collision_component.w;
     let eh = collision_component.h;
 
+    let px = player.x + player.collision_box.x_offset;
+    let py = player.y + player.collision_box.y_offset;
 
-    let (player_x, player_y) = ((player.x.floor() / 4.0).floor() as usize, (player.y.floor() / 4.0).floor() as usize);
+
+    let (player_x, player_y) = ((px.floor() / 4.0).floor() as usize, (py.floor() / 4.0).floor() as usize);
     let (entity_x, entity_y) = ((ex / 4.0).floor() as usize, (ey / 4.0).floor() as usize);
     let entity_x_offset = ex - entity_x as f32 * 4.0;
     let entity_y_offset = ey - entity_y as f32 * 4.0;

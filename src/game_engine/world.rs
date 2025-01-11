@@ -9,11 +9,12 @@ use crate::game_engine::player::Player;
 use crate::game_engine::terrain::{Terrain, TerrainTags};
 
 use super::camera::Camera;
+use super::entity_attacks::EntityAttackBox;
 use super::entity_components::{self, CollisionBox};
 use super::game::MousePosition;
 use super::item::ItemTags;
 use super::player_attacks::{PlayerAttack, PlayerAttackDescriptor};
-use super::utils::Rectangle;
+use super::utils::{self, Rectangle};
 
 #[derive(Debug, Clone)]
 pub struct Chunk{  
@@ -63,7 +64,9 @@ pub struct World{
 
     pub player_attacks: RefCell<Vec<PlayerAttack>>,
     pub player_archetype_descriptor_lookup: HashMap<String, PlayerAttackDescriptor>,
-    pub entities_to_be_killed_at_end_of_frame: RefCell<Vec<usize>>
+    pub entities_to_be_killed_at_end_of_frame: RefCell<Vec<usize>>,
+
+    pub entity_attacks: RefCell<Vec<EntityAttackBox>>
 }
 impl World{ 
     pub fn new(player: Player, sprite_container: SpriteContainer) -> Self{
@@ -94,7 +97,8 @@ impl World{
             entity_pathfinding_components: HashMap::new(),
             player_attacks: RefCell::new(Vec::new()),
             player_archetype_descriptor_lookup: HashMap::new(),
-            entities_to_be_killed_at_end_of_frame: RefCell::new(Vec::new())
+            entities_to_be_killed_at_end_of_frame: RefCell::new(Vec::new()),
+            entity_attacks: RefCell::new(Vec::new())
         }
     }
     pub fn new_chunk(&self, chunk_x: usize, chunk_y: usize, chunkref: Option<&mut std::cell::RefMut<'_, Vec<Chunk>>>) -> usize{
@@ -472,6 +476,18 @@ impl World{
         }
         return colliding;
     }
+    pub fn check_collision_with_player(&self, x: f32, y: f32, w: f32, h: f32, rotation: f32) -> bool{
+        return utils::check_collision(&Rectangle {
+            x: x, y: y, width: w, height: h, rotation: rotation },
+            &Rectangle {
+                x: self.player.borrow().x + self.player.borrow().collision_box.x_offset,
+                y: self.player.borrow().y + self.player.borrow().collision_box.y_offset,
+                width: self.player.borrow().collision_box.w,
+                height: self.player.borrow().collision_box.h,
+                rotation: 0.0
+            }
+        );
+    }
     pub fn attempt_move_player(&self, player: &mut Player, movement: [f32; 2]){
         
         if self.check_collision(true, None,(player.x.floor() + movement[0] + player.collision_box.x_offset).floor() as usize, (player.y.floor() + movement[1] + player.collision_box.y_offset).floor() as usize, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true){
@@ -545,6 +561,26 @@ impl World{
     }
     pub fn add_player_attack_archetype(&mut self, archetype_name: String, descriptor: PlayerAttackDescriptor){
         self.player_archetype_descriptor_lookup.insert(archetype_name, descriptor);
+    }
+    pub fn update_entity_attacks(&self){
+        let mut attacks = self.entity_attacks.borrow_mut();
+        let mut attacks_to_be_deleted = Vec::new();
+        let mut i = 0;
+        for attack in attacks.iter_mut(){
+            attack.time_charged += 1.0;
+            if attack.time_charged.floor() as usize >= attack.time_to_charge {
+                if (self.check_collision_with_player(attack.x, attack.y, attack.reach as f32, attack.width as f32, attack.rotation)){
+                    self.player.borrow_mut().health -= attack.damage as f32;
+                }
+                attacks_to_be_deleted.push(i);
+            }
+            i += 1;
+        }
+        let mut offset = 0;
+        for index in attacks_to_be_deleted.iter(){
+            attacks.remove(*index - offset);
+            offset += 1;
+        }
     }
     pub fn update_player_attacks(&self){
         let mut attacks = self.player_attacks.borrow_mut();

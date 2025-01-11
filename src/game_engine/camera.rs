@@ -103,7 +103,7 @@ impl Camera{
             let health_component = potentially_health_component.unwrap().borrow();
             let potentially_health_bar_back_id = world.sprites.get_sprite_id("health_bar_back");
             if potentially_health_bar_back_id.is_none() {
-                println!("WARNING: No Health Bar Back Sprite");
+                // println!("WARNING: No Health Bar Back Sprite");
                 return (draw_data_main, draw_data_other);
             }
             let entity_health_bar_sprite = world.sprites.get_sprite(potentially_health_bar_back_id.unwrap()).expect("Could not find health bar back sprite");
@@ -112,7 +112,7 @@ impl Camera{
             draw_data_other.index.extend(health_bar_draw_data.index);
             let potentially_health_bar_id = world.sprites.get_sprite_id("health");
             if potentially_health_bar_id.is_none() {
-                println!("WARNING: No Health Bar Sprite");
+                // println!("WARNING: No Health Bar Sprite");
                 return (draw_data_main, draw_data_other);
             }
             let entity_health_sprite = world.sprites.get_sprite(potentially_health_bar_id.unwrap()).expect("Could not find health bar sprite");
@@ -200,6 +200,17 @@ impl Camera{
         extra_data.offset(render_data.vertex.len() as u16);    
         render_data.vertex.extend(extra_data.vertex);
         render_data.index.extend(extra_data.index);
+
+        let mut entity_attack_draw_data = RenderData::new();
+        for attack in world.entity_attacks.borrow().iter() {
+            let sprite = world.sprites.get_sprite(attack.sprite_id).expect("Could not find attack sprite");
+            let dd = sprite.draw_data(attack.x, attack.y, attack.reach, attack.width, self.viewpoint_width, self.viewpoint_height, entity_attack_draw_data.vertex.len() as u16, -1 * self.camera_x.floor() as i32, -1 * self.camera_y.floor() as i32).rotated(attack.rotation * 180.0/std::f32::consts::PI);
+            entity_attack_draw_data.vertex.extend(dd.vertex);
+            entity_attack_draw_data.index.extend(dd.index);
+        }
+        entity_attack_draw_data.offset(render_data.vertex.len() as u16);
+        render_data.vertex.extend(entity_attack_draw_data.vertex);
+        render_data.index.extend(entity_attack_draw_data.index);
         let mut melee = false;
 
         let mut player_effect_draw_data = RenderData::new();

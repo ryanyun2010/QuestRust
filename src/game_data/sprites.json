@@ -11,6 +11,10 @@
         {
             "name": "melee_attack",
             "path": "src/rendering_engine/img/attack.png"
+        },
+        {
+            "name": "attack_highlight",
+            "path": "src/rendering_engine/img/attack_highlight.png"
         }
     ],
     "spritesheets": [

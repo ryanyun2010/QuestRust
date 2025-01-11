@@ -21,6 +21,7 @@ impl HeadlessState{
         world.generate_collision_cache_and_damage_cache();
         world.process_input(&self.keys_down, camera);
         world.update_entities();
+        world.update_entity_attacks();
         world.update_player_attacks();
         world.kill_entities_to_be_killed();
     }

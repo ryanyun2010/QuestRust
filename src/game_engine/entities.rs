@@ -1,6 +1,9 @@
 use crate::loot::Loot;
 use crate::game_engine::item::Item;
 use std::cell::{RefCell, RefMut};
+use std::f32::consts::PI;
+use std::time::Instant;
+use super::entity_attacks::EntityAttackBox;
 use super::entity_components::{self, CollisionBox, EntityAttackComponent, PathfindingComponent, PositionComponent};
 use super::world::{Chunk, World};
 use super::player::Player;
@@ -49,6 +52,7 @@ impl World {
         } 
     }
     pub fn update_entities(&mut self) {
+        // self.entity_attacks.borrow_mut().clear();
         self.pathfinding_frame += 1;
         self.pathfinding_frame = self.pathfinding_frame % 5;
         let player: Player = self.player.borrow().clone();
@@ -108,7 +112,7 @@ impl World {
                 _ => ()
             }
         }
-
+        
         let health_component = self.entity_health_components.get(entity_id);
         if health_component.is_some() {
             let health_component = health_component.unwrap().borrow();
@@ -120,8 +124,10 @@ impl World {
         
         if follows_player {
             let position_component = self.entity_position_components.get(entity_id).expect("Entities with tag: FollowsPlayer must have a PositionComponent").borrow().clone();
+            let px = player_x + self.player.borrow().collision_box.x_offset;
+            let py = player_y + self.player.borrow().collision_box.y_offset;
             distance = f64::sqrt(
-                (position_component.y as f64 - (player_y) as f64).powf(2.0) + (position_component.x as f64 - (player_x) as f64).powf(2.0),
+                (position_component.y as f64 - (py) as f64).powf(2.0) + (position_component.x as f64 - (px) as f64).powf(2.0),
             );
             if aggressive && distance <= (attack_range as f64) {
                 can_attack_player = true;
@@ -137,8 +143,36 @@ impl World {
             let mut attack_component = self.entity_attack_components.get(&entity_id).expect("Aggressive entities must have an attack component").borrow_mut();
 
             if attack_component.cur_attack_cooldown <= 0.0 {
-                self.player.borrow_mut().health -= attack_pattern.attacks[attack_component.cur_attack].attack();
+                // self.player.borrow_mut().health -= attack_pattern.attacks[attack_component.cur_attack].attack();
+                
                 attack_component.cur_attack += 1;
+                let position = self.entity_position_components.get(entity_id).expect("Entities with tag: FollowsPlayer must have a PositionComponent").borrow().clone();
+                let px = player_x + self.player.borrow().collision_box.x_offset;
+                let py = player_y + self.player.borrow().collision_box.y_offset;
+                let direction_to_player_unnormalized = [
+                    px - position.x,
+                    py - position.y
+                ];
+                let magnitude = f32::sqrt(direction_to_player_unnormalized[0].powf(2.0) + direction_to_player_unnormalized[1].powf(2.0));
+                let direction_to_player = [
+                    direction_to_player_unnormalized[0] / magnitude as f32,
+                    direction_to_player_unnormalized[1] / magnitude as f32
+                ];
+                let angle = f32::atan2(direction_to_player[1], direction_to_player[0]);
+                let reach = 70.0 as f32;
+                let width = 30.0;
+                self.entity_attacks.borrow_mut().push(EntityAttackBox {
+                    damage: 10,
+                    x: position.x + 16.0 + direction_to_player[0] * reach/2.0,
+                    y: position.y - width/2.0 + direction_to_player[1] * reach/2.0,
+                    reach: reach as usize,
+                    width: width as usize,
+                    time_to_charge: 9,
+                    time_charged: 0.0,
+                    sprite_id: self.sprites.get_sprite_id("attack_highlight").unwrap(),
+                    rotation: -1.0 * angle
+                });
+
                 if attack_component.cur_attack >= attack_pattern.attacks.len(){
                     attack_component.cur_attack = 0;
                 }
@@ -212,7 +246,8 @@ impl World {
                         pathfinding_component.cur_direction = EntityDirectionOptions::None;
                     },
                 }
-            }else if magnitude > 60.0{
+            } else if magnitude > 60.0{
+                let time = Instant::now();
                 let direction: EntityDirectionOptions = pathfinding::pathfind_high_granularity(position_component.clone(), *collision_box,*entity_id, self);
                 match direction {
                     EntityDirectionOptions::Down => {
@@ -358,8 +393,6 @@ pub enum EntityTags {
     Drops(Loot),
     BaseHealth(usize),
     Damageable(CollisionBox)
-
-
 }
 
 #[derive(Clone, Debug)]

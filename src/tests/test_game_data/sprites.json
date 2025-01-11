@@ -11,6 +11,10 @@
         {
             "name": "melee_attack",
             "path": "src/rendering_engine/img/attack.png"
+        },
+        {
+            "name": "attack_highlight",
+            "path": "src/rendering_engine/img/attack_highlight.png"
         }
     ],
     "spritesheets": [
@@ -46,21 +50,6 @@
                 {
                     "name": "ghost",
                     "x": 4,
-                    "y": 0
-                },
-                {
-                    "name": "wall",
-                    "x": 5,
-                    "y": 0
-                },
-                {
-                    "name": "wall2",
-                    "x": 6,
-                    "y": 0
-                },
-                {
-                    "name": "wall3",
-                    "x": 7,
                     "y": 0
                 }
             ]
@@ -147,6 +136,58 @@
                     "x": 3,
                     "y": 0
                 }
+            ]
+        },
+        {
+            "name": "kenny_sheet",
+            "path": "src/rendering_engine/img/kenny_sheet.png",
+            "width": 192,
+            "height": 176,
+            "sprite_width": 16,
+            "sprite_height": 16,
+            "sprite_padding": 0,
+            "sprites": [
+                {
+                    "name": "walltl",
+                    "x": 1,
+                    "y": 0
+                },
+                {
+                    "name": "wallt",
+                    "x": 2,
+                    "y": 0
+                },
+                {
+                    "name": "walltr",
+                    "x": 3,
+                    "y": 0
+                },
+                {
+                    "name": "walll",
+                    "x": 1,
+                    "y": 1
+                },
+                {
+                    "name": "wallr",
+                    "x": 3,
+                    "y": 1
+                },
+                {
+                    "name": "wallbl",
+                    "x": 1,
+                    "y": 2
+                },
+                {
+                    "name": "wallb",
+                    "x": 2,
+                    "y": 2
+                },
+                {
+                    "name": "wallbr",
+                    "x": 3,
+                    "y": 2
+                }
+
             ]
         }
     ]
