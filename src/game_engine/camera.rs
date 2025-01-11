@@ -186,11 +186,23 @@ impl Camera{
         }
         render_data.vertex.extend(terrain_data.vertex);
         render_data.index.extend(terrain_data.index);
+
+        let mut entity_attack_draw_data = RenderData::new();
+        for attack in world.entity_attacks.borrow().iter() {
+            let sprite = world.sprites.get_sprite(attack.sprite_id).expect("Could not find attack sprite");
+            let percent = attack.time_charged/attack.time_to_charge as f32;
+            for i in 0..(percent * 100.0).floor() as usize {
+                let dd = sprite.draw_data(attack.x, attack.y, attack.reach, attack.width, self.viewpoint_width, self.viewpoint_height, entity_attack_draw_data.vertex.len() as u16, -1 * self.camera_x.floor() as i32, -1 * self.camera_y.floor() as i32).rotated(attack.rotation * 180.0/std::f32::consts::PI);
+                entity_attack_draw_data.vertex.extend(dd.vertex);
+                entity_attack_draw_data.index.extend(dd.index);
+            }
+        }
+        entity_attack_draw_data.offset(render_data.vertex.len() as u16);
+        render_data.vertex.extend(entity_attack_draw_data.vertex);
+        render_data.index.extend(entity_attack_draw_data.index);
         entity_data.offset(render_data.vertex.len() as u16);
         render_data.vertex.extend(entity_data.vertex);
         render_data.index.extend(entity_data.index);
-
-
 
         let player_draw_data = player.draw_data(world, self.viewpoint_width, self.viewpoint_height, render_data.vertex.len() as u16, -1 * self.camera_x as i32, -1 * self.camera_y as i32);
     
@@ -201,16 +213,7 @@ impl Camera{
         render_data.vertex.extend(extra_data.vertex);
         render_data.index.extend(extra_data.index);
 
-        let mut entity_attack_draw_data = RenderData::new();
-        for attack in world.entity_attacks.borrow().iter() {
-            let sprite = world.sprites.get_sprite(attack.sprite_id).expect("Could not find attack sprite");
-            let dd = sprite.draw_data(attack.x, attack.y, attack.reach, attack.width, self.viewpoint_width, self.viewpoint_height, entity_attack_draw_data.vertex.len() as u16, -1 * self.camera_x.floor() as i32, -1 * self.camera_y.floor() as i32).rotated(attack.rotation * 180.0/std::f32::consts::PI);
-            entity_attack_draw_data.vertex.extend(dd.vertex);
-            entity_attack_draw_data.index.extend(dd.index);
-        }
-        entity_attack_draw_data.offset(render_data.vertex.len() as u16);
-        render_data.vertex.extend(entity_attack_draw_data.vertex);
-        render_data.index.extend(entity_attack_draw_data.index);
+       
         let mut melee = false;
 
         let mut player_effect_draw_data = RenderData::new();

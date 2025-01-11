@@ -167,7 +167,7 @@ impl World {
                     y: position.y - width/2.0 + direction_to_player[1] * reach/2.0,
                     reach: reach as usize,
                     width: width as usize,
-                    time_to_charge: 9,
+                    time_to_charge: 25,
                     time_charged: 0.0,
                     sprite_id: self.sprites.get_sprite_id("attack_highlight").unwrap(),
                     rotation: -1.0 * angle

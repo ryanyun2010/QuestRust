@@ -3,6 +3,6 @@
     {
         "name": "ghost_attack_pattern",
         "attacks": ["ghost_attack"],
-        "cooldowns": [0.1]
+        "cooldowns": [0.5]
     }
 ]
