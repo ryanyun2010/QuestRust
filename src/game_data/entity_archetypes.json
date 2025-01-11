@@ -17,7 +17,7 @@
         "health": 100,
         "monster_type": "Undead",
         "movement_speed": 2.0,
-        "range": 47,
+        "range": 70,
         "aggro_range": 1000,
         "attack_type": "Melee",
         "attack_pattern": "ghost_attack_pattern"
