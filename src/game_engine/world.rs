@@ -1,20 +1,18 @@
-use core::{arch, f32};
-use std::collections::{BTreeMap, HashMap, HashSet};
-use std::cell::{Ref, RefCell};
+use core::f32;
+use std::collections::{HashMap, HashSet};
+use std::cell::RefCell;
 use std::f32::consts::PI;
-use std::hash::Hash;
-use crate::rendering_engine::abstractions::{Sprite, SpriteContainer};
+use crate::rendering_engine::abstractions::SpriteContainer;
 use crate::entities::EntityTags;
 use crate::game_engine::inventory::ItemContainer;
 use crate::game_engine::player::Player;
 use crate::game_engine::terrain::{Terrain, TerrainTags};
 
 use super::camera::Camera;
-use super::entity_components::{self, EntityComponentHolder};
+use super::entity_components;
 use super::game::MousePosition;
 use super::item::ItemTags;
-use super::json_parsing::player_projectile_descriptor_json;
-use super::player_attacks::{melee_attack_descriptor, player_projectile_descriptor, PlayerAttack, PlayerAttackDescriptor};
+use super::player_attacks::{PlayerAttack, PlayerAttackDescriptor};
 use super::utils::Rectangle;
 
 #[derive(Debug, Clone)]
@@ -68,12 +66,12 @@ pub struct World{
     pub entities_to_be_killed_at_end_of_frame: RefCell<Vec<usize>>
 }
 impl World{ 
-    pub fn new(player: Player, spriteContainer: SpriteContainer) -> Self{
+    pub fn new(player: Player, sprite_container: SpriteContainer) -> Self{
         Self{
             chunks: RefCell::new(Vec::new()),
             player: RefCell::new(player),
             element_id: 0,
-            sprites: spriteContainer,
+            sprites: sprite_container,
             sprite_lookup: HashMap::new(),
             chunk_lookup: RefCell::new(HashMap::new()),
             entity_archetype_lookup: HashMap::new(),
@@ -245,7 +243,7 @@ impl World{
                         TerrainTags::BlocksMovement => {
                             let tiles_blocked: Vec<[usize; 2]> = World::get_terrain_tiles(terrain.x, terrain.y, 32, 32);
                             for tile in tiles_blocked.iter(){
-                                let mut collision_cache_entry = collision_cache_ref.get_mut(&[tile[0],tile[1]]);
+                                let collision_cache_entry = collision_cache_ref.get_mut(&[tile[0],tile[1]]);
                                 if collision_cache_entry.is_some(){    
                                     collision_cache_entry.unwrap().push(*terrain_id);
                                 }else{
@@ -272,7 +270,7 @@ impl World{
                             let collision_component = self.entity_collision_box_components.get(entity_id).expect("All Entities with the Has Collision tag should have a collision box component").borrow();
                             let tiles_blocked: Vec<[usize; 2]> = World::get_terrain_tiles(position_component.x as usize, position_component.y as usize, collision_component.w as usize, collision_component.h as usize);
                             for tile in tiles_blocked.iter(){
-                                let mut collision_cache_entry = collision_cache_ref.get_mut(&[tile[0],tile[1]]);
+                                let collision_cache_entry = collision_cache_ref.get_mut(&[tile[0],tile[1]]);
                                 if collision_cache_entry.is_some(){    
                                     collision_cache_entry.unwrap().push(*entity_id);
                                 }else{
@@ -332,6 +330,9 @@ impl World{
         false
     }
     pub fn get_colliding_rotated_rect(&self, player: bool, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, rotation: f32, entity: bool) -> Vec<usize>{
+        if !player {
+            unimplemented!("non-player get_colliding_rotated_rect not implemented");
+        }
         let tiles_to_check = World::get_collision_tiles_rotated_rect(x, y, w, h, rotation);
         let mut ids_to_check = HashSet::new();
         for tile in tiles_to_check.iter(){
@@ -382,6 +383,9 @@ impl World{
         return colliding;
     }
     pub fn get_colliding(&self, player: bool, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, entity: bool) -> Vec<usize>{
+        if !player {
+            unimplemented!("non-player get_colliding not implemented");
+        }
         let tiles_to_check = World::get_terrain_tiles(x, y, w, h);
         let mut ids_to_check = HashSet::new();
         for tile in tiles_to_check.iter(){
@@ -444,16 +448,16 @@ impl World{
     pub fn process_player_input(&mut self, keys: &HashMap<String,bool>){
         let mut direction: [f32; 2] = [0.0,0.0];
         let mut player: std::cell::RefMut<'_, Player> = self.player.borrow_mut();
-        if *keys.get("w").unwrap_or(&false) || *keys.get("ArrowUp").unwrap_or(&false){
+        if *keys.get("w").unwrap_or(&false) || *keys.get("arrowup").unwrap_or(&false){
             direction[1] -= 1.0;
         }
-        if *keys.get("a").unwrap_or(&false) || *keys.get("ArrowLeft").unwrap_or(&false){
+        if *keys.get("a").unwrap_or(&false) || *keys.get("arrowleft").unwrap_or(&false){
             direction[0] -= 1.0;
         }
-        if *keys.get("s").unwrap_or(&false) || *keys.get("ArrowDown").unwrap_or(&false){
+        if *keys.get("s").unwrap_or(&false) || *keys.get("arrowdown").unwrap_or(&false){
             direction[1] += 1.0;
         }
-        if *keys.get("d").unwrap_or(&false) || *keys.get("ArrowRight").unwrap_or(&false){
+        if *keys.get("d").unwrap_or(&false) || *keys.get("arrowright").unwrap_or(&false){
             direction[0] += 1.0;
         }
 
@@ -511,7 +515,7 @@ impl World{
                         i += 1;
                         continue;
                     }
-                    if (attack.dealt_damage){
+                    if attack.dealt_damage{
                         continue;
                     }
 
@@ -526,8 +530,8 @@ impl World{
                         }
                     }
                     if hit {
-                        let AOECollisions = self.get_colliding(true, None, attack.x as usize, attack.y as usize, descriptor.AOE.floor() as usize + descriptor.size.floor() as usize, descriptor.AOE.floor() as usize + descriptor.size.floor() as usize, true);
-                        for collision in AOECollisions.iter(){
+                        let aoe_collisions = self.get_colliding(true, None, attack.x as usize, attack.y as usize, descriptor.AOE.floor() as usize + descriptor.size.floor() as usize, descriptor.AOE.floor() as usize + descriptor.size.floor() as usize, true);
+                        for collision in aoe_collisions.iter(){
                             if self.entity_health_components.get(&collision).is_some(){
                                 let mut health_component = self.entity_health_components.get(&collision).unwrap().borrow_mut();
                                 health_component.health -= descriptor.damage;
@@ -548,8 +552,8 @@ impl World{
                         continue;
                     }
                     if attack.time_alive < 2.0 {   
-                        let mut height = melee_attack_descriptor.reach;
-                        let mut width = melee_attack_descriptor.width;
+                        let height = melee_attack_descriptor.reach;
+                        let width = melee_attack_descriptor.width;
                         let angle = -1.0 * f32::atan2(attack.direction[1], attack.direction[0]) * 180.0/PI + 180.0;
                         let collisions = self.get_colliding_rotated_rect(true, None, attack.x as usize, attack.y as usize, height.floor() as usize, width.floor() as usize,-1.0 * angle, true);
                         for collision in collisions.iter(){
@@ -608,18 +612,10 @@ impl World{
             mouse_direction_unnormalized[1] / magnitude
         ];
 
-        let W = camera_width;
-        let H = camera_height;
-        let x = mouse_position.x_screen;
-        let y = mouse_position.y_screen;
         let melee_attack_reach = self.player_archetype_descriptor_lookup.get("test_melee_attack").expect("Could not find player attack archetype: test_melee_attack").clone();
-        let mut reach = 0;
-        let mut width = 0;
         match melee_attack_reach{
             PlayerAttackDescriptor::Melee(melee_attack_descriptor) => {
                 if mouse_left {
-                    reach = melee_attack_descriptor.reach.floor() as usize;
-                    width = melee_attack_descriptor.width.floor() as usize;
                 }
             },
             PlayerAttackDescriptor::Projectile(projectile_descriptor) => {
@@ -628,7 +624,6 @@ impl World{
             }
         }
         
-        let angle = f32::atan2(y - H/2.0, x- W/2.0);
         self.player_attacks.borrow_mut().push(
             PlayerAttack::new(
                 "test_melee_attack".to_string(),
@@ -645,7 +640,7 @@ impl World{
     pub fn process_input(&mut self, keys: HashMap<String,bool>, camera: &mut Camera){
         self.process_player_input(&keys);
         let player = self.player.borrow();
-        camera.update_camera_position(self, player.x, player.y);
+        camera.update_camera_position(player.x, player.y);
     }
 }
 

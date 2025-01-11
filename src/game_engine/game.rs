@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use winit::{event, keyboard::{Key, NamedKey}};
 
-use crate::rendering_engine::{abstractions::{RenderDataFull, SpriteContainer}, renderer::Renderer};
+use crate::rendering_engine::renderer::Renderer;
 
-use super::{camera::Camera, stat, world::World};
+use super::{camera::Camera, world::World};
 #[derive(Debug, Copy, Clone)]
 pub struct MousePosition{
     pub x_world: f32,
@@ -113,7 +113,6 @@ impl<'a> Game<'a> {
             }
             _ => {}
         }
-        let key = event.logical_key.to_text();
         if key.is_none(){
             return;
         }

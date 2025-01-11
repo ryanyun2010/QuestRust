@@ -1,6 +1,6 @@
-use std::{collections::HashMap, f32::consts::PI};
-use wgpu_text::glyph_brush::{HorizontalAlign, Layout, Rectangle, Section as TextSection, Text};
-use crate::game_engine::{camera::Camera, json_parsing::{sprites_json_descriptor, ParsedData}, world::World};
+use std::collections::HashMap;
+use wgpu_text::glyph_brush::{HorizontalAlign, Layout, Section as TextSection, Text};
+use crate::game_engine::{camera::Camera, json_parsing::sprites_json_descriptor};
 
 use super::vertex::Vertex;
 
@@ -199,7 +199,7 @@ impl SpriteContainer{
         }
         for sheet in descriptor.spritesheets.iter(){
                 
-            let mut spritesheet = SpriteSheet {
+            let spritesheet = SpriteSheet {
                 texture_id: id,
                 width: sheet.width,
                 height: sheet.height,
@@ -215,7 +215,7 @@ impl SpriteContainer{
                 sprite_positions.push([sprite.x, sprite.y]);
                 names.push(sprite.name.clone());
             }
-            let mut spritesd = spritesheet.create_sprites(sprite_positions);
+            let spritesd = spritesheet.create_sprites(sprite_positions);
             for i in 0..spritesd.len(){
                 println!("{} {}", i, names[i]);
                 sprites.push(spritesd[i]);

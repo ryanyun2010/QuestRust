@@ -1,8 +1,6 @@
 #![cfg(test)]
 use crate::tests::{lib::headless::HeadlessGame, tests::{basic_world, basic_camera}};
 
-use super::lib::headless;
-
 #[tokio::test]
 async fn test_player_movement_right() {
     let world = basic_world().await;

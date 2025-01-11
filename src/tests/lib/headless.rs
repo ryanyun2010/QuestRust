@@ -1,6 +1,5 @@
-use std::collections::HashMap;
 
-use crate::{game_engine::{camera, world}, rendering_engine::abstractions::SpriteContainer};
+use crate::game_engine::{camera, world};
 use super::headless_state::HeadlessState;
 
 pub struct HeadlessGame {

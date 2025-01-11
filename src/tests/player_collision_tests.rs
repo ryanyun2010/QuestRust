@@ -1,8 +1,7 @@
 #![cfg(test)]
-use crate::game_engine::{entity_components, terrain};
 use crate::tests::tests::{basic_camera, basic_world};
 use crate::tests::lib::headless::HeadlessGame;
-use crate::game_engine::{terrain::TerrainTags, entities::EntityTags};
+use crate::game_engine::{terrain::TerrainTags, entities::EntityTags, entity_components};
 
 #[tokio::test]
 async fn test_player_terrain_collision_moving_right(){

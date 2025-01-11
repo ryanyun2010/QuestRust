@@ -1,12 +1,9 @@
 use wgpu_text::{BrushBuilder, TextBrush, glyph_brush::ab_glyph::FontRef};
 
-use winit::{event, keyboard::{Key, NamedKey}, window::Window};
-use std::collections::HashMap;
+use winit::window::Window;
 use wgpu::util::DeviceExt;
 use crate::vertex::Vertex;
 use crate::texture::{create_texture_bind_group, Texture};
-use crate::world::World;
-use crate::camera::Camera;
 use std::num::{NonZeroU64, NonZeroU32};
 use std::fs;
 
@@ -50,11 +47,10 @@ impl<'a> Renderer<'a> {
             },
         ).await.unwrap();
         let vertex_size = size_of::<Vertex>();
-        let mut limits = wgpu::Limits::default();
         let (device, queue) = adapter.request_device(
             &wgpu::DeviceDescriptor {
                 required_features: wgpu::Features::TEXTURE_BINDING_ARRAY |  wgpu::Features::SAMPLED_TEXTURE_AND_STORAGE_BUFFER_ARRAY_NON_UNIFORM_INDEXING,
-                required_limits: limits,
+                required_limits: wgpu::Limits::default(),
                 label: None,
                 memory_hints: Default::default(),
             },

@@ -1,6 +1,5 @@
 #![cfg(test)]
 use crate::game_engine::entity_components;
-use crate::game_engine::json_parsing::entity_attack_json;
 use crate::tests::tests::{basic_world, basic_camera};
 use crate::tests::lib::headless::HeadlessGame;
 use crate::game_engine::entities::{EntityAttack, EntityAttackPattern};

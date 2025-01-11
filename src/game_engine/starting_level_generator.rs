@@ -1,6 +1,5 @@
 use core::panic;
 
-use crate::rendering_engine::abstractions::SpriteContainer;
 use crate::game_engine::terrain::TerrainTags;
 use crate::game_engine::world::World;
 use crate::json_parsing::ParsedData;
@@ -43,7 +42,6 @@ pub fn generate_world_from_json_parsed_data(data: &ParsedData) -> World {
             "randomness" => {
                 println!("Randomness {:?}", descriptor);
                 let random_chances = descriptor.random_chances.clone().expect("Randomness terrain must have random_chances");
-                let archetype_tags = match_terrain_tags(&tags);
                 let mut random_chances_adjusted = Vec::new();
                 let mut sum_so_far = 0.0;
                 for chance in random_chances{

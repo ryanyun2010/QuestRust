@@ -1,13 +1,10 @@
 use crate::loot::Loot;
 use crate::game_engine::item::Item;
-use std::borrow::BorrowMut;
-use std::cell::{Ref, RefCell, RefMut};
-use std::collections::HashMap;
-use super::entity_components::{self, EntityAttackComponent, EntityComponentHolder, PathfindingComponent, PositionComponent};
+use std::cell::{RefCell, RefMut};
+use super::entity_components::{self, EntityAttackComponent, PathfindingComponent, PositionComponent};
 use super::world::{Chunk, World};
 use super::player::Player;
 use super::pathfinding::{self, EntityDirectionOptions};
-use super::json_parsing::ParsedData;
 
 impl World {
     pub fn move_entity(&self, mut position_component: RefMut<PositionComponent>, entity_id: &usize, movement: [f32; 2], chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>, respects_collision: bool, has_collision: bool){ 
@@ -150,12 +147,12 @@ impl World {
             }
         }
         if aggroed_to_player {
-            let mut pathfinding_component = self.entity_pathfinding_components.get(entity_id).expect("Entities with tag: FollowsPlayer must have a PathfindingComponent").borrow_mut();
-            let mut position_component = self.entity_position_components.get(entity_id).expect("Entities with tag: FollowsPlayer must have a PositionComponent").borrow_mut();
+            let pathfinding_component = self.entity_pathfinding_components.get(entity_id).expect("Entities with tag: FollowsPlayer must have a PathfindingComponent").borrow_mut();
+            let position_component = self.entity_position_components.get(entity_id).expect("Entities with tag: FollowsPlayer must have a PositionComponent").borrow_mut();
             self.move_entity_towards_player(entity_id, position_component, pathfinding_component, chunkref,  player_x, player_y, respects_collision, has_collision, movement_speed);
         }
     }
-    pub fn move_entity_towards_player(&self, entity_id: &usize, mut position_component: RefMut<PositionComponent>, mut pathfinding_component: RefMut<PathfindingComponent>, chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>, player_x: f32, player_y: f32, respects_collision: bool, has_collision: bool, movement_speed: f32){
+    pub fn move_entity_towards_player(&self, entity_id: &usize, position_component: RefMut<PositionComponent>, mut pathfinding_component: RefMut<PathfindingComponent>, chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>, player_x: f32, player_y: f32, respects_collision: bool, has_collision: bool, movement_speed: f32){
         let direction: [f32; 2] = [player_x - position_component.x, player_y - position_component.y];
         let entity_pathfinding_frame = self.pathfinding_frames.get(entity_id).unwrap();
         if direction[0] == 0.0 && direction[1] == 0.0 {
@@ -290,7 +287,7 @@ impl World {
                 EntityTags::FollowsPlayer => {
                     needs_pathfinding_component = true;
                 },
-                EntityTags::BaseHealth(health) => {
+                EntityTags::BaseHealth(..) => {
                     needs_health_component = true;
                 },
                 _ => {}

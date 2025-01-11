@@ -1,12 +1,10 @@
 use serde::{Deserialize, Serialize};
-use core::arch;
 use std::io::{BufReader, BufWriter, Write};
 use std::fs::File;
 use std::collections::HashMap;
 use crate::game_engine::entities::{EntityTags, EntityAttack, EntityAttackPattern};
 use crate::rendering_engine::abstractions::SpriteContainer;
 
-use super::terrain;
 use super::player_attacks::{PlayerAttackDescriptor, player_projectile_descriptor};
 
 
@@ -296,11 +294,10 @@ impl JSON_parser {
         }
 
         for (.., entity_archetype) in &self.entity_archetypes_json {
-            let mut tags = self.convert_archetype(&entity_archetype, &data);
+            let tags = self.convert_archetype(&entity_archetype, &data);
             data.entity_archetypes.insert(entity_archetype.name.clone(), tags);
             
         }
-        let mut i = 0;
         (data.sprites_to_load_json, data.sprites) = SpriteContainer::create_from_json(&self.sprites_json);
         data.starting_level_descriptor = self.starting_level_json.clone();
 

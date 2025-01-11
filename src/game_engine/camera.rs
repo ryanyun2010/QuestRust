@@ -1,11 +1,8 @@
 use std::collections::{BTreeMap, HashMap};
-use std::f32::consts::PI;
-use std::hash::Hash;
 
 use crate::world::World;
-use crate::rendering_engine::abstractions::{RenderData, RenderDataFull, SpriteContainer, TextSprite};
+use crate::rendering_engine::abstractions::{RenderData, RenderDataFull, TextSprite};
 use crate::game_engine::ui::UIElement;
-use crate::game_engine::entity_components::PositionComponent;
 use wgpu_text::glyph_brush::{HorizontalAlign, Section as TextSection};
 
 use super::player_attacks::PlayerAttackDescriptor;
@@ -64,7 +61,7 @@ impl Camera{
     }
     pub fn get_ui_elements_at(&self, x: usize, y: usize) -> Vec<String>{
         let mut elements = Vec::new();
-        for (id, element) in self.ui_elements.iter(){
+        for (.., element) in self.ui_elements.iter(){
             if x >= element.x as usize && x <= (element.x + element.width) as usize && y >= element.y as usize && y <= (element.y + element.height) as usize{
                 elements.push(element.name.clone());
             }
@@ -80,7 +77,7 @@ impl Camera{
     pub fn get_ui_element_mut(&mut self, element: usize) -> &mut crate::game_engine::ui::UIElement{
         self.ui_elements.get_mut(&element).unwrap()
     }
-    pub fn update_camera_position(&mut self, world: &World, player_x: f32, player_y: f32){
+    pub fn update_camera_position(&mut self, player_x: f32, player_y: f32){
         self.camera_x = player_x - (self.viewpoint_width as f32/ 2.0);
         self.camera_y = player_y - (self.viewpoint_height as f32/ 2.0);
     }
@@ -105,7 +102,7 @@ impl Camera{
         if potentially_health_component.is_some(){
             let health_component = potentially_health_component.unwrap().borrow();
             let potentially_health_bar_back_id = world.sprites.get_sprite_id("health_bar_back");
-            if(potentially_health_bar_back_id.is_none()){
+            if potentially_health_bar_back_id.is_none() {
                 println!("WARNING: No Health Bar Back Sprite");
                 return (draw_data_main, draw_data_other);
             }
@@ -114,7 +111,7 @@ impl Camera{
             draw_data_other.vertex.extend(health_bar_draw_data.vertex);
             draw_data_other.index.extend(health_bar_draw_data.index);
             let potentially_health_bar_id = world.sprites.get_sprite_id("health");
-            if(potentially_health_bar_id.is_none()){
+            if potentially_health_bar_id.is_none() {
                 println!("WARNING: No Health Bar Sprite");
                 return (draw_data_main, draw_data_other);
             }
@@ -250,11 +247,10 @@ impl Camera{
         render_data.index.extend(player_effect_draw_data.index);
 
         world.set_loaded_chunks(chunks_loaded);
-        for (id, element) in self.ui_elements.iter(){
+        for (.., element) in self.ui_elements.iter(){
             if !element.visible{
                 continue;
             }
-            let index_offset = render_data.vertex.len() as u16;
             let element_sprite = world.sprites.sprites[element.sprite_id];
             let draw_data = element_sprite.draw_data(element.x, element.y, element.width.floor() as usize, element.height.floor() as usize, self.viewpoint_width, self.viewpoint_height, render_data.vertex.len() as u16, 0, 0);
             render_data.vertex.extend(draw_data.vertex);
