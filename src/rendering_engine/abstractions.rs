@@ -83,18 +83,9 @@ impl Sprite {
         let screen_to_render_ratio_y: f32 = 2.0 / window_size_height as f32;
 
         let mut vertex = Vec::new();
-        let mut p_sorted_y = points.clone();
-        p_sorted_y.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
-        let top = p_sorted_y[3];
-        let second_top = p_sorted_y[2];
-        let top_left = if top.0 < second_top.0 { top } else { second_top };
-        let top_right = if top.0 < second_top.0 { second_top } else { top };
-        let bottom = p_sorted_y[0];
-        let second_bottom = p_sorted_y[1];
-        let bottom_left = if bottom.0 < second_bottom.0 { bottom } else { second_bottom };
-        let bottom_right = if bottom.0 < second_bottom.0 { second_bottom } else { bottom };
-
-        let ps = [top_left, top_right, bottom_right, bottom_left];
+        
+        let mut ps = points.clone();
+        ps.reverse();
         let tex = [[self.tex_x, self.tex_y + self.tex_h], [self.tex_x + self.tex_w, self.tex_y + self.tex_h], [self.tex_x + self.tex_w, self.tex_y], [self.tex_x, self.tex_y]];
 
         for i in 0..4 {
@@ -140,10 +131,10 @@ impl RenderData{
         }
         let mut clone = self.clone();
         let first = clone.vertex[0].tex_coords;
-        clone.vertex[0].tex_coords = clone.vertex[3].tex_coords;
-        clone.vertex[3].tex_coords = clone.vertex[2].tex_coords;
-        clone.vertex[2].tex_coords = clone.vertex[1].tex_coords;
-        clone.vertex[1].tex_coords = first;
+        clone.vertex[0].tex_coords = clone.vertex[1].tex_coords;
+        clone.vertex[1].tex_coords = clone.vertex[2].tex_coords;
+        clone.vertex[2].tex_coords = clone.vertex[3].tex_coords;
+        clone.vertex[3].tex_coords = first;
         return clone;
     }
     pub fn rotated(&self, angle: f32) -> RenderData{

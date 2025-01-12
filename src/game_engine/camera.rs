@@ -250,8 +250,7 @@ impl Camera{
                 continue;
             }
             if melee {
-                let angle = -1.0 * (f32::atan2(effect.direction[1],  effect.direction[0]));
-                let draw_data = sprite.unwrap().draw_data(effect.x, effect.y, width.unwrap().floor() as usize, height.unwrap().floor() as usize, self.viewpoint_width, self.viewpoint_height, player_effect_draw_data.vertex.len() as u16, -1 * self.camera_x as i32, -1 * self.camera_y as i32).rotated(angle * 180.0/std::f32::consts::PI);
+                let draw_data = sprite.unwrap().draw_data_rotated(effect.angle, effect.x, effect.y, width.unwrap().floor() as usize, height.unwrap().floor() as usize, self.viewpoint_width, self.viewpoint_height, player_effect_draw_data.vertex.len() as u16, -1 * self.camera_x as i32, -1 * self.camera_y as i32);
                 player_effect_draw_data.vertex.extend(draw_data.vertex);
                 player_effect_draw_data.index.extend(draw_data.index);
                 continue;

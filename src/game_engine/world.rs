@@ -560,8 +560,8 @@ impl World{
         }
     }
    
-    pub fn add_player_attacks(&self, archetype_name: String, x: f32, y: f32, direction: [f32;2]) {    
-        self.player_attacks.borrow_mut().push(PlayerAttack::new(archetype_name,0.0, x,y,direction));
+    pub fn add_player_attacks(&self, archetype_name: String, x: f32, y: f32, angle: f32) {    
+        self.player_attacks.borrow_mut().push(PlayerAttack::new(archetype_name,0.0, x,y,angle));
     }
     pub fn add_player_attack_archetype(&mut self, archetype_name: String, descriptor: PlayerAttackDescriptor){
         self.player_archetype_descriptor_lookup.insert(archetype_name, descriptor);
@@ -595,8 +595,8 @@ impl World{
             let descriptor = self.player_archetype_descriptor_lookup.get(&attack.archetype).expect(format!("Could not find player attack archetype: {}", attack.archetype).as_str());
             match descriptor{
                 PlayerAttackDescriptor::Projectile(descriptor) => {
-                    attack.x += attack.direction[0] * descriptor.speed;
-                    attack.y += attack.direction[1] * descriptor.speed;
+                    attack.x += attack.angle.cos() * descriptor.speed;
+                    attack.y += attack.angle.sin() * descriptor.speed;
                     attack.time_alive += 1.0;
                     if attack.time_alive > descriptor.lifetime{
                         attacks_to_be_deleted.push(i);
@@ -641,8 +641,7 @@ impl World{
                     if attack.time_alive < 2.0 {   
                         let height = melee_attack_descriptor.reach;
                         let width = melee_attack_descriptor.width;
-                        let angle = -1.0 * f32::atan2(attack.direction[1], attack.direction[0]) * 180.0/PI + 180.0;
-                        let collisions = self.get_attacked_rotated_rect(true, None, attack.x as usize, attack.y as usize, height.floor() as usize, width.floor() as usize,-1.0 * angle, true);
+                        let collisions = self.get_attacked_rotated_rect(true, None, attack.x as usize, attack.y as usize, height.floor() as usize, width.floor() as usize,attack.angle, true);
                         for collision in collisions.iter(){
                             if self.entity_health_components.get(&collision).is_some(){
                                 let mut health_component = self.entity_health_components.get(&collision).unwrap().borrow_mut();
@@ -703,14 +702,14 @@ impl World{
             mouse_direction_unnormalized[0] / magnitude,
             mouse_direction_unnormalized[1] / magnitude
         ];
-
+        let angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]);
         self.player_attacks.borrow_mut().push(
             PlayerAttack::new(
                 "test_melee_attack".to_string(),
                 0.0, 
                 self.player.borrow().x + mouse_direction_normalized[0] * 25.0 + 16.0,
-                self.player.borrow().y + mouse_direction_normalized[1] * 25.0, 
-                mouse_direction_normalized)
+                self.player.borrow().y + mouse_direction_normalized[1] * 25.0 + 22.0, 
+                angle * 180.0/PI)
         );
         
     }

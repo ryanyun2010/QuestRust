@@ -5,17 +5,17 @@ pub struct PlayerAttack{
     pub time_alive: f32,
     pub x: f32,
     pub y: f32,
-    pub direction: [f32; 2],
+    pub angle: f32,
     pub dealt_damage: bool
 }
 impl PlayerAttack{
-    pub fn new(archetype: String, time_alive: f32, x: f32, y: f32, direction: [f32; 2]) -> Self{
+    pub fn new(archetype: String, time_alive: f32, x: f32, y: f32, angle: f32) -> Self{
         Self{
             archetype,
             time_alive,
             x,
             y,
-            direction,
+            angle,
             dealt_damage: false
         }
     }
