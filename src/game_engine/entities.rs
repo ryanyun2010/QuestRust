@@ -161,10 +161,10 @@ impl World {
                 let descriptor = self.get_attack_descriptor_by_name(&attack_pattern.attacks[attack_component.cur_attack]).expect("Attack pattern must have a valid attack");
                 self.entity_attacks.borrow_mut().push(EntityAttackBox {
                     archetype: attack_pattern.attacks[attack_component.cur_attack].clone(),
-                    x: position.x + 16.0 + direction_to_player[0] * descriptor.reach as f32/2.0,
-                    y: position.y - descriptor.width as f32/2.0 + direction_to_player[1] * descriptor.reach as f32/2.0,
+                    x: position.x + 16.0 + descriptor.reach as f32/2.0 * direction_to_player[0],
+                    y: position.y + 16.0 + descriptor.reach as f32/2.0 * direction_to_player[1],
                     time_charged: 0.0,
-                    rotation: -1.0 * angle
+                    rotation: angle,
                 });
                 attack_component.cur_attack += 1;
                 if attack_component.cur_attack >= attack_pattern.attacks.len(){

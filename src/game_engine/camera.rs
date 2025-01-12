@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, HashMap};
+use std::f32::consts::PI;
 
 use crate::world::World;
 use crate::rendering_engine::abstractions::{RenderData, RenderDataFull, TextSprite};
@@ -18,6 +19,7 @@ pub struct Camera{
     pub level_editor: bool,
     pub text: BTreeMap<usize, TextSprite>,
     pub text_id: usize,
+    pub test: f32,
 }
 
 impl Camera{
@@ -33,6 +35,7 @@ impl Camera{
             level_editor: false,
             text: BTreeMap::new(),
             text_id: 0,
+            test: 0.0
         }
     }
     pub fn update_ui(&mut self, world: &mut World){
@@ -186,14 +189,14 @@ impl Camera{
         }
         render_data.vertex.extend(terrain_data.vertex);
         render_data.index.extend(terrain_data.index);
-
+        self.test += 1.0;
         let mut entity_attack_draw_data = RenderData::new();
         for attack in world.entity_attacks.borrow().iter() {
             let descriptor = world.get_attack_descriptor(attack).expect("Could not find attack descriptor");
             let sprite = world.sprites.get_sprite_by_name(&descriptor.sprite).expect("Could not find attack sprite");
             let percent = attack.time_charged/descriptor.time_to_charge as f32;
             for i in 0..(percent * 100.0).floor() as usize {
-                let dd = sprite.draw_data(attack.x, attack.y, descriptor.reach, descriptor.width, self.viewpoint_width, self.viewpoint_height, entity_attack_draw_data.vertex.len() as u16, -1 * self.camera_x.floor() as i32, -1 * self.camera_y.floor() as i32).rotated(attack.rotation * 180.0/std::f32::consts::PI);
+                let dd = sprite.draw_data_rotated(attack.rotation * 180.0/PI, attack.x, attack.y, descriptor.reach, descriptor.width, self.viewpoint_width, self.viewpoint_height, entity_attack_draw_data.vertex.len() as u16, -1 * self.camera_x.floor() as i32, -1 * self.camera_y.floor() as i32);
                 entity_attack_draw_data.vertex.extend(dd.vertex);
                 entity_attack_draw_data.index.extend(dd.index);
             }

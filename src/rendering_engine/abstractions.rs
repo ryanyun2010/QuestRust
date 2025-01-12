@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use wgpu_text::glyph_brush::{HorizontalAlign, Layout, Section as TextSection, Text};
-use crate::game_engine::{camera::Camera, json_parsing::sprites_json_descriptor};
+use crate::game_engine::{camera::Camera, json_parsing::sprites_json_descriptor, utils::{get_rotated_corners, Rectangle}};
 
 use super::vertex::Vertex;
 
@@ -55,6 +55,58 @@ impl Sprite {
             Vertex { position: [x + w, y + h, 0.0], tex_coords: [self.tex_x + self.tex_w, self.tex_y], index: self.texture_index },
             Vertex { position: [x, y + h, 0.0], tex_coords: [self.tex_x, self.tex_y], index: self.texture_index },
         ];
+
+        let index: Vec<u16> = vec![0 + index_offset, 1 + index_offset, 2 + index_offset, 0 + index_offset, 2 + index_offset, 3 + index_offset];
+
+        RenderData { vertex, index }
+    }
+    pub fn draw_data_rotated(&self, rotation:f32, screen_x: f32, screen_y: f32, screen_w: usize, screen_h: usize, window_size_width: usize, window_size_height: usize, index_offset:u16, vertex_offset_x: i32, vertex_offset_y: i32) -> RenderData {
+            let v = get_rotated_corners(
+                &Rectangle{
+                    x: screen_x,
+                    y: screen_y,
+                    width: screen_w as f32,
+                    height: screen_h as f32,
+                    rotation: rotation
+                }
+            );
+            let v_array: [(f32, f32); 4] = [
+                (v[0].0 + (vertex_offset_x as f32), v[0].1 + (vertex_offset_y as f32)),
+                (v[1].0 + (vertex_offset_x as f32), v[1].1 + (vertex_offset_y as f32)),
+                (v[2].0 + (vertex_offset_x as f32), v[2].1 + (vertex_offset_y as f32)),
+                (v[3].0 + (vertex_offset_x as f32), v[3].1 + (vertex_offset_y as f32))
+            ];
+            self.draw_data_p(v_array, window_size_width, window_size_height, index_offset)
+        }
+    pub fn draw_data_p(&self, points: [(f32, f32); 4], window_size_width: usize, window_size_height: usize, index_offset: u16) -> RenderData {
+        let screen_to_render_ratio_x: f32 = 2.0 / window_size_width as f32;
+        let screen_to_render_ratio_y: f32 = 2.0 / window_size_height as f32;
+
+        let mut vertex = Vec::new();
+        let mut p_sorted_y = points.clone();
+        p_sorted_y.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
+        let top = p_sorted_y[3];
+        let second_top = p_sorted_y[2];
+        let top_left = if top.0 < second_top.0 { top } else { second_top };
+        let top_right = if top.0 < second_top.0 { second_top } else { top };
+        let bottom = p_sorted_y[0];
+        let second_bottom = p_sorted_y[1];
+        let bottom_left = if bottom.0 < second_bottom.0 { bottom } else { second_bottom };
+        let bottom_right = if bottom.0 < second_bottom.0 { second_bottom } else { bottom };
+
+        let ps = [top_left, top_right, bottom_right, bottom_left];
+        let tex = [[self.tex_x, self.tex_y + self.tex_h], [self.tex_x + self.tex_w, self.tex_y + self.tex_h], [self.tex_x + self.tex_w, self.tex_y], [self.tex_x, self.tex_y]];
+
+        for i in 0..4 {
+            let (screen_x, screen_y) = ps[i];
+            let x: f32 = screen_x * screen_to_render_ratio_x - 1.0;
+            let y: f32 = -1.0 * (screen_y * screen_to_render_ratio_y - 1.0);
+            vertex.push(Vertex {
+                position: [x, y, 0.0],
+                tex_coords: tex[i],
+                index: self.texture_index,
+            });
+        }
 
         let index: Vec<u16> = vec![0 + index_offset, 1 + index_offset, 2 + index_offset, 0 + index_offset, 2 + index_offset, 3 + index_offset];
 
@@ -191,7 +243,6 @@ impl SpriteContainer{
                 sprite_height: sheet.sprite_height,
                 sprite_padding: sheet.sprite_padding
             };
-            println!("{} {}", id, sheet.path);
             sprites_to_load.push(sheet.path.clone());
             let mut sprite_positions = Vec::new();
             let mut names = Vec::new();
@@ -201,7 +252,6 @@ impl SpriteContainer{
             }
             let spritesd = spritesheet.create_sprites(sprite_positions);
             for i in 0..spritesd.len(){
-                println!("{} {}", i, names[i]);
                 sprites.push(spritesd[i]);
                 sprite_id_lookup.insert(names[i].to_string(), sprites.len() - 1);
             }

@@ -50,7 +50,6 @@ pub async fn run(world: World, camera: Camera, sprites_json_to_load: Vec<String>
                     }
                     let time = Instant::now();
                     game.update();
-                    println!("Update time: {:?}", time.elapsed());
                     match game.render() {
                         Ok(_) => {}
                         Err(

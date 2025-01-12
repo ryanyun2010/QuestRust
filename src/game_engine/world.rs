@@ -574,7 +574,7 @@ impl World{
             attack.time_charged += 1.0;
             let desciptor = self.get_attack_descriptor(attack).expect("Couldn't find entity attack descriptor?");
             if attack.time_charged.floor() as usize >= desciptor.time_to_charge {
-                if (self.check_collision_with_player(attack.x, attack.y, desciptor.reach as f32, desciptor.width as f32, attack.rotation)){
+                if (self.check_collision_with_player(attack.x, attack.y, desciptor.reach as f32, desciptor.width as f32, attack.rotation * 180.0/PI)){
                     self.player.borrow_mut().health -= desciptor.damage as f32;
                 }
                 attacks_to_be_deleted.push(i);
