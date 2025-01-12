@@ -6,5 +6,13 @@
         "width": 30,
         "time_to_charge": 25,
         "sprite": "attack_highlight"
+    },
+    {
+        "name": "ghost_attack_2",
+        "damage": 25.0,
+        "reach": 150,
+        "width": 70,
+        "time_to_charge": 40,
+        "sprite": "attack_highlight"
     }
 ]
