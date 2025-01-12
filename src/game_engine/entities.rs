@@ -145,7 +145,6 @@ impl World {
             if attack_component.cur_attack_cooldown <= 0.0 {
                 // self.player.borrow_mut().health -= attack_pattern.attacks[attack_component.cur_attack].attack();
                 
-                attack_component.cur_attack += 1;
                 let position = self.entity_position_components.get(entity_id).expect("Entities with tag: FollowsPlayer must have a PositionComponent").borrow().clone();
                 let px = player_x + self.player.borrow().collision_box.x_offset;
                 let py = player_y + self.player.borrow().collision_box.y_offset;
@@ -159,23 +158,20 @@ impl World {
                     direction_to_player_unnormalized[1] / magnitude as f32
                 ];
                 let angle = f32::atan2(direction_to_player[1], direction_to_player[0]);
-                let reach = 70.0 as f32;
-                let width = 30.0;
+                let descriptor = self.get_attack_descriptor_by_name(&attack_pattern.attacks[attack_component.cur_attack]).expect("Attack pattern must have a valid attack");
                 self.entity_attacks.borrow_mut().push(EntityAttackBox {
-                    damage: 10,
-                    x: position.x + 16.0 + direction_to_player[0] * reach/2.0,
-                    y: position.y - width/2.0 + direction_to_player[1] * reach/2.0,
-                    reach: reach as usize,
-                    width: width as usize,
-                    time_to_charge: 25,
+                    archetype: attack_pattern.attacks[attack_component.cur_attack].clone(),
+                    x: position.x + 16.0 + direction_to_player[0] * descriptor.reach as f32/2.0,
+                    y: position.y - descriptor.width as f32/2.0 + direction_to_player[1] * descriptor.reach as f32/2.0,
                     time_charged: 0.0,
-                    sprite_id: self.sprites.get_sprite_id("attack_highlight").unwrap(),
                     rotation: -1.0 * angle
                 });
-
+                attack_component.cur_attack += 1;
                 if attack_component.cur_attack >= attack_pattern.attacks.len(){
                     attack_component.cur_attack = 0;
                 }
+
+                
                 attack_component.cur_attack_cooldown = attack_pattern.attack_cooldowns[attack_component.cur_attack];                
             }else{
                 attack_component.cur_attack_cooldown -= 1.0/60.0;
@@ -397,11 +393,11 @@ pub enum EntityTags {
 
 #[derive(Clone, Debug)]
 pub struct EntityAttackPattern {
-    pub attacks: Vec<EntityAttack>,
+    pub attacks: Vec<String>,
     pub attack_cooldowns: Vec<f32>,  
 }
 impl EntityAttackPattern{
-    pub fn new(attacks: Vec<EntityAttack>, attack_cooldowns: Vec<f32>) -> Self{
+    pub fn new(attacks: Vec<String>, attack_cooldowns: Vec<f32>) -> Self{
         Self{
             attacks: attacks,
             attack_cooldowns: attack_cooldowns,
@@ -419,21 +415,4 @@ impl EntityAttackPattern{
     //     self.cur_attack_cooldown -= 1.0/60.0;
     //     None
     // }
-}
-
-#[derive(Copy, Clone, Debug)]
-pub struct EntityAttack{
-    pub damage: f32
-}
-
-impl EntityAttack{
-    pub fn new(damage: f32) -> Self{
-        Self{
-            damage: damage
-        }
-    }
-
-    pub fn attack(&self) -> f32{
-        self.damage as f32
-    }
 }

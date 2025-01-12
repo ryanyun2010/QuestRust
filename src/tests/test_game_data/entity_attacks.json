@@ -1,6 +1,10 @@
 [
     {
         "name": "ghost_attack",
-        "damage": 3.0
+        "damage": 150.0,
+        "reach": 50,
+        "width": 50,
+        "time_to_charge": 5,
+        "sprite": "attack_highlight"
     }
 ]

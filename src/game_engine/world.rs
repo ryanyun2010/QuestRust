@@ -2,6 +2,8 @@ use core::f32;
 use std::collections::{HashMap, HashSet};
 use std::cell::RefCell;
 use std::f32::consts::PI;
+use wgpu::DeviceDescriptor;
+
 use crate::rendering_engine::abstractions::SpriteContainer;
 use crate::entities::EntityTags;
 use crate::game_engine::inventory::ItemContainer;
@@ -9,7 +11,7 @@ use crate::game_engine::player::Player;
 use crate::game_engine::terrain::{Terrain, TerrainTags};
 
 use super::camera::Camera;
-use super::entity_attacks::EntityAttackBox;
+use super::entity_attacks::{EntityAttackBox, EntityAttackDescriptor};
 use super::entity_components::{self, CollisionBox};
 use super::game::MousePosition;
 use super::item::ItemTags;
@@ -66,7 +68,8 @@ pub struct World{
     pub player_archetype_descriptor_lookup: HashMap<String, PlayerAttackDescriptor>,
     pub entities_to_be_killed_at_end_of_frame: RefCell<Vec<usize>>,
 
-    pub entity_attacks: RefCell<Vec<EntityAttackBox>>
+    pub entity_attacks: RefCell<Vec<EntityAttackBox>>,
+    pub entity_attack_descriptor_lookup: HashMap<String, EntityAttackDescriptor>,
 }
 impl World{ 
     pub fn new(player: Player, sprite_container: SpriteContainer) -> Self{
@@ -98,7 +101,8 @@ impl World{
             player_attacks: RefCell::new(Vec::new()),
             player_archetype_descriptor_lookup: HashMap::new(),
             entities_to_be_killed_at_end_of_frame: RefCell::new(Vec::new()),
-            entity_attacks: RefCell::new(Vec::new())
+            entity_attacks: RefCell::new(Vec::new()),
+            entity_attack_descriptor_lookup: HashMap::new()
         }
     }
     pub fn new_chunk(&self, chunk_x: usize, chunk_y: usize, chunkref: Option<&mut std::cell::RefMut<'_, Vec<Chunk>>>) -> usize{
@@ -568,9 +572,10 @@ impl World{
         let mut i = 0;
         for attack in attacks.iter_mut(){
             attack.time_charged += 1.0;
-            if attack.time_charged.floor() as usize >= attack.time_to_charge {
-                if (self.check_collision_with_player(attack.x, attack.y, attack.reach as f32, attack.width as f32, attack.rotation)){
-                    self.player.borrow_mut().health -= attack.damage as f32;
+            let desciptor = self.get_attack_descriptor(attack).expect("Couldn't find entity attack descriptor?");
+            if attack.time_charged.floor() as usize >= desciptor.time_to_charge {
+                if (self.check_collision_with_player(attack.x, attack.y, desciptor.reach as f32, desciptor.width as f32, attack.rotation)){
+                    self.player.borrow_mut().health -= desciptor.damage as f32;
                 }
                 attacks_to_be_deleted.push(i);
             }
@@ -681,6 +686,12 @@ impl World{
             self.remove_entity(entity);
         }
         self.entities_to_be_killed_at_end_of_frame.borrow_mut().clear();
+    }
+    pub fn get_attack_descriptor(&self, attack: &EntityAttackBox) -> Option<&EntityAttackDescriptor>{
+        self.entity_attack_descriptor_lookup.get(&attack.archetype)
+    }
+    pub fn get_attack_descriptor_by_name(&self, archetype_name: &String) -> Option<&EntityAttackDescriptor>{
+        self.entity_attack_descriptor_lookup.get(archetype_name)
     }
     pub fn on_key_down(&mut self, key: &String){
 

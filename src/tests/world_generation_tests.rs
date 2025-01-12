@@ -69,7 +69,6 @@ async fn json_parsing_test(){
                 let attack_pattern = entity_attack_pattern.clone();
                 assert!(attack_pattern.attacks.len() == 1, "There should be one attack in the attack pattern");
                 assert!(attack_pattern.attack_cooldowns.len() == 1, "There should be one attack cooldown in the attack pattern");
-                assert!(attack_pattern.attacks[0].damage == 3.0,"Attack damage should be 3.0");
                 assert!(attack_pattern.attack_cooldowns[0] == 0.1, "Attack cooldown should be 0.1");
             },
             crate::game_engine::entities::EntityTags::AttackType(attack_type) => {
@@ -189,8 +188,15 @@ async fn world_generation_test(){
                 let attack_pattern = entity_attack_pattern.clone();
                 assert!(attack_pattern.attacks.len() == 1, "There should be one attack in the attack pattern");
                 assert!(attack_pattern.attack_cooldowns.len() == 1, "There should be one attack cooldown in the attack pattern");
-                assert!(attack_pattern.attacks[0].damage == 3.0,"Attack damage should be 3.0");
                 assert!(attack_pattern.attack_cooldowns[0] == 0.1, "Attack cooldown should be 0.1");
+                let attack = world.get_attack_descriptor_by_name(&attack_pattern.attacks[0]).expect("There should be an attack descriptor");
+                assert!(attack.damage == 150.0, "Attack damage should be 150.0");
+                assert!(attack.reach == 50, "Attack reach should be 50");
+                assert!(attack.width == 50, "Attack width should be 50");
+                assert!(attack.time_to_charge == 5, "Attack time to charge should be 5");
+                assert!(attack.sprite == "attack_highlight", "Attack sprite should be attack_highlight");
+
+
             },
             crate::game_engine::entities::EntityTags::AttackType(attack_type) => {
                 assert!(!found_attack_type, "AttackType tag should only be found once");

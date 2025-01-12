@@ -17,6 +17,13 @@ pub fn generate_world_from_json_parsed_data(data: &ParsedData) -> World {
     for archetype in data.entity_archetypes.iter(){
         world.add_entity_archetype(archetype.0.clone(), archetype.1.clone());
     }
+    for attack in data.entity_attacks.iter(){
+        world.entity_attack_descriptor_lookup.insert(
+            attack.0.clone(),
+            attack.1.clone()
+        );
+    }
+    
     for entity_descriptor in starting_level_descriptor.entities.iter(){
         let entity = world.create_entity_with_archetype(entity_descriptor.x, entity_descriptor.y, entity_descriptor.archetype.clone());
         world.set_sprite(entity, world.sprites.get_sprite_id(&entity_descriptor.sprite).expect(format!("Could not find sprite: {}", entity_descriptor.sprite).as_str()));

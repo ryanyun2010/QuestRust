@@ -1,4 +1,6 @@
 
+use std::time::Instant;
+
 use winit::{
     event::*, event_loop::EventLoop, window::WindowBuilder
 };
@@ -46,7 +48,9 @@ pub async fn run(world: World, camera: Camera, sprites_json_to_load: Vec<String>
                     if focused{
                         game.window().request_redraw();
                     }
+                    let time = Instant::now();
                     game.update();
+                    println!("Update time: {:?}", time.elapsed());
                     match game.render() {
                         Ok(_) => {}
                         Err(

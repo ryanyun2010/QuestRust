@@ -2,9 +2,10 @@ use serde::{Deserialize, Serialize};
 use std::io::{BufReader, BufWriter, Write};
 use std::fs::File;
 use std::collections::HashMap;
-use crate::game_engine::entities::{EntityTags, EntityAttack, EntityAttackPattern};
+use crate::game_engine::entities::{EntityTags, EntityAttackPattern};
 use crate::rendering_engine::abstractions::SpriteContainer;
 
+use super::entity_attacks::EntityAttackDescriptor;
 use super::entity_components::CollisionBox;
 use super::player_attacks::{PlayerAttackDescriptor, player_projectile_descriptor};
 
@@ -29,6 +30,15 @@ pub const PATH_BUNDLE: PathBundle = PathBundle{
     player_attacks_path: "src/game_data/player_attacks.json"
 };
 
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct entity_attack_descriptor_json {
+    pub name: String,
+    pub damage: f32,
+    pub reach: usize,
+    pub width: usize,
+    pub time_to_charge: usize,
+    pub sprite: String
+}
 
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -50,11 +60,6 @@ pub struct entity_attack_pattern_json {
     name: String,
     attacks: Vec<String>,
     cooldowns: Vec<f32>
-}
-#[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct entity_attack_json{
-    name: String,
-    damage: f32,
 }
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct sprites_json_descriptor {
@@ -164,7 +169,7 @@ impl player_attacks_descriptor_json {
 pub struct JSON_parser {
     pub entity_archetypes_json: HashMap<String, entity_archetype_json>,
     pub entity_attack_patterns_json: HashMap<String, entity_attack_pattern_json>,
-    pub entity_attacks_json: HashMap<String, entity_attack_json>,
+    pub entity_attacks_json: HashMap<String, entity_attack_descriptor_json>,
     pub terrain_archetypes_json: HashMap<String, terrain_archetype_json>,
     pub sprites_json: sprites_json_descriptor,
     pub item_json: HashMap<String, item_json>,
@@ -255,7 +260,7 @@ impl JSON_parser {
     pub fn parse_entity_attacks(&mut self, path: &str) {
         let file = File::open(path).expect("Could not open file");
         let reader = BufReader::new(file);
-        let data: Vec<entity_attack_json> = serde_json::from_reader(reader).expect("JSON was not well-formatted");
+        let data: Vec<entity_attack_descriptor_json> = serde_json::from_reader(reader).expect("JSON was not well-formatted");
         for attack in data {
             self.entity_attacks_json.insert(attack.name.clone(), attack);
         }
@@ -285,14 +290,16 @@ impl JSON_parser {
         // Convert Entity Attacks First
         let mut data = ParsedData::new();
         for (name, entity_attack) in &self.entity_attacks_json {
-            data.entity_attacks.insert(name.clone(), EntityAttack::new(entity_attack.damage));
+            data.entity_attacks.insert(name.clone(), EntityAttackDescriptor {
+                damage: entity_attack.damage,
+                reach: entity_attack.reach,
+                width: entity_attack.width,
+                time_to_charge: entity_attack.time_to_charge,
+                sprite: entity_attack.sprite.clone()
+            });
         }
         for (name, entity_attack_pattern) in &self.entity_attack_patterns_json {
-            let mut attacks = Vec::new();
-            for attack in &entity_attack_pattern.attacks {
-                attacks.push(data.entity_attacks.get(attack).expect(&format!("Couldn't find attack: {}, when parsing attack pattern: {}", attack, entity_attack_pattern.name)).clone());
-            }
-            data.entity_attack_patterns.insert(name.clone(), EntityAttackPattern::new(attacks, entity_attack_pattern.cooldowns.clone()));
+            data.entity_attack_patterns.insert(name.clone(), EntityAttackPattern::new(entity_attack_pattern.attacks.clone(), entity_attack_pattern.cooldowns.clone()));
         }
 
         for (.., entity_archetype) in &self.entity_archetypes_json {
@@ -426,7 +433,7 @@ impl JSON_parser {
 pub struct ParsedData{
     pub entity_archetypes: HashMap<String, Vec<EntityTags>>,
     pub entity_attack_patterns: HashMap<String, EntityAttackPattern>,
-    pub entity_attacks: HashMap<String, EntityAttack>,
+    pub entity_attacks: HashMap<String, EntityAttackDescriptor>,
     pub terrain_archetypes: HashMap<String, terrain_archetype_json>,
     pub sprites_to_load_json: Vec<String>,
     pub sprites: SpriteContainer,

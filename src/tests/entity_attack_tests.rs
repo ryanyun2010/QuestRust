@@ -1,8 +1,9 @@
 #![cfg(test)]
+use crate::game_engine::entity_attacks::EntityAttackDescriptor;
 use crate::game_engine::entity_components;
 use crate::tests::tests::{basic_world, basic_camera};
 use crate::tests::lib::headless::HeadlessGame;
-use crate::game_engine::entities::{EntityAttack, EntityAttackPattern};
+use crate::game_engine::entities::EntityAttackPattern;
 use crate::game_engine::entities::EntityTags;
 
 #[tokio::test]
@@ -10,8 +11,14 @@ async fn test_entity_can_kill_player(){
     let mut world = basic_world().await;
     let entity = world.add_entity(900.0, 405.0);
     world.set_sprite(entity, 0);
-    let attack = EntityAttack::new(100.0);
-    let attack_pattern = EntityAttackPattern::new(vec![attack], vec![0.1]);
+    world.entity_attack_descriptor_lookup.insert("test_attack".to_string(), EntityAttackDescriptor{
+        damage: 100.0,
+        reach: 50,
+        width: 50,
+        time_to_charge: 5,
+        sprite: "attack_highlight".to_string()
+    });
+    let attack_pattern = EntityAttackPattern::new(vec!["test_attack".to_string()], vec![0.1]);
     world.add_entity_archetype(String::from("Test"), vec![
         EntityTags::MovementSpeed(2.0),
         EntityTags::Range(47),
