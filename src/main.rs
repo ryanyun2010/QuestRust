@@ -1,11 +1,12 @@
 #![allow(warnings)]
 use std::time::Instant;
 pub mod rendering_engine;
-use rendering_engine::{renderer, texture, vertex, window};
+use rendering_engine::{renderer, sprite_sheet_generation_abstraction::combine_images, texture, vertex, window};
 pub mod game_engine;
 use game_engine::{camera, entities, json_parsing::{self, PATH_BUNDLE}, loot, starting_level_generator, stat, ui::UIElementDescriptor, world};
 pub mod tests;
 use std::env;
+use image::{GenericImageView, RgbaImage, Rgba};
 
 fn main() {
     // let args: Vec<String> = env::args().collect();

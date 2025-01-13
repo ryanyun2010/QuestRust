@@ -2,11 +2,13 @@ use std::collections::HashMap;
 use wgpu_text::glyph_brush::{HorizontalAlign, Layout, Section as TextSection, Text};
 use crate::game_engine::{camera::Camera, json_parsing::sprites_json_descriptor, utils::{get_rotated_corners, Rectangle}};
 
-use super::vertex::Vertex;
+use super::{sprite_sheet_generation_abstraction::SpriteSheetSheet, vertex::Vertex};
 
 #[derive(Debug, Clone, Copy)]
 pub struct SpriteSheet {
     pub texture_id: i32,
+    pub x_offset: usize,
+    pub total_width: usize,
     pub width: usize,
     pub height: usize,
     pub sprite_width: usize,
@@ -17,13 +19,13 @@ impl SpriteSheet{
     pub fn create_sprites(&self, sprite_positions: Vec<[usize;2]>) -> Vec<Sprite>{
         let mut sprites = Vec::new();
         for position in sprite_positions {
-            let x = position[0] * (self.sprite_width + self.sprite_padding);
+            let x = position[0] * (self.sprite_width + self.sprite_padding) + self.x_offset;
             let y = position[1] * (self.sprite_height + self.sprite_padding);
             sprites.push(Sprite {
                 texture_index: self.texture_id,
-                tex_x: x as f32 / self.width as f32,
+                tex_x: x as f32 / self.total_width as f32,
                 tex_y: y as f32 / self.height as f32,
-                tex_w: self.sprite_width as f32 / self.width as f32,
+                tex_w: self.sprite_width as f32 / self.total_width as f32,
                 tex_h: self.sprite_height as f32 / self.height as f32,
             });
         }
@@ -125,52 +127,6 @@ impl RenderData{
             *index += index_offset;
         }
     }
-    pub fn rotated_90(&self) -> RenderData{
-        assert!(self.vertex.len() == 4, "Rotated only works with 4 vertices");
-        let mut clone = self.clone();
-        let first = clone.vertex[0].tex_coords;
-        clone.vertex[0].tex_coords = clone.vertex[1].tex_coords;
-        clone.vertex[1].tex_coords = clone.vertex[2].tex_coords;
-        clone.vertex[2].tex_coords = clone.vertex[3].tex_coords;
-        clone.vertex[3].tex_coords = first;
-        return clone;
-    }
-    pub fn rotated(&self, angle: f32) -> RenderData{
-        assert!(self.vertex.len() == 4, "Rotated only works with 4 vertices");
-        let mut clone = self.clone();
-        let vert = crate::game_engine::utils::get_rotated_corners(&crate::game_engine::utils::Rectangle {
-            x: self.vertex[0].position[0],
-            y: self.vertex[0].position[1],
-            width: self.vertex[1].position[0] - self.vertex[0].position[0],
-            height: self.vertex[3].position[1] - self.vertex[0].position[1],
-            rotation: angle 
-        });
-        clone.vertex[0].position = [vert[0].0, vert[0].1, 0.0];
-        clone.vertex[1].position = [vert[1].0, vert[1].1, 0.0];
-        clone.vertex[2].position = [vert[2].0, vert[2].1, 0.0];
-        clone.vertex[3].position = [vert[3].0, vert[3].1, 0.0];
-        return clone;
-    }
-    pub fn flipped_x(&self) -> RenderData {
-        assert!(self.vertex.len() == 4, "Flip only works with 4 vertices");
-        let mut clone = self.clone();
-        let left = [clone.vertex[0].tex_coords,clone.vertex[3].tex_coords];
-        clone.vertex[0].tex_coords = clone.vertex[1].tex_coords;
-        clone.vertex[3].tex_coords = clone.vertex[2].tex_coords;
-        clone.vertex[1].tex_coords = left[0];
-        clone.vertex[2].tex_coords = left[1];
-        return clone;
-    }
-    pub fn flipped_y(&self) -> RenderData {
-        assert!(self.vertex.len() == 4, "Flip only works with 4 vertices");
-        let mut clone = self.clone();
-        let top = [clone.vertex[0].tex_coords,clone.vertex[1].tex_coords];
-        clone.vertex[0].tex_coords = clone.vertex[2].tex_coords;
-        clone.vertex[1].tex_coords = clone.vertex[3].tex_coords;
-        clone.vertex[2].tex_coords = top[0];
-        clone.vertex[3].tex_coords = top[1];
-        return clone;
-    }
 }
 
 pub struct RenderDataFull<'a>{
@@ -216,16 +172,10 @@ impl SpriteContainer{
             sprite_id_lookup.insert(sprite.name.clone(), sprites.len() - 1);
             id += 1;
         }
+        let sss = SpriteSheetSheet::create_from_json(&descriptor.spritesheets, true, id);
+        sprites_to_load.push(sss.path.clone());
+        let mut i = 0;
         for sheet in descriptor.spritesheets.iter(){
-                
-            let spritesheet = SpriteSheet {
-                texture_id: id,
-                width: sheet.width,
-                height: sheet.height,
-                sprite_width: sheet.sprite_width,
-                sprite_height: sheet.sprite_height,
-                sprite_padding: sheet.sprite_padding
-            };
             sprites_to_load.push(sheet.path.clone());
             let mut sprite_positions = Vec::new();
             let mut names = Vec::new();
@@ -233,13 +183,12 @@ impl SpriteContainer{
                 sprite_positions.push([sprite.x, sprite.y]);
                 names.push(sprite.name.clone());
             }
-            let spritesd = spritesheet.create_sprites(sprite_positions);
+            let spritesd = sss.sheets[i].create_sprites(sprite_positions);
             for i in 0..spritesd.len(){
                 sprites.push(spritesd[i]);
                 sprite_id_lookup.insert(names[i].to_string(), sprites.len() - 1);
             }
-
-            id += 1;
+            i += 1;
         }
         return (sprites_to_load, SpriteContainer{
             sprites,
