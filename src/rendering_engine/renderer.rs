@@ -29,6 +29,7 @@ pub struct Renderer<'a> {
     pub text_brush: TextBrush<FontRef<'a>>,
     window: &'a Window,
 }
+
 impl<'a> Renderer<'a> { 
     pub async fn new(window: &'a Window, sprites_to_load_json: &Vec<String>) -> Renderer<'a> {
         let size = window.inner_size();

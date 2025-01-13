@@ -20,7 +20,7 @@ pub struct Item {
 #[derive(Clone, Debug)]
 pub enum ItemTags {
     ItemType(ItemType),
-    Sprite(Sprite), //No Shit.
+    Sprite(String), //No Shit.
     Lore(String), //Description.
     Weapon(WeaponTag), //Weapon Stuff.
     // Place(PlaceTerrain), //I don't think we need this.
