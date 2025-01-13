@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, env};
 
 use crate::game_engine::json_parsing::sprite_sheet_json;
 
@@ -11,17 +11,24 @@ pub struct SpriteSheetSheet {
 const COMBINE_PATH: &str = "src/rendering_engine/img/COMBINED_AUTO_GENERATED.png";
 impl SpriteSheetSheet{
     pub fn create_from_json(sheets: &Vec<sprite_sheet_json>, combine: bool, texture_id: i32) -> Self {
-        let mut sheet_paths = Vec::new();
-        for sheet in sheets.iter() {
-            sheet_paths.push(sheet.path.clone());
+        let args: Vec<String> = env::args().collect();
+        if args.contains(&String::from("combine")) {
+            let mut sheet_paths = Vec::new();
+            for sheet in sheets.iter() {
+                sheet_paths.push(sheet.path.clone());
+            }
+            combine_images(sheet_paths, COMBINE_PATH).expect("Couldn't combine images, is one of the sprite/sprite_sheet paths wrong?");
         }
-        let total_width = combine_images(sheet_paths, COMBINE_PATH).expect("Couldn't combine images, is one of the sprite/sprite_sheet paths wrong?");
         let mut sprite_sheets = Vec::new();
         let mut x_offset = 0;
         let mut sprite_lookup = HashMap::new();
         let mut real_height = 0;
         for sheet in sheets.iter() {
             real_height = real_height.max(sheet.height);
+        }
+        let mut total_width = 0;
+        for sheet in sheets.iter() {
+            total_width += sheet.width;
         }
         for sheet in sheets.iter() {
             sprite_sheets.push(SpriteSheet{
@@ -53,7 +60,7 @@ impl SpriteSheetSheet{
 use image::{GenericImageView, RgbaImage, Rgba};
 use std::path::Path;
 
-pub fn combine_images(image_paths: Vec<String>, output_path: &str) -> Result<(usize), Box<dyn std::error::Error>> {
+pub fn combine_images(image_paths: Vec<String>, output_path: &str) -> Result<(), Box<dyn std::error::Error>> {
     let mut total_width = 0;
     let mut max_height = 0;
     let mut images = Vec::new();
@@ -83,6 +90,6 @@ pub fn combine_images(image_paths: Vec<String>, output_path: &str) -> Result<(us
 
     combined_img.save(output_path)?;
 
-    Ok((total_width as usize))
+    Ok(())
 }
 
