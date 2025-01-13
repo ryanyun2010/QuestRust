@@ -9,6 +9,10 @@
             "path": "src/rendering_engine/img/sword.png"
         },
         {
+            "name": "start_screen",
+            "path": "src/rendering_engine/img/start_screen.png"
+        },
+        {
             "name": "melee_attack",
             "path": "src/rendering_engine/img/attack.png"
         },

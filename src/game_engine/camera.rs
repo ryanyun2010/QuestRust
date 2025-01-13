@@ -92,8 +92,8 @@ impl Camera{
         let sprite_id = potentially_sprite_id.unwrap();
         let sprite = world.sprites.get_sprite(sprite_id).expect(format!("Could not find sprite {} while processing entity_id {}", sprite_id, entity_id).as_str());
         
-        let vertex_offset_x = -1 * self.camera_x as i32;
-        let vertex_offset_y = -1 * self.camera_y as i32;
+        let vertex_offset_x = (-1.0 * self.camera_x).floor() as i32;
+        let vertex_offset_y = (-1.0 * self.camera_y).floor() as i32;
         
 
         let entity_position_component = world.entity_position_components.get(&entity_id).expect("All entities with sprites should have a position component").borrow().clone();

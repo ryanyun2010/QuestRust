@@ -24,10 +24,10 @@ impl SpriteSheet{
             let y = position[1] * (self.sprite_height + self.sprite_padding);
             sprites.push(Sprite {
                 texture_index: self.texture_id,
-                tex_x: x as f32 / self.total_width as f32,
-                tex_y: y as f32 / self.height as f32,
-                tex_w: self.sprite_width as f32 / self.total_width as f32,
-                tex_h: self.sprite_height as f32 / self.height as f32,
+                tex_x: (x as f64 / self.total_width as f64) as f32,
+                tex_y: (y as f64 / self.height as f64) as f32,
+                tex_w: (self.sprite_width as f64 / self.total_width as f64) as f32,
+                tex_h: (self.sprite_height as f64 / self.height as f64) as f32,
             });
         }
         sprites
@@ -126,6 +126,13 @@ impl RenderData{
     pub fn offset(&mut self, index_offset: u16){
         for index in self.index.iter_mut(){
             *index += index_offset;
+        }
+    }
+    pub fn to_full(&self) -> RenderDataFull{
+        RenderDataFull{
+            vertex: self.vertex.clone(),
+            index: self.index.clone(),
+            sections: Vec::new()
         }
     }
 }

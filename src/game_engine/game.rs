@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use winit::{event, keyboard::{Key, NamedKey}};
 
-use crate::rendering_engine::renderer::Renderer;
+use crate::rendering_engine::{abstractions::RenderDataFull, renderer::Renderer, vertex::Vertex};
 
 use super::{camera::Camera, world::World};
 #[derive(Debug, Copy, Clone)]
@@ -29,11 +29,18 @@ pub struct InputState {
     pub mouse_left: bool,
     pub mouse_right: bool,
 }
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum GameState {
+    start,
+    play,
+    death,
+}
 pub struct Game<'a> {
     pub world: World,
     pub camera: Camera,
     pub renderer: Renderer<'a>,
     pub input: InputState,
+    pub state: GameState,
 }
 
 impl<'a> Game<'a> {
@@ -44,6 +51,7 @@ impl<'a> Game<'a> {
             world: world,
             camera: camera,
             renderer: renderer,
+            state: GameState::start,
             input: InputState {
                 keys_down: HashMap::new(),
                 mouse_position: MousePosition { 
@@ -58,12 +66,21 @@ impl<'a> Game<'a> {
         }
     }
     pub fn process_mouse_move(&mut self, x: f64, y: f64){
-        self.input.mouse_position.x_screen = x as f32 / self.renderer.size.width as f32 * self.camera.viewpoint_width as f32;
-        self.input.mouse_position.y_screen = y as f32 / self.renderer.size.height as f32 * self.camera.viewpoint_height as f32;
-        self.input.mouse_position.x_world = self.camera.camera_x + self.input.mouse_position.x_screen;
-        self.input.mouse_position.y_world = self.camera.camera_y + self.input.mouse_position.y_screen;
+        if self.state == GameState::play {
+            self.input.mouse_position.x_screen = x as f32 / self.renderer.size.width as f32 * self.camera.viewpoint_width as f32;
+            self.input.mouse_position.y_screen = y as f32 / self.renderer.size.height as f32 * self.camera.viewpoint_height as f32;
+        }else{
+            self.input.mouse_position.x_screen = x as f32 / self.renderer.size.width as f32 * self.camera.viewpoint_width as f32;
+            self.input.mouse_position.y_screen = y as f32 / self.renderer.size.height as f32 * self.camera.viewpoint_height as f32;
+            self.input.mouse_position.x_world = self.camera.camera_x + self.input.mouse_position.x_screen;
+            self.input.mouse_position.y_world = self.camera.camera_y + self.input.mouse_position.y_screen;
+        }
     }
     pub fn process_mouse_click(&mut self, state: event::ElementState, button: event::MouseButton){
+        if self.state == GameState::start {
+            self.state = GameState::play;
+            return;
+        }
         match button {
             event::MouseButton::Left => {
                 self.input.mouse_left = state == event::ElementState::Pressed;
@@ -79,10 +96,18 @@ impl<'a> Game<'a> {
 
     }
     pub fn process_input(&mut self){
-        self.world.process_input(&self.input.keys_down, &mut self.camera);
-        self.world.process_mouse_input(self.input.mouse_position, self.input.mouse_left, self.input.mouse_right);
+        if self.state == GameState::play {
+            self.world.process_input(&self.input.keys_down, &mut self.camera);
+            self.world.process_mouse_input(self.input.mouse_position, self.input.mouse_left, self.input.mouse_right);
+        }
     }
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
+        if self.state == GameState::start {
+            self.renderer.render(
+                self.world.sprites.get_sprite_by_name("start_screen").expect("No start_screen sprite?").draw_data(0.0, 0.0, self.camera.viewpoint_width, self.camera.viewpoint_height, self.camera.viewpoint_width, self.camera.viewpoint_height, 0, 0, 0).to_full()
+            );
+            return Ok(());
+        }
         self.renderer.render(self.camera.render(&mut self.world))
     }
     pub fn update(&mut self){
