@@ -74,8 +74,8 @@ impl Camera{
     pub fn get_ui_element_id_from_name(&self, element: String) -> Option<usize>{
         self.ui_element_names.get(&element).copied()
     }
-    pub fn get_ui_element(&self, element: usize) -> Option<UIElement>{
-        self.ui_elements.get(&element).cloned()
+    pub fn get_ui_element(&self, element: usize) -> Option<&UIElement>{
+        self.ui_elements.get(&element)
     }
     pub fn get_ui_element_mut(&mut self, element: usize) -> &mut crate::game_engine::ui::UIElement{
         self.ui_elements.get_mut(&element).unwrap()
@@ -133,8 +133,6 @@ impl Camera{
         let mut terrain_index_offset: u16 = 0;
         let mut entity_index_offset: u16 = 0;
         let mut extra_index_offset: u16 = 0;
-        let player = world.player.borrow().clone(); 
-
 
         let camera_left_chunk_x = World::coord_to_chunk_coord(self.camera_x.floor() as usize);
         let camera_right_chunk_x = World::coord_to_chunk_coord((self.camera_x + self.viewpoint_width as f32).floor() as usize) + 1;
@@ -208,7 +206,7 @@ impl Camera{
         render_data.vertex.extend(entity_data.vertex);
         render_data.index.extend(entity_data.index);
 
-        let player_draw_data = player.draw_data(world, self.viewpoint_width, self.viewpoint_height, render_data.vertex.len() as u16, -1 * self.camera_x as i32, -1 * self.camera_y as i32);
+        let player_draw_data = world.player.borrow().draw_data(world, self.viewpoint_width, self.viewpoint_height, render_data.vertex.len() as u16, -1 * self.camera_x as i32, -1 * self.camera_y as i32);
     
         render_data.vertex.extend(player_draw_data.vertex);
         render_data.index.extend(player_draw_data.index);
@@ -231,7 +229,7 @@ impl Camera{
                     width = Some(projectile_descriptor.size);
                     height = Some(projectile_descriptor.size);
                     let sprite_id = world.sprites.get_sprite_id(projectile_descriptor.sprite.as_str()).expect(format!("Could not find projectile sprite {}", projectile_descriptor.sprite).as_str());
-                    sprite = Some(world.sprites.get_sprite(sprite_id).expect(format!("Could not find projectile sprite {}", projectile_descriptor.sprite.as_str()).as_str()).clone());
+                    sprite = Some(world.sprites.get_sprite(sprite_id).expect(format!("Could not find projectile sprite {}", projectile_descriptor.sprite.as_str()).as_str()));
                 }
                 PlayerAttackDescriptor::Melee(melee_descriptor) => {
                     melee = true;
@@ -239,7 +237,7 @@ impl Camera{
                     width = Some(melee_descriptor.reach);
                     
                     let sprite_id = world.sprites.get_sprite_id(melee_descriptor.sprite.as_str()).expect(format!("Could not find melee sprite {}", melee_descriptor.sprite).as_str());
-                    sprite = Some(world.sprites.get_sprite(sprite_id).expect(format!("Could not find melee attack sprite {}", melee_descriptor.sprite.as_str()).as_str()).clone());
+                    sprite = Some(world.sprites.get_sprite(sprite_id).expect(format!("Could not find melee attack sprite {}", melee_descriptor.sprite.as_str()).as_str()));
 
                 }
             }
@@ -287,7 +285,7 @@ impl Camera{
     pub fn get_sections(&self, screen_width: f32, screen_height: f32) -> Vec<TextSection>{
         let mut sections = Vec::new();
         for (id, text) in self.text.iter(){
-            sections.push(text.get_section(&self, screen_width, screen_height).clone());
+            sections.push(text.get_section(&self, screen_width, screen_height));
         }
         sections
     }

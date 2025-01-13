@@ -9,11 +9,11 @@ use crate::renderer::Renderer;
 use crate::world::World;
 use crate::camera::Camera;
 
-pub async fn run(world: World, camera: Camera, sprites_json_to_load: Vec<String>) {
+pub async fn run(world: World, camera: Camera, sprites_json_to_load: &Vec<String>) {
     let event_loop = EventLoop::new().unwrap();
     let title = "Rust Game";
     let window = WindowBuilder::new().with_title(title).with_inner_size(winit::dpi::LogicalSize::new(1152, 720)).build(&event_loop).unwrap();
-    let renderer = Renderer::new(&window, sprites_json_to_load.clone()).await;
+    let renderer = Renderer::new(&window, sprites_json_to_load).await;
     let mut game = Game::new(world, camera, renderer);
     let mut focused: bool = false;
 
@@ -25,7 +25,6 @@ pub async fn run(world: World, camera: Camera, sprites_json_to_load: Vec<String>
         } if window_id == game.window().id() =>{
             match event {
                 WindowEvent::KeyboardInput {  event,.. } => { 
-                    let event = event.clone();
                     game.key_input(event);
                 },
                 WindowEvent::CloseRequested => control_flow.exit(),

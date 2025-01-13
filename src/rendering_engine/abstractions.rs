@@ -256,7 +256,7 @@ impl SpriteContainer{
         }
     }
     pub fn get_sprite_id(&self, name: &str) -> Option<usize>{
-        self.sprite_id_lookup.get(name).cloned()
+        self.sprite_id_lookup.get(name).copied()
     }
     pub fn get_sprite(&self, id: usize) -> Option<&Sprite>{
         self.sprites.get(id)
