@@ -1,6 +1,7 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, path::Path};
+use image::io::Reader;
 use wgpu_text::glyph_brush::{HorizontalAlign, Layout, Section as TextSection, Text};
-use crate::game_engine::{camera::Camera, json_parsing::sprites_json_descriptor, utils::{get_rotated_corners, Rectangle}};
+use crate::game_engine::{camera::Camera, json_parsing::{sprite_sheet_json, sprite_sheet_sprite_json, sprites_json_descriptor}, utils::{get_rotated_corners, Rectangle}};
 
 use super::{sprite_sheet_generation_abstraction::SpriteSheetSheet, vertex::Vertex};
 
@@ -159,23 +160,30 @@ impl SpriteContainer{
         let mut sprites = Vec::new();
         let mut sprite_id_lookup = HashMap::new();
         let mut sprites_to_load = Vec::new();
-        
-        for sprite in descriptor.basic_sprites.iter(){
-            sprites.push(Sprite {
-                texture_index: id,
-                tex_x: 0.0,
-                tex_y: 0.0,
-                tex_w: 1.0,
-                tex_h: 1.0
-            });
-            sprites_to_load.push(sprite.path.clone());
-            sprite_id_lookup.insert(sprite.name.clone(), sprites.len() - 1);
-            id += 1;
+        let mut sprite_sheets = descriptor.spritesheets.clone();
+        for sprite in descriptor.basic_sprites.iter(){ // TODO: THIS IS VERY JANK CODE THAT PROBABLY SHOULDN"T BE DONE LIKE THIS BUT I DONT CARE TOO MUCH ABOUT OPTIMIZING THIS
+            let size = get_image_dimensions(&sprite.path).expect(format!("Couldn't get image dimensions of image {}", &sprite.path).as_str());
+            sprite_sheets.push(sprite_sheet_json{
+                name: sprite.name.clone(),
+                path: sprite.path.clone(),
+                width: size.0 as usize,
+                height: size.1 as usize,
+                sprite_width: size.0 as usize,
+                sprite_height: size.1 as usize,
+                sprite_padding: 0,
+                sprites: vec![sprite_sheet_sprite_json{
+                    name: sprite.name.clone(),
+                    x: 0,
+                    y: 0
+                }]
+            }
+                
+                );
         }
-        let sss = SpriteSheetSheet::create_from_json(&descriptor.spritesheets, true, id);
+        let sss = SpriteSheetSheet::create_from_json(&sprite_sheets, true, id);
         sprites_to_load.push(sss.path.clone());
         let mut i = 0;
-        for sheet in descriptor.spritesheets.iter(){
+        for sheet in sprite_sheets.iter(){
             sprites_to_load.push(sheet.path.clone());
             let mut sprite_positions = Vec::new();
             let mut names = Vec::new();
@@ -245,4 +253,11 @@ impl TextSprite{
         .with_layout(Layout::default().h_align(self.align))
         .with_bounds((self.w/camera.viewpoint_width as f32 * screen_width,self.h/camera.viewpoint_height as f32 * screen_height))
     }
+}
+
+fn get_image_dimensions(file_path: &str) -> Result<(u32, u32), image::error::ImageError> {
+    let path = Path::new(file_path);
+    let reader = Reader::open(path)?;
+    let dimensions = reader.into_dimensions()?;
+    Ok(dimensions)
 }

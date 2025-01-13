@@ -8,14 +8,14 @@ pub struct SpriteSheetSheet {
     pub sheets: Vec<SpriteSheet>,
     pub path: String
 }
-const COMBINE_PATH: &str = "src/rendering_engine/img/combined.png";
+const COMBINE_PATH: &str = "src/rendering_engine/img/COMBINED_AUTO_GENERATED.png";
 impl SpriteSheetSheet{
     pub fn create_from_json(sheets: &Vec<sprite_sheet_json>, combine: bool, texture_id: i32) -> Self {
         let mut sheet_paths = Vec::new();
         for sheet in sheets.iter() {
             sheet_paths.push(sheet.path.clone());
         }
-        let total_width = combine_images(sheet_paths, "src/rendering_engine/img/combined.png").unwrap();
+        let total_width = combine_images(sheet_paths, COMBINE_PATH).expect("Couldn't combine images, is one of the sprite/sprite_sheet paths wrong?");
         let mut sprite_sheets = Vec::new();
         let mut x_offset = 0;
         let mut sprite_lookup = HashMap::new();
