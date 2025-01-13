@@ -28,30 +28,11 @@
             "sprite_padding": 0,
             "sprites": [
                 {
-                    "name": "dirt",
-                    "x": 0,
-                    "y": 0
-                },
-                {
-                    "name": "dirt2",
-                    "x": 1,
-                    "y": 0
-                },
-                {
-                    "name": "outside",
-                    "x": 2,
-                    "y": 0
-                },
-                {
                     "name": "grass",
                     "x": 3,
                     "y": 0
-                },
-                {
-                    "name": "ghost",
-                    "x": 4,
-                    "y": 0
                 }
+
             ]
         },
         {
@@ -186,6 +167,26 @@
                     "name": "wallbr",
                     "x": 3,
                     "y": 2
+                },
+                {
+                    "name": "ghost",
+                    "x": 0,
+                    "y": 9
+                },
+                {
+                    "name": "outside",
+                    "x": 0,
+                    "y": 0
+                },
+                {
+                    "name": "dirt",
+                    "x": 0,
+                    "y": 4
+                },
+                {
+                    "name": "dirt2",
+                    "x": 1,
+                    "y": 4
                 }
 
             ]

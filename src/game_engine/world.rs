@@ -3,6 +3,7 @@ use std::collections::{HashMap, HashSet};
 use std::cell::RefCell;
 use std::f32::consts::PI;
 use wgpu::DeviceDescriptor;
+use anyhow::anyhow;
 
 use crate::rendering_engine::abstractions::SpriteContainer;
 use crate::entities::EntityTags;
@@ -352,21 +353,21 @@ impl World{
         }
         false
     }
-    pub fn get_entity_damage_box(&self, id: usize) -> Option<&CollisionBox> {
+    pub fn get_entity_damage_box(&self, id: usize) -> Result<&CollisionBox, anyhow::Error> {
         let entity_tags_potentially = self.get_entity_tags(id);
         if entity_tags_potentially.is_none(){
-            return None;
+            return Err(anyhow!("Entity with id {} does not have tags", id));
         }
         let entity_tags = entity_tags_potentially.unwrap();
         for tag in entity_tags.iter(){
             match tag{
                 EntityTags::Damageable(dbox) => {
-                    return Some(dbox);
+                    return Ok(dbox);
                 }
                 _ => ()
             }
         }
-        None
+        return Err(anyhow!("Entity with id {} has tags, but does not have a damage box tag", id));
     }
     pub fn get_entity_collision_box(&self, id: usize) -> Option<&CollisionBox>{
         let entity_tags_potentially = self.get_entity_tags(id);
@@ -407,8 +408,8 @@ impl World{
             
             if terrain_potentially.is_none(){
                 if entity{
-                    let entity_damage_box = self.get_entity_damage_box(id).unwrap();
-                    let entity_position = self.entity_position_components.get(&id).unwrap().borrow();
+                    let entity_damage_box = self.get_entity_damage_box(id).expect("All entities in damage cache should have damage boxes");
+                    let entity_position = self.entity_position_components.get(&id).expect("All entities in damage cache should have position components").borrow();
                     let ex = entity_position.x + entity_damage_box.x_offset;
                     let ey = entity_position.y + entity_damage_box.y_offset;
                     let ew = entity_damage_box.w;
@@ -460,8 +461,8 @@ impl World{
             
             if terrain_potentially.is_none(){
                 if entity{
-                    let entity_damage_box = self.get_entity_damage_box(id).unwrap();
-                    let entity_position = self.entity_position_components.get(&id).unwrap().borrow();
+                    let entity_damage_box = self.get_entity_damage_box(id).expect("All entities in damage cache should have damage boxes");
+                    let entity_position = self.entity_position_components.get(&id).expect("All entities in damage cache should have position components").borrow();
                     let ex = entity_position.x + entity_damage_box.x_offset;
                     let ey = entity_position.y + entity_damage_box.y_offset;
                     let ew = entity_damage_box.w;

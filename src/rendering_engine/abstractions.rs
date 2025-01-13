@@ -126,9 +126,7 @@ impl RenderData{
         }
     }
     pub fn rotated_90(&self) -> RenderData{
-        if self.vertex.len() != 4 {
-            panic!("Rotated only works with 4 vertices");
-        }
+        assert!(self.vertex.len() == 4, "Rotated only works with 4 vertices");
         let mut clone = self.clone();
         let first = clone.vertex[0].tex_coords;
         clone.vertex[0].tex_coords = clone.vertex[1].tex_coords;
@@ -138,9 +136,7 @@ impl RenderData{
         return clone;
     }
     pub fn rotated(&self, angle: f32) -> RenderData{
-        if self.vertex.len() != 4 {
-            panic!("Rotated only works with 4 vertices");
-        }
+        assert!(self.vertex.len() == 4, "Rotated only works with 4 vertices");
         let mut clone = self.clone();
         let vert = crate::game_engine::utils::get_rotated_corners(&crate::game_engine::utils::Rectangle {
             x: self.vertex[0].position[0],
@@ -156,9 +152,7 @@ impl RenderData{
         return clone;
     }
     pub fn flipped_x(&self) -> RenderData {
-        if self.vertex.len() != 4 {
-            panic!("Flip only works with 4 vertices");
-        }
+        assert!(self.vertex.len() == 4, "Flip only works with 4 vertices");
         let mut clone = self.clone();
         let left = [clone.vertex[0].tex_coords,clone.vertex[3].tex_coords];
         clone.vertex[0].tex_coords = clone.vertex[1].tex_coords;
@@ -168,9 +162,7 @@ impl RenderData{
         return clone;
     }
     pub fn flipped_y(&self) -> RenderData {
-        if self.vertex.len() != 4 {
-            panic!("Flip only works with 4 vertices");
-        }
+        assert!(self.vertex.len() == 4, "Flip only works with 4 vertices");
         let mut clone = self.clone();
         let top = [clone.vertex[0].tex_coords,clone.vertex[1].tex_coords];
         clone.vertex[0].tex_coords = clone.vertex[2].tex_coords;
