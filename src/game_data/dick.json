@@ -1,7 +1,7 @@
 [
     {
-        "name" : "TestSword",
         "tags" : [
+            {"Name" : "Test Sword"},
             {"Sprite" : "sword"},
             {"ItemType" : {"ItemType" : "MeleeWeapon"}},
             {"Weapon" : {"WeaponTag" : {

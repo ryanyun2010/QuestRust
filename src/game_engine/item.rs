@@ -20,6 +20,7 @@ pub struct Item {
 #[derive(Clone, Debug)]
 pub enum ItemTags {
     ItemType(ItemType),
+    Name(String),
     Sprite(String), //No Shit.
     Lore(String), //Description.
     Weapon(WeaponTag), //Weapon Stuff.
@@ -144,7 +145,8 @@ pub enum WeaponComponentType {
 #[derive(Clone, Debug)]
 pub enum ItemComponent {
     Stack(usize),
-    Weapon(WeaponComponent)
+    Weapon(WeaponComponent),
+    Renamed(String)
 }
 //Weapon shit.
 //Will make armor and baubles later.
