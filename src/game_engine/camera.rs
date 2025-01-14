@@ -135,14 +135,14 @@ impl Camera{
         let mut extra_index_offset: u16 = 0;
 
         let camera_left_chunk_x = World::coord_to_chunk_coord(self.camera_x.floor() as usize);
-        let camera_right_chunk_x = World::coord_to_chunk_coord((self.camera_x + self.viewpoint_width as f32).floor() as usize) + 1;
+        let camera_right_chunk_x = World::coord_to_chunk_coord((self.camera_x + self.viewpoint_width as f32).floor() as usize);
 
         let camera_top_chunk_y = World::coord_to_chunk_coord(self.camera_y.floor() as usize);
-        let camera_bot_chunk_y = World::coord_to_chunk_coord((self.camera_y + self.viewpoint_height as f32).floor() as usize) + 1; 
+        let camera_bot_chunk_y = World::coord_to_chunk_coord((self.camera_y + self.viewpoint_height as f32).floor() as usize); 
 
         let mut chunks_loaded = Vec::new();
-        for x in camera_left_chunk_x..camera_right_chunk_x{
-            for y in camera_top_chunk_y..camera_bot_chunk_y{
+        for x in camera_left_chunk_x..=camera_right_chunk_x{
+            for y in camera_top_chunk_y..=camera_bot_chunk_y{
                 
                 let chunk_id = world.get_chunk_from_chunk_xy(x,y);
                 

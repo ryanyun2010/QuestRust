@@ -206,8 +206,8 @@ impl World{
         let right_x = ((x as f32 + w as f32) / 32.0).floor() as usize;
         let top_y = (y as f32 / 32.0).floor() as usize;
         let bot_y = ((y as f32 + h as f32)/ 32.0).floor() as usize;
-        for x in left_x..(right_x + 1){
-            for y in top_y..(bot_y + 1){
+        for x in left_x..=right_x{
+            for y in top_y..=bot_y{
                 tiles.push([x,y]);
             }
         }
