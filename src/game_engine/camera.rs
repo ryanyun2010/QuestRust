@@ -23,7 +23,7 @@ pub struct Camera{
 }
 
 impl Camera{
-    pub fn new(viewpoint_width:usize, viewpoint_height:usize) -> Self{
+    pub fn new(viewpoint_width: usize, viewpoint_height: usize) -> Self{
         Self{
             viewpoint_width: viewpoint_width,
             viewpoint_height: viewpoint_height,
@@ -106,7 +106,7 @@ impl Camera{
             let health_component = potentially_health_component.unwrap().borrow();
             let potentially_health_bar_back_id = world.sprites.get_sprite_id("health_bar_back");
             if potentially_health_bar_back_id.is_none() {
-                // println!("WARNING: No Health Bar Back Sprite");
+                println!("WARNING: No Health Bar Back Sprite");
                 return (draw_data_main, draw_data_other);
             }
             let entity_health_bar_sprite = world.sprites.get_sprite(potentially_health_bar_back_id.unwrap()).expect("Could not find health bar back sprite");
@@ -115,7 +115,7 @@ impl Camera{
             draw_data_other.index.extend(health_bar_draw_data.index);
             let potentially_health_bar_id = world.sprites.get_sprite_id("health");
             if potentially_health_bar_id.is_none() {
-                // println!("WARNING: No Health Bar Sprite");
+                println!("WARNING: No Health Bar Sprite");
                 return (draw_data_main, draw_data_other);
             }
             let entity_health_sprite = world.sprites.get_sprite(potentially_health_bar_id.unwrap()).expect("Could not find health bar sprite");
