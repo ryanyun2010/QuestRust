@@ -307,10 +307,11 @@ impl World{
     }
     pub fn check_collision(&self, player: bool, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, entity: bool) -> bool{
         if !player {
-            let pw = self.player.borrow().collision_box.w;
-            let ph = self.player.borrow().collision_box.h;
-            let px = self.player.borrow().x + self.player.borrow().collision_box.x_offset;
-            let py = self.player.borrow().y + self.player.borrow().collision_box.y_offset;
+            let player = self.player.borrow();
+            let pw = player.collision_box.w;
+            let ph = player.collision_box.h;
+            let px = player.x + player.collision_box.x_offset;
+            let py = player.y + player.collision_box.y_offset;
             if px.floor() - 1.0 < (x + w) as f32 && px.floor() + pw + 1.0 > x as f32 && py.floor() - 1.0 < (y + h) as f32 && py.floor() + ph + 1.0 > y as f32{
                 return true;
             }
@@ -482,13 +483,14 @@ impl World{
         return colliding;
     }
     pub fn check_collision_with_player(&self, x: f32, y: f32, w: f32, h: f32, rotation: f32) -> bool{
+        let player = self.player.borrow();
         return utils::check_collision(&Rectangle {
             x: x, y: y, width: w, height: h, rotation: rotation },
             &Rectangle {
-                x: self.player.borrow().x + self.player.borrow().collision_box.x_offset,
-                y: self.player.borrow().y + self.player.borrow().collision_box.y_offset,
-                width: self.player.borrow().collision_box.w,
-                height: self.player.borrow().collision_box.h,
+                x: player.x + player.collision_box.x_offset,
+                y: player.y + player.collision_box.y_offset,
+                width: player.collision_box.w,
+                height: player.collision_box.h,
                 rotation: 0.0
             }
         );

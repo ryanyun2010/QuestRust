@@ -266,7 +266,7 @@ impl Camera{
             if !element.visible{
                 continue;
             }
-            let element_sprite = world.sprites.sprites[element.sprite_id];
+            let element_sprite = world.sprites.get_sprite(element.sprite_id).expect(format!("Could not find sprite for ui element {}", element.name).as_str());
             let draw_data = element_sprite.draw_data(element.x, element.y, element.width.floor() as usize, element.height.floor() as usize, self.viewpoint_width, self.viewpoint_height, render_data.vertex.len() as u16, 0, 0);
             render_data.vertex.extend(draw_data.vertex);
             render_data.index.extend(draw_data.index);
