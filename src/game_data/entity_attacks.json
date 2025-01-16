@@ -20,7 +20,7 @@
     {
         "name": "wizard_attack",
         "type": "magic",
-        "damage": 5.0,
+        "damage": 12.0,
         "reach": 30,
         "max_start_dist_from_entity": 130,
         "width": 30,
@@ -30,7 +30,7 @@
     {
         "name": "wizard_attack_2",
         "type": "magic",
-        "damage": 25.0,
+        "damage": 40.0,
         "reach": 90,
         "max_start_dist_from_entity": 180,
         "width": 90,
