@@ -187,8 +187,8 @@ impl World {
                         self.entity_attacks.borrow_mut().push(
                             EntityAttackBox {
                                 archetype: attack_pattern.attacks[attack_component.cur_attack].clone(),
-                                x: position.x + direction_to_player[0] * (descriptor.reach as f32/2.0 + descriptor.max_start_dist_from_entity.unwrap_or(0) as f32),
-                                y: position.y + direction_to_player[1] * (descriptor.reach as f32/2.0 + descriptor.max_start_dist_from_entity.unwrap_or(0) as f32),
+                                x: position.x + angle.cos() * (descriptor.reach as f32/2.0),
+                                y: position.y + angle.sin() * (descriptor.reach as f32/2.0),
                                 time_charged: 0.0,
                                 rotation: angle,
                             }
