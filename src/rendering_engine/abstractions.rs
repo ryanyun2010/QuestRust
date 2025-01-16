@@ -1,7 +1,8 @@
-use std::{collections::HashMap, path::Path};
-use image::io::Reader;
-use wgpu_text::glyph_brush::{HorizontalAlign, Layout, Section as TextSection, Text};
-use crate::game_engine::{camera::Camera, json_parsing::{sprite_sheet_json, sprite_sheet_sprite_json, sprites_json_descriptor}, utils::{get_rotated_corners, Rectangle}};
+use std::{collections::HashMap, fs, path::Path};
+use image::{io::Reader, EncodableLayout};
+use wgpu::{Device, SurfaceConfiguration, TextureFormat};
+use wgpu_text::{glyph_brush::{ab_glyph::FontRef, HorizontalAlign, Layout, Section as TextSection, Text}, BrushBuilder, TextBrush};
+use crate::game_engine::{camera::{Camera, Font}, json_parsing::{sprite_sheet_json, sprite_sheet_sprite_json, sprites_json_descriptor}, utils::{get_rotated_corners, Rectangle}};
 
 use super::{sprite_sheet_generation_abstraction::SpriteSheetSheet, vertex::Vertex};
 

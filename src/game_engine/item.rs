@@ -6,8 +6,7 @@ Items give stats to the player. Entities and Terrain can have items (specificall
 */
 use std::os::macos::raw::stat;
 use crate::game_engine::entities::AttackType;
-use crate::stat::GearStat;
-use super::{inventory::ItemType, loot::Rarity, stat::Stat};
+use super::{inventory::ItemType, loot::Rarity, stat::GearStat};
 use crate::rendering_engine::abstractions::Sprite;
 //Each item when stored will be exactly like this. The item_type_id will be used in a lookup to find the tags.
 //They also have a Vec of components that will be largely unique. It's stackability will not be judged by the components, but instead by the tags.
@@ -158,27 +157,27 @@ pub struct WeaponComponent {
 }
 #[derive(Clone, Debug)]
 pub struct MeleeWeaponComponent {
-    damage: Stat,
-    attack_speed: Stat,
-    swing_range: Stat,
-    crit_luck: Stat,
-    crit_damage: Stat,
-    sweep: Stat
+    damage: GearStat,
+    attack_speed: GearStat,
+    swing_range: GearStat,
+    crit_luck: GearStat,
+    crit_damage: GearStat,
+    sweep: GearStat
 }
 #[derive(Clone, Debug)]
 pub struct RangedWeaponComponent {
-    damage: Stat,
-    crit_luck: Stat,
-    crit_damage: Stat,
-    accuracy: Stat,
-    load_speed: Stat,
-    range: Stat
+    damage: GearStat,
+    crit_luck: GearStat,
+    crit_damage: GearStat,
+    accuracy: GearStat,
+    load_speed: GearStat,
+    range: GearStat
 }
 #[derive(Clone, Debug)]
 pub struct MagicWeaponComponent {
-    mana: Stat,
-    mana_regen: Stat,
-    cooldown_regen: Stat
+    mana: GearStat,
+    mana_regen: GearStat,
+    cooldown_regen: GearStat
 }
 //MAGIC SHIT FUCK YEAH!!!
 #[derive(Clone, Debug)]
