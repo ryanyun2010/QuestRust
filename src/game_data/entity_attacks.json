@@ -11,9 +11,9 @@
     {
         "name": "ghost_attack_2",
         "type": "melee",
-        "damage": 25.0,
-        "reach": 300,
-        "width": 150,
+        "damage": 15.0,
+        "reach": 150,
+        "width": 100,
         "time_to_charge": 55,
         "sprite": "attack_highlight"
     },
