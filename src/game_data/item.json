@@ -1,0 +1,20 @@
+[
+    {
+
+        "name": "Test Sword",
+        "sprite": "sword",
+        "item_type": "MeleeWeapon",
+        "lore": "Well... It appears that you've obtained this.\nI guess there's not much else that we can do, now that you've hacked the game.\n\nP.S. This sword isn't even good, why are you using it?", 
+        "descriptor": {
+            "melee_weapon_descriptor":
+            {
+                "damage": [10, [0,20]],
+                "attack_speed": [75, [25,125]],
+                "swing_range": [30, [20,40]],
+                "crit_luck": [200, [100,300]],
+                "crit_damage": [100, [50,150]],
+                "sweep": [40, [20,60]]
+            }
+        }
+    }
+]

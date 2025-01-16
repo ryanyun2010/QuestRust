@@ -41,17 +41,23 @@ pub fn calculate_scaling_damage(multipliers: Vec<f32>, damage: i32, crit_chance:
 pub struct GearStat {
     base: Stat,
     variation: Stat,
-    max: Stat
 }
 impl GearStat {
     pub fn new(base: Stat, variation: Stat) -> Self {
-        let max: Stat = StatList::extract_from_stat_vec(vec![base,  variation]).extract_to_stat(base).unwrap();
         Self {
             base,
             variation,
-            max
         }
     }
+    pub fn get_max(&self) -> Stat {
+        let max = StatList::extract_from_stat_vec(vec![self.base,  self.variation]).extract_to_stat(self.base).unwrap();
+        return max;
+    }
+    pub fn get_min(&self) -> Stat {
+        let min = StatList::extract_from_stat_vec(vec![self.base,  self.variation]).extract_to_stat(self.base).unwrap();
+        return min;
+    }
+   
 }
 //Damage is the same as Health basically.
 #[derive(Clone, Copy, Debug, PartialEq)]

@@ -4,5 +4,10 @@
         "name": "ghost_attack_pattern",
         "attacks": ["ghost_attack", "ghost_attack", "ghost_attack", "ghost_attack", "ghost_attack_2", "ghost_attack"],
         "cooldowns": [0.09, 0.09, 0.09, 0.09, 0.09, 1.1]
+    },
+    {
+        "name": "wizard_attack_pattern",
+        "attacks": ["wizard_attack", "wizard_attack", "wizard_attack_2", "wizard_attack"],
+        "cooldowns": [0.2, 0.2, 0.2, 1.4]
     }
 ]

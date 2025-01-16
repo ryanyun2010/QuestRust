@@ -54,6 +54,30 @@
         "basic_tags": ["blocksMovement"]
     },
     {
+        "name": "walltl2",
+        "type": "basic",
+        "sprites": ["walltl2"],
+        "basic_tags": ["blocksMovement"]
+    },
+    {
+        "name": "wallbl2",
+        "type": "basic",
+        "sprites": ["wallbl2"],
+        "basic_tags": ["blocksMovement"]
+    },
+    {
+        "name": "wallbr2",
+        "type": "basic",
+        "sprites": ["wallbr2"],
+        "basic_tags": ["blocksMovement"]
+    },
+    {
+        "name": "walltr2",
+        "type": "basic",
+        "sprites": ["walltr2"],
+        "basic_tags": ["blocksMovement"]
+    },
+    {
         "name": "random_dirt",
         "type": "randomness",
         "random_chances": [0.5, 0.5],

@@ -27,6 +27,8 @@ async fn test_terrain_should_block_entities(){
         EntityAttackDescriptor{
             damage: 100.0,
             reach: 50,
+            r#type: crate::entities::AttackType::Melee,
+            max_start_dist_from_entity: None,
             width: 50,
             time_to_charge: 5,
             sprite: "attack_highlight".to_string()
@@ -98,6 +100,8 @@ async fn test_entities_should_pathfind_around_terrain(){
         EntityAttackDescriptor{
             damage: 100.0,
             reach: 50,
+            r#type: crate::entities::AttackType::Melee,
+            max_start_dist_from_entity: None,
             width: 50,
             time_to_charge: 5,
             sprite: "attack_highlight".to_string()

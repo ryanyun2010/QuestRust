@@ -18,8 +18,31 @@
         "monster_type": "Undead",
         "movement_speed": 2.5,
         "range": 70,
-        "aggro_range": 1000,
+        "aggro_range": 300,
         "attack_type": "Melee",
         "attack_pattern": "ghost_attack_pattern"
+    },
+    {
+        "name": "wizard",
+        "basic_tags": ["aggressive", "followsPlayer", "respectsCollision"],
+        "collision_box": {
+            "w": 25.0,
+            "h": 25.0,
+            "x_offset": 3.5,
+            "y_offset": 3.5
+        },
+        "damage_box": {
+            "w": 32.0,
+            "h": 32.0,
+            "x_offset": 0.0,
+            "y_offset": 0.0
+        },
+        "health": 90,
+        "monster_type": "Undead",
+        "movement_speed": 2,
+        "range": 190,
+        "aggro_range": 400,
+        "attack_type": "Ranged",
+        "attack_pattern": "wizard_attack_pattern"
     }
 ]

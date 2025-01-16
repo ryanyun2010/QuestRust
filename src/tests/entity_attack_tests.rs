@@ -15,6 +15,8 @@ async fn test_entity_can_kill_player(){
         damage: 100.0,
         reach: 50,
         width: 50,
+        r#type: crate::entities::AttackType::Melee,
+        max_start_dist_from_entity: None,
         time_to_charge: 5,
         sprite: "attack_highlight".to_string()
     });

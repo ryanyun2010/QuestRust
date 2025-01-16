@@ -1,3 +1,5 @@
+use super::entities::AttackType;
+
 #[derive(Clone, Debug)]
 pub struct EntityAttackBox {
     pub archetype: String,
@@ -9,9 +11,11 @@ pub struct EntityAttackBox {
 
 #[derive(Clone, Debug)]
 pub struct EntityAttackDescriptor{
+    pub r#type: AttackType,
     pub damage: f32,
     pub reach: usize,
     pub width: usize,
     pub time_to_charge: usize,
+    pub max_start_dist_from_entity: Option<usize>,
     pub sprite: String
 }

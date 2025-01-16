@@ -1,6 +1,7 @@
 [
     {
         "name": "ghost_attack",
+        "type": "melee",
         "damage": 150.0,
         "reach": 50,
         "width": 50,

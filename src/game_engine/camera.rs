@@ -132,7 +132,6 @@ impl Camera{
         let mut extra_data: RenderData = RenderData::new();
         let mut terrain_index_offset: u16 = 0;
         let mut entity_index_offset: u16 = 0;
-        let mut extra_index_offset: u16 = 0;
 
         let camera_left_chunk_x = World::coord_to_chunk_coord(self.camera_x.floor() as usize);
         let camera_right_chunk_x = World::coord_to_chunk_coord((self.camera_x + self.viewpoint_width as f32).floor() as usize);
@@ -173,13 +172,12 @@ impl Camera{
                 for entity_id in chunk.entities_ids.iter(){
 
                     
-                    let (draw_data, other_draw_data) = self.render_entity(world, *entity_id, entity_index_offset, extra_index_offset);
+                    let (draw_data, other_draw_data) = self.render_entity(world, *entity_id, entity_index_offset, extra_data.vertex.len() as u16);
                     entity_data.vertex.extend(draw_data.vertex);
                     entity_data.index.extend(draw_data.index);
                     extra_data.vertex.extend(other_draw_data.vertex);
                     extra_data.index.extend(other_draw_data.index);
                     entity_index_offset += 4;
-                    extra_index_offset += extra_data.vertex.len() as u16;
         
 
                 }

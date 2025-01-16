@@ -17,6 +17,54 @@
         {
             "x": 800.0,
             "y": 608.0,
+            "archetype": "wizard",
+            "sprite": "wizard"
+        },
+        {
+            "x": 1600.0,
+            "y": 608.0,
+            "archetype": "wizard",
+            "sprite": "wizard"
+        },
+        {
+            "x": 1600.0,
+            "y": 508.0,
+            "archetype": "wizard",
+            "sprite": "wizard"
+        },
+        {
+            "x": 1600.0,
+            "y": 708.0,
+            "archetype": "wizard",
+            "sprite": "wizard"
+        },
+        {
+            "x": 1400.0,
+            "y": 408.0,
+            "archetype": "ghost",
+            "sprite": "ghost"
+        },
+        {
+            "x": 1400.0,
+            "y": 508.0,
+            "archetype": "ghost",
+            "sprite": "ghost"
+        },
+        {
+            "x": 1400.0,
+            "y": 608.0,
+            "archetype": "ghost",
+            "sprite": "ghost"
+        },
+        {
+            "x": 1400.0,
+            "y": 808.0,
+            "archetype": "ghost",
+            "sprite": "ghost"
+        },
+        {
+            "x": 1400.0,
+            "y": 708.0,
             "archetype": "ghost",
             "sprite": "ghost"
         }
@@ -25,14 +73,14 @@
         {
             "x": 0,
             "y": 0,
-            "width": 70,
+            "width": 37,
             "height": 11,
             "terrain_archetype": "basic_outside"
         },
         {
             "x": 0,
             "y": 31,
-            "width": 70,
+            "width": 37,
             "height": 11,
             "terrain_archetype": "basic_outside"
         },
@@ -43,13 +91,7 @@
             "height": 20,
             "terrain_archetype": "basic_outside"
         },
-        {
-            "x": 37,
-            "y": 11,
-            "width": 17,
-            "height": 20,
-            "terrain_archetype": "basic_outside"
-        },
+        
         {
             "x": 18,
             "y": 11,
@@ -89,8 +131,148 @@
             "x": 36,
             "y": 12,
             "width": 1,
-            "height": 18,
+            "height": 7,
             "terrain_archetype": "wallr"
+        },
+        {
+            "x": 36,
+            "y": 23,
+            "width": 1,
+            "height": 1,
+            "terrain_archetype": "walltl2"
+        },
+        {
+            "x": 36,
+            "y": 19,
+            "width": 1,
+            "height": 1,
+            "terrain_archetype": "wallbl2"
+        },
+        {
+            "x": 37,
+            "y": 19,
+            "width": 2,
+            "height": 1,
+            "terrain_archetype": "wallt"
+        },
+        {
+            "x": 39,
+            "y": 19,
+            "width": 1,
+            "height": 1,
+            "terrain_archetype": "wallbr2"
+        },
+        {
+            "x": 37,
+            "y": 23,
+            "width": 2,
+            "height": 1,
+            "terrain_archetype": "wallb"
+        }, 
+        {
+            "x": 39,
+            "y": 23,
+            "width": 1,
+            "height": 1,
+            "terrain_archetype": "walltr2"
+        }, 
+        {
+            "x": 40,
+            "y": 8,
+            "width": 30,
+            "height": 27,
+            "terrain_archetype": "random_dirt"
+        },
+        {
+            "x": 36,
+            "y": 20,
+            "height": 3,
+            "width": 4,
+            "terrain_archetype": "random_dirt"
+        },
+        {
+            "x": 36,
+            "y": 24,
+            "width": 1,
+            "height": 6,
+            "terrain_archetype": "wallr"
+        },
+        {
+            "x": 39,
+            "y": 8,
+            "width": 1,
+            "height": 11,
+            "terrain_archetype": "walll"
+        },
+        {
+            "x": 39,
+            "y": 24,
+            "width": 1,
+            "height": 11,
+            "terrain_archetype": "walll"
+        },
+        {
+            "x": 70,
+            "y": 8,
+            "width": 1,
+            "height": 27,
+            "terrain_archetype": "wallr"
+        },
+        {
+            "x": 40,
+            "y": 7,
+            "width": 30,
+            "height": 1,
+            "terrain_archetype": "wallt"
+        },
+        {
+            "x": 40,
+            "y": 35,
+            "width": 30,
+            "height": 1,
+            "terrain_archetype": "wallb"
+        },
+        {
+            "x": 39,
+            "y": 35,
+            "width": 1,
+            "height": 1,
+            "terrain_archetype": "wallbl"
+        },
+        {
+            "x": 39,
+            "y": 7,
+            "width": 1,
+            "height": 1,
+            "terrain_archetype": "walltl"
+        },
+        {
+            "x": 37,
+            "y": 24,
+            "width": 2,
+            "height": 12,
+            "terrain_archetype": "basic_outside"
+        },
+        {
+            "x": 37,
+            "y": 7,
+            "width": 2,
+            "height": 12,
+            "terrain_archetype": "basic_outside"
+        },
+        {
+            "x": 70,
+            "y": 7,
+            "width": 1,
+            "height": 1,
+            "terrain_archetype": "walltr"
+        },
+        {
+            "x": 70,
+            "y": 35,
+            "width": 1,
+            "height": 1,
+            "terrain_archetype": "wallbr"
         },
         {
             "x": 18,

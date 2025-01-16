@@ -159,19 +159,48 @@ impl World {
                 ];
                 let angle = f32::atan2(direction_to_player[1], direction_to_player[0]);
                 let descriptor = self.get_attack_descriptor_by_name(&attack_pattern.attacks[attack_component.cur_attack]).expect("Attack pattern must have a valid attack");
-                self.entity_attacks.borrow_mut().push(EntityAttackBox {
-                    archetype: attack_pattern.attacks[attack_component.cur_attack].clone(),
-                    x: position.x + 16.0 + descriptor.reach as f32/2.0 * direction_to_player[0],
-                    y: position.y + 16.0 + descriptor.reach as f32/2.0 * direction_to_player[1],
-                    time_charged: 0.0,
-                    rotation: angle,
-                });
+                match descriptor.r#type {
+                    AttackType::Magic => {
+                        let max_dist = descriptor.reach as f32/2.0 + descriptor.max_start_dist_from_entity.unwrap_or(0) as f32;
+                        let dist_to_player = f32::sqrt((px - position.x).powf(2.0) + (py - position.y).powf(2.0));
+                        if dist_to_player < max_dist {
+                            self.entity_attacks.borrow_mut().push(EntityAttackBox {
+                                archetype: attack_pattern.attacks[attack_component.cur_attack].clone(),
+                                x: px,
+                                y: py,
+                                time_charged: 0.0,
+                                rotation: angle,
+                            });
+                        } else{
+                            self.entity_attacks.borrow_mut().push(
+                                EntityAttackBox {
+                                    archetype: attack_pattern.attacks[attack_component.cur_attack].clone(),
+                                    x: position.x + direction_to_player[0] * (max_dist),
+                                    y: position.y + direction_to_player[1] * (max_dist),
+                                    time_charged: 0.0,
+                                    rotation: angle,
+                                }
+                            )
+                        }
+                    }
+                    AttackType::Melee => {
+                        self.entity_attacks.borrow_mut().push(
+                            EntityAttackBox {
+                                archetype: attack_pattern.attacks[attack_component.cur_attack].clone(),
+                                x: position.x + direction_to_player[0] * (descriptor.reach as f32/2.0 + descriptor.max_start_dist_from_entity.unwrap_or(0) as f32),
+                                y: position.y + direction_to_player[1] * (descriptor.reach as f32/2.0 + descriptor.max_start_dist_from_entity.unwrap_or(0) as f32),
+                                time_charged: 0.0,
+                                rotation: angle,
+                            }
+                        )
+                    }
+                    _ => (todo!())
+                }
                 attack_component.cur_attack += 1;
                 if attack_component.cur_attack >= attack_pattern.attacks.len(){
                     attack_component.cur_attack = 0;
                 }
 
-                
                 attack_component.cur_attack_cooldown = attack_pattern.attack_cooldowns[attack_component.cur_attack];                
             }else{
                 attack_component.cur_attack_cooldown -= 1.0/60.0;

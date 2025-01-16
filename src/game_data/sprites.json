@@ -178,6 +178,11 @@
                     "y": 9
                 },
                 {
+                    "name": "wizard",
+                    "x": 3,
+                    "y": 9
+                },
+                {
                     "name": "outside",
                     "x": 0,
                     "y": 0
@@ -191,6 +196,26 @@
                     "name": "dirt2",
                     "x": 1,
                     "y": 4
+                },
+                {
+                    "name": "walltl2",
+                    "x": 4,
+                    "y": 0
+                },
+                {
+                    "name": "wallbl2",
+                    "x": 4,
+                    "y": 1
+                },
+                {
+                    "name": "walltr2",
+                    "x": 5,
+                    "y": 0
+                },
+                {
+                    "name": "wallbr2",
+                    "x": 5,
+                    "y": 1
                 }
 
             ]

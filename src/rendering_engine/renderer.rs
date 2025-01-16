@@ -11,9 +11,9 @@ use super::abstractions::RenderDataFull;
 
 
 pub const BACKGROUND_COLOR: wgpu::Color = wgpu::Color {
-    r: 120.0/255.0 * 0.5,
-    g: 60.0/255.0 * 0.5,
-    b: 52.0/255.0 * 0.5,
+    r: 118.0/255.0 * 0.39,
+    g: 59.0/255.0 * 0.19,
+    b: 54.0/255.0 * 0.183,
     a: 1.0,
 };
 

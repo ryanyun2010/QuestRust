@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use crate::game_engine::entities::{EntityTags, EntityAttackPattern};
 use crate::rendering_engine::abstractions::SpriteContainer;
 
+use super::entities::AttackType;
 use super::entity_attacks::EntityAttackDescriptor;
 use super::entity_components::CollisionBox;
 use super::player_attacks::{PlayerAttackDescriptor, player_projectile_descriptor};
@@ -33,8 +34,10 @@ pub const PATH_BUNDLE: PathBundle = PathBundle{
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct entity_attack_descriptor_json {
     pub name: String,
+    pub r#type: String,
     pub damage: f32,
     pub reach: usize,
+    pub max_start_dist_from_entity: Option<usize>,
     pub width: usize,
     pub time_to_charge: usize,
     pub sprite: String
@@ -290,9 +293,19 @@ impl JSON_parser {
         // Convert Entity Attacks First
         let mut data = ParsedData::new();
         for (name, entity_attack) in &self.entity_attacks_json {
+            let t = match entity_attack.r#type.as_str() {
+                "melee" => AttackType::Melee,
+                "ranged" => AttackType::Ranged,
+                "magic" => AttackType::Magic,
+                _ => {
+                    panic!("When parsing entity attacks, type: {} in attack: {} was not recognized", entity_attack.r#type, name);
+                }
+            };
             data.entity_attacks.insert(name.clone(), EntityAttackDescriptor {
+                r#type: t,
                 damage: entity_attack.damage,
                 reach: entity_attack.reach,
+                max_start_dist_from_entity: entity_attack.max_start_dist_from_entity,
                 width: entity_attack.width,
                 time_to_charge: entity_attack.time_to_charge,
                 sprite: entity_attack.sprite.clone()
