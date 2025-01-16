@@ -19,7 +19,7 @@ impl HeadlessGame{
     }
     pub async fn run(&mut self, frames: usize){
         for _i in 0..frames{
-            self.camera.render(&mut self.world);
+            self.camera.render(&mut self.world, 1152.0, 720.0);
             self.state.update(&mut self.world, &mut self.camera);    
         }  
     }

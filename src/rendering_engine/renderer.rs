@@ -26,7 +26,8 @@ pub struct Renderer<'a> {
     pub size: winit::dpi::PhysicalSize<u32>,
     pub render_pipeline: wgpu::RenderPipeline,
     pub diffuse_bind_group: wgpu::BindGroup,
-    pub text_brush: TextBrush<FontRef<'a>>,
+    pub text_brush_a: TextBrush<FontRef<'a>>,
+    pub text_brush_b: TextBrush<FontRef<'a>>,
     window: &'a Window,
 }
 
@@ -85,8 +86,10 @@ impl<'a> Renderer<'a> {
             label: Some("Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
         });
-        let bytes = include_bytes!("./img/font.ttf");
-        let brush: TextBrush<FontRef<'_>> = BrushBuilder::using_font_bytes(bytes).unwrap().build(&device, config.width, config.height, config.format);
+        let bytes_a = include_bytes!("./img/font.ttf");
+        let brush_a: TextBrush<FontRef<'_>> = BrushBuilder::using_font_bytes(bytes_a).unwrap().build(&device, config.width, config.height, config.format);
+        let bytes_b = include_bytes!("./img/fontb.ttf");
+        let brush_b: TextBrush<FontRef<'_>> = BrushBuilder::using_font_bytes(bytes_b).unwrap().build(&device, config.width, config.height, config.format);
 
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -144,7 +147,8 @@ impl<'a> Renderer<'a> {
             size: size,
             render_pipeline: render_pipeline,
             diffuse_bind_group: diffuse_bind_group,
-            text_brush: brush,
+            text_brush_a: brush_a,
+            text_brush_b: brush_b,
         }
  
     }
@@ -159,7 +163,8 @@ impl<'a> Renderer<'a> {
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
-            self.text_brush.resize_view(self.config.width as f32, self.config.height as f32, &self.queue);
+            self.text_brush_a.resize_view(self.config.width as f32, self.config.height as f32, &self.queue);
+            self.text_brush_b.resize_view(self.config.width as f32, self.config.height as f32, &self.queue);
         }
     }
 
@@ -196,8 +201,11 @@ impl<'a> Renderer<'a> {
         });
 
         {
-            let sections = render_data.sections;
-            self.text_brush.queue(&self.device, &self.queue, sections).unwrap();
+            let sections_a = render_data.sections_a;
+            let sections_b = render_data.sections_b;
+
+            self.text_brush_a.queue(&self.device, &self.queue, sections_a).unwrap();
+            self.text_brush_b.queue(&self.device, &self.queue, sections_b).unwrap();
             
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
@@ -219,7 +227,8 @@ impl<'a> Renderer<'a> {
             render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
             render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint16);
             render_pass.draw_indexed(0..num_indicies,0, 0..1);
-            self.text_brush.draw(&mut render_pass)
+            self.text_brush_a.draw(&mut render_pass);
+            self.text_brush_b.draw(&mut render_pass);
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));

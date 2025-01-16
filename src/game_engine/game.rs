@@ -108,7 +108,7 @@ impl<'a> Game<'a> {
             );
             return Ok(());
         }
-        self.renderer.render(self.camera.render(&mut self.world))
+        self.renderer.render(self.camera.render(&mut self.world, self.renderer.config.width as f32, self.renderer.config.height as f32))
     }
     pub fn update(&mut self){
         self.camera.update_ui(&mut self.world);
@@ -116,7 +116,8 @@ impl<'a> Game<'a> {
         self.process_input();
         self.world.update_entities();
         self.world.update_entity_attacks();
-        self.world.update_player_attacks();
+        self.world.update_player_attacks(&mut self.camera);
+        self.world.update_damage_text(&mut self.camera);
         self.world.kill_entities_to_be_killed();
         self.input.mouse_position.x_world = self.camera.camera_x + self.input.mouse_position.x_screen;
         self.input.mouse_position.y_world = self.camera.camera_y + self.input.mouse_position.y_screen;
@@ -165,7 +166,8 @@ impl<'a> Game<'a> {
             self.renderer.config.width = new_size.width;
             self.renderer.config.height = new_size.height;
             self.renderer.surface.configure(&self.renderer.device, &self.renderer.config);
-            self.renderer.text_brush.resize_view(self.renderer.config.width as f32, self.renderer.config.height as f32, &self.renderer.queue);
+            self.renderer.text_brush_a.resize_view(self.renderer.config.width as f32, self.renderer.config.height as f32, &self.renderer.queue);
+            self.renderer.text_brush_b.resize_view(self.renderer.config.width as f32, self.renderer.config.height as f32, &self.renderer.queue);
         }
     }
 

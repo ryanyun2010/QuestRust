@@ -22,7 +22,7 @@ impl HeadlessState{
         world.process_input(&self.keys_down, camera);
         world.update_entities();
         world.update_entity_attacks();
-        world.update_player_attacks();
+        world.update_player_attacks(camera);
         world.kill_entities_to_be_killed();
     }
 }

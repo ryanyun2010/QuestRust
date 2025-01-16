@@ -2,6 +2,7 @@ use core::f32;
 use std::collections::{HashMap, HashSet};
 use std::cell::RefCell;
 use std::f32::consts::PI;
+use std::hash::Hash;
 use wgpu::DeviceDescriptor;
 use anyhow::anyhow;
 
@@ -11,13 +12,19 @@ use crate::game_engine::inventory::ItemContainer;
 use crate::game_engine::player::Player;
 use crate::game_engine::terrain::{Terrain, TerrainTags};
 
-use super::camera::Camera;
+use super::camera::{self, Camera};
 use super::entity_attacks::{EntityAttackBox, EntityAttackDescriptor};
 use super::entity_components::{self, CollisionBox};
 use super::game::MousePosition;
 use super::item::ItemTags;
 use super::player_attacks::{PlayerAttack, PlayerAttackDescriptor};
 use super::utils::{self, Rectangle};
+
+#[derive(Debug, Clone)]
+pub struct DamageTextDescriptor {
+    pub world_text_id: usize, 
+    pub lifespan: f32
+}
 
 #[derive(Debug, Clone)]
 pub struct Chunk{  
@@ -71,7 +78,10 @@ pub struct World{
 
     pub entity_attacks: RefCell<Vec<EntityAttackBox>>,
     pub entity_attack_descriptor_lookup: HashMap<String, EntityAttackDescriptor>,
+
+    pub damage_text: RefCell<Vec<DamageTextDescriptor>>
 }
+
 impl World{ 
     pub fn new(player: Player, sprite_container: SpriteContainer) -> Self{
         Self{
@@ -103,7 +113,8 @@ impl World{
             player_archetype_descriptor_lookup: HashMap::new(),
             entities_to_be_killed_at_end_of_frame: RefCell::new(Vec::new()),
             entity_attacks: RefCell::new(Vec::new()),
-            entity_attack_descriptor_lookup: HashMap::new()
+            entity_attack_descriptor_lookup: HashMap::new(),
+            damage_text: RefCell::new(Vec::new())
         }
     }
     pub fn new_chunk(&self, chunk_x: usize, chunk_y: usize, chunkref: Option<&mut std::cell::RefMut<'_, Vec<Chunk>>>) -> usize{
@@ -590,7 +601,7 @@ impl World{
             offset += 1;
         }
     }
-    pub fn update_player_attacks(&self){
+    pub fn update_player_attacks(&self, camera: &mut Camera){
         let mut attacks = self.player_attacks.borrow_mut();
         let mut attacks_to_be_deleted = Vec::new();
         let mut i = 0;
@@ -625,9 +636,14 @@ impl World{
                         for collision in aoe_collisions.iter(){
                             if self.entity_health_components.get(&collision).is_some(){
                                 let mut health_component = self.entity_health_components.get(&collision).unwrap().borrow_mut();
+                                let entity_position = self.entity_position_components.get(&collision).unwrap().borrow();
                                 health_component.health -= descriptor.damage;
+                                
+                                let black = [0.0, 0.0, 0.0, 1.0];
+                                
                             }
                         }
+                        
                     }
 
                 },
@@ -648,8 +664,13 @@ impl World{
                         for collision in collisions.iter(){
                             if self.entity_health_components.get(&collision).is_some(){
                                 let mut health_component = self.entity_health_components.get(&collision).unwrap().borrow_mut();
+                                let entity_position = self.entity_position_components.get(&collision).unwrap().borrow();
                                 attack.dealt_damage = true;
                                 health_component.health -= melee_attack_descriptor.damage;
+                                let text_1 = camera.add_world_text(melee_attack_descriptor.damage.to_string(), super::camera::Font::B, entity_position.x + 11.0, entity_position.y + 7.0, 50.0, 50.0, 50.0, [0.0, 0.0, 0.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
+                                let text_2 = camera.add_world_text(melee_attack_descriptor.damage.to_string(), super::camera::Font::B, entity_position.x + 9.0, entity_position.y + 5.0, 50.0, 50.0, 50.0, [1.0, 1.0, 1.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
+                                self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_1, lifespan: 0.0});
+                                self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_2, lifespan: 0.0});
                             }
                         }
                     }
@@ -723,6 +744,25 @@ impl World{
         self.process_player_input(keys);
         let player = self.player.borrow();
         camera.update_camera_position(player.x, player.y);
+    }
+    pub fn update_damage_text(&self, camera: &mut Camera) {
+        let mut dt_to_remove = Vec::new();
+        let mut i = 0;
+        for damage_text in self.damage_text.borrow_mut().iter_mut(){
+            camera.get_world_text_mut(damage_text.world_text_id).unwrap().y -= 0.6;
+            camera.get_world_text_mut(damage_text.world_text_id).unwrap().color[3] -= 0.01666666666;
+            damage_text.lifespan += 1.0;
+            if damage_text.lifespan > 60.0 {
+                camera.remove_world_text(damage_text.world_text_id);
+                dt_to_remove.push(i);
+            }
+            i += 1;
+        }
+        let mut offset = 0;
+        for dt in dt_to_remove.iter(){
+            self.damage_text.borrow_mut().remove(*dt - offset);
+            offset += 1;
+        }
     }
 }
 

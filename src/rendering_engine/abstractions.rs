@@ -132,7 +132,8 @@ impl RenderData{
         RenderDataFull{
             vertex: self.vertex.clone(),
             index: self.index.clone(),
-            sections: Vec::new()
+            sections_a: Vec::new(),
+            sections_b: Vec::new()
         }
     }
 }
@@ -140,12 +141,13 @@ impl RenderData{
 pub struct RenderDataFull<'a>{
     pub vertex: Vec<Vertex>,
     pub index: Vec<u16>,
-    pub sections: Vec<TextSection<'a>>
+    pub sections_a: Vec<TextSection<'a>>,
+    pub sections_b: Vec<TextSection<'a>>
 }
 
 impl RenderDataFull<'_>{
     pub fn new() -> Self{
-        Self{ vertex: Vec::new(), index: Vec::new(), sections: Vec::new() }
+        Self{ vertex: Vec::new(), index: Vec::new(), sections_a: Vec::new(), sections_b: Vec::new() }
     }
 }
 
@@ -251,12 +253,12 @@ impl TextSprite{
     pub fn new(text: String, font_size: f32, x: f32, y: f32, w: f32, h: f32, color: [f32; 4], align: HorizontalAlign) -> Self{
         Self { text, font_size, x, y, w, h, color, align}
     }
-    pub fn get_section(&self, camera: &Camera, screen_width: f32, screen_height: f32) -> TextSection<'_>{
+    pub fn get_section(&self, camera: &Camera, screen_width: f32, screen_height: f32, x_offset: f32, y_offset: f32) -> TextSection<'_>{
         TextSection::default().add_text(
             Text::new(self.text.as_str())
             .with_scale(self.font_size)
             .with_color(self.color)
-        ).with_screen_position((self.x/camera.viewpoint_width as f32 * screen_width, self.y/camera.viewpoint_height as f32 * screen_height))
+        ).with_screen_position(((self.x + x_offset)/camera.viewpoint_width as f32 * screen_width, (self.y + y_offset)/camera.viewpoint_height as f32 * screen_height))
         .with_layout(Layout::default().h_align(self.align))
         .with_bounds((self.w/camera.viewpoint_width as f32 * screen_width,self.h/camera.viewpoint_height as f32 * screen_height))
     }

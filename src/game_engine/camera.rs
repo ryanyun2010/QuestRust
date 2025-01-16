@@ -8,6 +8,11 @@ use wgpu_text::glyph_brush::{HorizontalAlign, Section as TextSection};
 
 use super::player_attacks::PlayerAttackDescriptor;
 #[derive(Debug, Clone)]
+pub enum Font{
+    A,
+    B
+}
+#[derive(Debug, Clone)]
 pub struct Camera{
     pub viewpoint_width: usize,
     pub viewpoint_height: usize,
@@ -18,6 +23,10 @@ pub struct Camera{
     pub ui_element_id: usize,
     pub level_editor: bool,
     pub text: BTreeMap<usize, TextSprite>,
+    pub world_text: BTreeMap<usize, TextSprite>,
+    pub world_text_id: usize,
+    pub world_text_font_lookup: HashMap<usize, Font>,
+    pub text_font_lookup: HashMap<usize, Font>,
     pub text_id: usize,
     pub test: f32,
 }
@@ -34,7 +43,11 @@ impl Camera{
             ui_element_id: 0,
             level_editor: false,
             text: BTreeMap::new(),
+            world_text: BTreeMap::new(),
+            world_text_font_lookup: HashMap::new(),
+            text_font_lookup: HashMap::new(),
             text_id: 0,
+            world_text_id: 0,
             test: 0.0
         }
     }
@@ -125,7 +138,7 @@ impl Camera{
         }
         (draw_data_main, draw_data_other)
     }
-    pub fn render(&mut self, world: &mut World) -> RenderDataFull{
+    pub fn render(&mut self, world: &mut World, screen_width: f32, screen_height: f32) -> RenderDataFull{
         let mut render_data = RenderDataFull::new();
         let mut terrain_data: RenderData = RenderData::new();
         let mut entity_data: RenderData = RenderData::new();
@@ -269,22 +282,53 @@ impl Camera{
             render_data.vertex.extend(draw_data.vertex);
             render_data.index.extend(draw_data.index);
         }
-        render_data.sections = self.get_sections(self.viewpoint_width as f32, self.viewpoint_height as f32);
+        (render_data.sections_a, render_data.sections_b) = self.get_sections(screen_width, screen_height);
         render_data
     }
-    pub fn add_text(&mut self, text: String, x: f32, y: f32, w: f32, h: f32, font_size: f32, color: [f32; 4], align: HorizontalAlign) -> usize{
+    pub fn add_text(&mut self, text: String, font: Font,  x: f32, y: f32, w: f32, h: f32, font_size: f32, color: [f32; 4], align: HorizontalAlign) -> usize{
         self.text.insert(self.text_id,TextSprite::new(text, font_size, x, y, w, h, color, align));
+        self.text_font_lookup.insert(self.text_id, font);
         self.text_id += 1;
         self.text_id - 1
+    }
+    pub fn add_world_text(&mut self, text: String, font: Font, x: f32, y: f32, w: f32, h: f32, font_size: f32, color: [f32; 4], align: HorizontalAlign) -> usize{
+        self.world_text.insert(self.world_text_id,TextSprite::new(text, font_size, x, y, w, h, color, align));
+        self.world_text_font_lookup.insert(self.world_text_id, font);
+        self.world_text_id += 1;
+        self.world_text_id - 1
+    }
+    pub fn remove_world_text(&mut self, id: usize){
+        self.world_text.remove(&id);
+    }
+    pub fn get_world_text_mut(&mut self, id: usize) -> Option<&mut TextSprite>{
+        self.world_text.get_mut(&id)
     }
     pub fn remove_text(&mut self, id: usize){
         self.text.remove(&id);
     }
-    pub fn get_sections(&self, screen_width: f32, screen_height: f32) -> Vec<TextSection>{
-        let mut sections = Vec::new();
+    pub fn get_sections(&self, screen_width: f32, screen_height: f32) -> (Vec<TextSection>, Vec<TextSection>){
+        let mut sections_a = Vec::new();
+        let mut sections_b = Vec::new();
         for (id, text) in self.text.iter(){
-            sections.push(text.get_section(&self, screen_width, screen_height));
+            match self.text_font_lookup.get(id).expect(format!("Could not find font for text with id {}", id).as_str()){
+                Font::A => {
+                    sections_a.push(text.get_section(&self, screen_width, screen_height, 0.0, 0.0));
+                },
+                Font::B => {
+                    sections_b.push(text.get_section(&self, screen_width, screen_height, 0.0, 0.0));
+                }
+            }
         }
-        sections
+        for (id, text) in self.world_text.iter(){
+            match self.world_text_font_lookup.get(id).expect(format!("Could not find font for text with id {}", id).as_str()){
+                Font::A => {
+                    sections_a.push(text.get_section(&self, screen_width, screen_height, self.camera_x * -1.0, self.camera_y * -1.0));
+                },
+                Font::B => {
+                    sections_b.push(text.get_section(&self, screen_width, screen_height, self.camera_x * -1.0, self.camera_y * -1.0));
+                }
+            }
+        }
+        (sections_a, sections_b)
     }
 }
