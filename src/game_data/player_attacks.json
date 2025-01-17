@@ -7,7 +7,7 @@
             "speed": 10.0,
             "lifetime": 70.0,
             "AOE": 15.0,
-            "sprite": "ghost"
+            "sprite": "spear"
         }
     ],
     "melee_attacks": [

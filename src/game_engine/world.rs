@@ -620,8 +620,9 @@ impl World{
             let descriptor = self.player_archetype_descriptor_lookup.get(&attack.archetype).expect(format!("Could not find player attack archetype: {}", attack.archetype).as_str());
             match descriptor{
                 PlayerAttackDescriptor::Projectile(descriptor) => {
-                    attack.x += attack.angle.cos() * descriptor.speed;
-                    attack.y += attack.angle.sin() * descriptor.speed;
+                    let angle = attack.angle * PI/180.0;
+                    attack.x += angle.cos() * descriptor.speed;
+                    attack.y += angle.sin() * descriptor.speed;
                     attack.time_alive += 1.0;
                     if attack.time_alive > descriptor.lifetime{
                         attacks_to_be_deleted.push(i);
@@ -649,9 +650,10 @@ impl World{
                                 let mut health_component = self.entity_health_components.get(&collision).unwrap().borrow_mut();
                                 let entity_position = self.entity_position_components.get(&collision).unwrap().borrow();
                                 health_component.health -= descriptor.damage;
-                                
-                                let black = [0.0, 0.0, 0.0, 1.0];
-                                
+                                let text_1 = camera.add_world_text(descriptor.damage.to_string(), super::camera::Font::B, entity_position.x + 11.0, entity_position.y + 7.0, 50.0, 50.0, 50.0, [0.0, 0.0, 0.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
+                                let text_2 = camera.add_world_text(descriptor.damage.to_string(), super::camera::Font::B, entity_position.x + 9.0, entity_position.y + 5.0, 50.0, 50.0, 50.0, [1.0, 1.0, 1.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
+                                self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_1, lifespan: 0.0});
+                                self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_2, lifespan: 0.0});
                             }
                         }
                         
@@ -755,14 +757,26 @@ impl World{
             mouse_direction_unnormalized[1] / magnitude
         ];
         let angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]);
-        self.player_attacks.borrow_mut().push(
-            PlayerAttack::new(
-                "test_melee_attack".to_string(),
-                0.0, 
-                self.player.borrow().x + mouse_direction_normalized[0] * 25.0 + 16.0,
-                self.player.borrow().y + mouse_direction_normalized[1] * 25.0 + 22.0, 
-                angle * 180.0/PI)
-        );
+        if self.cur_hotbar_slot == 0 {
+            self.player_attacks.borrow_mut().push(
+                PlayerAttack::new(
+                    "test_melee_attack".to_string(),
+                    0.0, 
+                    self.player.borrow().x + mouse_direction_normalized[0] * 25.0 + 16.0,
+                    self.player.borrow().y + mouse_direction_normalized[1] * 25.0 + 22.0, 
+                    angle * 180.0/PI)
+            );
+        }
+        else if self.cur_hotbar_slot == 1 {
+            self.player_attacks.borrow_mut().push(
+                PlayerAttack::new(
+                    "test_projectile".to_string(),
+                    0.0, 
+                    self.player.borrow().x + mouse_direction_normalized[0] * 25.0 + 16.0,
+                    self.player.borrow().y + mouse_direction_normalized[1] * 25.0 + 22.0, 
+                    angle * 180.0/PI)
+            );
+        }
         
     }
     pub fn process_mouse_input(&mut self, mouse_position: MousePosition, mouse_left: bool, mouse_right: bool){
