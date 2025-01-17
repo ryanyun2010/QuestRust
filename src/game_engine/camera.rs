@@ -53,9 +53,17 @@ impl Camera{
     }
     pub fn update_ui(&mut self, world: &mut World){
         let player = world.player.borrow().clone();
-        let health_bar = self.get_ui_element_mut(self.get_ui_element_id_from_name(String::from("health_bar_inside")).unwrap());
+        let health_bar = self.get_ui_element_mut_by_name(String::from("health_bar_inside")).unwrap();
         let health_bar_width = f32::max(0.0, (player.health as f32 / player.max_health as f32) * 250.0);
         health_bar.width = health_bar_width;
+    }
+    pub fn get_ui_element_mut_by_name(&mut self, name: String) -> Option<&mut UIElement> {
+        let id_potential = self.get_ui_element_id_from_name(name);
+        if id_potential.is_some() {
+            return Some(self.get_ui_element_mut(id_potential.unwrap())); 
+        }
+        return None;
+        
     }
     pub fn remove_ui_element(&mut self, element: usize){
         let mut name_to_remove = String::new();

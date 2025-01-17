@@ -48,14 +48,6 @@ fn main() {
         sprite_id: world.sprites.get_sprite_id("hslot").expect("couldn't find hotbar sprite"),
         visible: true
     });
-    camera.add_ui_element(String::from("hhslot"), UIElementDescriptor {
-        x: 20.0,
-        y: 652.0,
-        width: 48.0,
-        height: 48.0,
-        sprite_id: world.sprites.get_sprite_id("slot_highlight").expect("couldn't find hotbar highlight sprite"),
-        visible: true
-    });
     camera.add_ui_element(String::from("hslot2"), UIElementDescriptor {
         x: 78.0,
         y: 652.0,
@@ -86,6 +78,14 @@ fn main() {
         width: 48.0,
         height: 48.0,
         sprite_id: world.sprites.get_sprite_id("hslot").expect("couldn't find hotbar sprite"),
+        visible: true
+    });
+    camera.add_ui_element(String::from("hhslot"), UIElementDescriptor {
+        x: 20.0,
+        y: 652.0,
+        width: 48.0,
+        height: 48.0,
+        sprite_id: world.sprites.get_sprite_id("slot_highlight").expect("couldn't find hotbar highlight sprite"),
         visible: true
     });
 

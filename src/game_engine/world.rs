@@ -79,7 +79,9 @@ pub struct World{
     pub entity_attacks: RefCell<Vec<EntityAttackBox>>,
     pub entity_attack_descriptor_lookup: HashMap<String, EntityAttackDescriptor>,
 
-    pub damage_text: RefCell<Vec<DamageTextDescriptor>>
+    pub damage_text: RefCell<Vec<DamageTextDescriptor>>,
+
+    pub cur_hotbar_slot: usize
 }
 
 impl World{ 
@@ -114,7 +116,8 @@ impl World{
             entities_to_be_killed_at_end_of_frame: RefCell::new(Vec::new()),
             entity_attacks: RefCell::new(Vec::new()),
             entity_attack_descriptor_lookup: HashMap::new(),
-            damage_text: RefCell::new(Vec::new())
+            damage_text: RefCell::new(Vec::new()),
+            cur_hotbar_slot: 0
         }
     }
     pub fn new_chunk(&self, chunk_x: usize, chunk_y: usize, chunkref: Option<&mut std::cell::RefMut<'_, Vec<Chunk>>>) -> usize{
@@ -717,7 +720,24 @@ impl World{
         self.entity_attack_descriptor_lookup.get(archetype_name)
     }
     pub fn on_key_down(&mut self, key: &String){
-
+        match key.as_str() {
+            "1" => {
+                self.cur_hotbar_slot = 0;
+            }
+            "2" => {
+                self.cur_hotbar_slot = 1;
+            }
+            "3" => {
+                self.cur_hotbar_slot = 2;
+            }
+            "4" => {
+                self.cur_hotbar_slot = 3;
+            }
+            "5" => {
+                self.cur_hotbar_slot = 4;
+            }
+            _ => ()
+        }
     }
     pub fn on_mouse_click(&mut self, mouse_position: MousePosition, mouse_left: bool, mouse_right: bool, camera_width: f32, camera_height: f32){
         let mouse_direction_unnormalized = [(mouse_position.x_world - self.player.borrow().x), (mouse_position.y_world - self.player.borrow().y)];
@@ -744,6 +764,8 @@ impl World{
         self.process_player_input(keys);
         let player = self.player.borrow();
         camera.update_camera_position(player.x, player.y);
+        println!("{}", self.cur_hotbar_slot as f32 * 58 as f32 + 20.0);
+         camera.get_ui_element_mut_by_name(String::from("hhslot")).unwrap().x  = self.cur_hotbar_slot as f32 * 58 as f32 + 20.0;
     }
     pub fn update_damage_text(&self, camera: &mut Camera) {
         let mut dt_to_remove = Vec::new();
