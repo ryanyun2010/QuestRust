@@ -9,12 +9,24 @@
             "path": "src/rendering_engine/img/sword.png"
         },
         {
+            "name": "start_screen",
+            "path": "src/rendering_engine/img/start_screen.png"
+        },
+        {
             "name": "melee_attack",
             "path": "src/rendering_engine/img/attack.png"
         },
         {
             "name": "attack_highlight",
             "path": "src/rendering_engine/img/attack_highlight.png"
+        },
+        {
+            "name": "hslot",
+            "path": "src/rendering_engine/img/hslot.png"
+        },
+        {
+            "name": "slot_highlight",
+            "path": "src/rendering_engine/img/slothighlight.png"
         }
     ],
     "spritesheets": [
@@ -28,30 +40,11 @@
             "sprite_padding": 0,
             "sprites": [
                 {
-                    "name": "dirt",
-                    "x": 0,
-                    "y": 0
-                },
-                {
-                    "name": "dirt2",
-                    "x": 1,
-                    "y": 0
-                },
-                {
-                    "name": "outside",
-                    "x": 2,
-                    "y": 0
-                },
-                {
                     "name": "grass",
                     "x": 3,
                     "y": 0
-                },
-                {
-                    "name": "ghost",
-                    "x": 4,
-                    "y": 0
                 }
+
             ]
         },
         {
@@ -186,6 +179,56 @@
                     "name": "wallbr",
                     "x": 3,
                     "y": 2
+                },
+                {
+                    "name": "ghost",
+                    "x": 0,
+                    "y": 9
+                },
+                {
+                    "name": "wizard",
+                    "x": 3,
+                    "y": 9
+                },
+                {
+                    "name": "spear",
+                    "x": 10,
+                    "y": 10
+                },
+                {
+                    "name": "outside",
+                    "x": 0,
+                    "y": 0
+                },
+                {
+                    "name": "dirt",
+                    "x": 0,
+                    "y": 4
+                },
+                {
+                    "name": "dirt2",
+                    "x": 1,
+                    "y": 4
+                },
+                {
+                    "name": "walltl2",
+                    "x": 4,
+                    "y": 0
+                },
+                {
+                    "name": "wallbl2",
+                    "x": 4,
+                    "y": 1
+                },
+                {
+                    "name": "walltr2",
+                    "x": 5,
+                    "y": 0
+                },
+                {
+                    "name": "wallbr2",
+                    "x": 5,
+                    "y": 1
                 }
 
             ]

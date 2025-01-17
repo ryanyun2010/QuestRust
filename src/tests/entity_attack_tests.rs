@@ -42,7 +42,7 @@ async fn test_entity_can_kill_player(){
     world.add_health_component(entity, entity_components::HealthComponent{health: 100.0, max_health: 100});
     world.add_pathfinding_component(entity, entity_components::PathfindingComponent::default());
     
-    let camera = basic_camera().await;
+    let camera = basic_camera(&world).await;
     let player_starting_position_x = world.player.borrow().x;
     let player_starting_position_y = world.player.borrow().y;
     let mut headless = HeadlessGame::new(world, camera);

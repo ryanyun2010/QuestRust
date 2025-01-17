@@ -6,7 +6,7 @@ use crate::game_engine::{terrain::TerrainTags, entities::EntityTags, entity_comp
 #[tokio::test]
 async fn test_player_terrain_collision_moving_right(){
     let mut world = basic_world().await;
-    let camera = basic_camera().await;
+    let camera = basic_camera(&world).await;
     let terrain_blocker = world.add_terrain(638, 402);
     world.set_sprite(terrain_blocker, 0);
     let blocker_archetype = world.add_terrain_archetype(
@@ -28,7 +28,7 @@ async fn test_player_terrain_collision_moving_right(){
 #[tokio::test]
 async fn test_player_terrain_collision_moving_left(){
     let mut world = basic_world().await;
-    let camera = basic_camera().await;
+    let camera = basic_camera(&world).await;
     let terrain_blocker = world.add_terrain(554, 402);
     world.set_sprite(terrain_blocker, 0);
     let blocker_archetype = world.add_terrain_archetype(
@@ -50,7 +50,7 @@ async fn test_player_terrain_collision_moving_left(){
 #[tokio::test]
 async fn test_player_terrain_collision_moving_up(){
     let mut world = basic_world().await;
-    let camera = basic_camera().await;
+    let camera = basic_camera(&world).await;
     let terrain_blocker = world.add_terrain(576, 358);
     world.set_sprite(terrain_blocker, 0);
     let blocker_archetype = world.add_terrain_archetype(
@@ -72,7 +72,7 @@ async fn test_player_terrain_collision_moving_up(){
 #[tokio::test]
 async fn test_player_terrain_collision_moving_down(){
     let mut world = basic_world().await;
-    let camera = basic_camera().await;
+    let camera = basic_camera(&world).await;
     let terrain_blocker = world.add_terrain(576, 442);
     world.set_sprite(terrain_blocker, 0);
     let blocker_archetype = world.add_terrain_archetype(
@@ -94,7 +94,7 @@ async fn test_player_terrain_collision_moving_down(){
 #[tokio::test]
 async fn test_player_entity_collision_moving_down(){
     let mut world = basic_world().await;
-    let camera = basic_camera().await;
+    let camera = basic_camera(&world).await;
     let entity_blocker = world.add_entity(576.0, 442.0);
     world.set_sprite(entity_blocker, 0);
     world.add_entity_archetype(
@@ -124,7 +124,7 @@ async fn test_player_entity_collision_moving_down(){
 #[tokio::test]
 async fn test_player_entity_collision_moving_up(){
     let mut world = basic_world().await;
-    let camera = basic_camera().await;
+    let camera = basic_camera(&world).await;
     let entity_blocker = world.add_entity(576.0, 358.0);
     world.set_sprite(entity_blocker, 0);
     world.add_entity_archetype(
@@ -154,7 +154,7 @@ async fn test_player_entity_collision_moving_up(){
 #[tokio::test]
 async fn test_player_entity_collision_moving_left(){
     let mut world = basic_world().await;
-    let camera = basic_camera().await;
+    let camera = basic_camera(&world).await;
     let entity_blocker = world.add_entity(554.0, 402.0);
     world.set_sprite(entity_blocker, 0);
     world.add_entity_archetype(
@@ -184,7 +184,7 @@ async fn test_player_entity_collision_moving_left(){
 #[tokio::test]
 async fn test_player_entity_collision_moving_right(){
     let mut world = basic_world().await;
-    let camera = basic_camera().await;
+    let camera = basic_camera(&world).await;
     let entity_blocker = world.add_entity(648.0, 402.0);
     world.set_sprite(entity_blocker, 0);
     world.add_entity_archetype(

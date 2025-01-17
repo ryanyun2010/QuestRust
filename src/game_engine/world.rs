@@ -68,6 +68,7 @@ pub struct World{
     pub entity_attack_components: HashMap<usize, RefCell<entity_components::EntityAttackComponent>>,
     pub entity_health_components: HashMap<usize, RefCell<entity_components::HealthComponent>>,
     pub entity_pathfinding_components: HashMap<usize, RefCell<entity_components::PathfindingComponent>>,
+    pub entity_aggro_components: HashMap<usize, RefCell<entity_components::AggroComponent>>,
 
     pub sprites: SpriteContainer,
     pub sprite_lookup: HashMap<usize, usize>, // corresponds element id to sprite id
@@ -119,6 +120,7 @@ impl World{
             entity_health_components: HashMap::new(),
             entity_position_components: HashMap::new(),
             entity_pathfinding_components: HashMap::new(),
+            entity_aggro_components: HashMap::new(),
             player_attacks: RefCell::new(Vec::new()),
             player_archetype_descriptor_lookup: HashMap::new(),
             entities_to_be_killed_at_end_of_frame: RefCell::new(Vec::new()),
@@ -717,6 +719,7 @@ impl World{
         self.entity_pathfinding_components.remove(&entity_id);
         self.entity_health_components.remove(&entity_id);
         self.entity_archetype_lookup.remove(&entity_id);
+        self.entity_aggro_components.remove(&entity_id);
     }
     pub fn kill_entity(&self, entity_id: usize){
         self.entities_to_be_killed_at_end_of_frame.borrow_mut().push(entity_id);

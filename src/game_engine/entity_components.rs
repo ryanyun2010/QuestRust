@@ -49,6 +49,17 @@ impl HealthComponent{
         }
     }
 }
+#[derive(Clone, Debug, Copy, PartialEq)]
+pub struct AggroComponent{
+    pub aggroed: bool,
+}
+impl AggroComponent{
+    pub fn new() -> Self{
+        Self{
+            aggroed: false
+        }
+    }
+}
 
 #[derive(Clone, Debug, Copy, PartialEq, Serialize, Deserialize)]
 pub struct CollisionBox{
@@ -81,5 +92,6 @@ setup_components!(
     position => PositionComponent,
     attack => EntityAttackComponent, 
     pathfinding => PathfindingComponent,
-    health => HealthComponent);
+    health => HealthComponent,
+    aggro => AggroComponent);
     

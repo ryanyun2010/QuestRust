@@ -9,7 +9,7 @@ use crate::game_engine::entity_components;
 #[tokio::test]
 async fn test_terrain_should_block_entities(){
     let mut world = basic_world().await;
-    let camera = basic_camera().await;
+    let camera = basic_camera(&world).await;
     let blocker_archetype = world.add_terrain_archetype(
         vec![
             TerrainTags::BlocksMovement,
@@ -81,7 +81,7 @@ async fn test_terrain_should_block_entities(){
 #[tokio::test]
 async fn test_entities_should_pathfind_around_terrain(){
     let mut world = basic_world().await;
-    let camera = basic_camera().await;
+    let camera = basic_camera(&world).await;
     let blocker_archetype = world.add_terrain_archetype(
         vec![
             TerrainTags::BlocksMovement,

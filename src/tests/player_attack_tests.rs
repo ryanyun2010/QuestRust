@@ -5,7 +5,7 @@ use super::tests::{basic_world, basic_camera};
 #[tokio::test]
 pub async fn test_player_attack() {
     let mut world = basic_world().await;
-    let camera = basic_camera().await;
+    let camera = basic_camera(&world).await;
     world.add_entity_archetype(String::from("test_attackable_entity"), vec![
         crate::game_engine::entities::EntityTags::BaseHealth(100),
         crate::game_engine::entities::EntityTags::Damageable(

@@ -4,7 +4,7 @@ use crate::tests::{lib::headless::HeadlessGame, tests::{basic_world, basic_camer
 #[tokio::test]
 async fn test_player_movement_right() {
     let world = basic_world().await;
-    let camera = basic_camera().await;
+    let camera = basic_camera(&world).await;
     
     let mut headless = HeadlessGame::new(world, camera);
 
@@ -21,7 +21,7 @@ async fn test_player_movement_right() {
 #[tokio::test]
 async fn test_player_movement_left() {
     let world = basic_world().await;
-    let camera = basic_camera().await;
+    let camera = basic_camera(&world).await;
     let mut headless = HeadlessGame::new(world, camera);
 
     headless.state.keys_down.insert(String::from("a"), true);
@@ -37,7 +37,7 @@ async fn test_player_movement_left() {
 #[tokio::test]
 async fn test_player_movement_down() {
     let world = basic_world().await;
-    let camera = basic_camera().await;
+    let camera = basic_camera(&world).await;
     let mut headless = HeadlessGame::new(world, camera);
 
     headless.state.keys_down.insert(String::from("s"), true);
@@ -53,7 +53,7 @@ async fn test_player_movement_down() {
 #[tokio::test]
 async fn test_player_movement_up() {
     let world = basic_world().await;
-    let camera = basic_camera().await;
+    let camera = basic_camera(&world).await;
     let mut headless = HeadlessGame::new(world, camera);
 
     headless.state.keys_down.insert(String::from("w"), true);
@@ -69,7 +69,7 @@ async fn test_player_movement_up() {
 #[tokio::test]
 async fn test_movement_both_d_and_a() {
     let world = basic_world().await;
-    let camera = basic_camera().await;
+    let camera = basic_camera(&world).await;
     let mut headless = HeadlessGame::new(world, camera);
 
     headless.state.keys_down.insert(String::from("d"), true);
@@ -87,7 +87,7 @@ async fn test_movement_both_d_and_a() {
 #[tokio::test]
 async fn test_movement_both_w_and_s() {
     let world = basic_world().await;
-    let camera = basic_camera().await;
+    let camera = basic_camera(&world).await;
     let mut headless = HeadlessGame::new(world, camera);
 
     headless.state.keys_down.insert(String::from("w"), true);
@@ -105,7 +105,7 @@ async fn test_movement_both_w_and_s() {
 #[tokio::test]
 async fn test_movement_w_and_d() {
     let world = basic_world().await;
-    let camera = basic_camera().await;
+    let camera = basic_camera(&world).await;
     let mut headless = HeadlessGame::new(world, camera);
 
     headless.state.keys_down.insert(String::from("w"), true);
@@ -127,7 +127,7 @@ async fn test_movement_w_and_d() {
 #[tokio::test]
 async fn test_movement_w_and_a() {
     let world = basic_world().await;
-    let camera = basic_camera().await;
+    let camera = basic_camera(&world).await;
     let mut headless = HeadlessGame::new(world, camera);
 
     headless.state.keys_down.insert(String::from("w"), true);
@@ -149,7 +149,7 @@ async fn test_movement_w_and_a() {
 #[tokio::test]
 async fn test_movement_s_and_d() {
     let world = basic_world().await;
-    let camera = basic_camera().await;
+    let camera = basic_camera(&world).await;
     let mut headless = HeadlessGame::new(world, camera);
 
     headless.state.keys_down.insert(String::from("s"), true);
@@ -171,7 +171,7 @@ async fn test_movement_s_and_d() {
 #[tokio::test]
 async fn test_movement_s_and_a() {
     let world = basic_world().await;
-    let camera = basic_camera().await;
+    let camera = basic_camera(&world).await;
     let mut headless = HeadlessGame::new(world, camera);
 
     headless.state.keys_down.insert(String::from("s"), true);
