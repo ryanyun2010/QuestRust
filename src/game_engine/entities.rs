@@ -4,7 +4,7 @@ use std::cell::{RefCell, RefMut};
 use std::f32::consts::PI;
 use std::time::Instant;
 use super::entity_attacks::EntityAttackBox;
-use super::entity_components::{self, CollisionBox, EntityAttackComponent, PathfindingComponent, PositionComponent};
+use super::entity_components::{self, AggroComponent, CollisionBox, EntityAttackComponent, PathfindingComponent, PositionComponent};
 use super::world::{Chunk, World};
 use super::player::Player;
 use super::pathfinding::{self, EntityDirectionOptions};
@@ -71,7 +71,6 @@ impl World {
         let entity_tags: &Vec<EntityTags> = entity_tags_potentially.unwrap();
         let mut distance: f64 = f64::MAX;
         let mut follows_player: bool = false;
-        let mut aggroed_to_player: bool = false;
         let mut aggro_range = 0;
         let mut attack_range = 0;
         let mut movement_speed = 1.0;
@@ -129,12 +128,26 @@ impl World {
             distance = f64::sqrt(
                 (position_component.y as f64 - (py) as f64).powf(2.0) + (position_component.x as f64 - (px) as f64).powf(2.0),
             );
-            if aggressive && distance <= (attack_range as f64) {
-                can_attack_player = true;
-            }else{
-                if distance < (aggro_range as f64){
-                    aggroed_to_player = true;
+          
+        }
+        
+        if aggressive {
+            let mut aggro = self.entity_aggro_components.get(entity_id).expect("Aggressive entities must have an aggro component").borrow_mut();
+            let position_component = self.entity_position_components.get(entity_id).expect("Entities with tag: FollowsPlayer must have a PositionComponent").borrow().clone();
+            let px = player_x + self.player.borrow().collision_box.x_offset;
+            let py = player_y + self.player.borrow().collision_box.y_offset;
+            let distance = f64::sqrt(
+                (position_component.y as f64 - (py) as f64).powf(2.0) + (position_component.x as f64 - (px) as f64).powf(2.0),
+                );
+            if aggro.aggroed {
+                if distance <= (attack_range as f64) {
+                    can_attack_player = true;
                 }
+            } else if distance <= (aggro_range as f64) {
+                aggro.aggroed = true;
+                if distance <= (attack_range as f64) {
+                    can_attack_player = true;
+                } 
             }
         }
         if can_attack_player && aggressive {
@@ -206,7 +219,14 @@ impl World {
                 attack_component.cur_attack_cooldown -= 1.0/60.0;
             }
         }
-        if aggroed_to_player {
+        let mut aggroed_to_entity = false;
+        if aggressive {
+            let aggro_potentially = self.entity_aggro_components.get(entity_id);
+            if aggro_potentially.is_some() {
+                aggroed_to_entity = aggro_potentially.unwrap().borrow().aggroed;
+            }
+        }
+        if aggroed_to_entity{
             let pathfinding_component = self.entity_pathfinding_components.get(entity_id).expect("Entities with tag: FollowsPlayer must have a PathfindingComponent").borrow_mut();
             let position_component = self.entity_position_components.get(entity_id).expect("Entities with tag: FollowsPlayer must have a PositionComponent").borrow_mut();
             self.move_entity_towards_player(entity_id, collision.unwrap_or(&CollisionBox {
@@ -338,6 +358,7 @@ impl World {
         let mut needs_collision_box_component = false;
         let mut needs_pathfinding_component = false;
         let mut needs_health_component = false;
+        let mut needs_aggro_component = false;
         let mut health = 0;
         for tag in archetype.iter(){
             match tag.clone(){
@@ -351,6 +372,9 @@ impl World {
                     needs_health_component = true;
                     health = h;
                 },
+                EntityTags::Aggressive => {
+                    needs_aggro_component = true;
+                }
                 _ => {}
             }
         }
@@ -363,10 +387,16 @@ impl World {
         if needs_health_component{
             self.add_health_component(entity, entity_components::HealthComponent{health: health as f32, max_health: health});
         }
+        if needs_aggro_component{
+            self.add_aggro_component(entity, entity_components::AggroComponent::new());
+        }
         entity
     }
     pub fn add_entity_archetype(&mut self, name: String, archetype: Vec<EntityTags>){
         self.entity_archetype_tags_lookup.insert(name, archetype);
+    }
+    pub fn add_aggro_component(&mut self, entity_id: usize, new_entity_aggro: entity_components::AggroComponent){
+        self.entity_aggro_components.insert(entity_id, RefCell::new(new_entity_aggro));
     }
     pub fn get_entity_archetype(&self, element_id: &usize) -> Option<&String>{
         self.entity_archetype_lookup.get(element_id)
@@ -381,6 +411,7 @@ impl World {
     pub fn set_entity_archetype(&mut self, element_id: usize, archetype_id: String){
         self.entity_archetype_lookup.insert(element_id, archetype_id);
     }
+
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]

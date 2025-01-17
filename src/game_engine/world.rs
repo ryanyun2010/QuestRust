@@ -1,6 +1,6 @@
 use core::f32;
 use std::collections::{HashMap, HashSet};
-use std::cell::RefCell;
+use std::cell::{RefCell, RefMut};
 use std::f32::consts::PI;
 use std::hash::Hash;
 use wgpu::DeviceDescriptor;
@@ -14,7 +14,7 @@ use crate::game_engine::terrain::{Terrain, TerrainTags};
 
 use super::camera::{self, Camera};
 use super::entity_attacks::{EntityAttackBox, EntityAttackDescriptor};
-use super::entity_components::{self, CollisionBox};
+use super::entity_components::{self, AggroComponent, CollisionBox, HealthComponent, PositionComponent};
 use super::game::MousePosition;
 use super::item::ItemTags;
 use super::player_attacks::{PlayerAttack, PlayerAttackDescriptor};
@@ -651,11 +651,12 @@ impl World{
                             if self.entity_health_components.get(&collision).is_some(){
                                 let mut health_component = self.entity_health_components.get(&collision).unwrap().borrow_mut();
                                 let entity_position = self.entity_position_components.get(&collision).unwrap().borrow();
-                                health_component.health -= descriptor.damage;
-                                let text_1 = camera.add_world_text(descriptor.damage.to_string(), super::camera::Font::B, entity_position.x + 11.0, entity_position.y + 7.0, 50.0, 50.0, 50.0, [0.0, 0.0, 0.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
-                                let text_2 = camera.add_world_text(descriptor.damage.to_string(), super::camera::Font::B, entity_position.x + 9.0, entity_position.y + 5.0, 50.0, 50.0, 50.0, [1.0, 1.0, 1.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
-                                self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_1, lifespan: 0.0});
-                                self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_2, lifespan: 0.0});
+                                let aggro_potentially = self.entity_aggro_components.get(&collision);
+                                let mut aggro = None;
+                                if aggro_potentially.is_some(){
+                                    aggro = Some(aggro_potentially.unwrap().borrow_mut());
+                                }
+                                self.damage_entity(&entity_position, Some(health_component), aggro, descriptor.damage, camera);
                             }
                         }
                         
@@ -685,12 +686,13 @@ impl World{
                             if self.entity_health_components.get(&collision).is_some(){
                                 let mut health_component = self.entity_health_components.get(&collision).unwrap().borrow_mut();
                                 let entity_position = self.entity_position_components.get(&collision).unwrap().borrow();
+                                let aggro_potentially = self.entity_aggro_components.get(&collision);
+                                let mut aggro = None;
+                                if aggro_potentially.is_some(){
+                                    aggro = Some(aggro_potentially.unwrap().borrow_mut());
+                                }
                                 attack.dealt_damage = true;
-                                health_component.health -= melee_attack_descriptor.damage;
-                                let text_1 = camera.add_world_text(melee_attack_descriptor.damage.to_string(), super::camera::Font::B, entity_position.x + 11.0, entity_position.y + 7.0, 50.0, 50.0, 50.0, [0.0, 0.0, 0.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
-                                let text_2 = camera.add_world_text(melee_attack_descriptor.damage.to_string(), super::camera::Font::B, entity_position.x + 9.0, entity_position.y + 5.0, 50.0, 50.0, 50.0, [1.0, 1.0, 1.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
-                                self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_1, lifespan: 0.0});
-                                self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_2, lifespan: 0.0});
+                                self.damage_entity( &entity_position, Some(health_component), aggro,  melee_attack_descriptor.damage, camera);
                             }
                         }
                     }
@@ -703,6 +705,22 @@ impl World{
             attacks.remove(*index - offset);
             offset += 1;
         }
+    }
+
+    pub fn damage_entity(&self, entity_position_component: &PositionComponent, entity_health_component: Option<RefMut<HealthComponent>>, entity_aggro_component: Option<RefMut<AggroComponent>>, damage: f32, camera: &mut Camera){
+        if entity_health_component.is_some() {
+            entity_health_component.unwrap().health -= damage;
+        }
+        let text_1 = camera.add_world_text(damage.to_string(), super::camera::Font::B, entity_position_component.x + 11.0, entity_position_component.y + 7.0, 50.0, 50.0, 50.0, [0.0, 0.0, 0.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
+        let text_2 = camera.add_world_text(damage.to_string(), super::camera::Font::B, entity_position_component.x + 9.0, entity_position_component.y + 5.0, 50.0, 50.0, 50.0, [1.0, 1.0, 1.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
+        if entity_aggro_component.is_some() {
+            let mut aggro = entity_aggro_component.unwrap();
+            if !aggro.aggroed{
+                aggro.aggroed = true;
+            }
+        }
+        self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_1, lifespan: 0.0});
+        self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_2, lifespan: 0.0});
     }
     
     pub fn remove_entity(&mut self, entity_id: usize){
