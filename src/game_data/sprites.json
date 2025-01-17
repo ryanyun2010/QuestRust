@@ -19,6 +19,10 @@
         {
             "name": "attack_highlight",
             "path": "src/rendering_engine/img/attack_highlight.png"
+        },
+        {
+            "name": "hslot",
+            "path": "src/rendering_engine/img/hslot.png"
         }
     ],
     "spritesheets": [

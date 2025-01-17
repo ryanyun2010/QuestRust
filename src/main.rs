@@ -40,6 +40,47 @@ fn main() {
         visible: true
     });
 
+    camera.add_ui_element(String::from("hslot1"), UIElementDescriptor {
+        x: 20.0,
+        y: 652.0,
+        width: 48.0,
+        height: 48.0,
+        sprite_id: world.sprites.get_sprite_id("hslot").expect("couldn't find hotbar sprite"),
+        visible: true
+    });
+    camera.add_ui_element(String::from("hslot2"), UIElementDescriptor {
+        x: 78.0,
+        y: 652.0,
+        width: 48.0,
+        height: 48.0,
+        sprite_id: world.sprites.get_sprite_id("hslot").expect("couldn't find hotbar sprite"),
+        visible: true
+    });
+    camera.add_ui_element(String::from("hslot3"), UIElementDescriptor {
+        x: 136.0,
+        y: 652.0,
+        width: 48.0,
+        height: 48.0,
+        sprite_id: world.sprites.get_sprite_id("hslot").expect("couldn't find hotbar sprite"),
+        visible: true
+    });
+    camera.add_ui_element(String::from("hslot4"), UIElementDescriptor {
+        x: 194.0,
+        y: 652.0,
+        width: 48.0,
+        height: 48.0,
+        sprite_id: world.sprites.get_sprite_id("hslot").expect("couldn't find hotbar sprite"),
+        visible: true
+    });
+    camera.add_ui_element(String::from("hslot5"), UIElementDescriptor {
+        x: 252.0,
+        y: 652.0,
+        width: 48.0,
+        height: 48.0,
+        sprite_id: world.sprites.get_sprite_id("hslot").expect("couldn't find hotbar sprite"),
+        visible: true
+    });
+
 
     // world.player.borrow_mut().holding_texture_sprite = Some(world.sprites.get_sprite_id("sword").unwrap());
     println!("Time to load: {:?} ms", load_time.elapsed().as_millis());
