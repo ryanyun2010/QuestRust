@@ -23,6 +23,10 @@
         {
             "name": "hslot",
             "path": "src/rendering_engine/img/hslot.png"
+        },
+        {
+            "name": "slot_highlight",
+            "path": "src/rendering_engine/img/slothighlight.png"
         }
     ],
     "spritesheets": [
