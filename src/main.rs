@@ -82,6 +82,25 @@ fn main() {
     });
 
 
+    camera.add_ui_element(String::from("tempitem"), UIElementDescriptor {
+        x: 28.0,
+        y: 660.0,
+        width: 32.0,
+        height: 32.0,
+        sprite_id: world.sprites.get_sprite_id("sword").expect("couldn't find hotbar sprite"),
+        visible: true
+    });
+
+
+    camera.add_ui_element(String::from("tempitem2"), UIElementDescriptor {
+        x: 86.0,
+        y: 660.0,
+        width: 32.0,
+        height: 32.0,
+        sprite_id: world.sprites.get_sprite_id("spear").expect("couldn't find hotbar sprite"),
+        visible: true
+    });
+
     // world.player.borrow_mut().holding_texture_sprite = Some(world.sprites.get_sprite_id("sword").unwrap());
     println!("Time to load: {:?} ms", load_time.elapsed().as_millis());
     pollster::block_on(window::run(world, camera, &parsed_data.sprites_to_load_json));
