@@ -81,7 +81,8 @@ pub struct World{
 
     pub damage_text: RefCell<Vec<DamageTextDescriptor>>,
 
-    pub cur_hotbar_slot: usize
+    pub cur_hotbar_slot: usize,
+    pub item_sprites_temp: Vec<Option<usize>>
 }
 
 impl World{ 
@@ -90,6 +91,13 @@ impl World{
             chunks: RefCell::new(Vec::new()),
             player: RefCell::new(player),
             element_id: 0,
+            item_sprites_temp: vec![
+                Some(sprite_container.get_sprite_id("sword").unwrap()),
+                Some(sprite_container.get_sprite_id("spear").unwrap()),
+                None,
+                None,
+                None
+            ],
             sprites: sprite_container,
             sprite_lookup: HashMap::new(),
             chunk_lookup: RefCell::new(HashMap::new()),
@@ -765,7 +773,9 @@ impl World{
         let player = self.player.borrow();
         camera.update_camera_position(player.x, player.y);
         println!("{}", self.cur_hotbar_slot as f32 * 58 as f32 + 20.0);
-         camera.get_ui_element_mut_by_name(String::from("hhslot")).unwrap().x  = self.cur_hotbar_slot as f32 * 58 as f32 + 20.0;
+        camera.get_ui_element_mut_by_name(String::from("hhslot")).unwrap().x  = self.cur_hotbar_slot as f32 * 58 as f32 + 20.0;
+        drop(player);
+        self.player.borrow_mut().holding_texture_sprite = self.item_sprites_temp[self.cur_hotbar_slot];
     }
     pub fn update_damage_text(&self, camera: &mut Camera) {
         let mut dt_to_remove = Vec::new();
