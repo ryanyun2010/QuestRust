@@ -657,6 +657,11 @@ impl World{
                             }
                         }
                         
+                    }else {
+                        let c = self.check_collision(true, None, attack.x as usize, attack.y as usize, descriptor.size as usize, descriptor.size as usize, true);
+                        if c{
+                            attacks_to_be_deleted.push(i);
+                        }
                     }
 
                 },
