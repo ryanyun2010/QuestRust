@@ -2,7 +2,7 @@
 use std::time::Instant;
 
 use winit::{
-    event::*, event_loop::EventLoop, window::WindowBuilder
+    event::*, event_loop::EventLoop, window::{WindowBuilder}
 };
 use crate::game_engine::game::Game;
 use crate::renderer::Renderer;
@@ -61,6 +61,11 @@ pub async fn run(world: World, camera: Camera, sprites_json_to_load: &Vec<String
                         Err(wgpu::SurfaceError::Timeout) => {
                             log::warn!("Surface timeout")
                         }
+                        Err(e) => {
+                            log::error!("Error: {:?}", e);
+                            control_flow.exit();
+                        }
+                        
                     }
                     
                 }
