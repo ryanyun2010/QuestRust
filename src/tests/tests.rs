@@ -21,7 +21,7 @@ pub async fn basic_world() -> world::World {
     sprites.sprite_id_lookup.insert(String::from("attack_highlight"), 0);
     sprites.sprite_id_lookup.insert(String::from("sword"), 0);
     sprites.sprite_id_lookup.insert(String::from("spear"), 0);
-    sprites.sprite_id_lookup.insert(String::from("hhslot"), 0);
+    sprites.sprite_id_lookup.insert(String::from("slot_highlight"), 0);
     sprites.sprite_id_lookup.insert(String::from("hslot"), 0);
     let mut world = world::World::new(player::Player::new(596.0, 400.0, 10.0, 10, 1.0, 0),sprites);
     world
