@@ -262,7 +262,7 @@ use serde::Serialize;
 
 macro_rules! create_stat_lists {
     ($($stat_name:ident),*) => {
-        #[derive(Debug, Clone)]
+        #[derive(Debug, Clone, Default)]
         pub struct StatList {
             $(pub $stat_name: Option<f32>,)*
         }
@@ -326,6 +326,16 @@ create_stat_lists!(
     AOE
 );
 
+#[macro_export]
+macro_rules! create_stat_list {
+    ($($field:ident => $value:expr),* $(,)?) => {{
+        let mut stats = StatList::default();
+        $(
+            stats.$field = Some($value);
+        )*
+        stats
+    }};
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GearStat {

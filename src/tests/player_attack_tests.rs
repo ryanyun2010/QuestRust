@@ -1,5 +1,5 @@
 #![cfg(test)]
-use crate::{game_engine::{entity_components::CollisionBox, game::MousePosition, item::{Item, ItemType}, stat::StatList}, tests::lib::headless::HeadlessGame};
+use crate::{create_stat_list, game_engine::{entity_components::CollisionBox, game::MousePosition, item::{Item, ItemType}, stat::StatList}, tests::lib::headless::HeadlessGame};
 
 use super::tests::{basic_world, basic_camera};
 #[tokio::test]
@@ -24,29 +24,11 @@ pub async fn test_melee_player_attack() {
             item_type: ItemType::MeleeWeapon,
             lore: String::from("test"),
             sprite: String::from("sword"),
-            stats: StatList {
-                damage: Some(150.0),
-                width: Some(50.0),
-                reach: Some(65.0),
-                health: None,
-                defense: None,
-                toughness: None,
-                crit_luck: None,
-                crit_damage: None,
-                vitality: None,
-                luck: None,
-                accuracy: None,
-                mana: None,
-                mana_regen: None,
-                cooldown_regen: None,
-                load_speed: None,
-                range: None,
-                lifetime: None,
-                speed: None,
-                ability_damage: None,
-                size: None,
-                AOE: None
-            }
+            stats: create_stat_list!(
+                damage => 150.0,
+                width => 50.0,
+                reach => 65.0
+            )
         }
     ];
     world.create_entity_with_archetype(639.0, 400.0, String::from("test_attackable_entity"));
@@ -89,29 +71,13 @@ pub async fn test_ranged_player_attack() {
             item_type: ItemType::RangedWeapon,
             lore: String::from("test"),
             sprite: String::from("spear"),
-            stats: StatList {
-                damage: Some(150.0),
-                width: None,
-                reach: None,
-                health: None,
-                defense: None,
-                toughness: None,
-                crit_luck: None,
-                crit_damage: None,
-                vitality: None,
-                luck: None,
-                accuracy: None,
-                mana: None,
-                mana_regen: None,
-                cooldown_regen: None,
-                load_speed: None,
-                range: None,
-                lifetime: Some(90.0),
-                speed: Some(10.0),
-                ability_damage: None,
-                size: Some(30.0),
-                AOE: Some(30.0)
-            }
+            stats: create_stat_list!(
+                damage => 150.0,
+                lifetime => 90.0,
+                speed => 10.0,
+                size => 30.0,
+                AOE => 30.0
+            )
         }
     ];
     world.create_entity_with_archetype(639.0, 400.0, String::from("test_attackable_entity"));
