@@ -317,6 +317,9 @@ impl Camera{
     pub fn remove_text(&mut self, id: usize){
         self.text.remove(&id);
     }
+    pub fn get_text_mut(&mut self, id: usize) -> Option<&mut TextSprite>{
+        self.text.get_mut(&id)
+    }
     pub fn get_sections(&self, screen_width: f32, screen_height: f32) -> (Vec<TextSection>, Vec<TextSection>){
         let mut sections_a = Vec::new();
         let mut sections_b = Vec::new();

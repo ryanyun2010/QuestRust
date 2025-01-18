@@ -19,6 +19,7 @@ pub async fn test_melee_player_attack() {
     ]);
     world.inventory.hotbar = vec![
         Item {
+            name: String::from("test_sword"),
             attack_sprite: String::from("melee_attack"),
             item_type: ItemType::MeleeWeapon,
             lore: String::from("test"),
@@ -83,6 +84,7 @@ pub async fn test_ranged_player_attack() {
     ]);
     world.inventory.hotbar = vec![
         Item {
+            name: String::from("test_sword"),
             attack_sprite: String::from("spear"),
             item_type: ItemType::RangedWeapon,
             lore: String::from("test"),

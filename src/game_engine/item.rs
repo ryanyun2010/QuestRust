@@ -215,6 +215,7 @@ use super::stat::{GearStatList, StatList};
 pub struct Item {
     pub stats: StatList,
     pub lore: String,
+    pub name: String,
     pub item_type: ItemType,
     pub sprite: String,
     pub attack_sprite: String,
@@ -222,6 +223,7 @@ pub struct Item {
 
 #[derive(Debug, Clone)]
 pub struct ItemArchetype {
+    pub name: String,
     pub stats: GearStatList,
     pub lore: String,
     pub item_type: ItemType,

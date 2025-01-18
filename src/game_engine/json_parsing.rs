@@ -341,6 +341,7 @@ impl JSON_parser {
 
         for (item_archetype) in &self.item_archetype_json {
             data.item_archetypes.insert(item_archetype.name.clone(), ItemArchetype{
+                name: item_archetype.name.clone(),
                 stats: item_archetype.stats.clone(),
                 lore: item_archetype.lore.clone(),
                 item_type: item_archetype.item_type.clone(),

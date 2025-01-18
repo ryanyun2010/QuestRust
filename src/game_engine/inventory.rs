@@ -5,6 +5,7 @@ use super::camera::Camera;
 pub struct Inventory {
     pub hotbar: Vec<Item>,
     pub cur_hotbar_slot: usize,
+    pub display_text: Option<usize>
 }
 
 impl Inventory{
@@ -12,13 +13,34 @@ impl Inventory{
         Self {
             hotbar: Vec::new(),
             cur_hotbar_slot: 0,
+            display_text: None,
         }
     }
     pub fn set_hotbar_slot(&mut self, slot: usize) {
         self.cur_hotbar_slot = slot;
     }
-    pub fn update_ui(&self, camera: &mut Camera) {
+    pub fn update_ui(&mut self, camera: &mut Camera) {
         camera.get_ui_element_mut_by_name(String::from("hhslot")).unwrap().x  = self.cur_hotbar_slot as f32 * 58 as f32 + 20.0;
+        let cur_item = self.get_cur_held_item();
+        if cur_item.is_some(){
+            let mut text = format!(
+                "{} \n \n {} \n \n", cur_item.unwrap().name, cur_item.unwrap().lore
+            );
+            let stats = &cur_item.unwrap().stats;
+            for stat in stats.into_iter() {
+                if stat.1.is_some(){
+                    text.push_str(
+                        format!("{}: {} \n", stat.0, stat.1.unwrap()).as_str()
+                    );
+                }
+            }
+            if self.display_text.is_none(){
+                self.display_text = Some(camera.add_text(text, super::camera::Font::A, 40.0, 390.0, 130.0, 250.0, 20.0, [1.0, 1.0, 1.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Left));
+            }else{
+                camera.get_text_mut(self.display_text.unwrap()).unwrap().text = text;
+            }
+        }
+        
     }
     pub fn get_cur_held_item(&self) -> Option<&Item> {
         return self.hotbar.get(self.cur_hotbar_slot);

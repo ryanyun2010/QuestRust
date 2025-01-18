@@ -825,6 +825,7 @@ impl World{
     pub fn create_item_with_archetype(&self, archetype: String) -> Item {
         let archetype_i = self.get_item_archetype(&archetype).expect(format!("Could not find item archetype: {}", archetype).as_str());
         let item = Item {
+            name: archetype_i.name.clone(),
             attack_sprite: archetype_i.attack_sprite.clone(),
             item_type: archetype_i.item_type.clone(),
             lore: archetype_i.lore.clone(),

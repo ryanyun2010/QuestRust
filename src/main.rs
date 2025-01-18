@@ -109,6 +109,15 @@ fn main() {
         visible: true
     });
 
+    camera.add_ui_element(String::from("itemdisplay"), UIElementDescriptor {
+        x: 30.0,
+        y: 380.0,
+        width: 150.0,
+        height: 250.0,
+        sprite_id: world.sprites.get_sprite_id("level_editor_menu_background").expect("couldn't find background sprite"),
+        visible: true
+    });
+
     // world.player.borrow_mut().holding_texture_sprite = Some(world.sprites.get_sprite_id("sword").unwrap());
     println!("Time to load: {:?} ms", load_time.elapsed().as_millis());
     pollster::block_on(window::run(world, camera, &parsed_data.sprites_to_load_json));

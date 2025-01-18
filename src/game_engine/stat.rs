@@ -260,83 +260,72 @@ use rand::Rng;
 use serde::Deserialize;
 use serde::Serialize;
 
-#[derive(Debug, Clone)]
-pub struct StatList {
-    pub health: Option<f32>,
-    pub defense: Option<f32>,
-    pub toughness: Option<f32>,
-    pub vitality: Option<f32>,
-    pub luck: Option<f32>,
-    pub damage: Option<f32>,
-    pub crit_luck: Option<f32>,
-    pub crit_damage: Option<f32>,
-    pub reach: Option<f32>,
-    pub accuracy: Option<f32>,
-    pub mana: Option<f32>,
-    pub mana_regen: Option<f32>,
-    pub cooldown_regen: Option<f32>,
-    pub width: Option<f32>,
-    pub load_speed: Option<f32>,
-    pub range: Option<f32>,
-    pub lifetime: Option<f32>,
-    pub speed: Option<f32>,
-    pub ability_damage: Option<f32>,
-    pub size: Option<f32>,
-    pub AOE: Option<f32>,
-}
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct GearStatList {
-    health: Option<GearStat>,
-    defense: Option<GearStat>,
-    toughness: Option<GearStat>,
-    vitality: Option<GearStat>,
-    luck: Option<GearStat>,
-    damage: Option<GearStat>,
-    crit_luck: Option<GearStat>,
-    crit_damage: Option<GearStat>,
-    reach: Option<GearStat>,
-    accuracy: Option<GearStat>,
-    mana: Option<GearStat>,
-    mana_regen: Option<GearStat>,
-    cooldown_regen: Option<GearStat>,
-    width: Option<GearStat>,
-    load_speed: Option<GearStat>,
-    range: Option<GearStat>,
-    lifetime: Option<GearStat>,
-    speed: Option<GearStat>,
-    ability_damage: Option<GearStat>,
-    size: Option<GearStat>,
-    AOE: Option<GearStat>,
+macro_rules! create_stat_lists {
+    ($($stat_name:ident),*) => {
+        #[derive(Debug, Clone)]
+        pub struct StatList {
+            $(pub $stat_name: Option<f32>,)*
+        }
+        #[derive(Debug, Clone, Serialize, Deserialize)]
+        pub struct GearStatList {
+            $(pub $stat_name: Option<GearStat>,)*
+        }
+        impl GearStatList {
+            pub fn get_variation(&self) -> StatList {
+                let mut list = StatList {
+                    $( $stat_name: self.$stat_name.map(|x| x.get_variation()), )*
+                };
+                list
+            }
+        }
+
+        impl IntoIterator for StatList {
+            type Item = (&'static str, Option<f32>);
+            type IntoIter = std::vec::IntoIter<Self::Item>;
+
+            fn into_iter(self) -> Self::IntoIter {
+                vec![
+                    $( (stringify!($stat_name), self.$stat_name), )*
+                ].into_iter()
+            }
+        }
+        impl<'a> IntoIterator for &'a StatList {
+            type Item = (&'static str, &'a Option<f32>);
+            type IntoIter = std::vec::IntoIter<Self::Item>;
+
+            fn into_iter(self) -> Self::IntoIter {
+                vec![
+                    $( (stringify!($stat_name), &self.$stat_name), )*
+                ].into_iter()
+            }
+        }
+    };
 }
 
-impl GearStatList {
-    pub fn get_variation(&self) -> StatList {
-        let mut list = StatList {
-            health: self.health.map(|x| x.get_variation()),
-            defense: self.defense.map(|x| x.get_variation()),
-            toughness: self.toughness.map(|x| x.get_variation()),
-            vitality: self.vitality.map(|x| x.get_variation()),
-            luck: self.luck.map(|x| x.get_variation()),
-            damage: self.damage.map(|x| x.get_variation()),
-            crit_luck: self.crit_luck.map(|x| x.get_variation()),
-            crit_damage: self.crit_damage.map(|x| x.get_variation()),
-            reach: self.reach.map(|x| x.get_variation()),
-            accuracy: self.accuracy.map(|x| x.get_variation()),
-            mana: self.mana.map(|x| x.get_variation()),
-            mana_regen: self.mana_regen.map(|x| x.get_variation()),
-            cooldown_regen: self.cooldown_regen.map(|x| x.get_variation()),
-            width: self.width.map(|x| x.get_variation()),
-            load_speed: self.load_speed.map(|x| x.get_variation()),
-            range: self.range.map(|x| x.get_variation()),
-            lifetime: self.lifetime.map(|x| x.get_variation()),
-            speed: self.speed.map(|x| x.get_variation()),
-            ability_damage: self.ability_damage.map(|x| x.get_variation()),
-            size: self.size.map(|x| x.get_variation()),
-            AOE: self.AOE.map(|x| x.get_variation()),
-        };
-        list
-    }
-}
+create_stat_lists!(
+    health,
+    defense,
+    toughness,
+    vitality,
+    luck,
+    damage,
+    crit_luck,
+    crit_damage,
+    reach,
+    accuracy,
+    mana,
+    mana_regen,
+    cooldown_regen,
+    width,
+    load_speed,
+    range,
+    lifetime,
+    speed,
+    ability_damage,
+    size,
+    AOE
+);
+
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GearStat {
