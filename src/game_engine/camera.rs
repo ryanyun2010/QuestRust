@@ -6,7 +6,8 @@ use crate::rendering_engine::abstractions::{RenderData, RenderDataFull, TextSpri
 use crate::game_engine::ui::UIElement;
 use wgpu_text::glyph_brush::{HorizontalAlign, Section as TextSection};
 
-use super::player_attacks::PlayerAttackDescriptor;
+use super::entities::AttackType;
+
 #[derive(Debug, Clone)]
 pub enum Font{
     A,
@@ -239,26 +240,26 @@ impl Camera{
 
         let mut player_effect_draw_data = RenderData::new();
         for effect in world.player_attacks.borrow().iter(){
-            let effect_archetype = world.player_archetype_descriptor_lookup.get(&effect.archetype).expect(format!("Could not find effect archetype {}", effect.archetype).as_str());
             let mut sprite = None;
             let mut width = None;
             let mut height = None;
-            match effect_archetype {
-                PlayerAttackDescriptor::Projectile(projectile_descriptor) => {
-                    width = Some(projectile_descriptor.size);
-                    height = Some(projectile_descriptor.size);
-                    let sprite_id = world.sprites.get_sprite_id(projectile_descriptor.sprite.as_str()).expect(format!("Could not find projectile sprite {}", projectile_descriptor.sprite).as_str());
-                    sprite = Some(world.sprites.get_sprite(sprite_id).expect(format!("Could not find projectile sprite {}", projectile_descriptor.sprite.as_str()).as_str()));
-                }
-                PlayerAttackDescriptor::Melee(melee_descriptor) => {
-                    melee = true;
-                    height = Some(melee_descriptor.width);
-                    width = Some(melee_descriptor.reach);
-                    
-                    let sprite_id = world.sprites.get_sprite_id(melee_descriptor.sprite.as_str()).expect(format!("Could not find melee sprite {}", melee_descriptor.sprite).as_str());
-                    sprite = Some(world.sprites.get_sprite(sprite_id).expect(format!("Could not find melee attack sprite {}", melee_descriptor.sprite.as_str()).as_str()));
+            match effect.attack_type {
+                AttackType::Melee => {
 
+                    melee = true;
+                    height = effect.stats.width;
+                    width = effect.stats.reach;
+                    
+                    let sprite_id = world.sprites.get_sprite_id(effect.sprite.as_str()).expect(format!("Could not find melee sprite {}", effect.sprite).as_str());
+                    sprite = Some(world.sprites.get_sprite(sprite_id).expect(format!("Could not find melee attack sprite {}", effect.sprite.as_str()).as_str()));
                 }
+                AttackType::Ranged => {
+                    width = effect.stats.size;
+                    height = effect.stats.size;
+                    let sprite_id = world.sprites.get_sprite_id(effect.sprite.as_str()).expect(format!("Could not find projectile sprite {}", effect.sprite).as_str());
+                    sprite = Some(world.sprites.get_sprite(sprite_id).expect(format!("Could not find projectile sprite {}", effect.sprite.as_str()).as_str()));
+                }
+                _ => {}
             }
             if sprite.is_none(){
                 continue;

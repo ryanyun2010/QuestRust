@@ -1,7 +1,11 @@
+use super::{entities::AttackType, stat::StatList};
 
-#[derive(Clone, Debug, PartialEq)]
+
+#[derive(Clone, Debug)]
 pub struct PlayerAttack{
-    pub archetype: String,
+    pub stats: StatList,
+    pub attack_type: AttackType,
+    pub sprite: String,
     pub time_alive: f32,
     pub x: f32,
     pub y: f32,
@@ -9,10 +13,12 @@ pub struct PlayerAttack{
     pub dealt_damage: bool
 }
 impl PlayerAttack{
-    pub fn new(archetype: String, time_alive: f32, x: f32, y: f32, angle: f32) -> Self{
+    pub fn new(stats: StatList, attack_type: AttackType,  sprite: String, x: f32, y: f32, angle: f32) -> Self{
         Self{
-            archetype,
-            time_alive,
+            stats,
+            sprite,
+            attack_type: attack_type,
+            time_alive: 0.0,
             x,
             y,
             angle,
@@ -21,30 +27,3 @@ impl PlayerAttack{
     }
 }
 
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum PlayerAttackDescriptor{
-    Projectile(player_projectile_descriptor),
-    Melee(melee_attack_descriptor)
-}
-
-
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct player_projectile_descriptor{
-    pub damage: f32,
-    pub speed: f32,
-    pub lifetime: f32,
-    pub AOE: f32,
-    pub size: f32,
-    pub sprite: String
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct melee_attack_descriptor{
-    pub damage: f32,
-    pub width: f32,
-    pub reach: f32,
-    pub lifetime: f32,
-    pub sprite: String
-}

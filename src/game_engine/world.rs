@@ -8,16 +8,17 @@ use anyhow::anyhow;
 
 use crate::rendering_engine::abstractions::SpriteContainer;
 use crate::entities::EntityTags;
-use crate::game_engine::inventory::ItemContainer;
 use crate::game_engine::player::Player;
 use crate::game_engine::terrain::{Terrain, TerrainTags};
 
 use super::camera::{self, Camera};
+use super::entities::AttackType;
 use super::entity_attacks::{EntityAttackBox, EntityAttackDescriptor};
 use super::entity_components::{self, AggroComponent, CollisionBox, HealthComponent, PositionComponent};
 use super::game::MousePosition;
-use super::item::ItemTags;
-use super::player_attacks::{PlayerAttack, PlayerAttackDescriptor};
+use super::inventory::Inventory;
+use super::item::{Item, ItemArchetype, ItemType};
+use super::player_attacks::{PlayerAttack};
 use super::utils::{self, Rectangle};
 
 #[derive(Debug, Clone)]
@@ -36,15 +37,14 @@ pub struct Chunk{
     
 }
 
-#[derive(Debug, Clone)]
 pub struct World{
     pub chunks: RefCell<Vec<Chunk>>,
     pub player: RefCell<Player>,
     pub element_id: usize,
     pub chunk_lookup: RefCell<HashMap<[usize; 2],usize>>, // corresponds chunk x,y to id
-    
-    pub item_containers: RefCell<HashMap<usize, ItemContainer>>, // corresponds element id to item container element
-    pub item_tag_lookup: RefCell<HashMap<usize, Vec<ItemTags>>>, // corresponds element id to item archetype
+
+    pub inventory: Inventory,
+    pub item_archetype_lookup: HashMap<String, ItemArchetype>,
 
     pub collision_cache: RefCell<HashMap<[usize; 2], Vec<usize>>>,
     pub damage_cache: RefCell<HashMap<[usize; 2], Vec<usize>>>, 
@@ -74,16 +74,12 @@ pub struct World{
     pub sprite_lookup: HashMap<usize, usize>, // corresponds element id to sprite id
 
     pub player_attacks: RefCell<Vec<PlayerAttack>>,
-    pub player_archetype_descriptor_lookup: HashMap<String, PlayerAttackDescriptor>,
     pub entities_to_be_killed_at_end_of_frame: RefCell<Vec<usize>>,
 
     pub entity_attacks: RefCell<Vec<EntityAttackBox>>,
     pub entity_attack_descriptor_lookup: HashMap<String, EntityAttackDescriptor>,
 
     pub damage_text: RefCell<Vec<DamageTextDescriptor>>,
-
-    pub cur_hotbar_slot: usize,
-    pub item_sprites_temp: Vec<Option<usize>>
 }
 
 impl World{ 
@@ -91,14 +87,7 @@ impl World{
         Self{
             chunks: RefCell::new(Vec::new()),
             player: RefCell::new(player),
-            element_id: 0,
-            item_sprites_temp: vec![
-                Some(sprite_container.get_sprite_id("sword").unwrap()),
-                Some(sprite_container.get_sprite_id("spear").unwrap()),
-                None,
-                None,
-                None
-            ],
+            element_id: 0, 
             sprites: sprite_container,
             sprite_lookup: HashMap::new(),
             chunk_lookup: RefCell::new(HashMap::new()),
@@ -107,8 +96,8 @@ impl World{
             terrain_archetype_tags_lookup: Vec::new(),
             terrain_archetype_lookup: HashMap::new(),
             terrain: HashMap::new(),
-            item_containers: RefCell::new(HashMap::new()),
-            item_tag_lookup: RefCell::new(HashMap::new()),
+            inventory: Inventory::new(),
+            item_archetype_lookup: HashMap::new(),
             loaded_chunks: Vec::new(),
             collision_cache: RefCell::new(HashMap::new()),
             damage_cache: RefCell::new(HashMap::new()),
@@ -122,12 +111,10 @@ impl World{
             entity_pathfinding_components: HashMap::new(),
             entity_aggro_components: HashMap::new(),
             player_attacks: RefCell::new(Vec::new()),
-            player_archetype_descriptor_lookup: HashMap::new(),
             entities_to_be_killed_at_end_of_frame: RefCell::new(Vec::new()),
             entity_attacks: RefCell::new(Vec::new()),
             entity_attack_descriptor_lookup: HashMap::new(),
             damage_text: RefCell::new(Vec::new()),
-            cur_hotbar_slot: 0
         }
     }
     pub fn new_chunk(&self, chunk_x: usize, chunk_y: usize, chunkref: Option<&mut std::cell::RefMut<'_, Vec<Chunk>>>) -> usize{
@@ -587,11 +574,21 @@ impl World{
         }
     }
    
-    pub fn add_player_attacks(&self, archetype_name: String, x: f32, y: f32, angle: f32) {    
-        self.player_attacks.borrow_mut().push(PlayerAttack::new(archetype_name,0.0, x,y,angle));
-    }
-    pub fn add_player_attack_archetype(&mut self, archetype_name: String, descriptor: PlayerAttackDescriptor){
-        self.player_archetype_descriptor_lookup.insert(archetype_name, descriptor);
+    pub fn add_player_attack(&self, item: &Item, x: f32, y: f32, angle: f32) {    
+        match item.item_type {
+            ItemType::MeleeWeapon => {
+                self.player_attacks.borrow_mut().push(
+                    PlayerAttack::new(item.stats.clone(), AttackType::Melee, item.attack_sprite.clone(), x, y, angle)
+                );
+            }
+            ItemType::RangedWeapon => {
+                self.player_attacks.borrow_mut().push(
+                    PlayerAttack::new(item.stats.clone(), AttackType::Ranged, item.attack_sprite.clone(), x, y, angle)
+                );
+            }
+            _ => {}
+        }
+        
     }
     pub fn update_entity_attacks(&self){
         let mut attacks = self.entity_attacks.borrow_mut();
@@ -619,58 +616,10 @@ impl World{
         let mut attacks_to_be_deleted = Vec::new();
         let mut i = 0;
         for attack in attacks.iter_mut(){
-            let descriptor = self.player_archetype_descriptor_lookup.get(&attack.archetype).expect(format!("Could not find player attack archetype: {}", attack.archetype).as_str());
-            match descriptor{
-                PlayerAttackDescriptor::Projectile(descriptor) => {
-                    let angle = attack.angle * PI/180.0;
-                    attack.x += angle.cos() * descriptor.speed;
-                    attack.y += angle.sin() * descriptor.speed;
+            match attack.attack_type{
+                AttackType::Melee => {
                     attack.time_alive += 1.0;
-                    if attack.time_alive > descriptor.lifetime{
-                        attacks_to_be_deleted.push(i);
-                        i += 1;
-                        continue;
-                    }
-                    if attack.dealt_damage{
-                        continue;
-                    }
-
-                    let collisions = self.get_attacked(true, None, attack.x as usize, attack.y as usize, descriptor.size.floor() as usize, descriptor.size.floor() as usize, true);
-                    let mut hit = false;
-                    for collision in collisions.iter(){
-                        if self.entity_health_components.get(&collision).is_some(){
-                            hit = true;
-                            attacks_to_be_deleted.push(i);
-                            attack.dealt_damage = true;
-                            break;
-                        }
-                    }
-                    if hit {
-                        let aoe_collisions = self.get_attacked(true, None, attack.x as usize, attack.y as usize, descriptor.AOE.floor() as usize + descriptor.size.floor() as usize, descriptor.AOE.floor() as usize + descriptor.size.floor() as usize, true);
-                        for collision in aoe_collisions.iter(){
-                            if self.entity_health_components.get(&collision).is_some(){
-                                let mut health_component = self.entity_health_components.get(&collision).unwrap().borrow_mut();
-                                let entity_position = self.entity_position_components.get(&collision).unwrap().borrow();
-                                let aggro_potentially = self.entity_aggro_components.get(&collision);
-                                let mut aggro = None;
-                                if aggro_potentially.is_some(){
-                                    aggro = Some(aggro_potentially.unwrap().borrow_mut());
-                                }
-                                self.damage_entity(&entity_position, Some(health_component), aggro, descriptor.damage, camera);
-                            }
-                        }
-                        
-                    }else {
-                        let c = self.check_collision(true, None, attack.x as usize, attack.y as usize, descriptor.size as usize, descriptor.size as usize, true);
-                        if c{
-                            attacks_to_be_deleted.push(i);
-                        }
-                    }
-
-                },
-                PlayerAttackDescriptor::Melee(melee_attack_descriptor) => {
-                    attack.time_alive += 1.0;
-                    if attack.time_alive > melee_attack_descriptor.lifetime{
+                    if attack.time_alive > 3.0{
                         attacks_to_be_deleted.push(i);
                         i += 1;
                         continue;
@@ -679,8 +628,8 @@ impl World{
                         continue;
                     }
                     if attack.time_alive < 2.0 {   
-                        let height = melee_attack_descriptor.reach;
-                        let width = melee_attack_descriptor.width;
+                        let height = attack.stats.reach.unwrap_or(0.0);
+                        let width = attack.stats.width.unwrap_or(0.0);
                         let collisions = self.get_attacked_rotated_rect(true, None, attack.x as usize, attack.y as usize, height.floor() as usize, width.floor() as usize,attack.angle, true);
                         for collision in collisions.iter(){
                             if self.entity_health_components.get(&collision).is_some(){
@@ -692,11 +641,62 @@ impl World{
                                     aggro = Some(aggro_potentially.unwrap().borrow_mut());
                                 }
                                 attack.dealt_damage = true;
-                                self.damage_entity( &entity_position, Some(health_component), aggro,  melee_attack_descriptor.damage, camera);
+                                self.damage_entity( &entity_position, Some(health_component), aggro,  attack.stats.damage.unwrap_or(0.0), camera);
                             }
                         }
                     }
                 }
+                AttackType::Ranged => {
+                    let angle = attack.angle * PI/180.0;
+                    attack.x += angle.cos() * attack.stats.speed.unwrap_or(0.0);
+                    attack.y += angle.sin() * attack.stats.speed.unwrap_or(0.0);
+                    attack.time_alive += 1.0;
+                    if attack.time_alive > attack.stats.lifetime.unwrap_or(f32::MAX){
+                        attacks_to_be_deleted.push(i);
+                        i += 1;
+                        continue;
+                    }
+                    if attack.dealt_damage{
+                        continue;
+                    }
+
+                    let collisions = self.get_attacked(true, None, attack.x as usize, attack.y as usize, attack.stats.size.unwrap_or(0.0).floor() as usize, attack.stats.size.unwrap_or(0.0).floor() as usize, true);
+                    let mut hit = false;
+                    for collision in collisions.iter(){
+                        if self.entity_health_components.get(&collision).is_some(){
+                            hit = true;
+                            attacks_to_be_deleted.push(i);
+                            attack.dealt_damage = true;
+                            break;
+                        }
+                    }
+                    if hit {
+                        let aoesize = attack.stats.AOE.unwrap_or(0.0) + attack.stats.size.unwrap_or(0.0);
+                        let aoe_collisions = self.get_attacked(true, None, attack.x as usize, attack.y as usize, aoesize.floor() as usize, aoesize.floor() as usize, true);
+                        for collision in aoe_collisions.iter(){
+                            if self.entity_health_components.get(&collision).is_some(){
+                                let mut health_component = self.entity_health_components.get(&collision).unwrap().borrow_mut();
+                                let entity_position = self.entity_position_components.get(&collision).unwrap().borrow();
+                                let aggro_potentially = self.entity_aggro_components.get(&collision);
+                                let mut aggro = None;
+                                if aggro_potentially.is_some(){
+                                    aggro = Some(aggro_potentially.unwrap().borrow_mut());
+                                }
+                                self.damage_entity(&entity_position, Some(health_component), aggro, attack.stats.damage.unwrap_or(0.0), camera);
+                            }
+                        }
+                        
+                    }else {
+                        let c = self.check_collision(true, None, attack.x as usize, attack.y as usize, attack.stats.size.unwrap_or(0.0) as usize,attack.stats.size.unwrap_or(0.0) as usize, true);
+                        if c{
+                            attacks_to_be_deleted.push(i);
+                        }
+                    }
+                }
+                AttackType::Magic => {
+                    todo!()
+                }
+               
             }
             i += 1;
         }
@@ -756,53 +756,52 @@ impl World{
         self.entity_attack_descriptor_lookup.get(archetype_name)
     }
     pub fn on_key_down(&mut self, key: &String){
-        match key.as_str() {
-            "1" => {
-                self.cur_hotbar_slot = 0;
+        if key.chars().all(char::is_numeric) {
+            let num = key.parse::<usize>().unwrap();
+            if num < 6 && num > 0 {
+                self.inventory.set_hotbar_slot(num - 1);
             }
-            "2" => {
-                self.cur_hotbar_slot = 1;
-            }
-            "3" => {
-                self.cur_hotbar_slot = 2;
-            }
-            "4" => {
-                self.cur_hotbar_slot = 3;
-            }
-            "5" => {
-                self.cur_hotbar_slot = 4;
-            }
-            _ => ()
         }
     }
     pub fn on_mouse_click(&mut self, mouse_position: MousePosition, mouse_left: bool, mouse_right: bool, camera_width: f32, camera_height: f32){
-        let mouse_direction_unnormalized = [(mouse_position.x_world - self.player.borrow().x), (mouse_position.y_world - self.player.borrow().y)];
-        let magnitude = f32::sqrt(mouse_direction_unnormalized[0].powf(2.0) + mouse_direction_unnormalized[1].powf(2.0));
-        let mouse_direction_normalized = [
-            mouse_direction_unnormalized[0] / magnitude,
-            mouse_direction_unnormalized[1] / magnitude
-        ];
-        let angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]);
-        if self.cur_hotbar_slot == 0 {
-            self.player_attacks.borrow_mut().push(
-                PlayerAttack::new(
-                    "test_melee_attack".to_string(),
-                    0.0, 
-                    self.player.borrow().x + mouse_direction_normalized[0] * 25.0 + 16.0,
-                    self.player.borrow().y + mouse_direction_normalized[1] * 25.0 + 22.0, 
-                    angle * 180.0/PI)
-            );
+        if mouse_left {
+            let cur_item = self.inventory.get_cur_held_item();
+            if cur_item.is_some() {
+                let item = cur_item.unwrap();
+                let mouse_direction_unnormalized = [(mouse_position.x_world - self.player.borrow().x), (mouse_position.y_world - self.player.borrow().y)];
+                let magnitude = f32::sqrt(mouse_direction_unnormalized[0].powf(2.0) + mouse_direction_unnormalized[1].powf(2.0));
+                let mouse_direction_normalized = [
+                    mouse_direction_unnormalized[0] / magnitude,
+                    mouse_direction_unnormalized[1] / magnitude
+                ];
+                let angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]);
+                self.add_player_attack(
+                    item, 
+                    self.player.borrow().x + 16.0 + mouse_direction_normalized[0] * 25.0,
+                    self.player.borrow().y + 22.0 + mouse_direction_normalized[1] * 25.0,
+                    angle * 180.0/PI);
+            }
         }
-        else if self.cur_hotbar_slot == 1 {
-            self.player_attacks.borrow_mut().push(
-                PlayerAttack::new(
-                    "test_projectile".to_string(),
-                    0.0, 
-                    self.player.borrow().x + mouse_direction_normalized[0] * 25.0 + 16.0,
-                    self.player.borrow().y + mouse_direction_normalized[1] * 25.0 + 22.0, 
-                    angle * 180.0/PI)
-            );
-        }
+        // if self.cur_hotbar_slot == 0 {
+        //     self.player_attacks.borrow_mut().push(
+        //         PlayerAttack::new(
+        //             "test_melee_attack".to_string(),
+        //             0.0, 
+        //             self.player.borrow().x + mouse_direction_normalized[0] * 25.0 + 16.0,
+        //             self.player.borrow().y + mouse_direction_normalized[1] * 25.0 + 22.0, 
+        //             angle * 180.0/PI)
+        //     );
+        // }
+        // else if self.cur_hotbar_slot == 1 {
+        //     self.player_attacks.borrow_mut().push(
+        //         PlayerAttack::new(
+        //             "test_projectile".to_string(),
+        //             0.0, 
+        //             self.player.borrow().x + mouse_direction_normalized[0] * 25.0 + 16.0,
+        //             self.player.borrow().y + mouse_direction_normalized[1] * 25.0 + 22.0, 
+        //             angle * 180.0/PI)
+        //     );
+        // }
         
     }
     pub fn process_mouse_input(&mut self, mouse_position: MousePosition, mouse_left: bool, mouse_right: bool){
@@ -812,10 +811,30 @@ impl World{
         self.process_player_input(keys);
         let player = self.player.borrow();
         camera.update_camera_position(player.x, player.y);
-        println!("{}", self.cur_hotbar_slot as f32 * 58 as f32 + 20.0);
-        camera.get_ui_element_mut_by_name(String::from("hhslot")).unwrap().x  = self.cur_hotbar_slot as f32 * 58 as f32 + 20.0;
         drop(player);
-        self.player.borrow_mut().holding_texture_sprite = self.item_sprites_temp[self.cur_hotbar_slot];
+        self.inventory.update_ui(camera);
+        let held_potentially = &self.inventory.get_cur_held_item();
+        if held_potentially.is_some() {
+            let sprite = &held_potentially.unwrap().sprite;
+            self.player.borrow_mut().holding_texture_sprite = self.sprites.get_sprite_id(sprite);
+        }else{
+            self.player.borrow_mut().holding_texture_sprite = None; 
+        }
+        
+    }
+    pub fn create_item_with_archetype(&self, archetype: String) -> Item {
+        let archetype_i = self.get_item_archetype(&archetype).expect(format!("Could not find item archetype: {}", archetype).as_str());
+        let item = Item {
+            attack_sprite: archetype_i.attack_sprite.clone(),
+            item_type: archetype_i.item_type.clone(),
+            lore: archetype_i.lore.clone(),
+            sprite: archetype_i.sprite.clone(),
+            stats: archetype_i.stats.get_variation()
+        };
+        item
+    }
+    pub fn get_item_archetype(&self, archetype: &String) -> Option<&ItemArchetype>{
+        self.item_archetype_lookup.get(archetype)
     }
     pub fn update_damage_text(&self, camera: &mut Camera) {
         let mut dt_to_remove = Vec::new();

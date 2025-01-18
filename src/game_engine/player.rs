@@ -1,8 +1,6 @@
 use crate::rendering_engine::abstractions::RenderData;
 
 use super::entity_components::CollisionBox;
-use super::inventory::Hotbar;
-use super::inventory::ItemContainerPointer;
 use super::world::World;
 #[derive(Clone, Debug)]
 pub struct Player {
@@ -13,10 +11,7 @@ pub struct Player {
     pub max_health: i32,
     pub movement_speed: f32,
     pub holding_texture_sprite: Option<usize>,
-    pub inventory: [[ItemContainerPointer; 6]; 6],
     pub collision_box: CollisionBox,
-    pub hotbar: Hotbar,
-    pub mouse_slot: ItemContainerPointer, //The item your mouse carries
 }
 #[macro_export]
 macro_rules! repeat_token {
@@ -39,18 +34,6 @@ impl Player {
             sprite_id: sprite_id,
             movement_speed: movement_speed,
             holding_texture_sprite: None,
-            inventory: [
-                [ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None)],
-                [ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None)],
-                [ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None)],
-                [ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None)],
-                [ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None)],
-                [ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None)]
-            ],
-            hotbar: Hotbar::Normal(
-                [ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None), ItemContainerPointer::new(None)]
-            ),
-            mouse_slot: ItemContainerPointer::new(None)
         }
     }
     pub fn draw_data(&self, world: &World, window_size_width: usize, window_size_height: usize, index_offset:u16, vertex_offset_x: i32, vertex_offset_y: i32) -> RenderData{

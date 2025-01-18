@@ -8,7 +8,7 @@ pub const TEST_PATH_BUNDLE: PathBundle = PathBundle{
     sprites_path: "src/tests/test_game_data/sprites.json",
     starting_level_path: "src/tests/test_game_data/starting_level.json",
     terrain_archetypes_path: "src/tests/test_game_data/terrain_archetypes.json",
-    player_attacks_path: "src/tests/test_game_data/player_attacks.json",
+    item_archetypes_path: "src/tests/test_game_data/items.json",
 };
 
 

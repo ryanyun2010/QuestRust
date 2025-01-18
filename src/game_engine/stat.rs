@@ -257,33 +257,88 @@
 use rand::prelude::*;
 
 use rand::Rng;
+use serde::Deserialize;
+use serde::Serialize;
 
-
-
-
-
+#[derive(Debug, Clone)]
 pub struct StatList {
-    health: Option<f32>,
-    defense: Option<f32>,
-    toughness: Option<f32>,
-    vitality: Option<f32>,
-    luck: Option<f32>,
-    damage: Option<f32>,
-    crit_luck: Option<f32>,
-    crit_damage: Option<f32>,
-    swing_range: Option<f32>,
-    accuracy: Option<f32>,
-    mana: Option<f32>,
-    mana_regen: Option<f32>,
-    cooldown_regen: Option<f32>,
-    sweep: Option<f32>,
-    load_speed: Option<f32>,
-    range: Option<f32>,
-    ability_damage: Option<f32>,
+    pub health: Option<f32>,
+    pub defense: Option<f32>,
+    pub toughness: Option<f32>,
+    pub vitality: Option<f32>,
+    pub luck: Option<f32>,
+    pub damage: Option<f32>,
+    pub crit_luck: Option<f32>,
+    pub crit_damage: Option<f32>,
+    pub reach: Option<f32>,
+    pub accuracy: Option<f32>,
+    pub mana: Option<f32>,
+    pub mana_regen: Option<f32>,
+    pub cooldown_regen: Option<f32>,
+    pub width: Option<f32>,
+    pub load_speed: Option<f32>,
+    pub range: Option<f32>,
+    pub lifetime: Option<f32>,
+    pub speed: Option<f32>,
+    pub ability_damage: Option<f32>,
+    pub size: Option<f32>,
+    pub AOE: Option<f32>,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GearStatList {
+    health: Option<GearStat>,
+    defense: Option<GearStat>,
+    toughness: Option<GearStat>,
+    vitality: Option<GearStat>,
+    luck: Option<GearStat>,
+    damage: Option<GearStat>,
+    crit_luck: Option<GearStat>,
+    crit_damage: Option<GearStat>,
+    reach: Option<GearStat>,
+    accuracy: Option<GearStat>,
+    mana: Option<GearStat>,
+    mana_regen: Option<GearStat>,
+    cooldown_regen: Option<GearStat>,
+    width: Option<GearStat>,
+    load_speed: Option<GearStat>,
+    range: Option<GearStat>,
+    lifetime: Option<GearStat>,
+    speed: Option<GearStat>,
+    ability_damage: Option<GearStat>,
+    size: Option<GearStat>,
+    AOE: Option<GearStat>,
 }
 
+impl GearStatList {
+    pub fn get_variation(&self) -> StatList {
+        let mut list = StatList {
+            health: self.health.map(|x| x.get_variation()),
+            defense: self.defense.map(|x| x.get_variation()),
+            toughness: self.toughness.map(|x| x.get_variation()),
+            vitality: self.vitality.map(|x| x.get_variation()),
+            luck: self.luck.map(|x| x.get_variation()),
+            damage: self.damage.map(|x| x.get_variation()),
+            crit_luck: self.crit_luck.map(|x| x.get_variation()),
+            crit_damage: self.crit_damage.map(|x| x.get_variation()),
+            reach: self.reach.map(|x| x.get_variation()),
+            accuracy: self.accuracy.map(|x| x.get_variation()),
+            mana: self.mana.map(|x| x.get_variation()),
+            mana_regen: self.mana_regen.map(|x| x.get_variation()),
+            cooldown_regen: self.cooldown_regen.map(|x| x.get_variation()),
+            width: self.width.map(|x| x.get_variation()),
+            load_speed: self.load_speed.map(|x| x.get_variation()),
+            range: self.range.map(|x| x.get_variation()),
+            lifetime: self.lifetime.map(|x| x.get_variation()),
+            speed: self.speed.map(|x| x.get_variation()),
+            ability_damage: self.ability_damage.map(|x| x.get_variation()),
+            size: self.size.map(|x| x.get_variation()),
+            AOE: self.AOE.map(|x| x.get_variation()),
+        };
+        list
+    }
+}
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GearStat {
     average: f32,
     variation: f32,
@@ -297,7 +352,7 @@ impl GearStat {
     }
     pub fn get_variation(&self) -> f32 {
         let mut rng = rand::thread_rng();
-        self.average + self.variation * 2.0 * rng.gen::<f32>() - self.variation
+        (self.average + self.variation * 2.0 * rng.gen::<f32>() - self.variation).round()
     }
 }
 

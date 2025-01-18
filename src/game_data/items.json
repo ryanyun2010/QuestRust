@@ -1,0 +1,30 @@
+[
+    {
+
+        "name": "test_sword",
+        "sprite": "sword",
+        "item_type": "MeleeWeapon",
+        "lore": "Well... It appears that you've obtained this.\nI guess there's not much else that we can do, now that you've hacked the game.\n\nP.S. This sword isn't even good, why are you using it?", 
+        "attack_sprite": "melee_attack",
+        "stats": {
+            "damage": {"average": 15.0, "variation": 2.5},
+            "width": {"average": 50.0, "variation": 10.0},
+            "reach": {"average": 65.0, "variation": 10.0}
+        }
+    },
+    {
+
+        "name": "test_spear",
+        "sprite": "spear",
+        "item_type": "RangedWeapon",
+        "attack_sprite": "spear",
+        "lore": "test", 
+        "stats": {
+            "damage": {"average": 6.0, "variation": 2.5},
+            "speed": {"average": 10.0, "variation": 2.5},
+            "lifetime": {"average": 90.0, "variation": 10.0},
+            "AOE": {"average": 15.0, "variation": 2.5},
+            "size": {"average": 20.0, "variation": 2.5}
+        }
+    }
+]
