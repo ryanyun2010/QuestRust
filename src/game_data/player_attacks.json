@@ -3,7 +3,7 @@
         {
             "name": "test_projectile",
             "size": 20.0,
-            "damage": 3.0,
+            "damage": 6.0,
             "speed": 10.0,
             "lifetime": 70.0,
             "AOE": 15.0,
