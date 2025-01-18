@@ -24,7 +24,7 @@ impl Inventory{
         let cur_item = self.get_cur_held_item();
         if cur_item.is_some(){
             let mut text = format!(
-                "{} \n \n {} \n \n", cur_item.unwrap().name, cur_item.unwrap().lore
+                "{}\n----------------------------------------\n\n{}\n\n", cur_item.unwrap().name, cur_item.unwrap().lore
             );
             let stats = &cur_item.unwrap().stats;
             for stat in stats.into_iter() {
