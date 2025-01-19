@@ -1,6 +1,6 @@
 use crate::loot::Loot;
 use crate::game_engine::item::Item;
-use crate::{error_prolif, perror, ptry, punwrap};
+use crate::{error_prolif, error_prolif_allow, perror, ptry, punwrap};
 use std::cell::{RefCell, RefMut};
 use std::f32::consts::PI;
 use std::time::Instant;
@@ -109,23 +109,13 @@ impl World {
             }
         }
 
-        let health_component = self.get_entity_health_component(entity_id);
-        match health_component{
-            Ok(health_component) => {
-                if health_component.borrow().health <= 0.0 {
-                    self.kill_entity(*entity_id);
-                    return Ok(());
-                }
-            },
-            Err(e) => {
-                match e.error {
-                    PE::NotFound(_) => {
-                    },
-                    _ => {
-                        error_prolif!(e);
-                    }
-                }
-            },
+        let health_component = error_prolif_allow!(self.get_entity_health_component(entity_id), NotFound);
+        if health_component.is_ok() {
+            let health = health_component.unwrap().borrow().health;
+            if health <= 0.0 {
+                self.kill_entity(*entity_id);
+                return Ok(());
+            }
         }
         
         if follows_player {

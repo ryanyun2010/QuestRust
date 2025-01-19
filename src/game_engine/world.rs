@@ -5,7 +5,7 @@ use std::f32::consts::PI;
 use std::hash::Hash;
 use wgpu::DeviceDescriptor;
 
-use crate::{error_prolif, perror, ptry, punwrap};
+use crate::{error_prolif, error_prolif_allow, perror, ptry, punwrap};
 use crate::error::{PError, PE};
 use crate::rendering_engine::abstractions::SpriteContainer;
 use crate::entities::EntityTags;
@@ -261,19 +261,9 @@ impl World{
             let chunk = &self.chunks.borrow()[*chunk];
             for terrain_id in chunk.terrain_ids.iter(){
                 let terrain = self.terrain.get(terrain_id).unwrap();
-                let terrain_tags_potentially = self.get_terrain_tags(*terrain_id);
-                match terrain_tags_potentially {
-                    Ok(terrain_tags) => (),
-                    Err(e) => {
-                        match e.error {
-                            PE::NotFound(_) => {
-                                continue;
-                            },
-                            _ => {
-                                error_prolif!(e);
-                            }
-                        }
-                    }
+                let terrain_tags_potentially = error_prolif_allow!(self.get_terrain_tags(*terrain_id), NotFound);
+                if terrain_tags_potentially.is_err() {
+                    continue;
                 }
                 let terrain_tags = terrain_tags_potentially.unwrap();
                 for tag in terrain_tags.iter(){
@@ -297,20 +287,9 @@ impl World{
             for entity_id in chunk.entities_ids.iter(){
                 let position_component = self.entity_position_components.get(entity_id).unwrap().borrow();
                 
-                let entity_tags_potentially = self.get_entity_tags(*entity_id);
-
-                match entity_tags_potentially {
-                    Ok(entity_tags) => (),
-                    Err(e) => {
-                        match e.error {
-                            PE::NotFound(_) => {
-                                continue;
-                            },
-                            _ => {
-                                error_prolif!(e);
-                            }
-                        }
-                    }
+                let entity_tags_potentially = error_prolif_allow!(self.get_entity_tags(*entity_id), NotFound);
+                if entity_tags_potentially.is_err() {
+                    continue;
                 }
                 let entity_tags = entity_tags_potentially.unwrap();
                 for tag in entity_tags.iter(){

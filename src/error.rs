@@ -360,3 +360,20 @@ macro_rules! error_prolif {
     );
     }} 
 }
+
+#[macro_export]
+macro_rules! error_prolif_allow {
+    ($result:expr, $($error_variant:ident)*) => {{
+        match $result {
+            Ok(value) => $result,
+            Err(mut perror) => {
+                match perror.error {
+                    $(
+                        crate::error::PE::$error_variant(_) => $result,
+                    )*
+                    _ => crate::error_prolif!(perror),
+                }
+            }
+        }
+    }} 
+}
