@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use winit::{event, keyboard::{Key, NamedKey}};
 
-use crate::rendering_engine::{abstractions::RenderDataFull, renderer::Renderer, vertex::Vertex};
+use crate::{error::PError, error_prolif, rendering_engine::{abstractions::RenderDataFull, renderer::Renderer, vertex::Vertex}};
 
 use super::{camera::Camera, world::World};
 #[derive(Debug, Copy, Clone)]
@@ -110,17 +110,23 @@ impl<'a> Game<'a> {
         }
         self.renderer.render(self.camera.render(&mut self.world, self.renderer.config.width as f32, self.renderer.config.height as f32))
     }
-    pub fn update(&mut self){
+    pub fn update(&mut self) -> Result<(), PError>{
         self.camera.update_ui(&mut self.world);
         self.world.generate_collision_cache_and_damage_cache();
         self.process_input();
         self.world.update_entities();
         self.world.update_entity_attacks();
         self.world.update_player_attacks(&mut self.camera);
-        self.world.update_damage_text(&mut self.camera);
+        match self.world.update_damage_text(&mut self.camera) {
+            Ok(_) => {},
+            Err(e) => {
+                error_prolif!(e);
+            }
+        }
         self.world.kill_entities_to_be_killed();
         self.input.mouse_position.x_world = self.camera.camera_x + self.input.mouse_position.x_screen;
         self.input.mouse_position.y_world = self.camera.camera_y + self.input.mouse_position.y_screen;
+        Ok(())
     }
     pub fn key_input(&mut self, event: winit::event::KeyEvent) {
         let mut key = event.logical_key.to_text();

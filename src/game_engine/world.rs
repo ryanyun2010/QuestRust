@@ -4,8 +4,9 @@ use std::cell::{RefCell, RefMut};
 use std::f32::consts::PI;
 use std::hash::Hash;
 use wgpu::DeviceDescriptor;
-use anyhow::anyhow;
 
+use crate::{error_prolif, perror, ptry, punwrap};
+use crate::error::{PError, PE};
 use crate::rendering_engine::abstractions::SpriteContainer;
 use crate::entities::EntityTags;
 use crate::game_engine::player::Player;
@@ -145,16 +146,21 @@ impl World{
             return new_chunk_id;
         }
     }
-    pub fn remove_terrain(&mut self, element_id: usize){
-        let terrain = self.terrain.get(&element_id).expect(format!("Tried to remove element_id {} which wasn't terrain or didnt exist", element_id).as_str());
+    pub fn remove_terrain(&mut self, element_id: usize) -> Result<(), PError>{
+        let terrain = punwrap!(self.terrain.get(&element_id), "Couldn't remove terrin with id {} because it wasn't terrain or didnt exist", element_id);
         let chunk_id = self.get_chunk_from_xy(terrain.x, terrain.y);
         if chunk_id.is_some(){
             let chunk = &mut self.chunks.borrow_mut()[chunk_id.unwrap()];
-            let index = chunk.terrain_ids.iter().position(|&x| x == element_id).unwrap();
+            let index = punwrap!(
+                chunk.terrain_ids.iter().position(|&x| x == element_id),
+                "terrain with id {} not found in the chunk where it was expected {}", 
+                element_id, 
+                chunk_id.unwrap());
             chunk.terrain_ids.remove(index);
         }
         self.terrain.remove(&element_id);
         self.terrain_archetype_lookup.remove(&element_id);
+        Ok(())
     }
     pub fn set_loaded_chunks(&mut self, chunk_ids: Vec<usize>){
         self.loaded_chunks = chunk_ids;
@@ -198,15 +204,15 @@ impl World{
     pub fn set_terrain_archetype(&mut self, id: usize, archetype_id: usize){
         self.terrain_archetype_lookup.insert(id, archetype_id);
     }
-    pub fn get_terrain_tags(&self, id: usize) -> Option<&Vec<TerrainTags>>{
-        let potential_archetype = self.terrain_archetype_lookup.get(&id);
-        if potential_archetype.is_some(){
-            return Some(&self.terrain_archetype_tags_lookup[*potential_archetype.unwrap()]);
-        }
-        None
+    pub fn get_terrain_tags(&self, id: usize) -> Result<&Vec<TerrainTags>, PError>{
+        let archetype = self.get_terrain_archetype(id)?;
+        let tags = self.terrain_archetype_tags_lookup.get(*archetype).ok_or(perror!(Invalid, 
+            "Archetype with id {} was found for terrain with id {} but it had no tags or didn't exist", id, archetype
+        ));
+        tags
     }
-    pub fn get_terrain_archetype(&self, id: usize) -> Option<&usize> {
-        self.terrain_archetype_lookup.get(&id)
+    pub fn get_terrain_archetype(&self, id: usize) -> Result<&usize, PError> {
+        self.terrain_archetype_lookup.get(&id).ok_or(perror!(NotFound, "Terrain archetype with id {} not found", id))
     }
     pub fn get_archetype_tags(&self, archetype: usize) -> Option<&Vec<TerrainTags>>{
         self.terrain_archetype_tags_lookup.get(archetype)
@@ -246,7 +252,7 @@ impl World{
         }
         return World::get_terrain_tiles(left_most_x.unwrap().floor() as usize, top_most_y.unwrap().floor() as usize, (right_most_x.unwrap() - left_most_x.unwrap()).ceil() as usize, (bot_most_y.unwrap() - top_most_y.unwrap()).ceil() as usize);
     }
-    pub fn generate_collision_cache_and_damage_cache(&mut self){
+    pub fn generate_collision_cache_and_damage_cache(&mut self) -> Result<(), PError>{
         let mut collision_cache_ref = self.collision_cache.borrow_mut();
         let mut damage_cache_ref = self.damage_cache.borrow_mut();
         collision_cache_ref.clear();
@@ -256,8 +262,18 @@ impl World{
             for terrain_id in chunk.terrain_ids.iter(){
                 let terrain = self.terrain.get(terrain_id).unwrap();
                 let terrain_tags_potentially = self.get_terrain_tags(*terrain_id);
-                if terrain_tags_potentially.is_none(){
-                    continue;
+                match terrain_tags_potentially {
+                    Ok(terrain_tags) => (),
+                    Err(e) => {
+                        match e.error {
+                            PE::NotFound(_) => {
+                                continue;
+                            },
+                            _ => {
+                                error_prolif!(e);
+                            }
+                        }
+                    }
                 }
                 let terrain_tags = terrain_tags_potentially.unwrap();
                 for tag in terrain_tags.iter(){
@@ -282,8 +298,19 @@ impl World{
                 let position_component = self.entity_position_components.get(entity_id).unwrap().borrow();
                 
                 let entity_tags_potentially = self.get_entity_tags(*entity_id);
-                if entity_tags_potentially.is_none(){
-                    continue;
+
+                match entity_tags_potentially {
+                    Ok(entity_tags) => (),
+                    Err(e) => {
+                        match e.error {
+                            PE::NotFound(_) => {
+                                continue;
+                            },
+                            _ => {
+                                error_prolif!(e);
+                            }
+                        }
+                    }
                 }
                 let entity_tags = entity_tags_potentially.unwrap();
                 for tag in entity_tags.iter(){
@@ -315,6 +342,7 @@ impl World{
                 }
             }
         }  
+        Ok(())
     }
     pub fn check_collision(&self, player: bool, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, entity: bool) -> bool{
         if !player {
@@ -365,12 +393,8 @@ impl World{
         }
         false
     }
-    pub fn get_entity_damage_box(&self, id: usize) -> Result<&CollisionBox, anyhow::Error> {
-        let entity_tags_potentially = self.get_entity_tags(id);
-        if entity_tags_potentially.is_none(){
-            return Err(anyhow!("Entity with id {} does not have tags", id));
-        }
-        let entity_tags = entity_tags_potentially.unwrap();
+    pub fn get_entity_damage_box(&self, id: usize) -> Result<&CollisionBox, PError> {
+        let entity_tags = ptry!(self.get_entity_tags(id), "while finding entity damage box");
         for tag in entity_tags.iter(){
             match tag{
                 EntityTags::Damageable(dbox) => {
@@ -379,23 +403,19 @@ impl World{
                 _ => ()
             }
         }
-        return Err(anyhow!("Entity with id {} has tags, but does not have a damage box tag", id));
+        return Err(perror!(NotFound, "Entity with id {} has no damage box", id));
     }
-    pub fn get_entity_collision_box(&self, id: usize) -> Option<&CollisionBox>{
-        let entity_tags_potentially = self.get_entity_tags(id);
-        if entity_tags_potentially.is_none(){
-            return None;
-        }
-        let entity_tags = entity_tags_potentially.unwrap();
+    pub fn get_entity_collision_box(&self, id: usize) -> Result<&CollisionBox, PError>{
+        let entity_tags = ptry!(self.get_entity_tags(id), "while finding entity collision box");
         for tag in entity_tags.iter(){
             match tag{
                 EntityTags::HasCollision(cbox) => {
-                    return Some(cbox);
+                    return Ok(cbox);
                 }
                 _ => ()
             }
         }
-        None
+        return Err(perror!(NotFound, "Entity with id {} has no collision box", id));
     }
     pub fn get_attacked_rotated_rect(&self, player: bool, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, rotation: f32, entity: bool) -> Vec<usize>{
         if !player {
@@ -782,27 +802,6 @@ impl World{
                     angle * 180.0/PI);
             }
         }
-        // if self.cur_hotbar_slot == 0 {
-        //     self.player_attacks.borrow_mut().push(
-        //         PlayerAttack::new(
-        //             "test_melee_attack".to_string(),
-        //             0.0, 
-        //             self.player.borrow().x + mouse_direction_normalized[0] * 25.0 + 16.0,
-        //             self.player.borrow().y + mouse_direction_normalized[1] * 25.0 + 22.0, 
-        //             angle * 180.0/PI)
-        //     );
-        // }
-        // else if self.cur_hotbar_slot == 1 {
-        //     self.player_attacks.borrow_mut().push(
-        //         PlayerAttack::new(
-        //             "test_projectile".to_string(),
-        //             0.0, 
-        //             self.player.borrow().x + mouse_direction_normalized[0] * 25.0 + 16.0,
-        //             self.player.borrow().y + mouse_direction_normalized[1] * 25.0 + 22.0, 
-        //             angle * 180.0/PI)
-        //     );
-        // }
-        
     }
     pub fn process_mouse_input(&mut self, mouse_position: MousePosition, mouse_left: bool, mouse_right: bool){
 
@@ -837,15 +836,18 @@ impl World{
     pub fn get_item_archetype(&self, archetype: &String) -> Option<&ItemArchetype>{
         self.item_archetype_lookup.get(archetype)
     }
-    pub fn update_damage_text(&self, camera: &mut Camera) {
+    pub fn update_damage_text(&self, camera: &mut Camera) -> Result<(), PError> {
         let mut dt_to_remove = Vec::new();
         let mut i = 0;
         for damage_text in self.damage_text.borrow_mut().iter_mut(){
-            camera.get_world_text_mut(damage_text.world_text_id).unwrap().y -= 0.6;
-            camera.get_world_text_mut(damage_text.world_text_id).unwrap().color[3] -= 0.01666666666;
+            let dt_ref = ptry!(
+                camera.get_world_text_mut(damage_text.world_text_id),
+                "failed to find damage text");
+            dt_ref.y -= 0.6;
+            dt_ref.color[3] -= 0.01666666666;
             damage_text.lifespan += 1.0;
             if damage_text.lifespan > 60.0 {
-                camera.remove_world_text(damage_text.world_text_id);
+                ptry!(camera.remove_world_text(damage_text.world_text_id), "failed to remove damage text");
                 dt_to_remove.push(i);
             }
             i += 1;
@@ -855,6 +857,7 @@ impl World{
             self.damage_text.borrow_mut().remove(*dt - offset);
             offset += 1;
         }
+        Ok(())
     }
 }
 

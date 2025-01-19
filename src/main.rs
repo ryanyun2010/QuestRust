@@ -7,6 +7,7 @@ use game_engine::{camera, entities, json_parsing::{self, PATH_BUNDLE}, loot, sta
 pub mod tests;
 use std::env;
 use image::{GenericImageView, RgbaImage, Rgba};
+pub mod error;
 
 fn main() {
     let mut parser = json_parsing::JSON_parser::new();

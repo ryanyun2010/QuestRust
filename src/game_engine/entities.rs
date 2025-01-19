@@ -1,5 +1,6 @@
 use crate::loot::Loot;
 use crate::game_engine::item::Item;
+use crate::{error_prolif, perror, ptry, punwrap};
 use std::cell::{RefCell, RefMut};
 use std::f32::consts::PI;
 use std::time::Instant;
@@ -8,7 +9,7 @@ use super::entity_components::{self, AggroComponent, CollisionBox, EntityAttackC
 use super::world::{Chunk, World};
 use super::player::Player;
 use super::pathfinding::{self, EntityDirectionOptions};
-
+use crate::error::{PError, PE};
 impl World {
     pub fn move_entity(&self, mut position_component: RefMut<PositionComponent>, entity_id: &usize, movement: [f32; 2], chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>, respects_collision: bool, has_collision: bool){ 
         if respects_collision && self.check_collision(false, Some(*entity_id), (position_component.x + movement[0]).floor() as usize, (position_component.y + movement[1]).floor() as usize, 32,32, true){
@@ -63,12 +64,8 @@ impl World {
             }
         }
     }
-    pub fn update_entity(&self, entity_id: &usize, player_x: f32, player_y: f32, chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>) {
-        let entity_tags_potentially: Option<&Vec<EntityTags>> = self.get_entity_tags(*entity_id);
-        if entity_tags_potentially.is_none() {
-            return;
-        }
-        let entity_tags: &Vec<EntityTags> = entity_tags_potentially.unwrap();
+    pub fn update_entity(&self, entity_id: &usize, player_x: f32, player_y: f32, chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>) -> Result<(), PError>{
+        let entity_tags = self.get_entity_tags(*entity_id)?;
         let mut distance: f64 = f64::MAX;
         let mut follows_player: bool = false;
         let mut aggro_range = 0;
@@ -111,18 +108,34 @@ impl World {
                 _ => ()
             }
         }
-        
-        let health_component = self.entity_health_components.get(entity_id);
-        if health_component.is_some() {
-            let health_component = health_component.unwrap().borrow();
-            if health_component.health <= 0.0 {
-                self.kill_entity(*entity_id);
-                return;
-            }
+
+        let health_component = self.get_entity_health_component(entity_id);
+        match health_component{
+            Ok(health_component) => {
+                if health_component.borrow().health <= 0.0 {
+                    self.kill_entity(*entity_id);
+                    return Ok(());
+                }
+            },
+            Err(e) => {
+                match e.error {
+                    PE::NotFound(_) => {
+                    },
+                    _ => {
+                        error_prolif!(e);
+                    }
+                }
+            },
         }
         
         if follows_player {
-            let position_component = self.entity_position_components.get(entity_id).expect("Entities with tag: FollowsPlayer must have a PositionComponent").borrow().clone();
+            let position_component = ptry!(
+                self.get_entity_position_component(entity_id),
+                Invalid,
+                "Entity with id {}, didn't have a position component, but all entities with the FollowsPlayer tag should have one",
+                entity_id
+            ).borrow().clone();
+
             let px = player_x + self.player.borrow().collision_box.x_offset;
             let py = player_y + self.player.borrow().collision_box.y_offset;
             distance = f64::sqrt(
@@ -132,8 +145,19 @@ impl World {
         }
         
         if aggressive {
-            let mut aggro = self.entity_aggro_components.get(entity_id).expect("Aggressive entities must have an aggro component").borrow_mut();
-            let position_component = self.entity_position_components.get(entity_id).expect("Entities with tag: FollowsPlayer must have a PositionComponent").borrow().clone();
+            let mut aggro = ptry!(
+                self.get_entity_aggro_component(entity_id), 
+                Invalid,
+                "Entity with id {}, didn't have an aggro component, but all entities with the Aggresive tag should have one", 
+                entity_id).borrow_mut();
+
+            let position_component = ptry!(
+                self.get_entity_position_component(entity_id),
+                Invalid,
+                "Entity with id {}, didn't have a position component, but all entities with the Aggresive tag should have one",
+                entity_id
+            ).borrow().clone();
+
             let px = player_x + self.player.borrow().collision_box.x_offset;
             let py = player_y + self.player.borrow().collision_box.y_offset;
             let distance = f64::sqrt(
@@ -151,14 +175,26 @@ impl World {
             }
         }
         if can_attack_player && aggressive {
-            let attack_pattern: &EntityAttackPattern = attacks.expect("Aggressive entities must have an attack pattern");
+            let attack_pattern = punwrap!(
+                attacks,
+                Invalid,
+                "Entity with id {}, didn't have an attack pattern, but all entities with the Aggresive tag should have one",
+                entity_id);
 
-            let mut attack_component = self.entity_attack_components.get(&entity_id).expect("Aggressive entities must have an attack component").borrow_mut();
+            let mut attack_component = ptry!(
+                self.get_entity_attack_component(entity_id),
+                Invalid,
+                "Entity with id {}, didn't have an attack component, but all entities with the Aggresive tag should have one",
+                entity_id).borrow_mut();
 
             if attack_component.cur_attack_cooldown <= 0.0 {
-                // self.player.borrow_mut().health -= attack_pattern.attacks[attack_component.cur_attack].attack();
-                
-                let position = self.entity_position_components.get(entity_id).expect("Entities with tag: FollowsPlayer must have a PositionComponent").borrow().clone();
+                let position = ptry!(
+                    self.get_entity_position_component(entity_id),
+                    Invalid,
+                    "Entity with id {}, didn't have a position component, but all entities with the Aggresive tag should have one",
+                    entity_id
+                ).borrow().clone();
+
                 let px = player_x + self.player.borrow().collision_box.x_offset;
                 let py = player_y + self.player.borrow().collision_box.y_offset;
                 let direction_to_player_unnormalized = [
@@ -221,14 +257,27 @@ impl World {
         }
         let mut aggroed_to_entity = false;
         if aggressive {
-            let aggro_potentially = self.entity_aggro_components.get(entity_id);
-            if aggro_potentially.is_some() {
-                aggroed_to_entity = aggro_potentially.unwrap().borrow().aggroed;
-            }
+            let aggro = ptry!(
+                self.get_entity_aggro_component(entity_id),
+                Invalid,
+                "Entity with id {}, didn't have an aggro component, but all entities with the Aggresive tag should have one",
+                entity_id
+            );
+            aggroed_to_entity = aggro.borrow().aggroed;
         }
         if aggroed_to_entity{
-            let pathfinding_component = self.entity_pathfinding_components.get(entity_id).expect("Entities with tag: FollowsPlayer must have a PathfindingComponent").borrow_mut();
-            let position_component = self.entity_position_components.get(entity_id).expect("Entities with tag: FollowsPlayer must have a PositionComponent").borrow_mut();
+            let position_component = ptry!(
+                self.get_entity_position_component(entity_id),
+                Invalid,
+                "Entity with id {}, didn't have a position component, but all entities with the Aggresive tag should have one",
+                entity_id
+            ).borrow_mut();
+            let pathfinding_component = ptry!(
+                self.get_pathfinding_component(entity_id),
+                Invalid,
+                "Entity with id {}, didn't have a position component, but all entities with the Aggresive tag should have one",
+                entity_id
+            ).borrow_mut();
             self.move_entity_towards_player(entity_id, collision.unwrap_or(&CollisionBox {
                     w: 0.0,
                     h: 0.0,
@@ -236,6 +285,22 @@ impl World {
                     y_offset: 0.0
             }),position_component, pathfinding_component, chunkref,  player_x, player_y, respects_collision, collision.is_some(), movement_speed);
         }
+        return Ok(())
+    }
+    pub fn get_pathfinding_component(&self, entity_id: &usize) -> Result<&RefCell<PathfindingComponent>, PError>{
+        self.entity_pathfinding_components.get(entity_id).ok_or(perror!(NotFound, "Pathfinding component for entity with id: {} was not found", entity_id))
+    }
+    pub fn get_entity_position_component(&self, entity_id: &usize) -> Result<&RefCell<PositionComponent>, PError>{
+        self.entity_position_components.get(entity_id).ok_or(perror!(NotFound, "Position component for entity with id: {} was not found", entity_id))
+    }
+    pub fn get_entity_aggro_component(&self, entity_id: &usize) -> Result<&RefCell<AggroComponent>, PError>{
+        self.entity_aggro_components.get(entity_id).ok_or(perror!(NotFound, "Aggro component for entity with id: {} was not found", entity_id))
+    }
+    pub fn get_entity_attack_component(&self, entity_id: &usize) -> Result<&RefCell<EntityAttackComponent>, PError>{
+        self.entity_attack_components.get(entity_id).ok_or(perror!(NotFound, "Attack component for entity with id: {} was not found", entity_id))
+    }
+    pub fn get_entity_health_component(&self, entity_id: &usize) -> Result<&RefCell<entity_components::HealthComponent>, PError>{
+        self.entity_health_components.get(entity_id).ok_or(perror!(NotFound, "Health component for entity with id: {} was not found", entity_id))
     }
     pub fn move_entity_towards_player(&self, entity_id: &usize,collision_box: &CollisionBox, position_component: RefMut<PositionComponent>, mut pathfinding_component: RefMut<PathfindingComponent>, chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>, player_x: f32, player_y: f32, respects_collision: bool, has_collision: bool, movement_speed: f32){
         let direction: [f32; 2] = [player_x - position_component.x, player_y - position_component.y];
@@ -398,15 +463,13 @@ impl World {
     pub fn add_aggro_component(&mut self, entity_id: usize, new_entity_aggro: entity_components::AggroComponent){
         self.entity_aggro_components.insert(entity_id, RefCell::new(new_entity_aggro));
     }
-    pub fn get_entity_archetype(&self, element_id: &usize) -> Option<&String>{
-        self.entity_archetype_lookup.get(element_id)
+    pub fn get_entity_archetype(&self, element_id: &usize) -> Result<&String, PError>{
+        self.entity_archetype_lookup.get(element_id).ok_or(perror!(NotFound, "Entity with id: {} not found", element_id))
     }
-    pub fn get_entity_tags(&self, element_id: usize) -> Option<&Vec<EntityTags>>{
-        let entity_archetype_id = self.get_entity_archetype(&element_id);
-        if entity_archetype_id.is_none(){
-            return None;
-        }
-        return self.entity_archetype_tags_lookup.get(entity_archetype_id.unwrap());
+    pub fn get_entity_tags(&self, element_id: usize) -> Result<&Vec<EntityTags>, PError>{
+        let entity_archetype = self.get_entity_archetype(&element_id)?;
+        return self.entity_archetype_tags_lookup.get(entity_archetype).ok_or(perror!(
+            Invalid, "Entity with id {} was found and had an archetype of {}, but the archetype appears to have no tags or doesn't exist", element_id, entity_archetype));
     }
     pub fn set_entity_archetype(&mut self, element_id: usize, archetype_id: String){
         self.entity_archetype_lookup.insert(element_id, archetype_id);

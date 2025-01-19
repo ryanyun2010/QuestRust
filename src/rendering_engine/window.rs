@@ -1,3 +1,8 @@
+macro_rules! print_error {
+    ($e:expr) => {
+        colorize_println(format!("{}", $e), Colors::BrightRedFg);
+    };
+}
 
 use std::time::Instant;
 
@@ -8,6 +13,7 @@ use crate::game_engine::game::Game;
 use crate::renderer::Renderer;
 use crate::world::World;
 use crate::camera::Camera;
+use colorized::*;
 
 pub async fn run(world: World, camera: Camera, sprites_json_to_load: &Vec<String>) {
     let event_loop = EventLoop::new().unwrap();
@@ -48,21 +54,28 @@ pub async fn run(world: World, camera: Camera, sprites_json_to_load: &Vec<String
                         game.window().request_redraw();
                     }
                     let time = Instant::now();
-                    game.update();
+                    match game.update() {
+                        Ok(_) => {}
+                        Err(e) => {
+                            print_error!(e);
+                            control_flow.exit();
+                        }
+                    }
+                    // println!("Time: {:?}", time.elapsed());
                     match game.render() {
                         Ok(_) => {}
                         Err(
                             wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated,
                         ) => game.resize(game.renderer.size),
                         Err(wgpu::SurfaceError::OutOfMemory) => {
-                            log::error!("OutOfMemory");
+                            print_error!("Out of Memory");
                             control_flow.exit();
                         }
                         Err(wgpu::SurfaceError::Timeout) => {
-                            log::warn!("Surface timeout")
+                            print_error!("Surface Timeout");
                         }
                         Err(e) => {
-                            log::error!("Error: {:?}", e);
+                            print_error!(e);
                             control_flow.exit();
                         }
                         

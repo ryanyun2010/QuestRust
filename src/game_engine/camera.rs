@@ -1,6 +1,8 @@
 use std::collections::{BTreeMap, HashMap};
 use std::f32::consts::PI;
 
+use crate::error::PError;
+use crate::perror;
 use crate::world::World;
 use crate::rendering_engine::abstractions::{RenderData, RenderDataFull, TextSprite};
 use crate::game_engine::ui::UIElement;
@@ -25,10 +27,10 @@ pub struct Camera{
     pub level_editor: bool,
     pub text: BTreeMap<usize, TextSprite>,
     pub world_text: BTreeMap<usize, TextSprite>,
-    pub world_text_id: usize,
+    pub text_id: usize,
     pub world_text_font_lookup: HashMap<usize, Font>,
     pub text_font_lookup: HashMap<usize, Font>,
-    pub text_id: usize,
+    pub world_text_id: usize,
     pub test: f32,
 }
 
@@ -308,11 +310,15 @@ impl Camera{
         self.world_text_id += 1;
         self.world_text_id - 1
     }
-    pub fn remove_world_text(&mut self, id: usize){
-        self.world_text.remove(&id);
+    pub fn remove_world_text(&mut self, id: usize) -> Result<(), PError>{
+        if self.world_text.remove(&id).is_none(){
+            return Err(perror!(NotFound, "No world text with id {}", id));
+        }
+        Ok(())
     }
-    pub fn get_world_text_mut(&mut self, id: usize) -> Option<&mut TextSprite>{
-        self.world_text.get_mut(&id)
+    pub fn get_world_text_mut(&mut self, id: usize) -> Result<&mut TextSprite, PError>{
+        self.world_text.get_mut(&id).ok_or(
+            perror!(NotFound, "No world text with id {}", id))
     }
     pub fn remove_text(&mut self, id: usize){
         self.text.remove(&id);
