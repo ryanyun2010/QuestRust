@@ -7,6 +7,8 @@ pub enum PE {
     InputFailed(ErrorDescriptor),
     Error(ErrorDescriptor),
     UnwrapFailure(ErrorDescriptor),
+    MissingExpectedGlobalSprite(ErrorDescriptor),
+    SurfaceError(wgpu::SurfaceError)
 }
 
 impl PE {
@@ -17,6 +19,8 @@ impl PE {
             PE::Error(e) => format!("Error: {}",e.as_string()),
             PE::Invalid(e) => format!("Invalid: {}", e.as_string()),
             PE::UnwrapFailure(e) => format!("Unwrap Failure: {}", e.as_string()),
+            PE::MissingExpectedGlobalSprite(e) => format!("Missing Expected Global Sprite: {}", e.as_string()),
+            PE::SurfaceError(e) => format!("Surface Error: {}", e)
         }
     }
 }
@@ -60,6 +64,54 @@ macro_rules! perror {
         crate::error::PError::new(
             crate::error::PE::$error_variant(crate::error::ErrorDescriptor {
                 desc: format!($desc, $($args)*),
+                location: crate::error::Location {
+                    file: file!().to_string(),
+                    line: line!(),
+                },
+            }),
+            vec![]
+        )
+    }};
+    ($error_variant:ident, $desc:expr) => {{
+        crate::error::PError::new(
+            crate::error::PE::$error_variant(crate::error::ErrorDescriptor {
+                desc: format!($desc),
+                location: crate::error::Location {
+                    file: file!().to_string(),
+                    line: line!(),
+                },
+            }),
+            vec![]
+        )
+    }};
+    ($desc:expr) => {{
+        crate::error::PError::new(
+            crate::error::PE::Error(crate::error::ErrorDescriptor {
+                desc: format!($desc),
+                location: crate::error::Location {
+                    file: file!().to_string(),
+                    line: line!(),
+                },
+            }),
+            vec![]
+        )
+    }};
+    ($desc:expr, $($args:tt)*) => {{
+        crate::error::PError::new(
+            crate::error::PE::Error(crate::error::ErrorDescriptor {
+                desc: format!($desc, $($args)*),
+                location: crate::error::Location {
+                    file: file!().to_string(),
+                    line: line!(),
+                },
+            }),
+            vec![]
+        )
+    }};
+    ($error_variant:ident) => {{
+        crate::error::PError::new(
+            crate::error::PE::Error(crate::error::ErrorDescriptor {
+                desc: Strgin::from(""),
                 location: crate::error::Location {
                     file: file!().to_string(),
                     line: line!(),
@@ -168,11 +220,11 @@ macro_rules! ptry {
         match $result {
             Ok(value) => value,
             Err(mut perror) => {
-                return Err(crate::PError::new(
-                    PE::Error(
-                        ErrorDescriptor {
-                            desc: format!("")
-                            location: Location {
+                return Err(crate::error::PError::new(
+                    crate::error::PE::Error(
+                        crate::error::ErrorDescriptor {
+                            desc: format!(""),
+                            location: crate::error::Location {
                                 file: file!().to_string(),
                                 line: line!()
                             }
@@ -230,11 +282,11 @@ macro_rules! punwrap {
         match $option {
             Some(value) => value,
             None => {
-                return Err(crate::PError::new(
-                    PE::UnwrapFailure(
-                        ErrorDescriptor {
+                return Err(crate::error::PError::new(
+                    crate::error::PE::UnwrapFailure(
+                        crate::error::ErrorDescriptor {
                             desc: format!(""),
-                            location: Location {
+                            location: crate::error::Location {
                                 file: file!().to_string(),
                                 line: line!(),
                             },
@@ -287,18 +339,18 @@ macro_rules! punwrap {
         match $option {
             Some(value) => value,
             None => {
-                return crate::PError::new(
-                    PE::UnwrapFailure(
-                        ErrorDescriptor {
+                return Err(crate::error::PError::new(
+                    crate::error::PE::UnwrapFailure(
+                        crate::error::ErrorDescriptor {
                             desc: format!($desc),
-                            location: Location {
+                            location: crate::error::Location {
                                 file: file!().to_string(),
                                 line: line!(),
                             },
                         },
                     ),
                     vec![],
-                );
+                ));
             }
         }
     }};

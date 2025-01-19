@@ -109,8 +109,8 @@ impl World {
             }
         }
 
-        let health_component = error_prolif_allow!(self.get_entity_health_component(entity_id), NotFound);
-        if health_component.is_ok() {
+        let health_component = self.get_entity_health_component(entity_id);
+        if health_component.is_some() {
             let health = health_component.unwrap().borrow().health;
             if health <= 0.0 {
                 self.kill_entity(*entity_id);
@@ -119,7 +119,7 @@ impl World {
         }
         
         if follows_player {
-            let position_component = ptry!(
+            let position_component = punwrap!(
                 self.get_entity_position_component(entity_id),
                 Invalid,
                 "Entity with id {}, didn't have a position component, but all entities with the FollowsPlayer tag should have one",
@@ -135,13 +135,13 @@ impl World {
         }
         
         if aggressive {
-            let mut aggro = ptry!(
+            let mut aggro = punwrap!(
                 self.get_entity_aggro_component(entity_id), 
                 Invalid,
                 "Entity with id {}, didn't have an aggro component, but all entities with the Aggresive tag should have one", 
                 entity_id).borrow_mut();
 
-            let position_component = ptry!(
+            let position_component = punwrap!(
                 self.get_entity_position_component(entity_id),
                 Invalid,
                 "Entity with id {}, didn't have a position component, but all entities with the Aggresive tag should have one",
@@ -171,14 +171,14 @@ impl World {
                 "Entity with id {}, didn't have an attack pattern, but all entities with the Aggresive tag should have one",
                 entity_id);
 
-            let mut attack_component = ptry!(
+            let mut attack_component = punwrap!(
                 self.get_entity_attack_component(entity_id),
                 Invalid,
                 "Entity with id {}, didn't have an attack component, but all entities with the Aggresive tag should have one",
                 entity_id).borrow_mut();
 
             if attack_component.cur_attack_cooldown <= 0.0 {
-                let position = ptry!(
+                let position = punwrap!(
                     self.get_entity_position_component(entity_id),
                     Invalid,
                     "Entity with id {}, didn't have a position component, but all entities with the Aggresive tag should have one",
@@ -247,7 +247,7 @@ impl World {
         }
         let mut aggroed_to_entity = false;
         if aggressive {
-            let aggro = ptry!(
+            let aggro = punwrap!(
                 self.get_entity_aggro_component(entity_id),
                 Invalid,
                 "Entity with id {}, didn't have an aggro component, but all entities with the Aggresive tag should have one",
@@ -256,13 +256,13 @@ impl World {
             aggroed_to_entity = aggro.borrow().aggroed;
         }
         if aggroed_to_entity{
-            let position_component = ptry!(
+            let position_component = punwrap!(
                 self.get_entity_position_component(entity_id),
                 Invalid,
                 "Entity with id {}, didn't have a position component, but all entities with the Aggresive tag should have one",
                 entity_id
             ).borrow_mut();
-            let pathfinding_component = ptry!(
+            let pathfinding_component = punwrap!(
                 self.get_pathfinding_component(entity_id),
                 Invalid,
                 "Entity with id {}, didn't have a position component, but all entities with the Aggresive tag should have one",
@@ -277,20 +277,20 @@ impl World {
         }
         return Ok(())
     }
-    pub fn get_pathfinding_component(&self, entity_id: &usize) -> Result<&RefCell<PathfindingComponent>, PError>{
-        self.entity_pathfinding_components.get(entity_id).ok_or(perror!(NotFound, "Pathfinding component for entity with id: {} was not found", entity_id))
+    pub fn get_pathfinding_component(&self, entity_id: &usize) -> Option<&RefCell<PathfindingComponent>>{
+        self.entity_pathfinding_components.get(entity_id)
     }
-    pub fn get_entity_position_component(&self, entity_id: &usize) -> Result<&RefCell<PositionComponent>, PError>{
-        self.entity_position_components.get(entity_id).ok_or(perror!(NotFound, "Position component for entity with id: {} was not found", entity_id))
+    pub fn get_entity_position_component(&self, entity_id: &usize) -> Option<&RefCell<PositionComponent>>{
+        self.entity_position_components.get(entity_id)
     }
-    pub fn get_entity_aggro_component(&self, entity_id: &usize) -> Result<&RefCell<AggroComponent>, PError>{
-        self.entity_aggro_components.get(entity_id).ok_or(perror!(NotFound, "Aggro component for entity with id: {} was not found", entity_id))
+    pub fn get_entity_aggro_component(&self, entity_id: &usize) -> Option<&RefCell<AggroComponent>>{
+        self.entity_aggro_components.get(entity_id)
     }
-    pub fn get_entity_attack_component(&self, entity_id: &usize) -> Result<&RefCell<EntityAttackComponent>, PError>{
-        self.entity_attack_components.get(entity_id).ok_or(perror!(NotFound, "Attack component for entity with id: {} was not found", entity_id))
+    pub fn get_entity_attack_component(&self, entity_id: &usize) -> Option<&RefCell<EntityAttackComponent>>{
+        self.entity_attack_components.get(entity_id)
     }
-    pub fn get_entity_health_component(&self, entity_id: &usize) -> Result<&RefCell<entity_components::HealthComponent>, PError>{
-        self.entity_health_components.get(entity_id).ok_or(perror!(NotFound, "Health component for entity with id: {} was not found", entity_id))
+    pub fn get_entity_health_component(&self, entity_id: &usize) -> Option<&RefCell<entity_components::HealthComponent>>{
+        self.entity_health_components.get(entity_id)
     }
     pub fn move_entity_towards_player(&self, entity_id: &usize,collision_box: &CollisionBox, position_component: RefMut<PositionComponent>, mut pathfinding_component: RefMut<PathfindingComponent>, chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>, player_x: f32, player_y: f32, respects_collision: bool, has_collision: bool, movement_speed: f32){
         let direction: [f32; 2] = [player_x - position_component.x, player_y - position_component.y];
@@ -459,7 +459,7 @@ impl World {
     pub fn get_entity_tags(&self, element_id: usize) -> Result<&Vec<EntityTags>, PError>{
         let entity_archetype = self.get_entity_archetype(&element_id)?;
         return self.entity_archetype_tags_lookup.get(entity_archetype).ok_or(perror!(
-            Invalid, "Entity with id {} was found and had an archetype of {}, but the archetype appears to have no tags or doesn't exist", element_id, entity_archetype));
+            Invalid, "Entity with id {} was found but refers to a non-existent archetype {}", element_id, entity_archetype));
     }
     pub fn set_entity_archetype(&mut self, element_id: usize, archetype_id: String){
         self.entity_archetype_lookup.insert(element_id, archetype_id);

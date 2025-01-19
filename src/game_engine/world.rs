@@ -205,14 +205,14 @@ impl World{
         self.terrain_archetype_lookup.insert(id, archetype_id);
     }
     pub fn get_terrain_tags(&self, id: usize) -> Result<&Vec<TerrainTags>, PError>{
-        let archetype = self.get_terrain_archetype(id)?;
+        let archetype = self.get_terrain_archetype(id).ok_or(perror!(NotFound, "Terrain with id {} has no archetype", id))?;
         let tags = self.terrain_archetype_tags_lookup.get(*archetype).ok_or(perror!(Invalid, 
-            "Archetype with id {} was found for terrain with id {} but it had no tags or didn't exist", id, archetype
+            "Terrain with id {} refers to a non existent archetype with id {}", id, archetype
         ));
         tags
     }
-    pub fn get_terrain_archetype(&self, id: usize) -> Result<&usize, PError> {
-        self.terrain_archetype_lookup.get(&id).ok_or(perror!(NotFound, "Terrain archetype with id {} not found", id))
+    pub fn get_terrain_archetype(&self, id: usize) -> Option<&usize> {
+        self.terrain_archetype_lookup.get(&id)
     }
     pub fn get_archetype_tags(&self, archetype: usize) -> Option<&Vec<TerrainTags>>{
         self.terrain_archetype_tags_lookup.get(archetype)
@@ -373,7 +373,7 @@ impl World{
         false
     }
     pub fn get_entity_damage_box(&self, id: usize) -> Result<&CollisionBox, PError> {
-        let entity_tags = ptry!(self.get_entity_tags(id), "while finding entity damage box");
+        let entity_tags = ptry!(self.get_entity_tags(id), NotFound, "couldn't find entity tags for entity with id {} while finding entity damage box", id);
         for tag in entity_tags.iter(){
             match tag{
                 EntityTags::Damageable(dbox) => {
@@ -385,7 +385,7 @@ impl World{
         return Err(perror!(NotFound, "Entity with id {} has no damage box", id));
     }
     pub fn get_entity_collision_box(&self, id: usize) -> Result<&CollisionBox, PError>{
-        let entity_tags = ptry!(self.get_entity_tags(id), "while finding entity collision box");
+        let entity_tags = ptry!(self.get_entity_tags(id), NotFound, "couldn't find entity tags for entity with id {} while finding entity damage box", id);
         for tag in entity_tags.iter(){
             match tag{
                 EntityTags::HasCollision(cbox) => {

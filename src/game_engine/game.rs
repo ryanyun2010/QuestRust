@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use winit::{event, keyboard::{Key, NamedKey}};
 
-use crate::{error::PError, error_prolif, rendering_engine::{abstractions::RenderDataFull, renderer::Renderer, vertex::Vertex}};
+use crate::{error::PError, error_prolif, ptry, rendering_engine::{abstractions::RenderDataFull, renderer::Renderer, vertex::Vertex}};
 
 use super::{camera::Camera, world::World};
 #[derive(Debug, Copy, Clone)]
@@ -101,14 +101,24 @@ impl<'a> Game<'a> {
             self.world.process_mouse_input(self.input.mouse_position, self.input.mouse_left, self.input.mouse_right);
         }
     }
-    pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
+    pub fn render(&mut self) -> Result<(), PError> {
         if self.state == GameState::start {
             self.renderer.render(
                 self.world.sprites.get_sprite_by_name("start_screen").expect("No start_screen sprite?").draw_data(0.0, 0.0, self.camera.viewpoint_width, self.camera.viewpoint_height, self.camera.viewpoint_width, self.camera.viewpoint_height, 0, 0, 0).to_full()
             );
             return Ok(());
         }
-        self.renderer.render(self.camera.render(&mut self.world, self.renderer.config.width as f32, self.renderer.config.height as f32))
+        let data = ptry!(self.camera.render(&mut self.world, self.renderer.config.width as f32, self.renderer.config.height as f32));
+
+        match self.renderer.render(data) {
+            Ok(_) => Ok(()),
+            Err(e) => {
+                error_prolif!(PError::new(
+                    crate::error::PE::SurfaceError(e),
+                    vec![]
+                ))
+            }
+        }
     }
     pub fn update(&mut self) -> Result<(), PError>{
         self.camera.update_ui(&mut self.world);

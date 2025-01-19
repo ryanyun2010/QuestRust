@@ -64,17 +64,27 @@ pub async fn run(world: World, camera: Camera, sprites_json_to_load: &Vec<String
                     // println!("Time: {:?}", time.elapsed());
                     match game.render() {
                         Ok(_) => {}
-                        Err(
-                            wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated,
-                        ) => game.resize(game.renderer.size),
-                        Err(wgpu::SurfaceError::OutOfMemory) => {
-                            print_error!("Out of Memory");
-                            control_flow.exit();
-                        }
-                        Err(wgpu::SurfaceError::Timeout) => {
-                            print_error!("Surface Timeout");
-                        }
+                        
                         Err(e) => {
+                            match &e.error {
+                                crate::error::PE::SurfaceError(s) => {
+                                    match s{
+                                        wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated => game.resize(game.renderer.size),
+                                        wgpu::SurfaceError::OutOfMemory => {
+                                            print_error!("Out of Memory");
+                                            control_flow.exit();
+                                        }
+                                        wgpu::SurfaceError::Timeout => {
+                                            print_error!("Surface Timeout");
+                                        }
+                                        _ => {
+                                            print_error!(format!("Surface Error: {}", s));
+                                            control_flow.exit();
+                                        }
+                                    }
+                                }
+                                _ => {}
+                            }
                             print_error!(e);
                             control_flow.exit();
                         }
