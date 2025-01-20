@@ -15,7 +15,7 @@ pub struct ItemOnMouse{
 #[derive(Debug)]
 pub struct Inventory {
     items: HashMap<usize, Item>,
-    hotbar: Vec<Slot>,
+    hotbar: Vec<usize>, // slot id of hotbar slots
     cur_hotbar_slot: usize,
     slots: Vec<Slot>,
     item_id: usize,
@@ -48,7 +48,7 @@ impl Slot {
             }),
             item_image: None,
             x: x,
-            y: y
+            y: y,
         }
     }
     pub fn get_ui(&self) -> Vec<UIESprite>{
@@ -56,6 +56,20 @@ impl Slot {
         sprites.extend(self.main_image.clone());
         sprites.extend(self.item_image.clone());
         sprites
+    }
+    pub fn alter_position(&mut self, new_x: usize, new_y: usize) {
+        self.x = new_x;
+        self.y = new_y;
+        if self.item_image.is_some(){
+            let ii = self.item_image.as_mut().unwrap();
+            ii.x = self.x as f32 + 8.0;
+            ii.y = self.y as f32 + 8.0;
+        }
+        if self.main_image.is_some(){
+            let mi = self.main_image.as_mut().unwrap();
+            mi.x = self.x as f32;
+            mi.y = self.y as f32;
+        }
     }
     pub fn set_item(&mut self, item: usize, items: &HashMap<usize, Item>) -> Result<(), anyhow::Error>{
         let i = items.get(&item);
@@ -92,7 +106,7 @@ impl Inventory{
             slots: Vec::new(),
             show_inventory: false,
             item_on_mouse: None,
-            mouse_position: MousePosition::default()
+            mouse_position: MousePosition::default(),
         }
     }
     pub fn add_item(&mut self, item: Item) -> usize {
@@ -106,22 +120,42 @@ impl Inventory{
         self.cur_hotbar_slot = slot;
     }
     pub fn init_ui(&mut self, sprites: &SpriteContainer) {
-        self.hotbar.push(Slot::new(20, 652));
-        self.hotbar.push(Slot::new(78, 652));
-        self.hotbar.push(Slot::new(136, 652));
-        self.hotbar.push(Slot::new(194, 652));
-        self.hotbar.push(Slot::new(252, 652));
-        self.slots.push(Slot::new(520, 200));
-        self.slots.push(Slot::new(578, 200));
-        self.slots.push(Slot::new(636, 200));
-        self.slots.push(Slot::new(694, 200));
-        self.slots.push(Slot::new(752, 200));
-        println!("{:?}", self.set_slot_item(0, 0));
-        println!("{:?}", self.set_slot_item(3, 1));
-        println!("{:?}", self.slots[0]);
+        self.add_hotbar_slot(Slot::new(20, 652));
+        self.add_hotbar_slot(Slot::new(78, 652));
+        self.add_hotbar_slot(Slot::new(136, 652));
+        self.add_hotbar_slot(Slot::new(194, 652));
+        self.add_hotbar_slot(Slot::new(252, 652));
+        self.add_slot(Slot::new(520, 200));
+        self.add_slot(Slot::new(578, 200));
+        self.add_slot(Slot::new(636, 200));
+        self.add_slot(Slot::new(694, 200));
+        self.add_slot(Slot::new(752, 200));
+        println!("{:?}", self.set_slot_item(7, 0));
+        println!("{:?}", self.set_slot_item(6, 1));
+    }
+    pub fn add_hotbar_slot(&mut self, slot: Slot) {
+        self.hotbar.push(self.slots.len());
+        self.slots.push(slot);
+    }
+    pub fn add_slot(&mut self, slot: Slot) {
+        self.slots.push(slot);
+    }
+    pub fn get_hotbar_slot(&self, slot: usize) -> Option<&Slot>{
+        self.hotbar.get(slot).and_then(
+            |x| self.slots.get(*x)
+        )
+    }
+    pub fn get_hotbar_slot_mut(&mut self, slot: usize) -> Option<&mut Slot>{
+        self.hotbar.get(slot).and_then(
+            |x| self.slots.get_mut(*x)
+        )
     }
     pub fn show_inventory(&mut self, camera: &mut Camera){
         self.show_inventory = true;
+        for i in 0..self.hotbar.len(){
+            let slot = self.get_hotbar_slot_mut(i).unwrap();
+            slot.alter_position(520 + i * 58, 380);
+        }
     }
     pub fn hide_inventory(&mut self, camera: &mut Camera){
         self.show_inventory = false;
@@ -130,12 +164,21 @@ impl Inventory{
             self.set_slot_item(iom.slot_belonging, iom.item_id);
             self.item_on_mouse = None;
         }
+        for i in 0..self.hotbar.len(){
+            let slot = self.get_hotbar_slot_mut(i).unwrap();
+            slot.alter_position(20 + i * 58, 652);
+        }
     }
     pub fn set_hotbar_slot_item(&mut self, slot: usize, item_id: usize) {
-        let slot_potentially = self.hotbar.get_mut(slot);
+        let slot_potentially = self.hotbar.get(slot).and_then(
+            |x| self.slots.get_mut(*x)
+        );
         if slot_potentially.is_some() {
             slot_potentially.unwrap().set_item(item_id, &self.items);
         }
+    }
+    pub fn get_slot(&self, slot: &usize) -> Option<&Slot> {
+        self.slots.get(*slot)
     }
     pub fn set_slot_item(&mut self, slot: usize, item_id: usize) -> Result<(), anyhow::Error> {
         let slot_potentially = self.slots.get_mut(slot);
@@ -163,7 +206,6 @@ impl Inventory{
                 height: 720.0,
                 sprite: String::from("inventory_background")
             });
-
             for slot in self.slots.iter() {
                 ui.extend(slot.get_ui());
             }
@@ -185,7 +227,7 @@ impl Inventory{
         }
         else {
             for slot in self.hotbar.iter() {
-                ui.extend(slot.get_ui());
+                ui.extend(self.get_slot(slot).unwrap().get_ui());
             }
             ui.push(
                 UIESprite{
@@ -276,8 +318,7 @@ impl Inventory{
         
     }
     pub fn get_cur_held_item(&self) -> Option<&Item> {
-        self.hotbar
-            .get(self.cur_hotbar_slot)
+        self.get_hotbar_slot(self.cur_hotbar_slot)
             .and_then(|slot| slot.item)
             .and_then(|item| self.get_item(&item))
     }
