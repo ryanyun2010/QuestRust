@@ -269,14 +269,14 @@ impl Inventory{
                     );
                     slot.item = None;
                 }else if self.item_on_mouse.is_some() {
-                    let item_clone = self.item_on_mouse.as_ref().unwrap().item_id;
+                    let item_clone = self.item_on_mouse.as_ref().unwrap().clone();
                     self.item_on_mouse = Some(
                         ItemOnMouse {
-                            slot_belonging: i,
+                            slot_belonging: item_clone.slot_belonging,
                             item_id: slot.item.unwrap()
                         }
                     ); 
-                    slot.item = Some(item_clone);
+                    slot.item = Some(item_clone.item_id);
                 }
             }else if self.item_on_mouse.is_some(){
                 slot.item = Some(self.item_on_mouse.as_ref().unwrap().item_id);
