@@ -1,4 +1,6 @@
+use crate::create_stat_list;
 use crate::game_engine::camera::Camera;
+use crate::game_engine::item::Item;
 use crate::game_engine::player;
 use crate::game_engine::ui::UIElementDescriptor;
 use crate::game_engine::world;
@@ -23,8 +25,33 @@ pub async fn basic_world() -> world::World {
     sprites.sprite_id_lookup.insert(String::from("spear"), 0);
     sprites.sprite_id_lookup.insert(String::from("slot_highlight"), 0);
     sprites.sprite_id_lookup.insert(String::from("hslot"), 0);
+    sprites.sprite_id_lookup.insert(String::from("inventory"), 0);
+    sprites.sprite_id_lookup.insert(String::from("inventory_background"), 0);
     let mut world = world::World::new(player::Player::new(596.0, 400.0, 10.0, 10, 1.0, 0),sprites);
-    
+    world.inventory.add_item(Item {
+        name: String::from("test1"),
+        attack_sprite: String::from("melee_attack"),
+        item_type: crate::game_engine::item::ItemType::MeleeWeapon,
+        lore: String::from("test"),
+        sprite: String::from("sword"),
+        stats: create_stat_list!(
+            damage => 150.0,
+            width => 50.0,
+            reach => 65.0
+        )
+    });
+    world.inventory.add_item(Item {
+        name: String::from("test2"),
+        attack_sprite: String::from("melee_attack"),
+        item_type: crate::game_engine::item::ItemType::MeleeWeapon,
+        lore: String::from("test"),
+        sprite: String::from("spear"),
+        stats: create_stat_list!(
+            damage => 150.0,
+            width => 50.0,
+            reach => 65.0
+        )
+    });
     world
 
 }

@@ -94,8 +94,13 @@ impl Inventory{
         self.hotbar.push(Slot::create_with_ui(136, 652, camera, sprites));
         self.hotbar.push(Slot::create_with_ui(194, 652, camera, sprites));
         self.hotbar.push(Slot::create_with_ui(252, 652, camera, sprites));
-        self.slots.push(Slot::create_with_ui(500, 200, camera, sprites));
+        self.slots.push(Slot::create_with_ui(520, 200, camera, sprites));
+        self.slots.push(Slot::create_with_ui(578, 200, camera, sprites));
+        self.slots.push(Slot::create_with_ui(636, 200, camera, sprites));
+        self.slots.push(Slot::create_with_ui(694, 200, camera, sprites));
+        self.slots.push(Slot::create_with_ui(752, 200, camera, sprites));
         self.set_slot_item(0, 0);
+        self.set_slot_item(3, 1);
         camera.add_ui_element(format!("inventory_background"), UIElementDescriptor {
             x: 326.0,
             y: 186.5,
@@ -160,6 +165,7 @@ impl Inventory{
         camera.get_ui_element_mut_by_name(String::from("inventory_background")).unwrap().visible = self.show_inventory;
         camera.get_ui_element_mut_by_name(String::from("inventory_back_shade")).unwrap().visible = self.show_inventory; 
         camera.get_ui_element_mut_by_name(String::from("hhslot")).unwrap().x  = self.cur_hotbar_slot as f32 * 58 as f32 + 20.0;
+        camera.get_ui_element_mut_by_name(String::from("hhslot")).unwrap().visible  = self.show_inventory;
         let cur_item = self.get_cur_held_item();
         if cur_item.is_some(){
             let mut text = format!(
@@ -254,13 +260,27 @@ impl Inventory{
         if slot_clicked.is_some() {
             let slot = slot_clicked.unwrap();
             if slot.item.is_some() {
-                self.item_on_mouse = Some(
-                    ItemOnMouse {
-                        slot_belonging: i,
-                        item_id: slot.item.unwrap()
-                    }
-                );
-                slot.item = None;
+                if self.item_on_mouse.is_none() {
+                    self.item_on_mouse = Some(
+                        ItemOnMouse {
+                            slot_belonging: i,
+                            item_id: slot.item.unwrap()
+                        }
+                    );
+                    slot.item = None;
+                }else if self.item_on_mouse.is_some() {
+                    let item_clone = self.item_on_mouse.as_ref().unwrap().item_id;
+                    self.item_on_mouse = Some(
+                        ItemOnMouse {
+                            slot_belonging: i,
+                            item_id: slot.item.unwrap()
+                        }
+                    ); 
+                    slot.item = Some(item_clone);
+                }
+            }else if self.item_on_mouse.is_some(){
+                slot.item = Some(self.item_on_mouse.as_ref().unwrap().item_id);
+                self.item_on_mouse = None;
             }
         }
     }
