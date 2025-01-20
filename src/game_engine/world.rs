@@ -659,10 +659,11 @@ impl World{
                     if attack.dealt_damage{
                         continue;
                     }
-
-                    let collisions = self.get_attacked(true, None, attack.x as usize, attack.y as usize, attack.stats.size.unwrap_or(0.0).floor() as usize, attack.stats.size.unwrap_or(0.0).floor() as usize, true);
+                    let size = attack.stats.size.unwrap_or(0.0).floor() as usize;
+                    let collisions = self.get_attacked(true, None, attack.x as usize - size/2, attack.y as usize - size/2, attack.stats.size.unwrap_or(0.0).floor() as usize, attack.stats.size.unwrap_or(0.0).floor() as usize, true);
                     let mut hit = false;
                     for collision in collisions.iter(){
+                    println!("TEST {}", hit);
                         if self.entity_health_components.get(&collision).is_some(){
                             hit = true;
                             attacks_to_be_deleted.push(i);
@@ -672,7 +673,7 @@ impl World{
                     }
                     if hit {
                         let aoesize = attack.stats.AOE.unwrap_or(0.0) + attack.stats.size.unwrap_or(0.0);
-                        let aoe_collisions = self.get_attacked(true, None, attack.x as usize, attack.y as usize, aoesize.floor() as usize, aoesize.floor() as usize, true);
+                        let aoe_collisions = self.get_attacked(true, None, attack.x as usize - (aoesize as f32/2.0) as usize, attack.y as usize - (aoesize as f32/2.0) as usize, aoesize.floor() as usize, aoesize.floor() as usize, true);
                         for collision in aoe_collisions.iter(){
                             if self.entity_health_components.get(&collision).is_some(){
                                 let mut health_component = self.entity_health_components.get(&collision).unwrap().borrow_mut();
@@ -768,7 +769,7 @@ impl World{
             let cur_item = self.inventory.get_cur_held_item();
             if cur_item.is_some() {
                 let item = cur_item.unwrap();
-                let mouse_direction_unnormalized = [(mouse_position.x_world - self.player.borrow().x), (mouse_position.y_world - self.player.borrow().y)];
+                let mouse_direction_unnormalized = [(mouse_position.x_world - self.player.borrow().x - 16.0), (mouse_position.y_world - self.player.borrow().y - 22.0)];
                 let magnitude = f32::sqrt(mouse_direction_unnormalized[0].powf(2.0) + mouse_direction_unnormalized[1].powf(2.0));
                 let mouse_direction_normalized = [
                     mouse_direction_unnormalized[0] / magnitude,
@@ -812,7 +813,7 @@ impl World{
         let player = self.player.borrow();
         camera.update_camera_position(player.x, player.y);
         drop(player);
-        self.inventory.update_ui(camera);
+        self.inventory.update_ui(camera, &self.sprites);
         let held_potentially = &self.inventory.get_cur_held_item();
         if held_potentially.is_some() {
             let sprite = &held_potentially.unwrap().sprite;

@@ -12,12 +12,21 @@ fn main() {
     let mut parser = json_parsing::JSON_parser::new();
     let load_time = Instant::now();
     let parsed_data = parser.parse_and_convert_game_data(PATH_BUNDLE);
-    
     let mut camera = camera::Camera::new(1152,720);
-    let world = starting_level_generator::generate_world_from_json_parsed_data(&parsed_data);
+    let mut world = starting_level_generator::generate_world_from_json_parsed_data(&parsed_data);
+    world.inventory.init_ui(&mut camera, &world.sprites);
+    let sword = world.inventory.add_item(
+        world.create_item_with_archetype("test_sword".to_string())
+    );
+    let spear = world.inventory.add_item(
+        world.create_item_with_archetype("test_spear".to_string())
+    );
+    world.inventory.set_hotbar_slot_item(0, sword);
+    world.inventory.set_hotbar_slot_item(1, spear);
     camera.add_ui_element(String::from("health_bar_background"), UIElementDescriptor {
         x: 32.0,
         y: 32.0,
+        z: 5.0,
         width: 256.0,
         height: 32.0,
         sprite_id: world.sprites.get_sprite_id("health_bar_back").expect("couldn't find health_bar_back sprite"),
@@ -26,92 +35,95 @@ fn main() {
     camera.add_ui_element(String::from("health_bar_inside"), UIElementDescriptor {
         x: 35.0,
         y: 35.0,
+        z: 6.0,
         width: 250.0,
         height: 26.0,
         sprite_id: world.sprites.get_sprite_id("health").expect("couldn't find health sprite"),
         visible: true
     });
-    camera.add_ui_element(String::from("inventory_button"), UIElementDescriptor {
-        x: 1030.0,
-        y: 650.0,
-        width: 75.0,
-        height: 25.0,
-        sprite_id: world.sprites.get_sprite_id("inventory").expect("couldn't find inventory sprite"),
-        visible: true
-    });
+    // camera.add_ui_element(String::from("inventory_background"), UIElementDescriptor {
+    //     x: 0.0,
+    //     y: 0.0,
+    //     width: 1152.0,
+    //     height: 720.0,
+    //     sprite_id: world.sprites.get_sprite_id("inventory_background").expect("couldn't find inventory_background sprite"),
+    //     visible: true
+    // });
+    // camera.add_ui_element(String::from("inventory"), UIElementDescriptor {
+    //     x: 326.0,
+    //     y: 186.5,
+    //     width: 500.0,
+    //     height: 347.0,
+    //     sprite_id: world.sprites.get_sprite_id("inventory").expect("couldn't find inventory sprite"),
+    //     visible: true
+    // });
 
-    camera.add_ui_element(String::from("hslot1"), UIElementDescriptor {
-        x: 20.0,
-        y: 652.0,
-        width: 48.0,
-        height: 48.0,
-        sprite_id: world.sprites.get_sprite_id("hslot").expect("couldn't find hotbar sprite"),
-        visible: true
-    });
-    camera.add_ui_element(String::from("hslot2"), UIElementDescriptor {
-        x: 78.0,
-        y: 652.0,
-        width: 48.0,
-        height: 48.0,
-        sprite_id: world.sprites.get_sprite_id("hslot").expect("couldn't find hotbar sprite"),
-        visible: true
-    });
-    camera.add_ui_element(String::from("hslot3"), UIElementDescriptor {
-        x: 136.0,
-        y: 652.0,
-        width: 48.0,
-        height: 48.0,
-        sprite_id: world.sprites.get_sprite_id("hslot").expect("couldn't find hotbar sprite"),
-        visible: true
-    });
-    camera.add_ui_element(String::from("hslot4"), UIElementDescriptor {
-        x: 194.0,
-        y: 652.0,
-        width: 48.0,
-        height: 48.0,
-        sprite_id: world.sprites.get_sprite_id("hslot").expect("couldn't find hotbar sprite"),
-        visible: true
-    });
-    camera.add_ui_element(String::from("hslot5"), UIElementDescriptor {
-        x: 252.0,
-        y: 652.0,
-        width: 48.0,
-        height: 48.0,
-        sprite_id: world.sprites.get_sprite_id("hslot").expect("couldn't find hotbar sprite"),
-        visible: true
-    });
-    camera.add_ui_element(String::from("hhslot"), UIElementDescriptor {
-        x: 20.0,
-        y: 652.0,
-        width: 48.0,
-        height: 48.0,
-        sprite_id: world.sprites.get_sprite_id("slot_highlight").expect("couldn't find hotbar highlight sprite"),
-        visible: true
-    });
-
-
-    camera.add_ui_element(String::from("tempitem"), UIElementDescriptor {
-        x: 28.0,
-        y: 660.0,
-        width: 32.0,
-        height: 32.0,
-        sprite_id: world.sprites.get_sprite_id("sword").expect("couldn't find hotbar sprite"),
-        visible: true
-    });
+    // camera.add_ui_element(String::from("hslot1"), UIElementDescriptor {
+    //     x: 20.0,
+    //     y: 652.0,
+    //     width: 48.0,
+    //     height: 48.0,
+    //     sprite_id: world.sprites.get_sprite_id("hslot").expect("couldn't find hotbar sprite"),
+    //     visible: true
+    // });
+    // camera.add_ui_element(String::from("hslot2"), UIElementDescriptor {
+    //     x: 78.0,
+    //     y: 652.0,
+    //     width: 48.0,
+    //     height: 48.0,
+    //     sprite_id: world.sprites.get_sprite_id("hslot").expect("couldn't find hotbar sprite"),
+    //     visible: true
+    // });
+    // camera.add_ui_element(String::from("hslot3"), UIElementDescriptor {
+    //     x: 136.0,
+    //     y: 652.0,
+    //     width: 48.0,
+    //     height: 48.0,
+    //     sprite_id: world.sprites.get_sprite_id("hslot").expect("couldn't find hotbar sprite"),
+    //     visible: true
+    // });
+    // camera.add_ui_element(String::from("hslot4"), UIElementDescriptor {
+    //     x: 194.0,
+    //     y: 652.0,
+    //     width: 48.0,
+    //     height: 48.0,
+    //     sprite_id: world.sprites.get_sprite_id("hslot").expect("couldn't find hotbar sprite"),
+    //     visible: true
+    // });
+    // camera.add_ui_element(String::from("hslot5"), UIElementDescriptor {
+    //     x: 252.0,
+    //     y: 652.0,
+    //     width: 48.0,
+    //     height: 48.0,
+    //     sprite_id: world.sprites.get_sprite_id("hslot").expect("couldn't find hotbar sprite"),
+    //     visible: true
+    // });
+   
 
 
-    camera.add_ui_element(String::from("tempitem2"), UIElementDescriptor {
-        x: 86.0,
-        y: 660.0,
-        width: 32.0,
-        height: 32.0,
-        sprite_id: world.sprites.get_sprite_id("spear").expect("couldn't find hotbar sprite"),
-        visible: true
-    });
+    // camera.add_ui_element(String::from("tempitem"), UIElementDescriptor {
+    //     x: 28.0,
+    //     y: 660.0,
+    //     width: 32.0,
+    //     height: 32.0,
+    //     sprite_id: world.sprites.get_sprite_id("sword").expect("couldn't find hotbar sprite"),
+    //     visible: true
+    // });
+
+
+    // camera.add_ui_element(String::from("tempitem2"), UIElementDescriptor {
+    //     x: 86.0,
+    //     y: 660.0,
+    //     width: 32.0,
+    //     height: 32.0,
+    //     sprite_id: world.sprites.get_sprite_id("spear").expect("couldn't find hotbar sprite"),
+    //     visible: true
+    // });
 
     camera.add_ui_element(String::from("itemdisplay"), UIElementDescriptor {
         x: 30.0,
         y: 380.0,
+        z: 5.0,
         width: 150.0,
         height: 250.0,
         sprite_id: world.sprites.get_sprite_id("level_editor_menu_background").expect("couldn't find background sprite"),

@@ -14,10 +14,6 @@ pub fn generate_world_from_json_parsed_data(data: &ParsedData) -> World {
     println!("{:?}", data.sprites);
     let mut world = World::new(Player::new(player_descriptor.x, player_descriptor.y, player_descriptor.health, player_descriptor.max_health, player_descriptor.movement_speed, data.sprites.get_sprite_id("player_front").expect("Couldn't find player_front sprite")), data.sprites.clone());
     world.item_archetype_lookup = data.item_archetypes.clone();
-    world.inventory.hotbar = vec![
-        world.create_item_with_archetype(String::from("test_sword")),
-        world.create_item_with_archetype(String::from("test_spear"))
-    ];
 
     for archetype in data.entity_archetypes.iter(){
         world.add_entity_archetype(archetype.0.clone(), archetype.1.clone());

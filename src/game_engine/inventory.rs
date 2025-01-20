@@ -1,11 +1,58 @@
-use crate::game_engine::item::Item;
+use std::collections::HashMap;
 
-use super::camera::Camera;
+use wgpu::rwh::XcbDisplayHandle;
+
+use crate::{game_engine::item::Item, rendering_engine::abstractions::{Sprite, SpriteContainer}};
+
+use super::{camera::{self, Camera}, ui::UIElementDescriptor};
 #[derive(Debug)]
 pub struct Inventory {
-    pub hotbar: Vec<Item>,
+    pub items: HashMap<usize, Item>,
+    pub hotbar: Vec<Slot>,
     pub cur_hotbar_slot: usize,
+    pub slots: Vec<Slot>,
+    item_id: usize,
     pub display_text: Option<usize>
+}
+#[derive(Debug, Clone)]
+pub struct Slot {
+    pub item: Option<usize>,
+    pub main_image_ui_id: usize,
+    pub item_image_ui_id: usize,
+    pub x: usize,
+    pub y: usize
+}
+
+impl Slot {
+    pub fn create_with_ui(x: usize, y: usize, camera: &mut Camera, sprites: &SpriteContainer) -> Self {
+        let slot_ui = camera.add_ui_element(format!("hslot:{}:{}",x,y), UIElementDescriptor {
+                x: x as f32,
+                y: y as f32,
+                z: 1.0,
+                width: 48.0,
+                height: 48.0,
+                sprite_id: sprites.get_sprite_id("hslot").expect("couldn't find hotbar sprite"),
+                visible: true
+            });
+        let item_ui = camera.add_ui_element(format!("hslotitem:{}:{}",x,y), 
+            UIElementDescriptor {
+                x: x as f32 + 8.0,
+                y: y as f32 + 8.0,
+                z: 3.0,
+                width: 32.0,
+                height: 32.0,
+                sprite_id: 0,
+                visible: false
+            }
+        );
+        Self {
+            item: None,
+            main_image_ui_id: slot_ui,
+            item_image_ui_id: item_ui,
+            x: x,
+            y: y
+        }
+    }
 }
 
 impl Inventory{
@@ -14,12 +61,44 @@ impl Inventory{
             hotbar: Vec::new(),
             cur_hotbar_slot: 0,
             display_text: None,
+            items: HashMap::new(),
+            item_id: 0,
+            slots: Vec::new()
         }
+    }
+    pub fn add_item(&mut self, item: Item) -> usize {
+        self.items.insert(
+            self.item_id, item
+        );
+        self.item_id += 1;
+        return self.item_id - 1;
     }
     pub fn set_hotbar_slot(&mut self, slot: usize) {
         self.cur_hotbar_slot = slot;
     }
-    pub fn update_ui(&mut self, camera: &mut Camera) {
+    pub fn init_ui(&mut self, camera: &mut Camera, sprites: &SpriteContainer) {
+        self.hotbar.push(Slot::create_with_ui(20, 652, camera, sprites));
+        self.hotbar.push(Slot::create_with_ui(78, 652, camera, sprites));
+        self.hotbar.push(Slot::create_with_ui(136, 652, camera, sprites));
+        self.hotbar.push(Slot::create_with_ui(194, 652, camera, sprites));
+        self.hotbar.push(Slot::create_with_ui(252, 652, camera, sprites));
+        camera.add_ui_element(String::from("hhslot"), UIElementDescriptor {
+            x: 20.0,
+            y: 652.0,
+            z: 2.0,
+            width: 48.0,
+            height: 48.0,
+            sprite_id: sprites.get_sprite_id("slot_highlight").expect("couldn't find hotbar highlight sprite"),
+            visible: true
+        });
+    }
+    pub fn set_hotbar_slot_item(&mut self, slot: usize, item_id: usize) {
+        let slot_potentially = self.hotbar.get_mut(slot);
+        if slot_potentially.is_some() {
+            slot_potentially.unwrap().item = Some(item_id);
+        }
+    }
+    pub fn update_ui(&mut self, camera: &mut Camera, sprites: &SpriteContainer) {
         camera.get_ui_element_mut_by_name(String::from("hhslot")).unwrap().x  = self.cur_hotbar_slot as f32 * 58 as f32 + 20.0;
         let cur_item = self.get_cur_held_item();
         if cur_item.is_some(){
@@ -40,10 +119,28 @@ impl Inventory{
                 camera.get_text_mut(self.display_text.unwrap()).unwrap().text = text;
             }
         }
+
+        for slot in self.hotbar.iter() {
+            if slot.item.is_some() {
+                let item = self.get_item(&slot.item.unwrap()).expect("Slot refers to a non-existent item?");
+                let i = camera.get_ui_element_mut(slot.item_image_ui_id);
+                i.sprite_id = sprites.get_sprite_id(&item.sprite).expect("Item refers to a non-existent sprite?");
+                i.visible = true;
+            }else {
+                let i = camera.get_ui_element_mut(slot.item_image_ui_id);
+                i.visible = false;
+            }
+        }
         
     }
     pub fn get_cur_held_item(&self) -> Option<&Item> {
-        return self.hotbar.get(self.cur_hotbar_slot);
+        self.hotbar
+            .get(self.cur_hotbar_slot)
+            .and_then(|slot| slot.item)
+            .and_then(|item| self.get_item(&item))
+    }
+    pub fn get_item(&self, id: &usize) -> Option<&Item> {
+        self.items.get(id)
     }
 }
 

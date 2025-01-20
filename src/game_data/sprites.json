@@ -1,10 +1,6 @@
 {
     "basic_sprites": [
         {
-            "name": "inventory",
-            "path": "src/rendering_engine/img/inventory.png"
-        },
-        {
             "name": "sword",
             "path": "src/rendering_engine/img/sword.png"
         },
@@ -27,7 +23,16 @@
         {
             "name": "slot_highlight",
             "path": "src/rendering_engine/img/slothighlight.png"
+        },
+        {
+            "name": "inventory",
+            "path": "src/rendering_engine/img/inven.png"
+        },
+        {
+            "name": "inventory_background",
+            "path": "src/rendering_engine/img/back.png"
         }
+
     ],
     "spritesheets": [
         {

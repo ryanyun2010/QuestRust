@@ -329,7 +329,7 @@ create_stat_lists!(
 #[macro_export]
 macro_rules! create_stat_list {
     ($($field:ident => $value:expr),* $(,)?) => {{
-        let mut stats = StatList::default();
+        let mut stats = crate::stat::StatList::default();
         $(
             stats.$field = Some($value);
         )*
