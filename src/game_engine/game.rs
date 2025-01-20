@@ -92,14 +92,24 @@ impl<'a> Game<'a> {
             _ => {}
         }
         if state == event::ElementState::Pressed {
-            self.world.on_mouse_click(self.input.mouse_position, self.input.mouse_left, self.input.mouse_right, self.camera.viewpoint_width as f32, self.camera.viewpoint_height as f32);
+            self.on_mouse_click();
         }
 
+    }
+    pub fn on_mouse_click(&mut self) {
+        if self.state == GameState::play {
+            self.world.on_mouse_click(self.input.mouse_position, self.input.mouse_left, self.input.mouse_right, self.camera.viewpoint_width as f32, self.camera.viewpoint_height as f32);
+        }else if self.state == GameState::inventory {
+            self.world.inventory.on_mouse_click(self.input.mouse_position, self.input.mouse_left, self.input.mouse_right);
+        }
     }
     pub fn process_input(&mut self){
         if self.state == GameState::play {
             self.world.process_input(&self.input.keys_down, &mut self.camera);
             self.world.process_mouse_input(self.input.mouse_position, self.input.mouse_left, self.input.mouse_right);
+        }else if self.state == GameState::inventory {
+            self.world.inventory.process_input(&self.input.keys_down);
+            self.world.inventory.process_mouse_input(self.input.mouse_position, self.input.mouse_left, self.input.mouse_right);
         }
     }
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
@@ -133,6 +143,12 @@ impl<'a> Game<'a> {
         }
     }
     pub fn key_input(&mut self, event: winit::event::KeyEvent) {
+
+        if self.state == GameState::start {
+            self.state = GameState::play;
+            return;
+        }
+
         let mut key = event.logical_key.to_text();
 
         match event.logical_key {
@@ -181,7 +197,11 @@ impl<'a> Game<'a> {
                 _ => self.state,
             };
         }else {
-            self.world.on_key_down(key);
+            if self.state == GameState::play {
+                self.world.on_key_down(key);
+            } else if self.state == GameState::inventory {
+                self.world.inventory.on_key_down(key);
+            }
         }
     }
 
