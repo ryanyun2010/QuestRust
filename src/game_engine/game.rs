@@ -33,6 +33,7 @@ pub struct InputState {
 pub enum GameState {
     start,
     play,
+    inventory,
     death,
 }
 pub struct Game<'a> {
@@ -111,16 +112,25 @@ impl<'a> Game<'a> {
         self.renderer.render(self.camera.render(&mut self.world, self.renderer.config.width as f32, self.renderer.config.height as f32))
     }
     pub fn update(&mut self){
-        self.camera.update_ui(&mut self.world);
-        self.world.generate_collision_cache_and_damage_cache();
-        self.process_input();
-        self.world.update_entities();
-        self.world.update_entity_attacks();
-        self.world.update_player_attacks(&mut self.camera);
-        self.world.update_damage_text(&mut self.camera);
-        self.world.kill_entities_to_be_killed();
-        self.input.mouse_position.x_world = self.camera.camera_x + self.input.mouse_position.x_screen;
-        self.input.mouse_position.y_world = self.camera.camera_y + self.input.mouse_position.y_screen;
+        if self.state == GameState::play {
+            self.camera.update_ui(&mut self.world);
+            self.world.generate_collision_cache_and_damage_cache();
+            self.process_input();
+            self.world.inventory.update_ui(&mut self.camera, &self.world.sprites);
+            self.world.update_entities();
+            self.world.update_entity_attacks();
+            self.world.update_player_attacks(&mut self.camera);
+            self.world.update_damage_text(&mut self.camera);
+            self.world.kill_entities_to_be_killed();
+            self.input.mouse_position.x_world = self.camera.camera_x + self.input.mouse_position.x_screen;
+            self.input.mouse_position.y_world = self.camera.camera_y + self.input.mouse_position.y_screen;
+        }else if self.state == GameState::inventory {
+            self.world.inventory.update_ui(&mut self.camera, &self.world.sprites);
+            self.camera.update_ui(&mut self.world);
+            self.process_input();
+            self.input.mouse_position.x_world = self.camera.camera_x + self.input.mouse_position.x_screen;
+            self.input.mouse_position.y_world = self.camera.camera_y + self.input.mouse_position.y_screen;
+        }
     }
     pub fn key_input(&mut self, event: winit::event::KeyEvent) {
         let mut key = event.logical_key.to_text();
@@ -157,7 +167,22 @@ impl<'a> Game<'a> {
     }
 
     pub fn on_key_down(&mut self, key: &String){
-       self.world.on_key_down(key);
+        if key == "e" {
+            
+            self.state = match self.state {
+                GameState::play => {
+                    self.world.inventory.show_inventory(&mut self.camera);
+                    GameState::inventory
+                },
+                GameState::inventory => {
+                    self.world.inventory.hide_inventory(&mut self.camera);
+                    GameState::play
+                },
+                _ => self.state,
+            };
+        }else {
+            self.world.on_key_down(key);
+        }
     }
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {

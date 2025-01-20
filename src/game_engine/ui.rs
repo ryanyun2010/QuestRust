@@ -8,7 +8,6 @@ pub struct UIElement{
     pub height: f32,
     pub sprite_id: usize,
     pub visible: bool,
-
 }
 
 pub struct UIElementDescriptor{

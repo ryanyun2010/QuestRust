@@ -12,7 +12,8 @@ pub struct Inventory {
     pub cur_hotbar_slot: usize,
     pub slots: Vec<Slot>,
     item_id: usize,
-    pub display_text: Option<usize>
+    pub display_text: Option<usize>,
+    show_inventory: bool
 }
 #[derive(Debug, Clone)]
 pub struct Slot {
@@ -63,7 +64,8 @@ impl Inventory{
             display_text: None,
             items: HashMap::new(),
             item_id: 0,
-            slots: Vec::new()
+            slots: Vec::new(),
+            show_inventory: false
         }
     }
     pub fn add_item(&mut self, item: Item) -> usize {
@@ -82,6 +84,24 @@ impl Inventory{
         self.hotbar.push(Slot::create_with_ui(136, 652, camera, sprites));
         self.hotbar.push(Slot::create_with_ui(194, 652, camera, sprites));
         self.hotbar.push(Slot::create_with_ui(252, 652, camera, sprites));
+        camera.add_ui_element(format!("inventory_background"), UIElementDescriptor {
+            x: 326.0,
+            y: 186.5,
+            z: 0.0,
+            width: 500.0,
+            height: 347.0,
+            sprite_id: sprites.get_sprite_id("inventory").expect("couldn't find inventory sprite"),
+            visible: false
+        });
+        camera.add_ui_element(String::from("inventory_back_shade"), UIElementDescriptor {
+            x: 0.0,
+            y: 0.0,
+            z: -1.0,
+            width: 1152.0,
+            height: 720.0,
+            sprite_id: sprites.get_sprite_id("inventory_background").expect("couldn't find inventory_back_shade sprite"),
+            visible: false
+        });
         camera.add_ui_element(String::from("hhslot"), UIElementDescriptor {
             x: 20.0,
             y: 652.0,
@@ -92,6 +112,12 @@ impl Inventory{
             visible: true
         });
     }
+    pub fn show_inventory(&mut self, camera: &mut Camera){
+        self.show_inventory = true;
+    }
+    pub fn hide_inventory(&mut self, camera: &mut Camera){
+        self.show_inventory = false;
+    }
     pub fn set_hotbar_slot_item(&mut self, slot: usize, item_id: usize) {
         let slot_potentially = self.hotbar.get_mut(slot);
         if slot_potentially.is_some() {
@@ -99,6 +125,8 @@ impl Inventory{
         }
     }
     pub fn update_ui(&mut self, camera: &mut Camera, sprites: &SpriteContainer) {
+        camera.get_ui_element_mut_by_name(String::from("inventory_background")).unwrap().visible = self.show_inventory;
+        camera.get_ui_element_mut_by_name(String::from("inventory_back_shade")).unwrap().visible = self.show_inventory; 
         camera.get_ui_element_mut_by_name(String::from("hhslot")).unwrap().x  = self.cur_hotbar_slot as f32 * 58 as f32 + 20.0;
         let cur_item = self.get_cur_held_item();
         if cur_item.is_some(){

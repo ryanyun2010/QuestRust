@@ -875,7 +875,6 @@ impl World{
         let player = self.player.borrow();
         camera.update_camera_position(player.x, player.y);
         drop(player);
-        self.inventory.update_ui(camera, &self.sprites);
         let held_potentially = &self.inventory.get_cur_held_item();
         if held_potentially.is_some() {
             let sprite = &held_potentially.unwrap().sprite;
