@@ -365,6 +365,69 @@ impl World{
         }
         false
     }
+    pub fn check_collision_non_damageable(&self, player: bool, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, entity: bool) -> bool{
+        if !player {
+            let player = self.player.borrow();
+            let pw = player.collision_box.w;
+            let ph = player.collision_box.h;
+            let px = player.x + player.collision_box.x_offset;
+            let py = player.y + player.collision_box.y_offset;
+            if px.floor() - 1.0 < (x + w) as f32 && px.floor() + pw + 1.0 > x as f32 && py.floor() - 1.0 < (y + h) as f32 && py.floor() + ph + 1.0 > y as f32{
+                return true;
+            }
+        }
+        let tiles_to_check = World::get_terrain_tiles(x, y, w, h);
+        let mut ids_to_check: Vec<usize> = Vec::new();
+        for tile in tiles_to_check.iter(){
+            if self.collision_cache.borrow().get(&[tile[0],tile[1]]).is_none(){
+                continue;
+            }else{
+                ids_to_check.extend(self.collision_cache.borrow().get(&[tile[0],tile[1]]).unwrap());
+            }
+        }
+        let idti: usize = id_to_ignore.unwrap_or(usize::MAX);
+        for id in ids_to_check{
+            if id == idti{
+                continue;
+            }
+            let terrain_potentially = self.terrain.get(&id);
+            
+            if terrain_potentially.is_none(){
+                if entity{
+                    let entity_collision_box = self.get_entity_collision_box(id).unwrap();
+                    let entity_position = self.entity_position_components.get(&id).unwrap().borrow();
+                    let entity_tags = self.get_entity_tags(id).unwrap();
+                    let mut damageable = false;
+                    for tag in entity_tags.iter(){
+                        match tag{
+                            EntityTags::Damageable(_) => {
+                                damageable = true;
+                            }
+                            _ => ()
+                        }
+                    }
+                    if damageable {
+                        continue;
+                    }
+                    let ex = entity_position.x + entity_collision_box.x_offset;
+                    let ey = entity_position.y + entity_collision_box.y_offset;
+                    let ew = entity_collision_box.w;
+                    let eh = entity_collision_box.h;
+                    if ex < (x + w) as f32 && ex + ew > x as f32 && ey < (y + h) as f32 && ey + eh > y as f32{
+                        return true;
+                    }
+                }
+                
+            }else{
+                let terrain = terrain_potentially.unwrap();
+                if terrain.x < x + w && terrain.x + 32 > x && terrain.y < y + h && terrain.y + 32 > y{
+                    return true;
+                }
+            }
+        }
+        false
+    }
+    
     pub fn get_entity_damage_box(&self, id: usize) -> Result<&CollisionBox, anyhow::Error> {
         let entity_tags_potentially = self.get_entity_tags(id);
         if entity_tags_potentially.is_none(){
@@ -663,7 +726,6 @@ impl World{
                     let collisions = self.get_attacked(true, None, attack.x as usize - size/2, attack.y as usize - size/2, attack.stats.size.unwrap_or(0.0).floor() as usize, attack.stats.size.unwrap_or(0.0).floor() as usize, true);
                     let mut hit = false;
                     for collision in collisions.iter(){
-                    println!("TEST {}", hit);
                         if self.entity_health_components.get(&collision).is_some(){
                             hit = true;
                             attacks_to_be_deleted.push(i);
@@ -688,7 +750,7 @@ impl World{
                         }
                         
                     }else {
-                        let c = self.check_collision(true, None, attack.x as usize, attack.y as usize, attack.stats.size.unwrap_or(0.0) as usize,attack.stats.size.unwrap_or(0.0) as usize, true);
+                        let c = self.check_collision_non_damageable(true, None, attack.x as usize, attack.y as usize, attack.stats.size.unwrap_or(0.0) as usize,attack.stats.size.unwrap_or(0.0) as usize, true);
                         if c{
                             attacks_to_be_deleted.push(i);
                         }
