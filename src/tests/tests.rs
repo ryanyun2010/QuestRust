@@ -57,6 +57,6 @@ pub async fn basic_world() -> world::World {
 }
 pub async fn basic_camera(world: &mut World) -> Camera {
     let mut camera = Camera::new(1152,720);
-    world.inventory.init_ui(&mut camera, &world.sprites);
+    world.inventory.init_ui(&world.sprites);
     camera
 }

@@ -7,6 +7,7 @@ use crate::game_engine::ui::UIElement;
 use wgpu_text::glyph_brush::{HorizontalAlign, Section as TextSection};
 
 use super::entities::AttackType;
+use super::ui::UIESprite;
 
 #[derive(Debug, Clone)]
 pub enum Font{
@@ -56,7 +57,7 @@ impl Camera{
         let player = world.player.borrow().clone();
         let health_bar = self.get_ui_element_mut_by_name(String::from("health_bar_inside")).unwrap();
         let health_bar_width = f32::max(0.0, (player.health as f32 / player.max_health as f32) * 250.0);
-        health_bar.width = health_bar_width;
+        health_bar.sprite.width = health_bar_width;
     }
     pub fn get_ui_element_mut_by_name(&mut self, name: String) -> Option<&mut UIElement> {
         let id_potential = self.get_ui_element_id_from_name(name);
@@ -87,7 +88,7 @@ impl Camera{
     pub fn get_ui_elements_at(&self, x: usize, y: usize) -> Vec<String>{
         let mut elements = Vec::new();
         for (.., element) in self.ui_elements.iter(){
-            if x >= element.x as usize && x <= (element.x + element.width) as usize && y >= element.y as usize && y <= (element.y + element.height) as usize{
+            if x >= element.sprite.x as usize && x <= (element.sprite.x + element.sprite.width) as usize && y >= element.sprite.y as usize && y <= (element.sprite.y + element.sprite.height) as usize{
                 elements.push(element.name.clone());
             }
         }
@@ -147,7 +148,7 @@ impl Camera{
         }
         (draw_data_main, draw_data_other)
     }
-    pub fn render(&mut self, world: &mut World, screen_width: f32, screen_height: f32) -> RenderDataFull{
+    pub fn render(&mut self, world: &mut World, uie: Vec<UIESprite>, screen_width: f32, screen_height: f32) -> RenderDataFull{
         let mut render_data = RenderDataFull::new();
         let mut terrain_data: RenderData = RenderData::new();
         let mut entity_data: RenderData = RenderData::new();
@@ -284,14 +285,12 @@ impl Camera{
         render_data.index.extend(player_effect_draw_data.index);
 
         world.set_loaded_chunks(chunks_loaded);
-        let mut sorted_ui_elements: Vec<&UIElement> = self.ui_elements.values().collect();
+        let mut sorted_ui_elements: Vec<&UIESprite> = self.ui_elements.values().filter_map(|x| if x.visible { Some(&x.sprite) } else { None }).collect();
+        sorted_ui_elements.extend(&uie);
         sorted_ui_elements.sort_by(|a, b| a.z.partial_cmp(&b.z).unwrap());
 
         for element in sorted_ui_elements.iter(){
-            if !element.visible{
-                continue;
-            }
-            let element_sprite = world.sprites.get_sprite(element.sprite_id).expect(format!("Could not find sprite for ui element {}", element.name).as_str());
+            let element_sprite = world.sprites.get_sprite_by_name(&element.sprite).expect(format!("Could not find sprite with name {} for ui element", element.sprite).as_str());
             let draw_data = element_sprite.draw_data(element.x, element.y, element.width.floor() as usize, element.height.floor() as usize, self.viewpoint_width, self.viewpoint_height, render_data.vertex.len() as u16, 0, 0);
             render_data.vertex.extend(draw_data.vertex);
             render_data.index.extend(draw_data.index);

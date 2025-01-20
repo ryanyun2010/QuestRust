@@ -14,13 +14,13 @@ fn main() {
     let parsed_data = parser.parse_and_convert_game_data(PATH_BUNDLE);
     let mut camera = camera::Camera::new(1152,720);
     let mut world = starting_level_generator::generate_world_from_json_parsed_data(&parsed_data);
-    world.inventory.init_ui(&mut camera, &world.sprites);
     let sword = world.inventory.add_item(
         world.create_item_with_archetype("test_sword".to_string())
     );
     let spear = world.inventory.add_item(
         world.create_item_with_archetype("test_spear".to_string())
     );
+    world.inventory.init_ui(&world.sprites);
     world.inventory.set_hotbar_slot_item(0, sword);
     world.inventory.set_hotbar_slot_item(1, spear);
     camera.add_ui_element(String::from("health_bar_background"), UIElementDescriptor {
@@ -29,7 +29,7 @@ fn main() {
         z: 5.0,
         width: 256.0,
         height: 32.0,
-        sprite_id: world.sprites.get_sprite_id("health_bar_back").expect("couldn't find health_bar_back sprite"),
+        sprite: String::from("health_bar_back"),
         visible: true
     });
     camera.add_ui_element(String::from("health_bar_inside"), UIElementDescriptor {
@@ -38,7 +38,7 @@ fn main() {
         z: 6.0,
         width: 250.0,
         height: 26.0,
-        sprite_id: world.sprites.get_sprite_id("health").expect("couldn't find health sprite"),
+        sprite: String::from("health"),
         visible: true
     });
     // camera.add_ui_element(String::from("inventory_background"), UIElementDescriptor {
@@ -120,15 +120,6 @@ fn main() {
     //     visible: true
     // });
 
-    camera.add_ui_element(String::from("itemdisplay"), UIElementDescriptor {
-        x: 30.0,
-        y: 380.0,
-        z: 5.0,
-        width: 150.0,
-        height: 250.0,
-        sprite_id: world.sprites.get_sprite_id("level_editor_menu_background").expect("couldn't find background sprite"),
-        visible: true
-    });
 
     // world.player.borrow_mut().holding_texture_sprite = Some(world.sprites.get_sprite_id("sword").unwrap());
     println!("Time to load: {:?} ms", load_time.elapsed().as_millis());

@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 
+use anyhow::anyhow;
 use wgpu::rwh::XcbDisplayHandle;
 
 use crate::{game_engine::item::Item, rendering_engine::abstractions::{Sprite, SpriteContainer}};
 
-use super::{camera::{self, Camera}, game::MousePosition, ui::UIElementDescriptor};
+use super::{camera::{self, Camera}, game::MousePosition, ui::{UIESprite, UIElementDescriptor}};
 
 #[derive(Debug, Clone)]
 pub struct ItemOnMouse{
@@ -13,54 +14,70 @@ pub struct ItemOnMouse{
 }
 #[derive(Debug)]
 pub struct Inventory {
-    pub items: HashMap<usize, Item>,
-    pub hotbar: Vec<Slot>,
-    pub cur_hotbar_slot: usize,
-    pub slots: Vec<Slot>,
+    items: HashMap<usize, Item>,
+    hotbar: Vec<Slot>,
+    cur_hotbar_slot: usize,
+    slots: Vec<Slot>,
     item_id: usize,
-    pub display_text: Option<usize>,
+    display_text: Option<usize>,
     show_inventory: bool,
     item_on_mouse: Option<ItemOnMouse>,
     mouse_position: MousePosition
 }
 #[derive(Debug, Clone)]
-pub struct Slot {
-    pub item: Option<usize>,
-    pub main_image_ui_id: usize,
-    pub item_image_ui_id: usize,
-    pub x: usize,
-    pub y: usize
+struct Slot {
+    item: Option<usize>,
+    main_image: Option<UIESprite>,
+    item_image: Option<UIESprite>,
+    x: usize,
+    y: usize
 }
 
 impl Slot {
-    pub fn create_with_ui(x: usize, y: usize, camera: &mut Camera, sprites: &SpriteContainer) -> Self {
-        let slot_ui = camera.add_ui_element(format!("hslot:{}:{}",x,y), UIElementDescriptor {
-                x: x as f32,
-                y: y as f32,
-                z: 1.0,
-                width: 48.0,
-                height: 48.0,
-                sprite_id: sprites.get_sprite_id("hslot").expect("couldn't find hotbar sprite"),
-                visible: true
-            });
-        let item_ui = camera.add_ui_element(format!("hslotitem:{}:{}",x,y), 
-            UIElementDescriptor {
-                x: x as f32 + 8.0,
-                y: y as f32 + 8.0,
-                z: 3.0,
-                width: 32.0,
-                height: 32.0,
-                sprite_id: 0,
-                visible: false
-            }
-        );
+    pub fn new(x: usize, y: usize) -> Self {
+
         Self {
             item: None,
-            main_image_ui_id: slot_ui,
-            item_image_ui_id: item_ui,
+            main_image: Some(UIESprite{
+                x: x as f32,
+                y: y as f32,
+                z: 5.0,
+                width: 48.0,
+                height: 48.0,
+                sprite: "hslot".to_string()
+            }),
+            item_image: None,
             x: x,
             y: y
         }
+    }
+    pub fn get_ui(&self) -> Vec<UIESprite>{
+        let mut sprites = Vec::new();
+        sprites.extend(self.main_image.clone());
+        sprites.extend(self.item_image.clone());
+        sprites
+    }
+    pub fn set_item(&mut self, item: usize, items: &HashMap<usize, Item>) -> Result<(), anyhow::Error>{
+        let i = items.get(&item);
+        if i.is_none() {
+            return Err(anyhow!("couldn't find item with id {}", item))
+        }
+        self.item = Some(item);
+        self.item_image = Some(
+            UIESprite {
+                x: self.x as f32 + 8.0,
+                y: self.y as f32 + 8.0,
+                z: 5.2,
+                width: 32.0,
+                height: 32.0,
+                sprite: i.unwrap().sprite.clone()
+            }
+        );
+        Ok(())
+    }
+    pub fn remove_item(&mut self) {
+        self.item = None;
+        self.item_image = None;
     }
 }
 
@@ -88,55 +105,20 @@ impl Inventory{
     pub fn set_hotbar_slot(&mut self, slot: usize) {
         self.cur_hotbar_slot = slot;
     }
-    pub fn init_ui(&mut self, camera: &mut Camera, sprites: &SpriteContainer) {
-        self.hotbar.push(Slot::create_with_ui(20, 652, camera, sprites));
-        self.hotbar.push(Slot::create_with_ui(78, 652, camera, sprites));
-        self.hotbar.push(Slot::create_with_ui(136, 652, camera, sprites));
-        self.hotbar.push(Slot::create_with_ui(194, 652, camera, sprites));
-        self.hotbar.push(Slot::create_with_ui(252, 652, camera, sprites));
-        self.slots.push(Slot::create_with_ui(520, 200, camera, sprites));
-        self.slots.push(Slot::create_with_ui(578, 200, camera, sprites));
-        self.slots.push(Slot::create_with_ui(636, 200, camera, sprites));
-        self.slots.push(Slot::create_with_ui(694, 200, camera, sprites));
-        self.slots.push(Slot::create_with_ui(752, 200, camera, sprites));
-        self.set_slot_item(0, 0);
-        self.set_slot_item(3, 1);
-        camera.add_ui_element(format!("inventory_background"), UIElementDescriptor {
-            x: 326.0,
-            y: 186.5,
-            z: 0.0,
-            width: 500.0,
-            height: 347.0,
-            sprite_id: sprites.get_sprite_id("inventory").expect("couldn't find inventory sprite"),
-            visible: false
-        });
-        camera.add_ui_element(String::from("inventory_back_shade"), UIElementDescriptor {
-            x: 0.0,
-            y: 0.0,
-            z: -1.0,
-            width: 1152.0,
-            height: 720.0,
-            sprite_id: sprites.get_sprite_id("inventory_background").expect("couldn't find inventory_back_shade sprite"),
-            visible: false
-        });
-        camera.add_ui_element(String::from("hhslot"), UIElementDescriptor {
-            x: 20.0,
-            y: 652.0,
-            z: 2.0,
-            width: 48.0,
-            height: 48.0,
-            sprite_id: sprites.get_sprite_id("slot_highlight").expect("couldn't find hotbar highlight sprite"),
-            visible: true
-        });
-        camera.add_ui_element(String::from("item_held"), UIElementDescriptor{
-            x: 0.0,
-            y: 0.0,
-            z: 999.0,
-            width: 24.0,
-            height: 24.0,
-            sprite_id: 0,
-            visible: false
-        });
+    pub fn init_ui(&mut self, sprites: &SpriteContainer) {
+        self.hotbar.push(Slot::new(20, 652));
+        self.hotbar.push(Slot::new(78, 652));
+        self.hotbar.push(Slot::new(136, 652));
+        self.hotbar.push(Slot::new(194, 652));
+        self.hotbar.push(Slot::new(252, 652));
+        self.slots.push(Slot::new(520, 200));
+        self.slots.push(Slot::new(578, 200));
+        self.slots.push(Slot::new(636, 200));
+        self.slots.push(Slot::new(694, 200));
+        self.slots.push(Slot::new(752, 200));
+        println!("{:?}", self.set_slot_item(0, 0));
+        println!("{:?}", self.set_slot_item(3, 1));
+        println!("{:?}", self.slots[0]);
     }
     pub fn show_inventory(&mut self, camera: &mut Camera){
         self.show_inventory = true;
@@ -152,86 +134,145 @@ impl Inventory{
     pub fn set_hotbar_slot_item(&mut self, slot: usize, item_id: usize) {
         let slot_potentially = self.hotbar.get_mut(slot);
         if slot_potentially.is_some() {
-            slot_potentially.unwrap().item = Some(item_id);
+            slot_potentially.unwrap().set_item(item_id, &self.items);
         }
     }
-    pub fn set_slot_item(&mut self, slot: usize, item_id: usize) {
+    pub fn set_slot_item(&mut self, slot: usize, item_id: usize) -> Result<(), anyhow::Error> {
         let slot_potentially = self.slots.get_mut(slot);
         if slot_potentially.is_some() {
-            slot_potentially.unwrap().item = Some(item_id);
+            slot_potentially.unwrap().set_item(item_id, &self.items)?;
         }
+        Ok(())
     }
-    pub fn update_ui(&mut self, camera: &mut Camera, sprites: &SpriteContainer) {
-        camera.get_ui_element_mut_by_name(String::from("inventory_background")).unwrap().visible = self.show_inventory;
-        camera.get_ui_element_mut_by_name(String::from("inventory_back_shade")).unwrap().visible = self.show_inventory; 
-        camera.get_ui_element_mut_by_name(String::from("hhslot")).unwrap().x  = self.cur_hotbar_slot as f32 * 58 as f32 + 20.0;
-        camera.get_ui_element_mut_by_name(String::from("hhslot")).unwrap().visible  = self.show_inventory;
-        let cur_item = self.get_cur_held_item();
-        if cur_item.is_some(){
-            let mut text = format!(
-                "{}\n----------------------------------------\n\n{}\n\n", cur_item.unwrap().name, cur_item.unwrap().lore
-            );
-            let stats = &cur_item.unwrap().stats;
-            for stat in stats.into_iter() {
-                if stat.1.is_some(){
-                    text.push_str(
-                        format!("{}: {} \n", stat.0, stat.1.unwrap()).as_str()
-                    );
-                }
-            }
-            if self.display_text.is_none(){
-                self.display_text = Some(camera.add_text(text, super::camera::Font::A, 40.0, 390.0, 130.0, 250.0, 20.0, [1.0, 1.0, 1.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Left));
-            }else{
-                camera.get_text_mut(self.display_text.unwrap()).unwrap().text = text;
-            }
-        }
-
-        if self.item_on_mouse.is_some() {
-            let item = self.item_on_mouse.as_ref().unwrap();
-            let item_ui = camera.get_ui_element_mut_by_name(String::from("item_held")).unwrap();
-            item_ui.visible = true;
-            item_ui.sprite_id = sprites.get_sprite_id(self.get_item(&item.item_id).unwrap().sprite.as_str()).unwrap();
-            item_ui.x = self.mouse_position.x_screen - 12.0;
-            item_ui.y = self.mouse_position.y_screen - 12.0;
-        }else{
-            let item_ui = camera.get_ui_element_mut_by_name(String::from("item_held")).unwrap();
-            item_ui.visible = false;
-        }
+    pub fn render_ui(&mut self, sprites: &SpriteContainer) -> Vec<UIESprite> {
+        let mut ui = Vec::new();
         if self.show_inventory {
-            for slot in self.hotbar.iter() {
-                camera.get_ui_element_mut(slot.main_image_ui_id).visible = false;
-                camera.get_ui_element_mut(slot.item_image_ui_id).visible = false;
-            }
+            ui.push(UIESprite {
+                z: 0.0,
+                x: 326.0,
+                y: 186.5,
+                width: 500.0,
+                height: 347.0,
+                sprite: String::from("inventory")
+            });
+            ui.push(UIESprite {
+                z: -1.0,
+                x: 0.0,
+                y: 0.0,
+                width: 1152.0,
+                height: 720.0,
+                sprite: String::from("inventory_background")
+            });
+
             for slot in self.slots.iter() {
-                camera.get_ui_element_mut(slot.main_image_ui_id).visible = true;
-                if slot.item.is_some() {
-                    let item = self.get_item(&slot.item.unwrap()).expect("Slot refers to a non-existent item?");
-                    let i = camera.get_ui_element_mut(slot.item_image_ui_id);
-                    i.sprite_id = sprites.get_sprite_id(&item.sprite).expect("Item refers to a non-existent sprite?");
-                    i.visible = true;
-                }else {
-                    let i = camera.get_ui_element_mut(slot.item_image_ui_id);
-                    i.visible = false;
-                }
+                ui.extend(slot.get_ui());
             }
-        }else{
-            for slot in self.slots.iter() {
-                camera.get_ui_element_mut(slot.main_image_ui_id).visible = false;
-                camera.get_ui_element_mut(slot.item_image_ui_id).visible = false;
-            }
-            for slot in self.hotbar.iter() {
-                camera.get_ui_element_mut(slot.main_image_ui_id).visible = true;
-                if slot.item.is_some() {
-                    let item = self.get_item(&slot.item.unwrap()).expect("Slot refers to a non-existent item?");
-                    let i = camera.get_ui_element_mut(slot.item_image_ui_id);
-                    i.sprite_id = sprites.get_sprite_id(&item.sprite).expect("Item refers to a non-existent sprite?");
-                    i.visible = true;
-                }else {
-                    let i = camera.get_ui_element_mut(slot.item_image_ui_id);
-                    i.visible = false;
+
+            if self.item_on_mouse.is_some() {
+                let iom = self.item_on_mouse.as_ref().unwrap();
+                let item = self.get_item(&iom.item_id);
+                if item.is_some(){
+                    ui.push(UIESprite {
+                        x: self.mouse_position.x_screen - 12.0,
+                        y: self.mouse_position.y_screen - 12.0,
+                        z: 999.0,
+                        width: 24.0,
+                        height: 24.0,
+                        sprite: item.unwrap().sprite.clone()
+                    })
                 }
             }
         }
+        else {
+            for slot in self.hotbar.iter() {
+                ui.extend(slot.get_ui());
+            }
+            ui.push(
+                UIESprite{
+                    x: 20.0 + 58.0 * self.cur_hotbar_slot as f32,
+                    y: 652.0,
+                    z: 5.1,
+                    width: 48.0,
+                    height: 48.0,
+                    sprite: String::from("slot_highlight")
+                }
+            )
+        }
+        ui
+        
+
+
+
+        // camera.get_ui_element_mut_by_name(String::from("inventory_background")).unwrap().visible = self.show_inventory;
+        // camera.get_ui_element_mut_by_name(String::from("inventory_back_shade")).unwrap().visible = self.show_inventory; 
+        // camera.get_ui_element_mut_by_name(String::from("hhslot")).unwrap().x  = self.cur_hotbar_slot as f32 * 58 as f32 + 20.0;
+        // camera.get_ui_element_mut_by_name(String::from("hhslot")).unwrap().visible  = self.show_inventory;
+        // let cur_item = self.get_cur_held_item();
+        // if cur_item.is_some(){
+        //     let mut text = format!(
+        //         "{}\n----------------------------------------\n\n{}\n\n", cur_item.unwrap().name, cur_item.unwrap().lore
+        //     );
+        //     let stats = &cur_item.unwrap().stats;
+        //     for stat in stats.into_iter() {
+        //         if stat.1.is_some(){
+        //             text.push_str(
+        //                 format!("{}: {} \n", stat.0, stat.1.unwrap()).as_str()
+        //             );
+        //         }
+        //     }
+        //     if self.display_text.is_none(){
+        //         self.display_text = Some(camera.add_text(text, super::camera::Font::A, 40.0, 390.0, 130.0, 250.0, 20.0, [1.0, 1.0, 1.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Left));
+        //     }else{
+        //         camera.get_text_mut(self.display_text.unwrap()).unwrap().text = text;
+        //     }
+        // }
+
+        // if self.item_on_mouse.is_some() {
+        //     let item = self.item_on_mouse.as_ref().unwrap();
+        //     let item_ui = camera.get_ui_element_mut_by_name(String::from("item_held")).unwrap();
+        //     item_ui.visible = true;
+        //     item_ui.sprite_id = sprites.get_sprite_id(self.get_item(&item.item_id).unwrap().sprite.as_str()).unwrap();
+        //     item_ui.x = self.mouse_position.x_screen - 12.0;
+        //     item_ui.y = self.mouse_position.y_screen - 12.0;
+        // }else{
+        //     let item_ui = camera.get_ui_element_mut_by_name(String::from("item_held")).unwrap();
+        //     item_ui.visible = false;
+        // }
+        // if self.show_inventory {
+        //     for slot in self.hotbar.iter() {
+        //         camera.get_ui_element_mut(slot.main_image_ui_id).visible = false;
+        //         camera.get_ui_element_mut(slot.item_image_ui_id).visible = false;
+        //     }
+        //     for slot in self.slots.iter() {
+        //         camera.get_ui_element_mut(slot.main_image_ui_id).visible = true;
+        //         if slot.item.is_some() {
+        //             let item = self.get_item(&slot.item.unwrap()).expect("Slot refers to a non-existent item?");
+        //             let i = camera.get_ui_element_mut(slot.item_image_ui_id);
+        //             i.sprite_id = sprites.get_sprite_id(&item.sprite).expect("Item refers to a non-existent sprite?");
+        //             i.visible = true;
+        //         }else {
+        //             let i = camera.get_ui_element_mut(slot.item_image_ui_id);
+        //             i.visible = false;
+        //         }
+        //     }
+        // }else{
+        //     for slot in self.slots.iter() {
+        //         camera.get_ui_element_mut(slot.main_image_ui_id).visible = false;
+        //         camera.get_ui_element_mut(slot.item_image_ui_id).visible = false;
+        //     }
+        //     for slot in self.hotbar.iter() {
+        //         camera.get_ui_element_mut(slot.main_image_ui_id).visible = true;
+        //         if slot.item.is_some() {
+        //             let item = self.get_item(&slot.item.unwrap()).expect("Slot refers to a non-existent item?");
+        //             let i = camera.get_ui_element_mut(slot.item_image_ui_id);
+        //             i.sprite_id = sprites.get_sprite_id(&item.sprite).expect("Item refers to a non-existent sprite?");
+        //             i.visible = true;
+        //         }else {
+        //             let i = camera.get_ui_element_mut(slot.item_image_ui_id);
+        //             i.visible = false;
+        //         }
+        //     }
+        // }
         
     }
     pub fn get_cur_held_item(&self) -> Option<&Item> {
@@ -267,7 +308,7 @@ impl Inventory{
                             item_id: slot.item.unwrap()
                         }
                     );
-                    slot.item = None;
+                    slot.remove_item();
                 }else if self.item_on_mouse.is_some() {
                     let item_clone = self.item_on_mouse.as_ref().unwrap().clone();
                     self.item_on_mouse = Some(
@@ -276,10 +317,10 @@ impl Inventory{
                             item_id: slot.item.unwrap()
                         }
                     ); 
-                    slot.item = Some(item_clone.item_id);
+                    slot.set_item(item_clone.item_id, &self.items);
                 }
             }else if self.item_on_mouse.is_some(){
-                slot.item = Some(self.item_on_mouse.as_ref().unwrap().item_id);
+                slot.set_item(self.item_on_mouse.as_ref().unwrap().item_id, &self.items);
                 self.item_on_mouse = None;
             }
         }

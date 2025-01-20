@@ -119,14 +119,14 @@ impl<'a> Game<'a> {
             );
             return Ok(());
         }
-        self.renderer.render(self.camera.render(&mut self.world, self.renderer.config.width as f32, self.renderer.config.height as f32))
+        let uie = self.world.inventory.render_ui(&self.world.sprites);
+        self.renderer.render(self.camera.render(&mut self.world, uie, self.renderer.config.width as f32, self.renderer.config.height as f32))
     }
     pub fn update(&mut self){
         if self.state == GameState::play {
             self.camera.update_ui(&mut self.world);
             self.world.generate_collision_cache_and_damage_cache();
             self.process_input();
-            self.world.inventory.update_ui(&mut self.camera, &self.world.sprites);
             self.world.update_entities();
             self.world.update_entity_attacks();
             self.world.update_player_attacks(&mut self.camera);
@@ -135,7 +135,6 @@ impl<'a> Game<'a> {
             self.input.mouse_position.x_world = self.camera.camera_x + self.input.mouse_position.x_screen;
             self.input.mouse_position.y_world = self.camera.camera_y + self.input.mouse_position.y_screen;
         }else if self.state == GameState::inventory {
-            self.world.inventory.update_ui(&mut self.camera, &self.world.sprites);
             self.camera.update_ui(&mut self.world);
             self.process_input();
             self.input.mouse_position.x_world = self.camera.camera_x + self.input.mouse_position.x_screen;
