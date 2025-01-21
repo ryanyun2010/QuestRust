@@ -302,12 +302,12 @@ impl Camera{
         }
         let temp_uie_clone = uie.text.clone();
         self.temp_uie = temp_uie_clone; // THIS IS THE JANKIEST THING IVE EVER SEEN BUT ITS THE ONLY WAY IT WORKS FOR SOME REASON
-        (render_data.sections_a, render_data.sections_b) = self.get_sections(screen_width, screen_height);
+        (render_data.sections_a_t, render_data.sections_a_b, render_data.sections_b_t, render_data.sections_b_b) = self.get_sections(screen_width, screen_height);
         let mut f = Vec::new();
         for text in self.temp_uie.iter() {
             f.push(text.get_section(&self, screen_width, screen_height, 0.0, 0.0).clone());
         }
-        render_data.sections_a.extend(f);
+        render_data.sections_a_t.extend(f);
         Ok(render_data)
     }
     pub fn add_text(&mut self, text: String, font: Font,  x: f32, y: f32, w: f32, h: f32, font_size: f32, color: [f32; 4], align: HorizontalAlign) -> usize{
@@ -340,29 +340,31 @@ impl Camera{
     pub fn get_text_mut(&mut self, id: usize) -> Option<&mut TextSprite>{
         self.text.get_mut(&id)
     }
-    pub fn get_sections(&self, screen_width: f32, screen_height: f32) -> (Vec<TextSection>, Vec<TextSection>){
-        let mut sections_a = Vec::new();
-        let mut sections_b = Vec::new();
+    pub fn get_sections(&self, screen_width: f32, screen_height: f32) -> (Vec<TextSection>, Vec<TextSection>, Vec<TextSection>, Vec<TextSection>){
+        let mut sections_a_t = Vec::new();
+        let mut sections_a_b = Vec::new();
+        let mut sections_b_t = Vec::new();
+        let mut sections_b_b = Vec::new();
         for (id, text) in self.text.iter(){
             match self.text_font_lookup.get(id).expect(format!("Could not find font for text with id {}", id).as_str()){
                 Font::A => {
-                    sections_a.push(text.get_section(&self, screen_width, screen_height, 0.0, 0.0).clone());
+                    sections_a_t.push(text.get_section(&self, screen_width, screen_height, 0.0, 0.0).clone());
                 },
                 Font::B => {
-                    sections_b.push(text.get_section(&self, screen_width, screen_height, 0.0, 0.0).clone());
+                    sections_b_t.push(text.get_section(&self, screen_width, screen_height, 0.0, 0.0).clone());
                 }
             }
         }
         for (id, text) in self.world_text.iter(){
             match self.world_text_font_lookup.get(id).expect(format!("Could not find font for text with id {}", id).as_str()){
                 Font::A => {
-                    sections_a.push(text.get_section(&self, screen_width, screen_height, self.camera_x * -1.0, self.camera_y * -1.0).clone());
+                    sections_a_b.push(text.get_section(&self, screen_width, screen_height, self.camera_x * -1.0, self.camera_y * -1.0).clone());
                 },
                 Font::B => {
-                    sections_b.push(text.get_section(&self, screen_width, screen_height, self.camera_x * -1.0, self.camera_y * -1.0).clone());
+                    sections_b_b.push(text.get_section(&self, screen_width, screen_height, self.camera_x * -1.0, self.camera_y * -1.0).clone());
                 }
             }
         }
-        (sections_a, sections_b)
+        (sections_a_t, sections_a_b, sections_b_t, sections_b_b)
     }
 }

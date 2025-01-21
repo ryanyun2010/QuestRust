@@ -146,7 +146,6 @@ impl Inventory{
         )
     }
     pub fn show_inventory(&mut self){
-        todo!("ACTUALLY FIX Z LEVEL");
         self.show_inventory = true;
         for i in 0..self.hotbar.len(){
             let slot = self.get_hotbar_slot_mut(i).unwrap();

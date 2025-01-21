@@ -201,8 +201,8 @@ impl<'a> Renderer<'a> {
         });
 
         {
-            let mut sections_a = render_data.sections_a.clone();
-            let mut sections_b = render_data.sections_b.clone();
+            let sections_a = render_data.sections_a_b.clone();
+            let sections_b = render_data.sections_b_b.clone();
             self.text_brush_a.queue(&self.device, &self.queue, sections_a).unwrap();
             self.text_brush_b.queue(&self.device, &self.queue, sections_b).unwrap();
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -227,15 +227,13 @@ impl<'a> Renderer<'a> {
             render_pass.draw_indexed(0..render_data.index_behind_text,0, 0..1);
             self.text_brush_a.draw(&mut render_pass);
             self.text_brush_b.draw(&mut render_pass);
-            // render_pass.draw_indexed(render_data.index_behind_text..num_indicies,0, 0..1);
         }
-        self.queue.submit(std::iter::once(encoder.finish()));
-        let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
-        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("Render Encoder"),
-        });
 
         {
+            let sections_a = render_data.sections_a_t.clone();
+            let sections_b = render_data.sections_b_t.clone();
+            self.text_brush_a.queue(&self.device, &self.queue, sections_a).unwrap();
+            self.text_brush_b.queue(&self.device, &self.queue, sections_b).unwrap();
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -256,6 +254,8 @@ impl<'a> Renderer<'a> {
             render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
             render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint32);
             render_pass.draw_indexed(render_data.index_behind_text..num_indicies,0, 0..1);
+            self.text_brush_a.draw(&mut render_pass);
+            self.text_brush_b.draw(&mut render_pass);
         }
         self.queue.submit(std::iter::once(encoder.finish()));
     
