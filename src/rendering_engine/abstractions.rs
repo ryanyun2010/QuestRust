@@ -42,7 +42,7 @@ pub struct Sprite{
     pub tex_h: f32
 }
 impl Sprite {
-    pub fn draw_data(&self, screen_x: f32, screen_y: f32, screen_w: usize, screen_h: usize, window_size_width: usize, window_size_height: usize, index_offset:u16, vertex_offset_x: i32, vertex_offset_y: i32) -> RenderData {
+    pub fn draw_data(&self, screen_x: f32, screen_y: f32, screen_w: usize, screen_h: usize, window_size_width: usize, window_size_height: usize, index_offset: u32, vertex_offset_x: i32, vertex_offset_y: i32) -> RenderData {
 
         let screen_to_render_ratio_x: f32 = 2.0 / window_size_width as f32;
         let screen_to_render_ratio_y: f32 = 2.0 / window_size_height as f32;
@@ -59,11 +59,11 @@ impl Sprite {
             Vertex { position: [x, y + h, 0.0], tex_coords: [self.tex_x, self.tex_y], index: self.texture_index },
         ];
 
-        let index: Vec<u16> = vec![0 + index_offset, 1 + index_offset, 2 + index_offset, 0 + index_offset, 2 + index_offset, 3 + index_offset];
+        let index: Vec<u32> = vec![0 + index_offset, 1 + index_offset, 2 + index_offset, 0 + index_offset, 2 + index_offset, 3 + index_offset];
 
         RenderData { vertex, index }
     }
-    pub fn draw_data_rotated(&self, rotation:f32, screen_x: f32, screen_y: f32, screen_w: usize, screen_h: usize, window_size_width: usize, window_size_height: usize, index_offset:u16, vertex_offset_x: i32, vertex_offset_y: i32) -> RenderData {
+    pub fn draw_data_rotated(&self, rotation:f32, screen_x: f32, screen_y: f32, screen_w: usize, screen_h: usize, window_size_width: usize, window_size_height: usize, index_offset:u32, vertex_offset_x: i32, vertex_offset_y: i32) -> RenderData {
             let v = get_rotated_corners(
                 &Rectangle{
                     x: screen_x,
@@ -81,7 +81,7 @@ impl Sprite {
             ];
             self.draw_data_p(v_array, window_size_width, window_size_height, index_offset)
         }
-    pub fn draw_data_p(&self, points: [(f32, f32); 4], window_size_width: usize, window_size_height: usize, index_offset: u16) -> RenderData {
+    pub fn draw_data_p(&self, points: [(f32, f32); 4], window_size_width: usize, window_size_height: usize, index_offset: u32) -> RenderData {
         let screen_to_render_ratio_x: f32 = 2.0 / window_size_width as f32;
         let screen_to_render_ratio_y: f32 = 2.0 / window_size_height as f32;
 
@@ -102,7 +102,7 @@ impl Sprite {
             });
         }
 
-        let index: Vec<u16> = vec![0 + index_offset, 1 + index_offset, 2 + index_offset, 0 + index_offset, 2 + index_offset, 3 + index_offset];
+        let index: Vec<u32> = vec![0 + index_offset, 1 + index_offset, 2 + index_offset, 0 + index_offset, 2 + index_offset, 3 + index_offset];
 
         RenderData { vertex, index }
     }
@@ -116,14 +116,14 @@ impl Sprite {
 #[derive(Debug, Clone)]
 pub struct RenderData{
     pub vertex: Vec<Vertex>,
-    pub index: Vec<u16>
+    pub index: Vec<u32>
 }
 
 impl RenderData{
     pub fn new() -> Self{
         Self{ vertex: Vec::new(), index: Vec::new() }
     }
-    pub fn offset(&mut self, index_offset: u16){
+    pub fn offset(&mut self, index_offset: u32){
         for index in self.index.iter_mut(){
             *index += index_offset;
         }
@@ -133,21 +133,26 @@ impl RenderData{
             vertex: self.vertex.clone(),
             index: self.index.clone(),
             sections_a: Vec::new(),
-            sections_b: Vec::new()
+            sections_b: Vec::new(),
+            index_in_front_of_text: self.vertex.len() as u32,
+            index_behind_text: 0,
         }
     }
 }
 
 pub struct RenderDataFull<'a>{
     pub vertex: Vec<Vertex>,
-    pub index: Vec<u16>,
+    pub index: Vec<u32>,
     pub sections_a: Vec<TextSection<'a>>,
-    pub sections_b: Vec<TextSection<'a>>
+    pub sections_b: Vec<TextSection<'a>>,
+    pub index_in_front_of_text: u32,
+    pub index_behind_text: u32,
+
 }
 
 impl RenderDataFull<'_>{
     pub fn new() -> Self{
-        Self{ vertex: Vec::new(), index: Vec::new(), sections_a: Vec::new(), sections_b: Vec::new() }
+        Self{ vertex: Vec::new(), index: Vec::new(), sections_a: Vec::new(), sections_b: Vec::new(), index_in_front_of_text: 0, index_behind_text: 0 }
     }
 }
 

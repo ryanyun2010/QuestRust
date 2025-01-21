@@ -127,7 +127,6 @@ macro_rules! perror {
         )
     }};
 }
-// TODO, MAKE THIS NOT USE FORMAT IF IT DOESNT HAVE TO + LET IT RETURN JUST AN ERROR IF ONLY 1 ARG
 
 
 impl fmt::Display for PError {

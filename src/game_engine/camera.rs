@@ -114,7 +114,7 @@ impl Camera{
         self.camera_x = player_x - (self.viewpoint_width as f32/ 2.0);
         self.camera_y = player_y - (self.viewpoint_height as f32/ 2.0);
     }
-    pub fn render_entity(&self, world: &World, entity_id: usize, entity_index_offset: u16, extra_index_offset: u16) -> Result<(RenderData, RenderData), PError> {
+    pub fn render_entity(&self, world: &World, entity_id: usize, entity_index_offset: u32, extra_index_offset: u32) -> Result<(RenderData, RenderData), PError> {
         let potentially_sprite_id = world.get_sprite(entity_id);
         if potentially_sprite_id.is_none(){
             return Err(perror!(NotFound, "There was no sprite to render for entity with id {}", entity_id));
@@ -139,7 +139,7 @@ impl Camera{
                 return Err(perror!(MissingExpectedGlobalSprite, "There was no health bar back sprite"));
             }
             let entity_health_bar_sprite = world.sprites.get_sprite(potentially_health_bar_back_id.unwrap()).expect("Could not find health bar back sprite");
-            let health_bar_draw_data = entity_health_bar_sprite.draw_data(entity_position_component.x - 4.0, entity_position_component.y - 15.0, 40, 12, self.viewpoint_width, self.viewpoint_height, extra_index_offset + draw_data_other.vertex.len() as u16, vertex_offset_x, vertex_offset_y);
+            let health_bar_draw_data = entity_health_bar_sprite.draw_data(entity_position_component.x - 4.0, entity_position_component.y - 15.0, 40, 12, self.viewpoint_width, self.viewpoint_height, extra_index_offset + draw_data_other.vertex.len() as u32, vertex_offset_x, vertex_offset_y);
             draw_data_other.vertex.extend(health_bar_draw_data.vertex);
             draw_data_other.index.extend(health_bar_draw_data.index);
             let potentially_health_bar_id = world.sprites.get_sprite_id("health");
@@ -147,7 +147,7 @@ impl Camera{
                 return Err(perror!(MissingExpectedGlobalSprite, "There was no health bar inside sprite"));
             }
             let entity_health_sprite = world.sprites.get_sprite(potentially_health_bar_id.unwrap()).expect("Could not find health bar sprite");
-            let health_bar_inner_draw_data = entity_health_sprite.draw_data(entity_position_component.x - 3.0, entity_position_component.y - 14.0, (38.0 * health_component.health/health_component.max_health as f32).floor() as usize, 10, self.viewpoint_width, self.viewpoint_height, extra_index_offset + draw_data_other.vertex.len() as u16, vertex_offset_x, vertex_offset_y);
+            let health_bar_inner_draw_data = entity_health_sprite.draw_data(entity_position_component.x - 3.0, entity_position_component.y - 14.0, (38.0 * health_component.health/health_component.max_health as f32).floor() as usize, 10, self.viewpoint_width, self.viewpoint_height, extra_index_offset + draw_data_other.vertex.len() as u32, vertex_offset_x, vertex_offset_y);
             draw_data_other.vertex.extend(health_bar_inner_draw_data.vertex);
             draw_data_other.index.extend(health_bar_inner_draw_data.index);
         }
@@ -158,8 +158,8 @@ impl Camera{
         let mut terrain_data: RenderData = RenderData::new();
         let mut entity_data: RenderData = RenderData::new();
         let mut extra_data: RenderData = RenderData::new();
-        let mut terrain_index_offset: u16 = 0;
-        let mut entity_index_offset: u16 = 0;
+        let mut terrain_index_offset: u32 = 0;
+        let mut entity_index_offset: u32 = 0;
 
         let camera_left_chunk_x = World::coord_to_chunk_coord(self.camera_x.floor() as usize);
         let camera_right_chunk_x = World::coord_to_chunk_coord((self.camera_x + self.viewpoint_width as f32).floor() as usize);
@@ -195,7 +195,7 @@ impl Camera{
 
                 for entity_id in chunk.entities_ids.iter(){
 
-                    let dd = error_prolif_allow!(self.render_entity(world, *entity_id, entity_index_offset, extra_data.vertex.len() as u16), NotFound);
+                    let dd = error_prolif_allow!(self.render_entity(world, *entity_id, entity_index_offset, extra_data.vertex.len() as u32), NotFound);
                     if dd.is_ok() {
                         let (draw_data, other_draw_data) = dd.unwrap();
                         entity_data.vertex.extend(draw_data.vertex);
@@ -218,24 +218,24 @@ impl Camera{
             let sprite = punwrap!(world.sprites.get_sprite_by_name(&descriptor.sprite), Expected, "Attack descriptor for attack: {:?}, refers to a non-existent sprite: {}", attack, descriptor.sprite);
             let percent = attack.time_charged/descriptor.time_to_charge as f32;
             for i in 0..(percent * 100.0).floor() as usize {
-                let dd = sprite.draw_data_rotated(attack.rotation * 180.0/PI, attack.x, attack.y, descriptor.reach, descriptor.width, self.viewpoint_width, self.viewpoint_height, entity_attack_draw_data.vertex.len() as u16, -1 * self.camera_x.floor() as i32, -1 * self.camera_y.floor() as i32);
+                let dd = sprite.draw_data_rotated(attack.rotation * 180.0/PI, attack.x, attack.y, descriptor.reach, descriptor.width, self.viewpoint_width, self.viewpoint_height, entity_attack_draw_data.vertex.len() as u32, -1 * self.camera_x.floor() as i32, -1 * self.camera_y.floor() as i32);
                 entity_attack_draw_data.vertex.extend(dd.vertex);
                 entity_attack_draw_data.index.extend(dd.index);
             }
         }
-        entity_attack_draw_data.offset(render_data.vertex.len() as u16);
+        entity_attack_draw_data.offset(render_data.vertex.len() as u32);
         render_data.vertex.extend(entity_attack_draw_data.vertex);
         render_data.index.extend(entity_attack_draw_data.index);
-        entity_data.offset(render_data.vertex.len() as u16);
+        entity_data.offset(render_data.vertex.len() as u32);
         render_data.vertex.extend(entity_data.vertex);
         render_data.index.extend(entity_data.index);
 
-        let player_draw_data = world.player.borrow().draw_data(world, self.viewpoint_width, self.viewpoint_height, render_data.vertex.len() as u16, -1 * self.camera_x as i32, -1 * self.camera_y as i32);
+        let player_draw_data = world.player.borrow().draw_data(world, self.viewpoint_width, self.viewpoint_height, render_data.vertex.len() as u32, -1 * self.camera_x as i32, -1 * self.camera_y as i32);
     
         render_data.vertex.extend(player_draw_data.vertex);
         render_data.index.extend(player_draw_data.index);
 
-        extra_data.offset(render_data.vertex.len() as u16);    
+        extra_data.offset(render_data.vertex.len() as u32);    
         render_data.vertex.extend(extra_data.vertex);
         render_data.index.extend(extra_data.index);
 
@@ -272,18 +272,18 @@ impl Camera{
                 return Err(perror!("Player attack {:?} has no width or no height?", effect));
             }
             if melee {
-                let draw_data = sprite.unwrap().draw_data_rotated(effect.angle, effect.x, effect.y, width.unwrap().floor() as usize, height.unwrap().floor() as usize, self.viewpoint_width, self.viewpoint_height, player_effect_draw_data.vertex.len() as u16, -1 * self.camera_x as i32, -1 * self.camera_y as i32);
+                let draw_data = sprite.unwrap().draw_data_rotated(effect.angle, effect.x, effect.y, width.unwrap().floor() as usize, height.unwrap().floor() as usize, self.viewpoint_width, self.viewpoint_height, player_effect_draw_data.vertex.len() as u32, -1 * self.camera_x as i32, -1 * self.camera_y as i32);
                 player_effect_draw_data.vertex.extend(draw_data.vertex);
                 player_effect_draw_data.index.extend(draw_data.index);
                 continue;
             } else{
-                let draw_data = sprite.unwrap().draw_data_rotated(effect.angle + 90.0, effect.x, effect.y, width.unwrap().floor() as usize, height.unwrap().floor() as usize, self.viewpoint_width, self.viewpoint_height, player_effect_draw_data.vertex.len() as u16, -1 * self.camera_x as i32, -1 * self.camera_y as i32);
+                let draw_data = sprite.unwrap().draw_data_rotated(effect.angle + 90.0, effect.x, effect.y, width.unwrap().floor() as usize, height.unwrap().floor() as usize, self.viewpoint_width, self.viewpoint_height, player_effect_draw_data.vertex.len() as u32, -1 * self.camera_x as i32, -1 * self.camera_y as i32);
                 player_effect_draw_data.vertex.extend(draw_data.vertex);
                 player_effect_draw_data.index.extend(draw_data.index);
                 continue;
             }
         }
-        player_effect_draw_data.offset(render_data.vertex.len() as u16);
+        player_effect_draw_data.offset(render_data.vertex.len() as u32);
         render_data.vertex.extend(player_effect_draw_data.vertex);
         render_data.index.extend(player_effect_draw_data.index);
 
@@ -294,7 +294,7 @@ impl Camera{
 
         for element in sorted_ui_elements.iter(){
             let element_sprite = punwrap!(world.sprites.get_sprite_by_name(&element.sprite), Expected, "UI: {:?} refers to a non-existent sprite {}", element, element.sprite);
-            let draw_data = element_sprite.draw_data(element.x, element.y, element.width.floor() as usize, element.height.floor() as usize, self.viewpoint_width, self.viewpoint_height, render_data.vertex.len() as u16, 0, 0);
+            let draw_data = element_sprite.draw_data(element.x, element.y, element.width.floor() as usize, element.height.floor() as usize, self.viewpoint_width, self.viewpoint_height, render_data.vertex.len() as u32, 0, 0);
             render_data.vertex.extend(draw_data.vertex);
             render_data.index.extend(draw_data.index);
         }

@@ -184,6 +184,7 @@ impl<'a> Renderer<'a> {
 
         let indicies = &render_data.index;
         let num_indicies = indicies.len() as u32;
+        println!("num_indicies: {}", num_indicies);
 
         let index_buffer = self.device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
@@ -225,10 +226,11 @@ impl<'a> Renderer<'a> {
             render_pass.set_pipeline(&self.render_pipeline);
             render_pass.set_bind_group(0, &self.diffuse_bind_group, &[0]);
             render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
-            render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-            render_pass.draw_indexed(0..num_indicies,0, 0..1);
+            render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+            render_pass.draw_indexed(0..render_data.index_behind_text,0, 0..1);
             self.text_brush_a.draw(&mut render_pass);
             self.text_brush_b.draw(&mut render_pass);
+            render_pass.draw_indexed(render_data.index_behind_text..num_indicies,0, 0..1);
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));
