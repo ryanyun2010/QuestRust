@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 
-use wgpu::SurfaceError;
 use winit::{event, keyboard::{Key, NamedKey}};
 
-use crate::{error::PError, perror, ptry, rendering_engine::renderer::Renderer};
+use crate::{error::PError, ptry, rendering_engine::renderer::Renderer};
 
 use super::{camera::Camera, world::World};
 #[derive(Debug, Copy, Clone)]
@@ -133,24 +132,25 @@ impl<'a> Game<'a> {
             }
         }
     }
-    pub fn update(&mut self){
+    pub fn update(&mut self) -> Result<(), PError> {
         if self.state == GameState::play {
-            self.camera.update_ui(&mut self.world);
+            ptry!(self.camera.update_ui(&mut self.world));
             self.world.generate_collision_cache_and_damage_cache();
             self.process_input();
             self.world.update_entities();
             self.world.update_entity_attacks();
             self.world.update_player_attacks(&mut self.camera);
-            self.world.update_damage_text(&mut self.camera);
+            ptry!(self.world.update_damage_text(&mut self.camera));
             self.world.kill_entities_to_be_killed();
             self.input.mouse_position.x_world = self.camera.camera_x + self.input.mouse_position.x_screen;
             self.input.mouse_position.y_world = self.camera.camera_y + self.input.mouse_position.y_screen;
         }else if self.state == GameState::inventory {
-            self.camera.update_ui(&mut self.world);
+            ptry!(self.camera.update_ui(&mut self.world));
             self.process_input();
             self.input.mouse_position.x_world = self.camera.camera_x + self.input.mouse_position.x_screen;
             self.input.mouse_position.y_world = self.camera.camera_y + self.input.mouse_position.y_screen;
         }
+        Ok(())
     }
     pub fn key_input(&mut self, event: winit::event::KeyEvent) {
 

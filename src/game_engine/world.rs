@@ -4,6 +4,8 @@ use std::cell::{RefCell, RefMut};
 use std::f32::consts::PI;
 use anyhow::anyhow;
 
+use crate::error::PError;
+use crate::ptry;
 use crate::rendering_engine::abstractions::SpriteContainer;
 use crate::entities::EntityTags;
 use crate::game_engine::player::Player;
@@ -897,7 +899,7 @@ impl World{
     pub fn get_item_archetype(&self, archetype: &String) -> Option<&ItemArchetype>{
         self.item_archetype_lookup.get(archetype)
     }
-    pub fn update_damage_text(&self, camera: &mut Camera) {
+    pub fn update_damage_text(&self, camera: &mut Camera) -> Result<(), PError> {
         let mut dt_to_remove = Vec::new();
         let mut i = 0;
         for damage_text in self.damage_text.borrow_mut().iter_mut(){
@@ -905,7 +907,7 @@ impl World{
             camera.get_world_text_mut(damage_text.world_text_id).unwrap().color[3] -= 0.01666666666;
             damage_text.lifespan += 1.0;
             if damage_text.lifespan > 60.0 {
-                camera.remove_world_text(damage_text.world_text_id);
+                ptry!(camera.remove_world_text(damage_text.world_text_id), "Trying to remove non-existent world text?");
                 dt_to_remove.push(i);
             }
             i += 1;
@@ -915,6 +917,7 @@ impl World{
             self.damage_text.borrow_mut().remove(*dt - offset);
             offset += 1;
         }
+        Ok(())
     }
 }
 

@@ -256,7 +256,7 @@ macro_rules! ptry {
     ($result:expr, $desc:expr) => {{
         match $result {
             Ok(value) => value,
-            Err(mut perror) => {
+            Err(perror) => {
                 return Err(crate::error::PError::new(
                     crate::error::PE::Error(
                         crate::error::ErrorDescriptor {

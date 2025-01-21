@@ -1,8 +1,8 @@
 use std::collections::{BTreeMap, HashMap};
 use std::f32::consts::PI;
 
-use crate::error::{PError, PE};
-use crate::{error_prolif_allow, perror, ptry, punwrap};
+use crate::error::PError;
+use crate::{error_prolif_allow, perror, punwrap};
 use crate::world::World;
 use crate::rendering_engine::abstractions::{RenderData, RenderDataFull, TextSprite, UIEFull};
 use crate::game_engine::ui::UIElement;
@@ -293,7 +293,7 @@ impl Camera{
         sorted_ui_elements.sort_by(|a, b| a.z.partial_cmp(&b.z).unwrap());
 
         for element in sorted_ui_elements.iter(){
-            let element_sprite = world.sprites.get_sprite_by_name(&element.sprite).expect(format!("Could not find sprite with name {} for ui element", element.sprite).as_str());
+            let element_sprite = punwrap!(world.sprites.get_sprite_by_name(&element.sprite), Expected, "UI: {:?} refers to a non-existent sprite {}", element, element.sprite);
             let draw_data = element_sprite.draw_data(element.x, element.y, element.width.floor() as usize, element.height.floor() as usize, self.viewpoint_width, self.viewpoint_height, render_data.vertex.len() as u16, 0, 0);
             render_data.vertex.extend(draw_data.vertex);
             render_data.index.extend(draw_data.index);
@@ -320,14 +320,20 @@ impl Camera{
         self.world_text_id += 1;
         self.world_text_id - 1
     }
-    pub fn remove_world_text(&mut self, id: usize){
-        self.world_text.remove(&id);
+    pub fn remove_world_text(&mut self, id: usize) -> Result<(), PError>{
+        if self.world_text.remove(&id).is_none() {
+            return Err(perror!(NotFound, "There was no world text to remove with id {}", id))
+        }
+        Ok(())
     }
     pub fn get_world_text_mut(&mut self, id: usize) -> Option<&mut TextSprite>{
         self.world_text.get_mut(&id)
     }
-    pub fn remove_text(&mut self, id: usize){
-        self.text.remove(&id);
+    pub fn remove_text(&mut self, id: usize) -> Result<(), PError>{
+        if self.text.remove(&id).is_none() {
+            return Err(perror!(NotFound, "There was no text to remove with id {}", id))
+        }
+        Ok(())
     }
     pub fn get_text_mut(&mut self, id: usize) -> Option<&mut TextSprite>{
         self.text.get_mut(&id)

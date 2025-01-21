@@ -47,7 +47,13 @@ pub async fn run(world: World, camera: Camera, sprites_json_to_load: &Vec<String
                     if focused{
                         game.window().request_redraw();
                     }
-                    game.update();
+                    match game.update() {
+                        Ok(_) => {}
+                        Err(e) => {
+                            print_error!(e);
+                            control_flow.exit();
+                        }
+                    }
                     match game.render() {
                         Ok(_) => {}
                         Err(e) => {
