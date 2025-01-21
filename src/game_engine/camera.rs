@@ -286,6 +286,8 @@ impl Camera{
         player_effect_draw_data.offset(render_data.vertex.len() as u32);
         render_data.vertex.extend(player_effect_draw_data.vertex);
         render_data.index.extend(player_effect_draw_data.index);
+        render_data.index_behind_text = render_data.index.len() as u32;
+        println!("Index behind text: {}", render_data.index_behind_text);
 
         world.set_loaded_chunks(chunks_loaded);
         let mut sorted_ui_elements: Vec<&UIESprite> = self.ui_elements.values().filter_map(|x| if x.visible { Some(&x.sprite) } else { None }).collect();

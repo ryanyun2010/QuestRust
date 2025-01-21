@@ -134,7 +134,6 @@ impl RenderData{
             index: self.index.clone(),
             sections_a: Vec::new(),
             sections_b: Vec::new(),
-            index_in_front_of_text: self.vertex.len() as u32,
             index_behind_text: 0,
         }
     }
@@ -145,14 +144,13 @@ pub struct RenderDataFull<'a>{
     pub index: Vec<u32>,
     pub sections_a: Vec<TextSection<'a>>,
     pub sections_b: Vec<TextSection<'a>>,
-    pub index_in_front_of_text: u32,
     pub index_behind_text: u32,
 
 }
 
 impl RenderDataFull<'_>{
     pub fn new() -> Self{
-        Self{ vertex: Vec::new(), index: Vec::new(), sections_a: Vec::new(), sections_b: Vec::new(), index_in_front_of_text: 0, index_behind_text: 0 }
+        Self{ vertex: Vec::new(), index: Vec::new(), sections_a: Vec::new(), sections_b: Vec::new(), index_behind_text: 0 }
     }
 }
 
