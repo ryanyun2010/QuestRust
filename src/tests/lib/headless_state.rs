@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
+use crate::error::PError;
 use crate::game_engine::world::World;
 use crate::camera::Camera;
+use crate::ptry;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum GameState {
@@ -24,13 +26,14 @@ impl HeadlessState{
             right_mouse_button_down: false,
         }
     }
-    pub fn update(&self, world: &mut World, camera: &mut Camera) {
+    pub fn update(&self, world: &mut World, camera: &mut Camera) -> Result<(), PError>{
         world.generate_collision_cache_and_damage_cache();
         world.process_input(&self.keys_down, camera);
-        world.update_entities();
+        ptry!(world.update_entities());
         world.update_entity_attacks();
         world.update_player_attacks(camera);
         world.kill_entities_to_be_killed();
+        Ok(())
     }
     
 }

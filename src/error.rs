@@ -217,12 +217,12 @@ macro_rules! ptry {
     ($result:expr, $desc:expr, $($args:tt)*) => {{
         match $result {
             Ok(value) => value,
-            Err(mut perror) => {
-                return Err(crate::PError::new(
-                    PE::Error(
-                        ErrorDescriptor {
+            Err(perror) => {
+                return Err(crate::error::PError::new(
+                    crate::error::PE::Error(
+                        crate::error::ErrorDescriptor {
                             desc: format!($desc, $($args)*),
-                            location: Location {
+                            location: crate::error::Location {
                                 file: file!().to_string(),
                                 line: line!()
                             }
@@ -314,6 +314,26 @@ macro_rules! punwrap {
             }
         }
     }};
+    ($option:expr, $error_variant:ident, $desc:expr) => {{
+        match $option {
+            Some(value) => value,
+            None => {
+                return Err(crate::error::PError::new(
+                    crate::error::PE::$error_variant(
+                        crate::error::ErrorDescriptor {
+                            desc: format!($desc),
+                            location: crate::error::Location {
+                                file: file!().to_string(),
+                                line: line!(),
+                            },
+                        },
+                    ),
+                    vec![]
+                ),
+                );
+            }
+        }
+    }};
     ($option:expr, $error_variant:ident, $desc:expr, $($args:tt)*) => {{
         match $option {
             Some(value) => value,
@@ -375,21 +395,22 @@ macro_rules! punwrap {
         match $option {
             Some(value) => value,
             None => {
-                return crate::PError::new(
-                    PE::$error_variant(
-                        ErrorDescriptor {
+                return Err(crate::error::PError::new(
+                    crate::error::PE::$error_variant(
+                        crate::error::ErrorDescriptor {
                             desc: format!(""),
-                            location: Location {
+                            location: crate::error::Location {
                                 file: file!().to_string(),
                                 line: line!(),
                             },
                         },
                     ),
                     vec![],
-                );
+                ));
             }
         }
     }};
+   
     ($option:expr, $error_variant:ident, $desc:expr, $($args:tt)*) => {{
         match $option {
             Some(value) => value,

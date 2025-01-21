@@ -114,7 +114,7 @@ pub fn pathfind_by_block(position_component: PositionComponent, collision_compon
             if nx > 100000000 || ny > 100000000 {
                 continue;
             }
-            if world.check_collision(true, Some(entity_id), ((nx * 32) as f32 + entity_x_offset).floor() as usize - 1, ((ny * 32) as f32 + entity_y_offset).floor() as usize - 1, ew.ceil() as usize + 2, eh.ceil() as usize + 2, true) {
+            if world.check_collision(true, Some(entity_id), ((nx * 32) as f32 + entity_x_offset).floor() as usize, ((ny * 32) as f32 + entity_y_offset).floor() as usize, ew.ceil() as usize, eh.ceil() as usize, true) {
                 continue;
             }
 

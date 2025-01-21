@@ -1,5 +1,7 @@
+use crate::error::PError;
 use crate::loot::Loot;
 use crate::game_engine::item::Item;
+use crate::{perror, ptry, punwrap};
 use std::cell::{RefCell, RefMut};
 use super::entity_attacks::EntityAttackBox;
 use super::entity_components::{self, CollisionBox, EntityAttackComponent, PathfindingComponent, PositionComponent};
@@ -8,11 +10,11 @@ use super::player::Player;
 use super::pathfinding::{self, EntityDirectionOptions};
 
 impl World {
-    pub fn move_entity(&self, mut position_component: RefMut<PositionComponent>, entity_id: &usize, movement: [f32; 2], chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>, respects_collision: bool, has_collision: bool){ 
+    pub fn move_entity(&self, mut position_component: RefMut<PositionComponent>, entity_id: &usize, movement: [f32; 2], chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>, respects_collision: bool, has_collision: bool) -> Result<(), PError>{ 
         if respects_collision && self.check_collision(false, Some(*entity_id), (position_component.x + movement[0]).floor() as usize, (position_component.y + movement[1]).floor() as usize, 32,32, true){
-            return;
+            return Ok(());
         }
-        let prev_chunk = self.get_chunk_from_xy(position_component.x as usize, position_component.y as usize).unwrap();
+        let prev_chunk = punwrap!(self.get_chunk_from_xy(position_component.x as usize, position_component.y as usize), "entity with id {} doesn't have a current chunk?", entity_id);
         
         if has_collision {
             let mut collision_cache_ref = self.collision_cache.borrow_mut();
@@ -48,8 +50,9 @@ impl World {
             chunkref[prev_chunk].entities_ids.retain(|x| *x != *entity_id);
             chunkref[new_chunk].entities_ids.push(*entity_id);
         } 
+        Ok(())
     }
-    pub fn update_entities(&mut self) {
+    pub fn update_entities(&mut self) -> Result<(), PError> {
         // self.entity_attacks.borrow_mut().clear();
         self.pathfinding_frame += 1;
         self.pathfinding_frame = self.pathfinding_frame % 5;
@@ -57,14 +60,15 @@ impl World {
         for chunk in self.loaded_chunks.iter() {
             let chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>> = &mut self.chunks.borrow_mut();
             for entity_id in chunkref[*chunk].clone().entities_ids.iter() {
-                self.update_entity(entity_id, player.x.floor(), player.y.floor(), chunkref);
+                ptry!(self.update_entity(entity_id, player.x.floor(), player.y.floor(), chunkref), "While updating entity {}", entity_id);
             }
         }
+        Ok(())
     }
-    pub fn update_entity(&self, entity_id: &usize, player_x: f32, player_y: f32, chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>) {
+    pub fn update_entity(&self, entity_id: &usize, player_x: f32, player_y: f32, chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>) -> Result<(), PError>{
         let entity_tags_potentially: Option<&Vec<EntityTags>> = self.get_entity_tags(*entity_id);
         if entity_tags_potentially.is_none() {
-            return;
+            return Err(perror!(NotFound, "Entity with id {} doesn't have any tags", entity_id));
         }
         let entity_tags: &Vec<EntityTags> = entity_tags_potentially.unwrap();
         let mut distance: f64 = f64::MAX;
@@ -115,12 +119,12 @@ impl World {
             let health_component = health_component.unwrap().borrow();
             if health_component.health <= 0.0 {
                 self.kill_entity(*entity_id);
-                return;
+                return Ok(());
             }
         }
         
         if follows_player {
-            let position_component = self.entity_position_components.get(entity_id).expect("Entities with tag: FollowsPlayer must have a PositionComponent").borrow().clone();
+            let position_component = punwrap!(self.entity_position_components.get(entity_id), Expected, "all entities with follow player tag should have entity position component").borrow().clone();
             let px = player_x + self.player.borrow().collision_box.x_offset;
             let py = player_y + self.player.borrow().collision_box.y_offset;
             distance = f64::sqrt(
@@ -130,8 +134,8 @@ impl World {
         }
         
         if aggressive {
-            let mut aggro = self.entity_aggro_components.get(entity_id).expect("Aggressive entities must have an aggro component").borrow_mut();
-            let position_component = self.entity_position_components.get(entity_id).expect("Entities with tag: FollowsPlayer must have a PositionComponent").borrow().clone();
+            let mut aggro = punwrap!(self.entity_aggro_components.get(entity_id), Expected, "all entities with the aggressive tag should have an aggro component").borrow_mut();
+            let position_component = punwrap!(self.entity_position_components.get(entity_id), "all entities with the follow player tag should have a position component").borrow().clone();
             let px = player_x + self.player.borrow().collision_box.x_offset;
             let py = player_y + self.player.borrow().collision_box.y_offset;
             let distance = f64::sqrt(
@@ -149,14 +153,13 @@ impl World {
             }
         }
         if can_attack_player && aggressive {
-            let attack_pattern: &EntityAttackPattern = attacks.expect("Aggressive entities must have an attack pattern");
-
-            let mut attack_component = self.entity_attack_components.get(&entity_id).expect("Aggressive entities must have an attack component").borrow_mut();
+            let attack_pattern: &EntityAttackPattern = punwrap!(attacks, Expected, "all entities with the aggressive tag should have an attack pattern");
+            let mut attack_component = punwrap!(self.entity_attack_components.get(&entity_id), Expected, "all aggressive entities should have an attack component").borrow_mut();
 
             if attack_component.cur_attack_cooldown <= 0.0 {
                 // self.player.borrow_mut().health -= attack_pattern.attacks[attack_component.cur_attack].attack();
                 
-                let position = self.entity_position_components.get(entity_id).expect("Entities with tag: FollowsPlayer must have a PositionComponent").borrow().clone();
+                let position = punwrap!(self.entity_position_components.get(entity_id), Expected, "all entities that can attack should have a position component").borrow().clone();
                 let px = player_x + self.player.borrow().collision_box.x_offset;
                 let py = player_y + self.player.borrow().collision_box.y_offset;
                 let direction_to_player_unnormalized = [
@@ -169,7 +172,7 @@ impl World {
                     direction_to_player_unnormalized[1] / magnitude as f32
                 ];
                 let angle = f32::atan2(direction_to_player[1], direction_to_player[0]);
-                let descriptor = self.get_attack_descriptor_by_name(&attack_pattern.attacks[attack_component.cur_attack]).expect("Attack pattern must have a valid attack");
+                let descriptor = punwrap!(self.get_attack_descriptor_by_name(&attack_pattern.attacks[attack_component.cur_attack]), Invalid, "attack descriptor refers to a non-existent attack {}", attack_pattern.attacks[attack_component.cur_attack]); 
                 match descriptor.r#type {
                     AttackType::Magic => {
                         let max_dist = descriptor.reach as f32/2.0 + descriptor.max_start_dist_from_entity.unwrap_or(0) as f32;
@@ -227,41 +230,42 @@ impl World {
         if aggroed_to_entity{
             let pathfinding_component = self.entity_pathfinding_components.get(entity_id).expect("Entities with tag: FollowsPlayer must have a PathfindingComponent").borrow_mut();
             let position_component = self.entity_position_components.get(entity_id).expect("Entities with tag: FollowsPlayer must have a PositionComponent").borrow_mut();
-            self.move_entity_towards_player(entity_id, collision.unwrap_or(&CollisionBox {
+            ptry!(self.move_entity_towards_player(entity_id, collision.unwrap_or(&CollisionBox {
                     w: 0.0,
                     h: 0.0,
                     x_offset: 0.0,
                     y_offset: 0.0
-            }),position_component, pathfinding_component, chunkref,  player_x, player_y, respects_collision, collision.is_some(), movement_speed);
+            }),position_component, pathfinding_component, chunkref,  player_x, player_y, respects_collision, collision.is_some(), movement_speed));
         }
+        Ok(())
     }
-    pub fn move_entity_towards_player(&self, entity_id: &usize,collision_box: &CollisionBox, position_component: RefMut<PositionComponent>, mut pathfinding_component: RefMut<PathfindingComponent>, chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>, player_x: f32, player_y: f32, respects_collision: bool, has_collision: bool, movement_speed: f32){
+    pub fn move_entity_towards_player(&self, entity_id: &usize,collision_box: &CollisionBox, position_component: RefMut<PositionComponent>, mut pathfinding_component: RefMut<PathfindingComponent>, chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>, player_x: f32, player_y: f32, respects_collision: bool, has_collision: bool, movement_speed: f32) -> Result<(), PError>{
         let direction: [f32; 2] = [player_x - position_component.x, player_y - position_component.y];
         let entity_pathfinding_frame = self.pathfinding_frames.get(entity_id).unwrap();
         if direction[0] == 0.0 && direction[1] == 0.0 {
-            return;
+            return Ok(());
         }
         if self.pathfinding_frame != *entity_pathfinding_frame {
             let magnitude: f32 = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
             if magnitude > 128.0{
                 match pathfinding_component.cur_direction {
                     EntityDirectionOptions::Down => {
-                        self.move_entity(position_component, entity_id, [0.0, movement_speed], chunkref, respects_collision, has_collision);
+                        ptry!(self.move_entity(position_component, entity_id, [0.0, movement_speed], chunkref, respects_collision, has_collision));
                     },
                     EntityDirectionOptions::Up => {
-                        self.move_entity(position_component, entity_id, [0.0, -movement_speed], chunkref, respects_collision, has_collision);
+                        ptry!(self.move_entity(position_component, entity_id, [0.0, -movement_speed], chunkref, respects_collision, has_collision));
                     },
                     EntityDirectionOptions::Left => {
-                        self.move_entity(position_component, entity_id, [-movement_speed, 0.0], chunkref, respects_collision, has_collision);
+                        ptry!(self.move_entity(position_component, entity_id, [-movement_speed, 0.0], chunkref, respects_collision, has_collision));
                     },
                     EntityDirectionOptions::Right => {
-                        self.move_entity(position_component, entity_id, [movement_speed, 0.0], chunkref, respects_collision, has_collision);
+                        ptry!(self.move_entity(position_component, entity_id, [movement_speed, 0.0], chunkref, respects_collision, has_collision));
                     },
                     EntityDirectionOptions::None => {
                         ()
                     },
                 }
-                return;
+                return Ok(());
             }
         }
         let magnitude: f32 = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
@@ -270,43 +274,43 @@ impl World {
                 let direction: EntityDirectionOptions = pathfinding::pathfind_by_block(position_component.clone(), *collision_box, *entity_id, self);
                 match direction {
                     EntityDirectionOptions::Down => {
+                        ptry!(self.move_entity(position_component, entity_id, [0.0, movement_speed], chunkref, respects_collision, has_collision));
                         pathfinding_component.cur_direction = EntityDirectionOptions::Down;
-                        self.move_entity(position_component, entity_id, [0.0, movement_speed], chunkref, respects_collision, has_collision);
                     },
                     EntityDirectionOptions::Up => {
+                        ptry!(self.move_entity(position_component, entity_id, [0.0, -movement_speed], chunkref, respects_collision, has_collision));
                         pathfinding_component.cur_direction = EntityDirectionOptions::Up;
-                        self.move_entity(position_component, entity_id, [0.0, -movement_speed], chunkref, respects_collision, has_collision);
                     },
                     EntityDirectionOptions::Left => {
+                        ptry!(self.move_entity(position_component, entity_id, [-movement_speed, 0.0], chunkref, respects_collision, has_collision));
                         pathfinding_component.cur_direction = EntityDirectionOptions::Left;
-                        self.move_entity(position_component, entity_id, [-movement_speed, 0.0], chunkref, respects_collision, has_collision);
                     },
                     EntityDirectionOptions::Right => {
+                        ptry!(self.move_entity(position_component, entity_id, [movement_speed, 0.0], chunkref, respects_collision, has_collision));
                         pathfinding_component.cur_direction = EntityDirectionOptions::Right;
-                        self.move_entity(position_component, entity_id, [movement_speed, 0.0], chunkref, respects_collision, has_collision);
                     },
                     EntityDirectionOptions::None => {
                         pathfinding_component.cur_direction = EntityDirectionOptions::None;
                     },
-                }
+                };
             } else if magnitude > 60.0{
                 let direction: EntityDirectionOptions = pathfinding::pathfind_high_granularity(position_component.clone(), *collision_box,*entity_id, self);
                 match direction {
                     EntityDirectionOptions::Down => {
                         pathfinding_component.cur_direction = EntityDirectionOptions::Down;
-                        self.move_entity(position_component, entity_id, [0.0, movement_speed], chunkref, respects_collision, has_collision);
+                        ptry!(self.move_entity(position_component, entity_id, [0.0, movement_speed], chunkref, respects_collision, has_collision));
                     },
                     EntityDirectionOptions::Up => {
                         pathfinding_component.cur_direction = EntityDirectionOptions::Up;
-                        self.move_entity(position_component, entity_id, [0.0, -movement_speed], chunkref, respects_collision, has_collision);
+                        ptry!(self.move_entity(position_component, entity_id, [0.0, -movement_speed], chunkref, respects_collision, has_collision));
                     },
                     EntityDirectionOptions::Left => {
                         pathfinding_component.cur_direction = EntityDirectionOptions::Left;
-                        self.move_entity(position_component, entity_id, [-movement_speed, 0.0], chunkref, respects_collision, has_collision);
+                        ptry!(self.move_entity(position_component, entity_id, [-movement_speed, 0.0], chunkref, respects_collision, has_collision));
                     },
                     EntityDirectionOptions::Right => {
                         pathfinding_component.cur_direction = EntityDirectionOptions::Right;
-                        self.move_entity(position_component, entity_id, [movement_speed, 0.0], chunkref, respects_collision, has_collision);
+                        ptry!(self.move_entity(position_component, entity_id, [movement_speed, 0.0], chunkref, respects_collision, has_collision));
                     },
                     EntityDirectionOptions::None => {
                         pathfinding_component.cur_direction = EntityDirectionOptions::None;
@@ -314,12 +318,13 @@ impl World {
                 }
             }else {
                 let movement = [direction[0] / magnitude * movement_speed, direction[1] / magnitude * movement_speed];
-                self.move_entity(position_component, entity_id,  movement, chunkref,  respects_collision, has_collision);
+                ptry!(self.move_entity(position_component, entity_id,  movement, chunkref,  respects_collision, has_collision));
             }
         }else{
             let movement = [direction[0] / magnitude * movement_speed, direction[1] / magnitude * movement_speed];
-            self.move_entity(position_component, entity_id,  movement, chunkref,  respects_collision, has_collision);
+            ptry!(self.move_entity(position_component, entity_id,  movement, chunkref,  respects_collision, has_collision));
         }
+        Ok(())
     }
     pub fn add_entity(&mut self, x: f32, y: f32) -> usize{
         let new_entity_pathfinding_frame = self.next_pathfinding_frame_for_entity;

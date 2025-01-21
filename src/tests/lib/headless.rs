@@ -23,7 +23,7 @@ impl HeadlessGame{
                 sprites: vec![],
                 text: vec![],
             }, 1152.0, 720.0));
-            self.state.update(&mut self.world, &mut self.camera);    
+            ptry!(self.state.update(&mut self.world, &mut self.camera));    
         }  
         Ok(())
     }
