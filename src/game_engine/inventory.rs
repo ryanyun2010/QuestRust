@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anyhow::anyhow;
 use wgpu::rwh::XcbDisplayHandle;
 
-use crate::{game_engine::item::Item, rendering_engine::abstractions::{Sprite, SpriteContainer}};
+use crate::{game_engine::item::Item, rendering_engine::abstractions::{Sprite, SpriteContainer, TextSprite, UIEFull}};
 
 use super::{camera::{self, Camera}, game::MousePosition, ui::{UIESprite, UIElementDescriptor}};
 
@@ -187,8 +187,20 @@ impl Inventory{
         }
         Ok(())
     }
-    pub fn render_ui(&mut self, sprites: &SpriteContainer) -> Vec<UIESprite> {
+    pub fn render_ui(&mut self, sprites: &SpriteContainer) -> UIEFull {
         let mut ui = Vec::new();
+        let mut text = vec![
+            TextSprite {
+                x: 50.0,
+                y: 50.0,
+                text: String::from("TEST"),
+                font_size: 40.0,
+                w: 100.0,
+                h: 100.0,
+                color: [0.0, 0.0, 0.0, 1.0],
+                align: wgpu_text::glyph_brush::HorizontalAlign::Center
+            }
+        ];
         if self.show_inventory {
             ui.push(UIESprite {
                 z: 0.0,
@@ -208,6 +220,44 @@ impl Inventory{
             });
             for slot in self.slots.iter() {
                 ui.extend(slot.get_ui());
+                if (slot.x as f32) < self.mouse_position.x_screen && (slot.x as f32 + 48.0) > self.mouse_position.x_screen && (slot.y as f32) < self.mouse_position.y_screen && (slot.y as f32 + 48.0) > self.mouse_position.y_screen{
+                    if slot.item.is_some(){
+                        let item = self.get_item(&slot.item.unwrap()).unwrap();
+                        let mut t = format!(
+                            "{}\n----------------------------------------\n\n{}\n\n", item.name, item.lore
+                        );
+                        let stats = &item.stats;
+                        for stat in stats.into_iter() {
+                            if stat.1.is_some(){
+                                t.push_str(
+                                    format!("{}: {} \n", stat.0, stat.1.unwrap()).as_str()
+                                );
+                            }
+                        }
+                        ui.push(
+                            UIESprite {
+                                x: self.mouse_position.x_screen + 20.0,
+                                y: self.mouse_position.y_screen - 165.0, 
+                                z: 5.6,
+                                width: 220.0,
+                                height: 320.0,
+                                sprite: String::from("level_editor_menu_background")
+                            }
+                        );
+                        text.push(
+                            TextSprite {
+                                text: t,
+                                font_size: 20.0,
+                                x: self.mouse_position.x_screen + 30.0,
+                                y: self.mouse_position.y_screen - 150.0,
+                                w: 200.0,
+                                h: 300.0,
+                                color: [1.0,1.0,1.0,1.0],
+                                align: wgpu_text::glyph_brush::HorizontalAlign::Left
+                            }
+                        )
+                    }
+                }
             }
 
             if self.item_on_mouse.is_some() {
@@ -240,81 +290,11 @@ impl Inventory{
                 }
             )
         }
-        ui
+        UIEFull {
+            sprites: ui,
+            text: text,
+        }
         
-
-
-
-        // camera.get_ui_element_mut_by_name(String::from("inventory_background")).unwrap().visible = self.show_inventory;
-        // camera.get_ui_element_mut_by_name(String::from("inventory_back_shade")).unwrap().visible = self.show_inventory; 
-        // camera.get_ui_element_mut_by_name(String::from("hhslot")).unwrap().x  = self.cur_hotbar_slot as f32 * 58 as f32 + 20.0;
-        // camera.get_ui_element_mut_by_name(String::from("hhslot")).unwrap().visible  = self.show_inventory;
-        // let cur_item = self.get_cur_held_item();
-        // if cur_item.is_some(){
-        //     let mut text = format!(
-        //         "{}\n----------------------------------------\n\n{}\n\n", cur_item.unwrap().name, cur_item.unwrap().lore
-        //     );
-        //     let stats = &cur_item.unwrap().stats;
-        //     for stat in stats.into_iter() {
-        //         if stat.1.is_some(){
-        //             text.push_str(
-        //                 format!("{}: {} \n", stat.0, stat.1.unwrap()).as_str()
-        //             );
-        //         }
-        //     }
-        //     if self.display_text.is_none(){
-        //         self.display_text = Some(camera.add_text(text, super::camera::Font::A, 40.0, 390.0, 130.0, 250.0, 20.0, [1.0, 1.0, 1.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Left));
-        //     }else{
-        //         camera.get_text_mut(self.display_text.unwrap()).unwrap().text = text;
-        //     }
-        // }
-
-        // if self.item_on_mouse.is_some() {
-        //     let item = self.item_on_mouse.as_ref().unwrap();
-        //     let item_ui = camera.get_ui_element_mut_by_name(String::from("item_held")).unwrap();
-        //     item_ui.visible = true;
-        //     item_ui.sprite_id = sprites.get_sprite_id(self.get_item(&item.item_id).unwrap().sprite.as_str()).unwrap();
-        //     item_ui.x = self.mouse_position.x_screen - 12.0;
-        //     item_ui.y = self.mouse_position.y_screen - 12.0;
-        // }else{
-        //     let item_ui = camera.get_ui_element_mut_by_name(String::from("item_held")).unwrap();
-        //     item_ui.visible = false;
-        // }
-        // if self.show_inventory {
-        //     for slot in self.hotbar.iter() {
-        //         camera.get_ui_element_mut(slot.main_image_ui_id).visible = false;
-        //         camera.get_ui_element_mut(slot.item_image_ui_id).visible = false;
-        //     }
-        //     for slot in self.slots.iter() {
-        //         camera.get_ui_element_mut(slot.main_image_ui_id).visible = true;
-        //         if slot.item.is_some() {
-        //             let item = self.get_item(&slot.item.unwrap()).expect("Slot refers to a non-existent item?");
-        //             let i = camera.get_ui_element_mut(slot.item_image_ui_id);
-        //             i.sprite_id = sprites.get_sprite_id(&item.sprite).expect("Item refers to a non-existent sprite?");
-        //             i.visible = true;
-        //         }else {
-        //             let i = camera.get_ui_element_mut(slot.item_image_ui_id);
-        //             i.visible = false;
-        //         }
-        //     }
-        // }else{
-        //     for slot in self.slots.iter() {
-        //         camera.get_ui_element_mut(slot.main_image_ui_id).visible = false;
-        //         camera.get_ui_element_mut(slot.item_image_ui_id).visible = false;
-        //     }
-        //     for slot in self.hotbar.iter() {
-        //         camera.get_ui_element_mut(slot.main_image_ui_id).visible = true;
-        //         if slot.item.is_some() {
-        //             let item = self.get_item(&slot.item.unwrap()).expect("Slot refers to a non-existent item?");
-        //             let i = camera.get_ui_element_mut(slot.item_image_ui_id);
-        //             i.sprite_id = sprites.get_sprite_id(&item.sprite).expect("Item refers to a non-existent sprite?");
-        //             i.visible = true;
-        //         }else {
-        //             let i = camera.get_ui_element_mut(slot.item_image_ui_id);
-        //             i.visible = false;
-        //         }
-        //     }
-        // }
         
     }
     pub fn get_cur_held_item(&self) -> Option<&Item> {

@@ -2,9 +2,9 @@ use std::collections::{BTreeMap, HashMap};
 use std::f32::consts::PI;
 
 use crate::world::World;
-use crate::rendering_engine::abstractions::{RenderData, RenderDataFull, TextSprite};
+use crate::rendering_engine::abstractions::{RenderData, RenderDataFull, TextSprite, UIEFull};
 use crate::game_engine::ui::UIElement;
-use wgpu_text::glyph_brush::{HorizontalAlign, Section as TextSection};
+use wgpu_text::glyph_brush::{HorizontalAlign, Section as TextSection, Text};
 
 use super::entities::AttackType;
 use super::ui::UIESprite;
@@ -31,6 +31,7 @@ pub struct Camera{
     pub text_font_lookup: HashMap<usize, Font>,
     pub text_id: usize,
     pub test: f32,
+    pub temp_uie: Vec<TextSprite>
 }
 
 impl Camera{
@@ -50,7 +51,8 @@ impl Camera{
             text_font_lookup: HashMap::new(),
             text_id: 0,
             world_text_id: 0,
-            test: 0.0
+            test: 0.0,
+            temp_uie: Vec::new()
         }
     }
     pub fn update_ui(&mut self, world: &mut World){
@@ -148,7 +150,7 @@ impl Camera{
         }
         (draw_data_main, draw_data_other)
     }
-    pub fn render(&mut self, world: &mut World, uie: Vec<UIESprite>, screen_width: f32, screen_height: f32) -> RenderDataFull{
+    pub fn render(&mut self, world: &mut World, uie: UIEFull, screen_width: f32, screen_height: f32) -> RenderDataFull{
         let mut render_data = RenderDataFull::new();
         let mut terrain_data: RenderData = RenderData::new();
         let mut entity_data: RenderData = RenderData::new();
@@ -286,7 +288,7 @@ impl Camera{
 
         world.set_loaded_chunks(chunks_loaded);
         let mut sorted_ui_elements: Vec<&UIESprite> = self.ui_elements.values().filter_map(|x| if x.visible { Some(&x.sprite) } else { None }).collect();
-        sorted_ui_elements.extend(&uie);
+        sorted_ui_elements.extend(&uie.sprites);
         sorted_ui_elements.sort_by(|a, b| a.z.partial_cmp(&b.z).unwrap());
 
         for element in sorted_ui_elements.iter(){
@@ -295,7 +297,14 @@ impl Camera{
             render_data.vertex.extend(draw_data.vertex);
             render_data.index.extend(draw_data.index);
         }
+        let temp_uie_clone = uie.text.clone();
+        self.temp_uie = temp_uie_clone; // THIS IS THE JANKIEST THING IVE EVER SEEN BUT ITS THE ONLY WAY IT WORKS FOR SOME REASON
         (render_data.sections_a, render_data.sections_b) = self.get_sections(screen_width, screen_height);
+        let mut f = Vec::new();
+        for text in self.temp_uie.iter() {
+            f.push(text.get_section(&self, screen_width, screen_height, 0.0, 0.0).clone());
+        }
+        render_data.sections_a.extend(f);
         render_data
     }
     pub fn add_text(&mut self, text: String, font: Font,  x: f32, y: f32, w: f32, h: f32, font_size: f32, color: [f32; 4], align: HorizontalAlign) -> usize{
@@ -328,20 +337,20 @@ impl Camera{
         for (id, text) in self.text.iter(){
             match self.text_font_lookup.get(id).expect(format!("Could not find font for text with id {}", id).as_str()){
                 Font::A => {
-                    sections_a.push(text.get_section(&self, screen_width, screen_height, 0.0, 0.0));
+                    sections_a.push(text.get_section(&self, screen_width, screen_height, 0.0, 0.0).clone());
                 },
                 Font::B => {
-                    sections_b.push(text.get_section(&self, screen_width, screen_height, 0.0, 0.0));
+                    sections_b.push(text.get_section(&self, screen_width, screen_height, 0.0, 0.0).clone());
                 }
             }
         }
         for (id, text) in self.world_text.iter(){
             match self.world_text_font_lookup.get(id).expect(format!("Could not find font for text with id {}", id).as_str()){
                 Font::A => {
-                    sections_a.push(text.get_section(&self, screen_width, screen_height, self.camera_x * -1.0, self.camera_y * -1.0));
+                    sections_a.push(text.get_section(&self, screen_width, screen_height, self.camera_x * -1.0, self.camera_y * -1.0).clone());
                 },
                 Font::B => {
-                    sections_b.push(text.get_section(&self, screen_width, screen_height, self.camera_x * -1.0, self.camera_y * -1.0));
+                    sections_b.push(text.get_section(&self, screen_width, screen_height, self.camera_x * -1.0, self.camera_y * -1.0).clone());
                 }
             }
         }

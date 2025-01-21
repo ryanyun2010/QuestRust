@@ -2,7 +2,7 @@ use std::{collections::HashMap, fs, path::Path};
 use image::{io::Reader, EncodableLayout};
 use wgpu::{Device, SurfaceConfiguration, TextureFormat};
 use wgpu_text::{glyph_brush::{ab_glyph::FontRef, HorizontalAlign, Layout, Section as TextSection, Text}, BrushBuilder, TextBrush};
-use crate::game_engine::{camera::{Camera, Font}, json_parsing::{sprite_sheet_json, sprite_sheet_sprite_json, sprites_json_descriptor}, utils::{get_rotated_corners, Rectangle}};
+use crate::game_engine::{camera::{Camera, Font}, json_parsing::{sprite_sheet_json, sprite_sheet_sprite_json, sprites_json_descriptor}, ui::UIESprite, utils::{get_rotated_corners, Rectangle}};
 
 use super::{sprite_sheet_generation_abstraction::SpriteSheetSheet, vertex::Vertex};
 
@@ -270,4 +270,13 @@ fn get_image_dimensions(file_path: &str) -> Result<(u32, u32), image::error::Ima
     let reader = Reader::open(path)?;
     let dimensions = reader.into_dimensions()?;
     Ok(dimensions)
+}
+
+
+
+
+#[derive(Debug, Clone)]
+pub struct UIEFull {
+    pub sprites: Vec<UIESprite>,
+    pub text: Vec<TextSprite>,
 }
