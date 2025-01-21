@@ -14,7 +14,7 @@ rand = "0.8.5"
 serde = { version = "1.0.217", features = ["derive"] }
 serde_json = "1.0.135" 
 tokio = { version = "1.43.0", features = ["full"] }
-wgpu_text = {git = "https://github.com/ryanyun2010/wgpu_text_edited"}
+wgpu_text = "0.9.2"
 colorized = "1.0.0"
 term_size = "0.3.2"
 [dependencies.image]
