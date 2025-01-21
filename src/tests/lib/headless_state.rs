@@ -3,6 +3,13 @@ use std::collections::HashMap;
 use crate::game_engine::world::World;
 use crate::camera::Camera;
 
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum GameState {
+    start,
+    play,
+    inventory,
+    death,
+}
 pub struct HeadlessState{
     pub keys_down: HashMap<String, bool>,
     pub left_mouse_button_down: bool,
@@ -25,5 +32,7 @@ impl HeadlessState{
         world.update_player_attacks(camera);
         world.kill_entities_to_be_killed();
     }
+    
 }
+
 

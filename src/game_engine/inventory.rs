@@ -17,16 +17,16 @@ pub struct Inventory {
     items: HashMap<usize, Item>,
     hotbar: Vec<usize>, // slot id of hotbar slots
     cur_hotbar_slot: usize,
-    slots: Vec<Slot>,
+    pub slots: Vec<Slot>,
     item_id: usize,
     display_text: Option<usize>,
-    show_inventory: bool,
+    pub show_inventory: bool,
     item_on_mouse: Option<ItemOnMouse>,
     mouse_position: MousePosition
 }
 #[derive(Debug, Clone)]
-struct Slot {
-    item: Option<usize>,
+pub struct Slot {
+    pub item: Option<usize>,
     main_image: Option<UIESprite>,
     item_image: Option<UIESprite>,
     x: usize,
@@ -130,8 +130,6 @@ impl Inventory{
         self.add_slot(Slot::new(636, 200));
         self.add_slot(Slot::new(694, 200));
         self.add_slot(Slot::new(752, 200));
-        println!("{:?}", self.set_slot_item(7, 0));
-        println!("{:?}", self.set_slot_item(6, 1));
     }
     pub fn add_hotbar_slot(&mut self, slot: Slot) {
         self.hotbar.push(self.slots.len());

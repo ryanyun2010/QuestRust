@@ -183,7 +183,6 @@ impl<'a> Game<'a> {
 
     pub fn on_key_down(&mut self, key: &String){
         if key == "e" {
-            
             self.state = match self.state {
                 GameState::play => {
                     self.world.inventory.show_inventory(&mut self.camera);
