@@ -114,7 +114,7 @@ pub fn pathfind_by_block(position_component: PositionComponent, collision_compon
             if nx > 100000000 || ny > 100000000 {
                 continue;
             }
-            if world.check_collision(true, Some(entity_id), ((nx * 32) as f32 + entity_x_offset).floor() as usize, ((ny * 32) as f32 + entity_y_offset).floor() as usize, ew.ceil() as usize, eh.ceil() as usize, true) {
+            if world.check_collision(true, Some(entity_id), ((nx * 32) as f32 + entity_x_offset).floor(), ((ny * 32) as f32 + entity_y_offset).floor(), ew.ceil() as usize, eh.ceil() as usize, true) {
                 continue;
             }
 
@@ -212,7 +212,7 @@ pub fn pathfind_high_granularity(position_component: PositionComponent, collisio
                 continue;
             }
 
-            if world.check_collision(false, Some(entity_id), (nx as f32 * 4.0 + entity_x_offset).floor() as usize, (ny as f32 * 4.0 + entity_y_offset).floor() as usize, ew as usize, eh as usize, true) {
+            if world.check_collision(false, Some(entity_id), (nx as f32 * 4.0 + entity_x_offset).floor(), (ny as f32 * 4.0 + entity_y_offset).floor(), ew as usize, eh as usize, true) {
                 continue;
             }
 

@@ -11,7 +11,7 @@ use super::pathfinding::{self, EntityDirectionOptions};
 
 impl World {
     pub fn move_entity(&self, mut position_component: RefMut<PositionComponent>, entity_id: &usize, movement: [f32; 2], chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>, respects_collision: bool, has_collision: bool) -> Result<(), PError>{ 
-        if respects_collision && self.check_collision(false, Some(*entity_id), (position_component.x + movement[0]).floor() as usize, (position_component.y + movement[1]).floor() as usize, 32,32, true){
+        if respects_collision && self.check_collision(false, Some(*entity_id), (position_component.x + movement[0]).floor(), (position_component.y + movement[1]).floor(), 32,32, true){
             return Ok(());
         }
         let prev_chunk = punwrap!(self.get_chunk_from_xy(position_component.x as usize, position_component.y as usize), "entity with id {} doesn't have a current chunk?", entity_id);

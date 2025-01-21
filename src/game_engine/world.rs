@@ -316,18 +316,18 @@ impl World{
             }
         }  
     }
-    pub fn check_collision(&self, player: bool, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, entity: bool) -> bool{
+    pub fn check_collision(&self, player: bool, id_to_ignore: Option<usize>, x: f32, y: f32, w: usize, h: usize, entity: bool) -> bool{
         if !player {
             let player = self.player.borrow();
             let pw = player.collision_box.w;
             let ph = player.collision_box.h;
             let px = player.x + player.collision_box.x_offset;
             let py = player.y + player.collision_box.y_offset;
-            if px.floor() - 1.0 < (x + w) as f32 && px.floor() + pw + 1.0 > x as f32 && py.floor() - 1.0 < (y + h) as f32 && py.floor() + ph + 1.0 > y as f32{
+            if px.floor() - 1.0 < (x + w as f32) && px.floor() + pw + 1.0 > x as f32 && py.floor() - 1.0 < (y + h as f32) && py.floor() + ph + 1.0 > y{
                 return true;
             }
         }
-        let tiles_to_check = World::get_terrain_tiles(x, y, w, h);
+        let tiles_to_check = World::get_terrain_tiles(x.floor() as usize, y.floor() as usize, w, h);
         let mut ids_to_check: Vec<usize> = Vec::new();
         for tile in tiles_to_check.iter(){
             if self.collision_cache.borrow().get(&[tile[0],tile[1]]).is_none(){
@@ -351,14 +351,14 @@ impl World{
                     let ey = entity_position.y + entity_collision_box.y_offset;
                     let ew = entity_collision_box.w;
                     let eh = entity_collision_box.h;
-                    if ex < (x + w) as f32 && ex + ew > x as f32 && ey < (y + h) as f32 && ey + eh > y as f32{
+                    if ex < (x + w as f32) && ex + ew > x as f32 && ey < (y + h as f32) && ey + eh > y as f32{
                         return true;
                     }
                 }
                 
             }else{
                 let terrain = terrain_potentially.unwrap();
-                if terrain.x < x + w && terrain.x + 32 > x && terrain.y < y + h && terrain.y + 32 > y{
+                if (terrain.x as f32) < (x + w as f32) && terrain.x as f32 + 32.0 > x as f32 && (terrain.y as f32) < (y + h as f32) && (terrain.y as f32 + 32.0) > y{
                     return true;
                 }
             }
@@ -571,14 +571,14 @@ impl World{
     }
     pub fn attempt_move_player(&self, player: &mut Player, movement: [f32; 2]){
         
-        if self.check_collision(true, None,(player.x.floor() + movement[0] + player.collision_box.x_offset).floor() as usize, (player.y.floor() + movement[1] + player.collision_box.y_offset).floor() as usize, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true){
+        if self.check_collision(true, None,player.x.floor() + movement[0] + player.collision_box.x_offset, player.y.floor() + movement[1] + player.collision_box.y_offset, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true){
             return;
         }
         player.x += movement[0];
         player.y += movement[1];
     }
     pub fn can_move_player(&self, player: &mut Player, movement: [f32; 2]) -> bool{
-        if self.check_collision(true, None,(player.x.floor() + movement[0] + player.collision_box.x_offset).floor() as usize, (player.y.floor() + movement[1] + player.collision_box.y_offset).floor() as usize, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true){
+        if self.check_collision(true, None,(player.x.floor() + movement[0] + player.collision_box.x_offset) as f32, (player.y.floor() + movement[1] + player.collision_box.y_offset) as f32, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true){
             return false;
         }
         true
