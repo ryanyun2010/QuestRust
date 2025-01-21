@@ -1,8 +1,7 @@
-use std::{collections::HashMap, fs, path::Path};
-use image::{io::Reader, EncodableLayout};
-use wgpu::{Device, SurfaceConfiguration, TextureFormat};
-use wgpu_text::{glyph_brush::{ab_glyph::FontRef, HorizontalAlign, Layout, Section as TextSection, Text}, BrushBuilder, TextBrush};
-use crate::game_engine::{camera::{Camera, Font}, json_parsing::{sprite_sheet_json, sprite_sheet_sprite_json, sprites_json_descriptor}, ui::UIESprite, utils::{get_rotated_corners, Rectangle}};
+use std::{collections::HashMap, path::Path};
+use image::io::Reader;
+use wgpu_text::glyph_brush::{HorizontalAlign, Layout, Section as TextSection, Text};
+use crate::game_engine::{camera::Camera, json_parsing::{sprite_sheet_json, sprite_sheet_sprite_json, sprites_json_descriptor}, ui::UIESprite, utils::{get_rotated_corners, Rectangle}};
 
 use super::{sprite_sheet_generation_abstraction::SpriteSheetSheet, vertex::Vertex};
 
@@ -166,7 +165,6 @@ impl SpriteContainer{
         }
     }
     pub fn create_from_json(descriptor: &sprites_json_descriptor) -> (Vec<String>, SpriteContainer){
-        let mut id = 0;
         let mut sprites = Vec::new();
         let mut sprite_id_lookup = HashMap::new();
         let mut sprites_to_load = Vec::new();
@@ -190,7 +188,7 @@ impl SpriteContainer{
                 
                 );
         }
-        let sss = SpriteSheetSheet::create_from_json(&sprite_sheets, true, id);
+        let sss = SpriteSheetSheet::create_from_json(&sprite_sheets, 0);
         sprites_to_load.push(sss.path.clone());
         let mut i = 0;
         for sheet in sprite_sheets.iter(){

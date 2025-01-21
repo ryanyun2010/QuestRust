@@ -31,7 +31,10 @@ pub async fn test_melee_player_attack() {
             )
         }
     );
-    world.inventory.set_hotbar_slot_item(0, item);
+    match world.inventory.set_hotbar_slot_item(0, item) {
+        Ok(_) => {},
+        Err(e) => panic!("Error: {:?}", e)
+    }
     world.create_entity_with_archetype(639.0, 400.0, String::from("test_attackable_entity"));
     let mut headless = HeadlessGame::new(world, camera);
     headless.world.on_mouse_click(MousePosition {
@@ -82,7 +85,10 @@ pub async fn test_ranged_player_attack() {
             )
         }
     );
-    world.inventory.set_hotbar_slot_item(0, item);
+    match world.inventory.set_hotbar_slot_item(0, item) {
+        Ok(_) => {},
+        Err(e) => panic!("Error: {:?}", e)
+    }
     world.create_entity_with_archetype(689.0, 400.0, String::from("test_attackable_entity"));
     let mut headless = HeadlessGame::new(world, camera);
     headless.world.on_mouse_click(MousePosition {

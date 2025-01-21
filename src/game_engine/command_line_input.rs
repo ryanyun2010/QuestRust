@@ -1,5 +1,5 @@
 use dialog::DialogBox;
-use anyhow::{anyhow, Error};
+use anyhow::anyhow;
 
 pub fn prompt_float(prompt: &str) -> Result<f32, anyhow::Error> {
     let prompt_res = dialog::Input::new(prompt).show();

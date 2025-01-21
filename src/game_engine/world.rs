@@ -2,8 +2,6 @@ use core::f32;
 use std::collections::{HashMap, HashSet};
 use std::cell::{RefCell, RefMut};
 use std::f32::consts::PI;
-use std::hash::Hash;
-use wgpu::DeviceDescriptor;
 use anyhow::anyhow;
 
 use crate::rendering_engine::abstractions::SpriteContainer;
@@ -11,14 +9,14 @@ use crate::entities::EntityTags;
 use crate::game_engine::player::Player;
 use crate::game_engine::terrain::{Terrain, TerrainTags};
 
-use super::camera::{self, Camera};
+use super::camera::Camera;
 use super::entities::AttackType;
 use super::entity_attacks::{EntityAttackBox, EntityAttackDescriptor};
 use super::entity_components::{self, AggroComponent, CollisionBox, HealthComponent, PositionComponent};
 use super::game::MousePosition;
 use super::inventory::Inventory;
 use super::item::{Item, ItemArchetype, ItemType};
-use super::player_attacks::{PlayerAttack};
+use super::player_attacks::PlayerAttack;
 use super::utils::{self, Rectangle};
 
 #[derive(Debug, Clone)]
@@ -661,7 +659,7 @@ impl World{
             attack.time_charged += 1.0;
             let desciptor = self.get_attack_descriptor(attack).expect("Couldn't find entity attack descriptor?");
             if attack.time_charged.floor() as usize >= desciptor.time_to_charge {
-                if (self.check_collision_with_player(attack.x, attack.y, desciptor.reach as f32, desciptor.width as f32, attack.rotation * 180.0/PI)){
+                if self.check_collision_with_player(attack.x, attack.y, desciptor.reach as f32, desciptor.width as f32, attack.rotation * 180.0/PI){
                     self.player.borrow_mut().health -= desciptor.damage as f32;
                 }
                 attacks_to_be_deleted.push(i);
@@ -696,7 +694,7 @@ impl World{
                         let collisions = self.get_attacked_rotated_rect(true, None, attack.x as usize, attack.y as usize, height.floor() as usize, width.floor() as usize,attack.angle, true);
                         for collision in collisions.iter(){
                             if self.entity_health_components.get(&collision).is_some(){
-                                let mut health_component = self.entity_health_components.get(&collision).unwrap().borrow_mut();
+                                let health_component = self.entity_health_components.get(&collision).unwrap().borrow_mut();
                                 let entity_position = self.entity_position_components.get(&collision).unwrap().borrow();
                                 let aggro_potentially = self.entity_aggro_components.get(&collision);
                                 let mut aggro = None;
@@ -738,7 +736,7 @@ impl World{
                         let aoe_collisions = self.get_attacked(true, None, attack.x as usize - (aoesize as f32/2.0) as usize, attack.y as usize - (aoesize as f32/2.0) as usize, aoesize.floor() as usize, aoesize.floor() as usize, true);
                         for collision in aoe_collisions.iter(){
                             if self.entity_health_components.get(&collision).is_some(){
-                                let mut health_component = self.entity_health_components.get(&collision).unwrap().borrow_mut();
+                                let health_component = self.entity_health_components.get(&collision).unwrap().borrow_mut();
                                 let entity_position = self.entity_position_components.get(&collision).unwrap().borrow();
                                 let aggro_potentially = self.entity_aggro_components.get(&collision);
                                 let mut aggro = None;

@@ -354,7 +354,10 @@ async fn test_close_inventory_with_item_held_basic(){
     }, true, false);
     headless.run(5).await;
     
-    headless.world.inventory.hide_inventory();
+    match headless.world.inventory.hide_inventory() {
+        Ok(_) => {},
+        Err(e) => panic!("Error: {:?}", e)
+    }
     headless.run(5).await;
     assert!(
         headless.world.inventory.get_slot(&6).unwrap().item.is_some(),
@@ -435,7 +438,10 @@ async fn test_close_inventory_with_item_held_after_swap(){
         y_world: 201.0 + headless.camera.camera_y,
     }, true, false); 
     headless.run(5).await;
-    headless.world.inventory.hide_inventory();
+    match headless.world.inventory.hide_inventory() {
+        Ok(_) => {},
+        Err(e) => panic!("Error: {:?}", e)
+    }
     headless.run(5).await;
     assert!(
         headless.world.inventory.get_slot(&6).unwrap().item.is_some(),
@@ -522,7 +528,10 @@ pub async fn test_melee_player_attack_after_inventory_movement() {
         y_world: 381.0 + headless.camera.camera_y,
     }, true, false);
     headless.run(5).await;
-    headless.world.inventory.hide_inventory();
+    match headless.world.inventory.hide_inventory() {
+        Ok(_) => {},
+        Err(e) => panic!("Error: {:?}", e)
+    }
     headless.run(5).await;
     headless.world.on_mouse_click(MousePosition {
             x_screen: 639.0,

@@ -10,7 +10,7 @@ pub struct SpriteSheetSheet {
 }
 const COMBINE_PATH: &str = "src/rendering_engine/img/COMBINED_AUTO_GENERATED.png";
 impl SpriteSheetSheet{
-    pub fn create_from_json(sheets: &Vec<sprite_sheet_json>, combine: bool, texture_id: i32) -> Self {
+    pub fn create_from_json(sheets: &Vec<sprite_sheet_json>, texture_id: i32) -> Self {
         let args: Vec<String> = env::args().collect();
         if args.contains(&String::from("combine")) {
             let mut sheet_paths = Vec::new();
@@ -57,8 +57,7 @@ impl SpriteSheetSheet{
 
 }
 
-use image::{GenericImageView, RgbaImage, Rgba};
-use std::path::Path;
+use image::{GenericImageView, RgbaImage};
 
 pub fn combine_images(image_paths: Vec<String>, output_path: &str) -> Result<(), Box<dyn std::error::Error>> {
     let mut total_width = 0;

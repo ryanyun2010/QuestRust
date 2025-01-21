@@ -1,3 +1,9 @@
+#![allow(non_camel_case_types)]
+#![allow(unused_assignments)]
+#![allow(unused_variables)]
+#![allow(non_snake_case)]
+#![allow(dead_code)]
+#![allow(deprecated)]
 use std::time::Instant;
 pub mod rendering_engine;
 use rendering_engine::{renderer, texture, vertex, window};
@@ -17,9 +23,15 @@ fn main() {
     let spear = world.inventory.add_item(
         world.create_item_with_archetype("test_spear".to_string())
     );
-    world.inventory.init_ui(&world.sprites);
-    world.inventory.set_hotbar_slot_item(0, sword);
-    world.inventory.set_hotbar_slot_item(1, spear);
+    world.inventory.init_ui();
+    match world.inventory.set_hotbar_slot_item(0, sword) {
+        Ok(_) => {},
+        Err(e) => println!("Error: {}", e)
+    };
+    match world.inventory.set_hotbar_slot_item(1, spear) {
+        Ok(_) => {},
+        Err(e) => println!("Error: {}", e)
+    }
     camera.add_ui_element(String::from("health_bar_background"), UIElementDescriptor {
         x: 32.0,
         y: 32.0,

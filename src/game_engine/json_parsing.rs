@@ -339,7 +339,7 @@ impl JSON_parser {
             data.terrain_archetypes.insert(terrain_archetype.name.clone(), terrain_archetype.clone());
         }
 
-        for (item_archetype) in &self.item_archetype_json {
+        for item_archetype in &self.item_archetype_json {
             data.item_archetypes.insert(item_archetype.name.clone(), ItemArchetype{
                 name: item_archetype.name.clone(),
                 stats: item_archetype.stats.clone(),

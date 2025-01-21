@@ -1,11 +1,10 @@
 use std::collections::HashMap;
 
 use anyhow::anyhow;
-use wgpu::rwh::XcbDisplayHandle;
 
-use crate::{game_engine::item::Item, rendering_engine::abstractions::{Sprite, SpriteContainer, TextSprite, UIEFull}};
+use crate::{game_engine::item::Item, rendering_engine::abstractions::{TextSprite, UIEFull}};
 
-use super::{camera::{self, Camera}, game::MousePosition, ui::{UIESprite, UIElementDescriptor}};
+use super::{game::MousePosition, ui::UIESprite};
 
 #[derive(Debug, Clone)]
 pub struct ItemOnMouse{
@@ -19,7 +18,6 @@ pub struct Inventory {
     cur_hotbar_slot: usize,
     pub slots: Vec<Slot>,
     item_id: usize,
-    display_text: Option<usize>,
     pub show_inventory: bool,
     item_on_mouse: Option<ItemOnMouse>,
     mouse_position: MousePosition
@@ -100,7 +98,6 @@ impl Inventory{
         Self {
             hotbar: Vec::new(),
             cur_hotbar_slot: 0,
-            display_text: None,
             items: HashMap::new(),
             item_id: 0,
             slots: Vec::new(),
@@ -119,7 +116,7 @@ impl Inventory{
     pub fn set_hotbar_slot(&mut self, slot: usize) {
         self.cur_hotbar_slot = slot;
     }
-    pub fn init_ui(&mut self, sprites: &SpriteContainer) {
+    pub fn init_ui(&mut self) {
         self.add_hotbar_slot(Slot::new(20, 652));
         self.add_hotbar_slot(Slot::new(78, 652));
         self.add_hotbar_slot(Slot::new(136, 652));
@@ -155,25 +152,27 @@ impl Inventory{
             slot.alter_position(520 + i * 58, 380);
         }
     }
-    pub fn hide_inventory(&mut self){
+    pub fn hide_inventory(&mut self) -> Result<(), anyhow::Error>{
         self.show_inventory = false;
         if self.item_on_mouse.is_some(){
             let iom = self.item_on_mouse.as_ref().unwrap();
-            self.set_slot_item(iom.slot_belonging, iom.item_id);
+            self.set_slot_item(iom.slot_belonging, iom.item_id)?;
             self.item_on_mouse = None;
         }
         for i in 0..self.hotbar.len(){
             let slot = self.get_hotbar_slot_mut(i).unwrap();
             slot.alter_position(20 + i * 58, 652);
         }
+        Ok(())
     }
-    pub fn set_hotbar_slot_item(&mut self, slot: usize, item_id: usize) {
+    pub fn set_hotbar_slot_item(&mut self, slot: usize, item_id: usize) -> Result<(), anyhow::Error> {
         let slot_potentially = self.hotbar.get(slot).and_then(
             |x| self.slots.get_mut(*x)
         );
         if slot_potentially.is_some() {
-            slot_potentially.unwrap().set_item(item_id, &self.items);
+            slot_potentially.unwrap().set_item(item_id, &self.items)?;
         }
+        Ok(())
     }
     pub fn get_slot(&self, slot: &usize) -> Option<&Slot> {
         self.slots.get(*slot)
@@ -185,7 +184,7 @@ impl Inventory{
         }
         Ok(())
     }
-    pub fn render_ui(&mut self, sprites: &SpriteContainer) -> UIEFull {
+    pub fn render_ui(&mut self) -> UIEFull {
         let mut ui = Vec::new();
         let mut text = vec![
             TextSprite {
@@ -308,39 +307,51 @@ impl Inventory{
 
     }
     pub fn on_mouse_click(&mut self, position: MousePosition, left: bool, right: bool) {
-        let mut slot_clicked = None;
-        let mut i = 0;
-        for slot in self.slots.iter_mut() {
-            if slot.x < position.x_screen as usize && slot.x + 48 > position.x_screen as usize && slot.y < position.y_screen as usize && slot.y + 48 > position.y_screen as usize {
-                slot_clicked = Some(slot);
-                break;
-            }
-            i += 1;
-        }
-        if slot_clicked.is_some() {
-            let slot = slot_clicked.unwrap();
-            if slot.item.is_some() {
-                if self.item_on_mouse.is_none() {
-                    self.item_on_mouse = Some(
-                        ItemOnMouse {
-                            slot_belonging: i,
-                            item_id: slot.item.unwrap()
-                        }
-                    );
-                    slot.remove_item();
-                }else if self.item_on_mouse.is_some() {
-                    let item_clone = self.item_on_mouse.as_ref().unwrap().clone();
-                    self.item_on_mouse = Some(
-                        ItemOnMouse {
-                            slot_belonging: item_clone.slot_belonging,
-                            item_id: slot.item.unwrap()
-                        }
-                    ); 
-                    slot.set_item(item_clone.item_id, &self.items);
+        if left {
+            let mut slot_clicked = None;
+            let mut i = 0;
+            for slot in self.slots.iter_mut() {
+                if slot.x < position.x_screen as usize && slot.x + 48 > position.x_screen as usize && slot.y < position.y_screen as usize && slot.y + 48 > position.y_screen as usize {
+                    slot_clicked = Some(slot);
+                    break;
                 }
-            }else if self.item_on_mouse.is_some(){
-                slot.set_item(self.item_on_mouse.as_ref().unwrap().item_id, &self.items);
-                self.item_on_mouse = None;
+                i += 1;
+            }
+            if slot_clicked.is_some() {
+                let slot = slot_clicked.unwrap();
+                if slot.item.is_some() {
+                    if self.item_on_mouse.is_none() {
+                        self.item_on_mouse = Some(
+                            ItemOnMouse {
+                                slot_belonging: i,
+                                item_id: slot.item.unwrap()
+                            }
+                        );
+                        slot.remove_item();
+                    }else if self.item_on_mouse.is_some() {
+                        let item_clone = self.item_on_mouse.as_ref().unwrap().clone();
+                        self.item_on_mouse = Some(
+                            ItemOnMouse {
+                                slot_belonging: item_clone.slot_belonging,
+                                item_id: slot.item.unwrap()
+                            }
+                        ); 
+                        match slot.set_item(item_clone.item_id, &self.items) {
+                            Ok(_) => (),
+                            Err(e) => {
+                                println!("Error setting item: {:?}", e)
+                            }
+                        }
+                    }
+                }else if self.item_on_mouse.is_some(){
+                    match slot.set_item(self.item_on_mouse.as_ref().unwrap().item_id, &self.items){
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("Error setting item: {:?}", e)
+                        }
+                    }
+                    self.item_on_mouse = None;
+                }
             }
         }
     }

@@ -41,7 +41,7 @@ impl LootTable {
         }
     }
     pub fn roll(&self) -> Option<Item> {
-        let mut rand: f32 = rand::random();
+        let rand: f32 = rand::random();
         let roll: usize = (rand*(self.total_weight as f32)).floor() as usize;
         for entry in 0..self.entries.len()-1 {
             if roll <= self.entries[entry].weight_range {

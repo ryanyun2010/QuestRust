@@ -4,7 +4,7 @@ use std::f32::consts::PI;
 use crate::world::World;
 use crate::rendering_engine::abstractions::{RenderData, RenderDataFull, TextSprite, UIEFull};
 use crate::game_engine::ui::UIElement;
-use wgpu_text::glyph_brush::{HorizontalAlign, Section as TextSection, Text};
+use wgpu_text::glyph_brush::{HorizontalAlign, Section as TextSection};
 
 use super::entities::AttackType;
 use super::ui::UIESprite;

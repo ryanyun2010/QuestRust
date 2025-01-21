@@ -1,10 +1,8 @@
 use crate::loot::Loot;
 use crate::game_engine::item::Item;
 use std::cell::{RefCell, RefMut};
-use std::f32::consts::PI;
-use std::time::Instant;
 use super::entity_attacks::EntityAttackBox;
-use super::entity_components::{self, AggroComponent, CollisionBox, EntityAttackComponent, PathfindingComponent, PositionComponent};
+use super::entity_components::{self, CollisionBox, EntityAttackComponent, PathfindingComponent, PositionComponent};
 use super::world::{Chunk, World};
 use super::player::Player;
 use super::pathfinding::{self, EntityDirectionOptions};
@@ -207,7 +205,7 @@ impl World {
                             }
                         )
                     }
-                    _ => (todo!())
+                    _ => todo!()
                 }
                 attack_component.cur_attack += 1;
                 if attack_component.cur_attack >= attack_pattern.attacks.len(){
@@ -292,7 +290,6 @@ impl World {
                     },
                 }
             } else if magnitude > 60.0{
-                let time = Instant::now();
                 let direction: EntityDirectionOptions = pathfinding::pathfind_high_granularity(position_component.clone(), *collision_box,*entity_id, self);
                 match direction {
                     EntityDirectionOptions::Down => {
@@ -355,7 +352,6 @@ impl World {
         self.set_entity_archetype(entity, archetype.clone());
         let archetype = self.entity_archetype_tags_lookup.get(&archetype).expect("Archetype not found");
         let mut needs_attack_component = false;
-        let mut needs_collision_box_component = false;
         let mut needs_pathfinding_component = false;
         let mut needs_health_component = false;
         let mut needs_aggro_component = false;

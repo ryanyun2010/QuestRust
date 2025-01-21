@@ -254,8 +254,6 @@
 //     }
 // }
 
-use rand::prelude::*;
-
 use rand::Rng;
 use serde::Deserialize;
 use serde::Serialize;
@@ -272,7 +270,7 @@ macro_rules! create_stat_lists {
         }
         impl GearStatList {
             pub fn get_variation(&self) -> StatList {
-                let mut list = StatList {
+                let list = StatList {
                     $( $stat_name: self.$stat_name.map(|x| x.get_variation()), )*
                 };
                 list

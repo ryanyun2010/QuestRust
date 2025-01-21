@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use winit::{event, keyboard::{Key, NamedKey}};
 
-use crate::rendering_engine::{abstractions::RenderDataFull, renderer::Renderer, vertex::Vertex};
+use crate::rendering_engine::renderer::Renderer;
 
 use super::{camera::Camera, world::World};
 #[derive(Debug, Copy, Clone)]
@@ -116,10 +116,10 @@ impl<'a> Game<'a> {
         if self.state == GameState::start {
             self.renderer.render(
                 self.world.sprites.get_sprite_by_name("start_screen").expect("No start_screen sprite?").draw_data(0.0, 0.0, self.camera.viewpoint_width, self.camera.viewpoint_height, self.camera.viewpoint_width, self.camera.viewpoint_height, 0, 0, 0).to_full()
-            );
+            )?;
             return Ok(());
         }
-        let uie = self.world.inventory.render_ui(&self.world.sprites);
+        let uie = self.world.inventory.render_ui();
         self.renderer.render(self.camera.render(&mut self.world, uie, self.renderer.config.width as f32, self.renderer.config.height as f32))
     }
     pub fn update(&mut self){
@@ -189,7 +189,12 @@ impl<'a> Game<'a> {
                     GameState::inventory
                 },
                 GameState::inventory => {
-                    self.world.inventory.hide_inventory();
+                    match self.world.inventory.hide_inventory() {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("Error hiding inventory: {:?}", e);
+                        }
+                    }
                     GameState::play
                 },
                 _ => self.state,

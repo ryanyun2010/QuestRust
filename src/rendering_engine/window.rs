@@ -1,8 +1,6 @@
 
-use std::time::Instant;
-
 use winit::{
-    event::*, event_loop::EventLoop, window::{WindowBuilder}
+    event::*, event_loop::EventLoop, window::WindowBuilder
 };
 use crate::game_engine::game::Game;
 use crate::renderer::Renderer;
@@ -47,7 +45,6 @@ pub async fn run(world: World, camera: Camera, sprites_json_to_load: &Vec<String
                     if focused{
                         game.window().request_redraw();
                     }
-                    let time = Instant::now();
                     game.update();
                     match game.render() {
                         Ok(_) => {}
