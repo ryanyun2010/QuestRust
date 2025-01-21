@@ -10,6 +10,7 @@ use rendering_engine::{renderer, texture, vertex, window};
 pub mod game_engine;
 use game_engine::{camera, entities, json_parsing::{self, PATH_BUNDLE}, loot, starting_level_generator, stat, ui::UIElementDescriptor, world};
 pub mod tests;
+pub mod error;
 
 fn main() {
     let mut parser = json_parsing::JSON_parser::new();

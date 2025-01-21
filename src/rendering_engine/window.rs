@@ -2,7 +2,9 @@
 use winit::{
     event::*, event_loop::EventLoop, window::WindowBuilder
 };
+use crate::error::PE;
 use crate::game_engine::game::Game;
+use crate::print_error;
 use crate::renderer::Renderer;
 use crate::world::World;
 use crate::camera::Camera;
@@ -48,23 +50,35 @@ pub async fn run(world: World, camera: Camera, sprites_json_to_load: &Vec<String
                     game.update();
                     match game.render() {
                         Ok(_) => {}
-                        Err(
-                            wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated,
-                        ) => game.resize(game.renderer.size),
-                        Err(wgpu::SurfaceError::OutOfMemory) => {
-                            log::error!("OutOfMemory");
-                            control_flow.exit();
-                        }
-                        Err(wgpu::SurfaceError::Timeout) => {
-                            log::warn!("Surface timeout")
-                        }
                         Err(e) => {
-                            log::error!("Error: {:?}", e);
-                            control_flow.exit();
+                            match e.error {
+                                PE::SurfaceError(se) => {
+                                    match se {
+                                        wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated => {
+                                            print_error!("Surface lost or outdated");
+                                            game.resize(game.renderer.size)
+                                        },
+                                        wgpu::SurfaceError::OutOfMemory => {
+                                            print_error!("Out of memory");
+                                            control_flow.exit();
+                                        }
+                                        wgpu::SurfaceError::Timeout => {
+                                            print_error!("Surface timeout");
+                                            log::warn!("Surface timeout")
+                                        }
+                                        _ => {
+                                            print_error!(format!("Surface error: {}", se));
+                                            control_flow.exit();
+                                        }
+                                    }
+                                }
+                                _ => {
+                                    print_error!(e);
+                                    control_flow.exit();
+                                }
+                            }
                         }
-                        
                     }
-                    
                 }
                 _ => {}
             }   

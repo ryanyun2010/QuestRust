@@ -1,6 +1,8 @@
 use std::collections::{BTreeMap, HashMap};
 use std::f32::consts::PI;
 
+use crate::error::{PError, PE};
+use crate::{error_prolif_allow, perror, ptry, punwrap};
 use crate::world::World;
 use crate::rendering_engine::abstractions::{RenderData, RenderDataFull, TextSprite, UIEFull};
 use crate::game_engine::ui::UIElement;
@@ -55,21 +57,19 @@ impl Camera{
             temp_uie: Vec::new()
         }
     }
-    pub fn update_ui(&mut self, world: &mut World){
+    pub fn update_ui(&mut self, world: &mut World) -> Result<(), PError>{
         let player = world.player.borrow().clone();
-        let health_bar = self.get_ui_element_mut_by_name(String::from("health_bar_inside")).unwrap();
+        let health_bar = punwrap!(self.get_ui_element_mut_by_name(String::from("health_bar_inside")), "Could not find health bar inside ui element");
         let health_bar_width = f32::max(0.0, (player.health as f32 / player.max_health as f32) * 250.0);
         health_bar.sprite.width = health_bar_width;
+        Ok(())
     }
     pub fn get_ui_element_mut_by_name(&mut self, name: String) -> Option<&mut UIElement> {
-        let id_potential = self.get_ui_element_id_from_name(name);
-        if id_potential.is_some() {
-            return Some(self.get_ui_element_mut(id_potential.unwrap())); 
-        }
-        return None;
-        
+        self.get_ui_element_id_from_name(name).and_then(
+            |x| self.get_ui_element_mut(x)
+        )
     }
-    pub fn remove_ui_element(&mut self, element: usize){
+    pub fn remove_ui_element(&mut self, element: usize) -> Result<(), PError>{
         let mut name_to_remove = String::new();
         for (name, id) in self.ui_element_names.iter(){
             if *id == element{
@@ -77,8 +77,13 @@ impl Camera{
                 break;
             }
         }
-        self.ui_element_names.remove(&name_to_remove);
-        self.ui_elements.remove(&element);
+        if self.ui_element_names.remove(&name_to_remove).is_none() {
+            return Err(perror!("Element name {} associated with id {} was not found", name_to_remove, element));
+        };
+        if self.ui_elements.remove(&element).is_none(){
+            return Err(perror!(NotFound, "There was no element to remove with id {}", element));
+        };
+        Ok(())
     }
     pub fn add_ui_element(&mut self, name: String,  element_descriptor: crate::game_engine::ui::UIElementDescriptor) -> usize{
         let element = UIElement::new(name.clone(), element_descriptor);
@@ -102,17 +107,17 @@ impl Camera{
     pub fn get_ui_element(&self, element: usize) -> Option<&UIElement>{
         self.ui_elements.get(&element)
     }
-    pub fn get_ui_element_mut(&mut self, element: usize) -> &mut crate::game_engine::ui::UIElement{
-        self.ui_elements.get_mut(&element).unwrap()
+    pub fn get_ui_element_mut(&mut self, element: usize) -> Option<&mut crate::game_engine::ui::UIElement>{
+        self.ui_elements.get_mut(&element)
     }
     pub fn update_camera_position(&mut self, player_x: f32, player_y: f32){
         self.camera_x = player_x - (self.viewpoint_width as f32/ 2.0);
         self.camera_y = player_y - (self.viewpoint_height as f32/ 2.0);
     }
-    pub fn render_entity(&self, world: &World, entity_id: usize, entity_index_offset: u16, extra_index_offset: u16) -> (RenderData, RenderData) {
+    pub fn render_entity(&self, world: &World, entity_id: usize, entity_index_offset: u16, extra_index_offset: u16) -> Result<(RenderData, RenderData), PError> {
         let potentially_sprite_id = world.get_sprite(entity_id);
         if potentially_sprite_id.is_none(){
-            return (RenderData::new(), RenderData::new());
+            return Err(perror!(NotFound, "There was no sprite to render for entity with id {}", entity_id));
         }
         let sprite_id = potentially_sprite_id.unwrap();
         let sprite = world.sprites.get_sprite(sprite_id).expect(format!("Could not find sprite {} while processing entity_id {}", sprite_id, entity_id).as_str());
@@ -131,8 +136,7 @@ impl Camera{
             let health_component = potentially_health_component.unwrap().borrow();
             let potentially_health_bar_back_id = world.sprites.get_sprite_id("health_bar_back");
             if potentially_health_bar_back_id.is_none() {
-                println!("WARNING: No Health Bar Back Sprite");
-                return (draw_data_main, draw_data_other);
+                return Err(perror!(MissingExpectedGlobalSprite, "There was no health bar back sprite"));
             }
             let entity_health_bar_sprite = world.sprites.get_sprite(potentially_health_bar_back_id.unwrap()).expect("Could not find health bar back sprite");
             let health_bar_draw_data = entity_health_bar_sprite.draw_data(entity_position_component.x - 4.0, entity_position_component.y - 15.0, 40, 12, self.viewpoint_width, self.viewpoint_height, extra_index_offset + draw_data_other.vertex.len() as u16, vertex_offset_x, vertex_offset_y);
@@ -140,17 +144,16 @@ impl Camera{
             draw_data_other.index.extend(health_bar_draw_data.index);
             let potentially_health_bar_id = world.sprites.get_sprite_id("health");
             if potentially_health_bar_id.is_none() {
-                println!("WARNING: No Health Bar Sprite");
-                return (draw_data_main, draw_data_other);
+                return Err(perror!(MissingExpectedGlobalSprite, "There was no health bar inside sprite"));
             }
             let entity_health_sprite = world.sprites.get_sprite(potentially_health_bar_id.unwrap()).expect("Could not find health bar sprite");
             let health_bar_inner_draw_data = entity_health_sprite.draw_data(entity_position_component.x - 3.0, entity_position_component.y - 14.0, (38.0 * health_component.health/health_component.max_health as f32).floor() as usize, 10, self.viewpoint_width, self.viewpoint_height, extra_index_offset + draw_data_other.vertex.len() as u16, vertex_offset_x, vertex_offset_y);
             draw_data_other.vertex.extend(health_bar_inner_draw_data.vertex);
             draw_data_other.index.extend(health_bar_inner_draw_data.index);
         }
-        (draw_data_main, draw_data_other)
+        Ok((draw_data_main, draw_data_other))
     }
-    pub fn render(&mut self, world: &mut World, uie: UIEFull, screen_width: f32, screen_height: f32) -> RenderDataFull{
+    pub fn render(&mut self, world: &mut World, uie: UIEFull, screen_width: f32, screen_height: f32) -> Result<RenderDataFull, PError>{
         let mut render_data = RenderDataFull::new();
         let mut terrain_data: RenderData = RenderData::new();
         let mut entity_data: RenderData = RenderData::new();
@@ -177,12 +180,8 @@ impl Camera{
 
                 chunks_loaded.push(chunk_id.unwrap());
                 for terrain_id in chunk.terrain_ids.iter(){
-                    let potentially_sprite_id = world.get_sprite(*terrain_id);
-                    if potentially_sprite_id.is_none(){
-                        continue;
-                    }
-                    let sprite_id = potentially_sprite_id.unwrap();
-                    let sprite = world.sprites.get_sprite(sprite_id).expect("Could not find sprite while processing terrain");
+                    let sprite_id = punwrap!(world.get_sprite(*terrain_id), Expected, "Could not find sprite for terrain with id {}", terrain_id);
+                    let sprite = punwrap!(world.sprites.get_sprite(sprite_id), Expected, "Sprite in sprite_lookup for terrain with id {} is a non-existent sprite", terrain_id);
 
                     let vertex_offset_x = -1 * self.camera_x as i32;
                     let vertex_offset_y = -1 * self.camera_y as i32;
@@ -196,13 +195,15 @@ impl Camera{
 
                 for entity_id in chunk.entities_ids.iter(){
 
-                    
-                    let (draw_data, other_draw_data) = self.render_entity(world, *entity_id, entity_index_offset, extra_data.vertex.len() as u16);
-                    entity_data.vertex.extend(draw_data.vertex);
-                    entity_data.index.extend(draw_data.index);
-                    extra_data.vertex.extend(other_draw_data.vertex);
-                    extra_data.index.extend(other_draw_data.index);
-                    entity_index_offset += 4;
+                    let dd = error_prolif_allow!(self.render_entity(world, *entity_id, entity_index_offset, extra_data.vertex.len() as u16), NotFound);
+                    if dd.is_ok() {
+                        let (draw_data, other_draw_data) = dd.unwrap();
+                        entity_data.vertex.extend(draw_data.vertex);
+                        entity_data.index.extend(draw_data.index);
+                        extra_data.vertex.extend(other_draw_data.vertex);
+                        extra_data.index.extend(other_draw_data.index);
+                        entity_index_offset += 4;
+                    }
         
 
                 }
@@ -213,8 +214,8 @@ impl Camera{
         self.test += 1.0;
         let mut entity_attack_draw_data = RenderData::new();
         for attack in world.entity_attacks.borrow().iter() {
-            let descriptor = world.get_attack_descriptor(attack).expect("Could not find attack descriptor");
-            let sprite = world.sprites.get_sprite_by_name(&descriptor.sprite).expect("Could not find attack sprite");
+            let descriptor = punwrap!(world.get_attack_descriptor(attack), Expected, "Could not find attack descriptor for attack: {:?}", attack);
+            let sprite = punwrap!(world.sprites.get_sprite_by_name(&descriptor.sprite), Expected, "Attack descriptor for attack: {:?}, refers to a non-existent sprite: {}", attack, descriptor.sprite);
             let percent = attack.time_charged/descriptor.time_to_charge as f32;
             for i in 0..(percent * 100.0).floor() as usize {
                 let dd = sprite.draw_data_rotated(attack.rotation * 180.0/PI, attack.x, attack.y, descriptor.reach, descriptor.width, self.viewpoint_width, self.viewpoint_height, entity_attack_draw_data.vertex.len() as u16, -1 * self.camera_x.floor() as i32, -1 * self.camera_y.floor() as i32);
@@ -253,22 +254,22 @@ impl Camera{
                     height = effect.stats.width;
                     width = effect.stats.reach;
                     
-                    let sprite_id = world.sprites.get_sprite_id(effect.sprite.as_str()).expect(format!("Could not find melee sprite {}", effect.sprite).as_str());
-                    sprite = Some(world.sprites.get_sprite(sprite_id).expect(format!("Could not find melee attack sprite {}", effect.sprite.as_str()).as_str()));
+                    let sprite_id = punwrap!(world.sprites.get_sprite_id(effect.sprite.as_str()), Expected, "player melee attack {:?} refers to a non-existent sprite {}", effect, effect.sprite.as_str());
+                    sprite = Some(punwrap!(world.sprites.get_sprite(sprite_id), Expected, "player melee attack {:?} refers to a non-existent sprite {}", effect, effect.sprite.as_str()));
                 }
                 AttackType::Ranged => {
                     width = effect.stats.size;
                     height = effect.stats.size;
-                    let sprite_id = world.sprites.get_sprite_id(effect.sprite.as_str()).expect(format!("Could not find projectile sprite {}", effect.sprite).as_str());
-                    sprite = Some(world.sprites.get_sprite(sprite_id).expect(format!("Could not find projectile sprite {}", effect.sprite.as_str()).as_str()));
+                    let sprite_id = punwrap!(world.sprites.get_sprite_id(effect.sprite.as_str()), Expected, "player ranged attack {:?} refers to a non-existent sprite {}", effect, effect.sprite.as_str());
+                    sprite = Some(punwrap!(world.sprites.get_sprite(sprite_id), Expected, "player ranged attack {:?} refers to a non-existent sprite {}", effect, effect.sprite.as_str()));
                 }
                 _ => {}
             }
             if sprite.is_none(){
-                continue;
+                return Err(perror!("Player attack {:?} has no sprite", effect));
             }
             if width.is_none() || height.is_none(){
-                continue;
+                return Err(perror!("Player attack {:?} has no width or no height?", effect));
             }
             if melee {
                 let draw_data = sprite.unwrap().draw_data_rotated(effect.angle, effect.x, effect.y, width.unwrap().floor() as usize, height.unwrap().floor() as usize, self.viewpoint_width, self.viewpoint_height, player_effect_draw_data.vertex.len() as u16, -1 * self.camera_x as i32, -1 * self.camera_y as i32);
@@ -305,7 +306,7 @@ impl Camera{
             f.push(text.get_section(&self, screen_width, screen_height, 0.0, 0.0).clone());
         }
         render_data.sections_a.extend(f);
-        render_data
+        Ok(render_data)
     }
     pub fn add_text(&mut self, text: String, font: Font,  x: f32, y: f32, w: f32, h: f32, font_size: f32, color: [f32; 4], align: HorizontalAlign) -> usize{
         self.text.insert(self.text_id,TextSprite::new(text, font_size, x, y, w, h, color, align));

@@ -47,7 +47,12 @@ async fn test_entity_can_kill_player(){
     let player_starting_position_x = world.player.borrow().x;
     let player_starting_position_y = world.player.borrow().y;
     let mut headless = HeadlessGame::new(world, camera);
-    headless.run(1000).await;
+    match headless.run(1000).await {
+        Err(e) => {
+            panic!("{}", e)
+        }
+        _ => {}
+    }
 
     assert!(
         headless.world.player.borrow().x == player_starting_position_x, 

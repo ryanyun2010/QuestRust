@@ -9,7 +9,12 @@ async fn test_nothing_happens_in_blank_world(){
     let starting_x = world.player.borrow().x;
     let starting_y = world.player.borrow().y;
     let mut headless = HeadlessGame::new(world, camera);
-    headless.run(1000).await;
+    match headless.run(1000).await {
+        Err(e) => {
+            panic!("{}", e)
+        }
+        _ => {}
+    }
 
     assert!(
         headless.world.player.borrow().x == starting_x,

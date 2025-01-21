@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
+use wgpu::SurfaceError;
 use winit::{event, keyboard::{Key, NamedKey}};
 
-use crate::rendering_engine::renderer::Renderer;
+use crate::{error::PError, perror, ptry, rendering_engine::renderer::Renderer};
 
 use super::{camera::Camera, world::World};
 #[derive(Debug, Copy, Clone)]
@@ -112,15 +113,25 @@ impl<'a> Game<'a> {
             self.world.inventory.process_mouse_input(self.input.mouse_position, self.input.mouse_left, self.input.mouse_right);
         }
     }
-    pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
+    pub fn render(&mut self) -> Result<(), PError> {
         if self.state == GameState::start {
-            self.renderer.render(
+            match self.renderer.render(
                 self.world.sprites.get_sprite_by_name("start_screen").expect("No start_screen sprite?").draw_data(0.0, 0.0, self.camera.viewpoint_width, self.camera.viewpoint_height, self.camera.viewpoint_width, self.camera.viewpoint_height, 0, 0, 0).to_full()
-            )?;
+            ) {
+                Ok(_) => {}
+                Err(e) => {
+                    return Err(PError::new(crate::error::PE::SurfaceError(e), vec![]));
+                }
+            }
             return Ok(());
         }
         let uie = self.world.inventory.render_ui();
-        self.renderer.render(self.camera.render(&mut self.world, uie, self.renderer.config.width as f32, self.renderer.config.height as f32))
+        match self.renderer.render(ptry!(self.camera.render(&mut self.world, uie, self.renderer.config.width as f32, self.renderer.config.height as f32))){
+            Ok(_) => {Ok(())}
+            Err(e) => {
+                return Err(PError::new(crate::error::PE::SurfaceError(e), vec![]));
+            }
+        }
     }
     pub fn update(&mut self){
         if self.state == GameState::play {

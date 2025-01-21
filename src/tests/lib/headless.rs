@@ -1,5 +1,5 @@
 
-use crate::{game_engine::{camera, world}, rendering_engine::abstractions::UIEFull};
+use crate::{error::PError, game_engine::{camera, world}, ptry, rendering_engine::abstractions::UIEFull};
 use super::headless_state::HeadlessState;
 
 pub struct HeadlessGame {
@@ -17,13 +17,14 @@ impl HeadlessGame{
             state,
         }
     }
-    pub async fn run(&mut self, frames: usize){
+    pub async fn run(&mut self, frames: usize) -> Result<(), PError>{
         for _i in 0..frames{
-            self.camera.render(&mut self.world, UIEFull {
+            ptry!(self.camera.render(&mut self.world, UIEFull {
                 sprites: vec![],
                 text: vec![],
-            }, 1152.0, 720.0);
+            }, 1152.0, 720.0));
             self.state.update(&mut self.world, &mut self.camera);    
         }  
+        Ok(())
     }
 }
