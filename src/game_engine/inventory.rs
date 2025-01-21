@@ -148,14 +148,14 @@ impl Inventory{
             |x| self.slots.get_mut(*x)
         )
     }
-    pub fn show_inventory(&mut self, camera: &mut Camera){
+    pub fn show_inventory(&mut self){
         self.show_inventory = true;
         for i in 0..self.hotbar.len(){
             let slot = self.get_hotbar_slot_mut(i).unwrap();
             slot.alter_position(520 + i * 58, 380);
         }
     }
-    pub fn hide_inventory(&mut self, camera: &mut Camera){
+    pub fn hide_inventory(&mut self){
         self.show_inventory = false;
         if self.item_on_mouse.is_some(){
             let iom = self.item_on_mouse.as_ref().unwrap();

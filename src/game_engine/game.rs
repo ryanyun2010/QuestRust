@@ -185,11 +185,11 @@ impl<'a> Game<'a> {
         if key == "e" {
             self.state = match self.state {
                 GameState::play => {
-                    self.world.inventory.show_inventory(&mut self.camera);
+                    self.world.inventory.show_inventory();
                     GameState::inventory
                 },
                 GameState::inventory => {
-                    self.world.inventory.hide_inventory(&mut self.camera);
+                    self.world.inventory.hide_inventory();
                     GameState::play
                 },
                 _ => self.state,
