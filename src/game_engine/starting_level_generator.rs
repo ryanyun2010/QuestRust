@@ -10,8 +10,6 @@ pub fn generate_world_from_json_parsed_data(data: &ParsedData) -> World {
     
     let starting_level_descriptor = data.starting_level_descriptor.clone();
     let player_descriptor = starting_level_descriptor.player;
-    println!("Player descriptor: {:?}", player_descriptor.sprite);
-    println!("{:?}", data.sprites);
     let mut world = World::new(Player::new(player_descriptor.x, player_descriptor.y, player_descriptor.health, player_descriptor.max_health, player_descriptor.movement_speed, data.sprites.get_sprite_id("player_front").expect("Couldn't find player_front sprite")), data.sprites.clone());
     world.item_archetype_lookup = data.item_archetypes.clone();
 
@@ -48,7 +46,6 @@ pub fn generate_world_from_json_parsed_data(data: &ParsedData) -> World {
                 }
             },
             "randomness" => {
-                println!("Randomness {:?}", descriptor);
                 let random_chances = descriptor.random_chances.clone().expect("Randomness terrain must have random_chances");
                 let mut random_chances_adjusted = Vec::new();
                 let mut sum_so_far = 0.0;

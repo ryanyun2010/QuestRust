@@ -46,7 +46,6 @@ impl World {
         }
 
         if new_chunk != prev_chunk {
-            println!("Moving entity from chunk: {} to chunk: {}", prev_chunk, new_chunk);
             chunkref[prev_chunk].entities_ids.retain(|x| *x != *entity_id);
             chunkref[new_chunk].entities_ids.push(*entity_id);
         } 
@@ -83,7 +82,6 @@ impl World {
         let mut collision = None;
 
         for tag in entity_tags.iter() {
-            // println!("{:?}", entity_tags[tag_id]);
             match tag {
                 EntityTags::FollowsPlayer => {
                     follows_player = true;
@@ -228,8 +226,8 @@ impl World {
             }
         }
         if aggroed_to_entity{
-            let pathfinding_component = self.entity_pathfinding_components.get(entity_id).expect("Entities with tag: FollowsPlayer must have a PathfindingComponent").borrow_mut();
-            let position_component = self.entity_position_components.get(entity_id).expect("Entities with tag: FollowsPlayer must have a PositionComponent").borrow_mut();
+            let pathfinding_component = punwrap!(self.entity_pathfinding_components.get(entity_id), Expected, "all entities that follow player should have a pathfinding component").borrow_mut();
+            let position_component = punwrap!(self.entity_position_components.get(entity_id), Expected, "all entities that follow player should have a position component").borrow_mut();
             ptry!(self.move_entity_towards_player(entity_id, collision.unwrap_or(&CollisionBox {
                     w: 0.0,
                     h: 0.0,

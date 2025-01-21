@@ -186,18 +186,7 @@ impl Inventory{
     }
     pub fn render_ui(&mut self) -> UIEFull {
         let mut ui = Vec::new();
-        let mut text = vec![
-            TextSprite {
-                x: 50.0,
-                y: 50.0,
-                text: String::from("TEST"),
-                font_size: 40.0,
-                w: 100.0,
-                h: 100.0,
-                color: [0.0, 0.0, 0.0, 1.0],
-                align: wgpu_text::glyph_brush::HorizontalAlign::Center
-            }
-        ];
+        let mut text = Vec::new(); 
         if self.show_inventory {
             ui.push(UIESprite {
                 z: 0.0,

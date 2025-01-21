@@ -4,7 +4,7 @@
 #![allow(non_snake_case)]
 #![allow(dead_code)]
 #![allow(deprecated)]
-use std::time::Instant;
+use std::{env, path::Path, time::Instant};
 pub mod rendering_engine;
 use rendering_engine::{renderer, texture, vertex, window};
 pub mod game_engine;
@@ -13,6 +13,9 @@ pub mod tests;
 pub mod error;
 
 fn main() {
+    let path = Path::new("/Users/ryan/Desktop/QuestRust/");
+    assert!(env::set_current_dir(&path).is_ok(), "QuestRust directory not found at path: {}", path.display());
+    println!("Successfully changed working directory to {}!", path.display());
     let mut parser = json_parsing::JSON_parser::new();
     let load_time = Instant::now();
     let parsed_data = parser.parse_and_convert_game_data(PATH_BUNDLE);
