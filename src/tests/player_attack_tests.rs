@@ -1,5 +1,5 @@
 #![cfg(test)]
-use crate::{create_stat_list, game_engine::{entity_components::CollisionBox, game::MousePosition, item::{Item, ItemType}, stat::StatList}, tests::lib::headless::HeadlessGame};
+use crate::{create_stat_list, game_engine::{entity_components::CollisionBox, game::MousePosition, item::{Item, ItemType}}, tests::lib::headless::HeadlessGame};
 
 use super::tests::{basic_world, basic_camera};
 #[tokio::test]

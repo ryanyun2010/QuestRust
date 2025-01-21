@@ -3,6 +3,7 @@
 
 use crate::{create_stat_list, game_engine::{entity_components::CollisionBox, game::MousePosition, item::{Item, ItemType}}, tests::{lib::headless::HeadlessGame, tests::{basic_camera, basic_world}}};
 
+#[tokio::test]
 async fn test_inventory_clicking_blank_slot_in_blank_inventory(){
     let mut world = basic_world().await;
     let camera = basic_camera(&mut world).await;
@@ -51,8 +52,14 @@ async fn test_inventory_clicking_blank_slot_in_inventory_with_items(){
     let mut world = basic_world().await;
     let camera = basic_camera(&mut world).await;
     let mut headless = crate::tests::lib::headless::HeadlessGame::new(world, camera);
-    headless.world.inventory.set_slot_item(7, 1);
-    headless.world.inventory.set_slot_item(8, 0);
+    let res = headless.world.inventory.set_slot_item(7, 1);
+    if res.is_err() {
+        panic!("set slot 7 to item 1 failed with error: {}", res.err().unwrap())
+    }
+    let res = headless.world.inventory.set_slot_item(8, 0);
+    if res.is_err() {
+        panic!("set slot 8 to item 1 failed with error: {}", res.err().unwrap())
+    }
     headless.world.inventory.show_inventory();
     assert!(
         headless.world.inventory.get_slot(&7).unwrap().item.is_some(),
@@ -137,7 +144,10 @@ async fn test_inventory_item_move(){
     let camera = basic_camera(&mut world).await;
     let mut headless = crate::tests::lib::headless::HeadlessGame::new(world, camera);
     headless.world.inventory.show_inventory();
-    headless.world.inventory.set_slot_item(6, 1);
+    let res = headless.world.inventory.set_slot_item(6, 1);
+    if res.is_err() {
+        panic!("set slot 6 to item 1 failed with error: {}", res.err().unwrap())
+    }
     assert!(
         headless.world.inventory.get_slot(&5).unwrap().item.is_none(),
         "There should be no item in slot 5"
@@ -212,8 +222,14 @@ async fn test_inventory_item_swap(){
     let camera = basic_camera(&mut world).await;
     let mut headless = crate::tests::lib::headless::HeadlessGame::new(world, camera);
     headless.world.inventory.show_inventory();
-    headless.world.inventory.set_slot_item(6, 1);
-    headless.world.inventory.set_slot_item(5, 0);
+    let res = headless.world.inventory.set_slot_item(6, 1);
+    if res.is_err() {
+        panic!("set slot 6 to item 1 failed with error: {}", res.err().unwrap())
+    }
+    let res = headless.world.inventory.set_slot_item(5, 0);
+    if res.is_err() {
+        panic!("set slot 5 to item 0 failed with error: {}", res.err().unwrap())
+    }
     assert!(
         headless.world.inventory.get_slot(&5).unwrap().item.is_some(),
         "There should be an item in slot 5"
@@ -308,7 +324,10 @@ async fn test_close_inventory_with_item_held_basic(){
     let camera = basic_camera(&mut world).await;
     let mut headless = crate::tests::lib::headless::HeadlessGame::new(world, camera);
     headless.world.inventory.show_inventory();
-    headless.world.inventory.set_slot_item(6, 1);
+    let res = headless.world.inventory.set_slot_item(6, 1);
+    if res.is_err() {
+        panic!("set slot 6 to item 1 failed with error: {}", res.err().unwrap())
+    }
     assert!(
         headless.world.inventory.get_slot(&6).unwrap().item.is_some(),
         "There should be an item in slot 6"
@@ -361,8 +380,14 @@ async fn test_close_inventory_with_item_held_after_swap(){
     let camera = basic_camera(&mut world).await;
     let mut headless = crate::tests::lib::headless::HeadlessGame::new(world, camera);
     headless.world.inventory.show_inventory();
-    headless.world.inventory.set_slot_item(6, 1);
-    headless.world.inventory.set_slot_item(5, 0);
+    let res = headless.world.inventory.set_slot_item(6, 1);
+    if res.is_err() {
+        panic!("set slot 6 to item 1 failed with error: {}", res.err().unwrap())
+    }
+    let res = headless.world.inventory.set_slot_item(5, 0);
+    if res.is_err() {
+        panic!("set slot 5 to item 0 failed with error: {}", res.err().unwrap())
+    }
     assert!(
         headless.world.inventory.get_slot(&6).unwrap().item.is_some(),
         "There should be an item in slot 6"
@@ -469,7 +494,10 @@ pub async fn test_melee_player_attack_after_inventory_movement() {
         }
     );
     world.create_entity_with_archetype(639.0, 400.0, String::from("test_attackable_entity"));
-    world.inventory.set_slot_item(6, item);
+    let res = world.inventory.set_slot_item(6, item);
+    if res.is_err() {
+        panic!("set slot 6 to item {} failed with error: {}", item, res.err().unwrap())
+    }
     world.inventory.show_inventory();
     let mut headless = HeadlessGame::new(world, camera);
     headless.run(5).await;

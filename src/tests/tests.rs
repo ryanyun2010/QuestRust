@@ -2,7 +2,6 @@ use crate::create_stat_list;
 use crate::game_engine::camera::Camera;
 use crate::game_engine::item::Item;
 use crate::game_engine::player;
-use crate::game_engine::ui::UIElementDescriptor;
 use crate::game_engine::world;
 use crate::game_engine::world::World;
 
@@ -56,7 +55,7 @@ pub async fn basic_world() -> world::World {
 
 }
 pub async fn basic_camera(world: &mut World) -> Camera {
-    let mut camera = Camera::new(1152,720);
+    let camera = Camera::new(1152,720);
     world.inventory.init_ui(&world.sprites);
     camera
 }
