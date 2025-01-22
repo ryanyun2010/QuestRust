@@ -30,7 +30,7 @@ impl PathfindingNode {
 }
 
 impl Eq for PathfindingNode {}
-
+#[allow(clippy::non_canonical_partial_ord_impl)]
 impl PartialOrd for PathfindingNode {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         other.f.partial_cmp(&self.f)  

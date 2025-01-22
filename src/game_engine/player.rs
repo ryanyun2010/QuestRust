@@ -39,8 +39,6 @@ impl Player {
     pub fn draw_data(&self, world: &World, window_size_width: usize, window_size_height: usize, index_offset:u32, vertex_offset_x: i32, vertex_offset_y: i32) -> RenderData{
         let sprite = world.sprites.get_sprite(self.sprite_id).expect("Could not find player sprite?");
         let mut dd = sprite.draw_data(self.x.floor(), self.y.floor(), 38, 52,window_size_width, window_size_height, index_offset, vertex_offset_x, vertex_offset_y);
-        
-
         if self.holding_texture_sprite.is_none(){
             return dd;
         }else{
