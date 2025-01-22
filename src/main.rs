@@ -4,6 +4,9 @@
 #![allow(non_snake_case)]
 #![allow(dead_code)]
 #![allow(deprecated)]
+#![allow(clippy::too_many_arguments)]
+#![allow(clippy::expect_fun_call)]
+#![allow(clippy::derivable_impls)]
 use std::{env, path::Path, time::Instant};
 pub mod rendering_engine;
 use rendering_engine::{renderer, texture, vertex, window};

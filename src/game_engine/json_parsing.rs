@@ -161,8 +161,8 @@ pub struct player_attacks_descriptor_json {
     pub ranged_projectiles: Vec<player_projectile_descriptor_json>,
     pub melee_attacks: Vec<melee_attack_descriptor_json>
 }
-impl player_attacks_descriptor_json {
-    pub fn new() -> Self {
+impl Default for player_attacks_descriptor_json {
+    fn default() -> Self {
         Self {
             ranged_projectiles: Vec::new(),
             melee_attacks: Vec::new()
@@ -328,7 +328,7 @@ impl JSON_parser {
         }
 
         for (.., entity_archetype) in &self.entity_archetypes_json {
-            let tags = self.convert_archetype(&entity_archetype, &data);
+            let tags = self.convert_archetype(entity_archetype, &data);
             data.entity_archetypes.insert(entity_archetype.name.clone(), tags);
             
         }
@@ -356,10 +356,10 @@ impl JSON_parser {
         let mut tags = Vec::new();
         from_JSON_entity_tag_parsing_basic!(tags, &entity_archetype.basic_tags);
         if entity_archetype.collision_box.is_some() {
-            tags.push(EntityTags::HasCollision(entity_archetype.collision_box.clone().unwrap()));
+            tags.push(EntityTags::HasCollision(entity_archetype.collision_box.unwrap()));
         }
         if entity_archetype.damage_box.is_some() { 
-            tags.push(EntityTags::Damageable(entity_archetype.damage_box.clone().unwrap()));
+            tags.push(EntityTags::Damageable(entity_archetype.damage_box.unwrap()));
         }
         tags.push(EntityTags::BaseHealth(entity_archetype.health));
         match entity_archetype.monster_type.as_str() {
@@ -409,7 +409,7 @@ impl JSON_parser {
             }
         }
         tags.push(EntityTags::Attacks(data.entity_attack_patterns.get(&entity_archetype.attack_pattern).expect(&format!("When parsing entity archetypes, attack pattern: {} in archetype: {} was not found", entity_archetype.attack_pattern, entity_archetype.name)).clone()));
-        return tags;
+        tags
     }
     pub fn parse_and_convert_game_data(&mut self, paths: PathBundle) -> ParsedData{
         self.parse_entity_archetypes(paths.entity_archetypes_path);

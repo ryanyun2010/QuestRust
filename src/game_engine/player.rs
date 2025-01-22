@@ -22,17 +22,17 @@ macro_rules! repeat_token {
 impl Player {
     pub fn new(x: f32, y: f32, health: f32, max_health: i32, movement_speed: f32, sprite_id: usize) -> Self {
         Self {
-            x: x,
-            y: y,
+            x,
+            y,
             collision_box: CollisionBox{
                 w: 32.0, 
                 h: 32.0,
                 x_offset: 3.0,
                 y_offset: 18.0},
-            health: health,
-            max_health: max_health,
-            sprite_id: sprite_id,
-            movement_speed: movement_speed,
+            health,
+            max_health,
+            sprite_id,
+            movement_speed,
             holding_texture_sprite: None,
         }
     }

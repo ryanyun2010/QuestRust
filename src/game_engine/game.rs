@@ -13,8 +13,8 @@ pub struct MousePosition{
     pub y_screen: f32,
 }
 
-impl MousePosition{
-    pub fn default() -> Self{
+impl Default for MousePosition{
+    fn default() -> Self{
         Self {
             x_world: 0.0,
             y_world: 0.0,
@@ -49,9 +49,9 @@ impl<'a> Game<'a> {
         let cx = camera.camera_x;
         let cy = camera.camera_y;
         Self {
-            world: world,
-            camera: camera,
-            renderer: renderer,
+            world,
+            camera,
+            renderer,
             state: GameState::start,
             input: InputState {
                 keys_down: HashMap::new(),
@@ -128,7 +128,7 @@ impl<'a> Game<'a> {
         match self.renderer.render(ptry!(self.camera.render(&mut self.world, uie, self.renderer.config.width as f32, self.renderer.config.height as f32))){
             Ok(_) => {Ok(())}
             Err(e) => {
-                return Err(PError::new(crate::error::PE::SurfaceError(e), vec![]));
+                Err(PError::new(crate::error::PE::SurfaceError(e), vec![]))
             }
         }
     }
@@ -210,12 +210,12 @@ impl<'a> Game<'a> {
                 },
                 _ => self.state,
             };
-        }else {
-            if self.state == GameState::play {
-                self.world.on_key_down(key);
-            } else if self.state == GameState::inventory {
-                self.world.inventory.on_key_down(key);
-            }
+            return;
+        }
+        if self.state == GameState::play {
+            self.world.on_key_down(key);
+        } else if self.state == GameState::inventory {
+            self.world.inventory.on_key_down(key);
         }
     }
 
@@ -231,7 +231,7 @@ impl<'a> Game<'a> {
     }
 
     pub fn window(&self) -> &winit::window::Window {
-        &self.renderer.window()
+        self.renderer.window()
     }
 
     

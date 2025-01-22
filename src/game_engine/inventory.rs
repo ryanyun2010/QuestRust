@@ -45,8 +45,8 @@ impl Slot {
                 sprite: "hslot".to_string()
             }),
             item_image: None,
-            x: x,
-            y: y,
+            x,
+            y,
         }
     }
     pub fn get_ui(&self) -> Vec<UIESprite>{
@@ -93,8 +93,8 @@ impl Slot {
     }
 }
 
-impl Inventory{
-    pub fn new() -> Self {
+impl Default for Inventory{
+    fn default() -> Self {
         Self {
             hotbar: Vec::new(),
             cur_hotbar_slot: 0,
@@ -106,12 +106,15 @@ impl Inventory{
             mouse_position: MousePosition::default(),
         }
     }
+}
+
+impl Inventory {
     pub fn add_item(&mut self, item: Item) -> usize {
         self.items.insert(
             self.item_id, item
         );
         self.item_id += 1;
-        return self.item_id - 1;
+        self.item_id - 1
     }
     pub fn set_hotbar_slot(&mut self, slot: usize) {
         self.cur_hotbar_slot = slot;
@@ -207,8 +210,8 @@ impl Inventory{
             for slot in self.slots.iter() {
                 ui.extend(slot.get_ui());
                 if (slot.x as f32) < self.mouse_position.x_screen && (slot.x as f32 + 48.0) > self.mouse_position.x_screen && (slot.y as f32) < self.mouse_position.y_screen && (slot.y as f32 + 48.0) > self.mouse_position.y_screen{
-                    if slot.item.is_some(){
-                        let item = self.get_item(&slot.item.unwrap()).unwrap();
+                    if let Some(i) = slot.item{
+                        let item = self.get_item(&i).unwrap();
                         let mut t = format!(
                             "{}\n----------------------------------------\n\n{}\n\n", item.name, item.lore
                         );
@@ -249,14 +252,14 @@ impl Inventory{
             if self.item_on_mouse.is_some() {
                 let iom = self.item_on_mouse.as_ref().unwrap();
                 let item = self.get_item(&iom.item_id);
-                if item.is_some(){
+                if let Some(item) = item{
                     ui.push(UIESprite {
                         x: self.mouse_position.x_screen - 12.0,
                         y: self.mouse_position.y_screen - 12.0,
                         z: 999.0,
                         width: 24.0,
                         height: 24.0,
-                        sprite: item.unwrap().sprite.clone()
+                        sprite: item.sprite.clone()
                     })
                 }
             }
@@ -278,7 +281,7 @@ impl Inventory{
         }
         UIEFull {
             sprites: ui,
-            text: text,
+            text,
         }
         
         
@@ -292,7 +295,7 @@ impl Inventory{
         self.items.get(id)
     }
 
-    pub fn on_key_down(&mut self, key: &String) {
+    pub fn on_key_down(&mut self, key: &str) {
 
     }
     pub fn on_mouse_click(&mut self, position: MousePosition, left: bool, right: bool) {

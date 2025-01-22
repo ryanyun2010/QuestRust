@@ -39,8 +39,8 @@ pub struct Camera{
 impl Camera{
     pub fn new(viewpoint_width: usize, viewpoint_height: usize) -> Self{
         Self{
-            viewpoint_width: viewpoint_width,
-            viewpoint_height: viewpoint_height,
+            viewpoint_width,
+            viewpoint_height,
             camera_x: 20.0,
             camera_y: 40.0,
             ui_elements: HashMap::new(),
@@ -60,7 +60,7 @@ impl Camera{
     pub fn update_ui(&mut self, world: &mut World) -> Result<(), PError>{
         let player = world.player.borrow().clone();
         let health_bar = punwrap!(self.get_ui_element_mut_by_name(String::from("health_bar_inside")), "Could not find health bar inside ui element");
-        let health_bar_width = f32::max(0.0, (player.health as f32 / player.max_health as f32) * 250.0);
+        let health_bar_width = f32::max(0.0, (player.health / player.max_health as f32) * 250.0);
         health_bar.sprite.width = health_bar_width;
         Ok(())
     }
@@ -99,7 +99,7 @@ impl Camera{
                 elements.push(element.name.clone());
             }
         }
-        return elements;
+        elements
     }
     pub fn get_ui_element_id_from_name(&self, element: String) -> Option<usize>{
         self.ui_element_names.get(&element).copied()
@@ -120,13 +120,13 @@ impl Camera{
             return Err(perror!(NotFound, "There was no sprite to render for entity with id {}", entity_id));
         }
         let sprite_id = potentially_sprite_id.unwrap();
-        let sprite = world.sprites.get_sprite(sprite_id).expect(format!("Could not find sprite {} while processing entity_id {}", sprite_id, entity_id).as_str());
+        let sprite = punwrap!(world.sprites.get_sprite(sprite_id), Invalid, "Sprite in sprite_lookup for entity with id {} is a non-existent sprite", entity_id);
         
         let vertex_offset_x = (-1.0 * self.camera_x).floor() as i32;
         let vertex_offset_y = (-1.0 * self.camera_y).floor() as i32;
         
 
-        let entity_position_component = world.entity_position_components.get(&entity_id).expect("All entities with sprites should have a position component").borrow().clone();
+        let entity_position_component = world.entity_position_components.get(&entity_id).expect("All entities with sprites should have a position component").borrow();
 
         let draw_data_main = sprite.draw_data(entity_position_component.x, entity_position_component.y, 32, 32, self.viewpoint_width, self.viewpoint_height, entity_index_offset, vertex_offset_x, vertex_offset_y);
         let mut draw_data_other = RenderData::new();
@@ -183,8 +183,8 @@ impl Camera{
                     let sprite_id = punwrap!(world.get_sprite(*terrain_id), Expected, "Could not find sprite for terrain with id {}", terrain_id);
                     let sprite = punwrap!(world.sprites.get_sprite(sprite_id), Expected, "Sprite in sprite_lookup for terrain with id {} is a non-existent sprite", terrain_id);
 
-                    let vertex_offset_x = -1 * self.camera_x as i32;
-                    let vertex_offset_y = -1 * self.camera_y as i32;
+                    let vertex_offset_x = -self.camera_x as i32;
+                    let vertex_offset_y = -self.camera_y as i32;
 
                     let terrain = world.get_terrain(*terrain_id).unwrap();
                     let draw_data = sprite.draw_data(terrain.x as f32, terrain.y as f32, 32, 32, self.viewpoint_width, self.viewpoint_height, terrain_index_offset, vertex_offset_x, vertex_offset_y);
@@ -218,7 +218,7 @@ impl Camera{
             let sprite = punwrap!(world.sprites.get_sprite_by_name(&descriptor.sprite), Expected, "Attack descriptor for attack: {:?}, refers to a non-existent sprite: {}", attack, descriptor.sprite);
             let percent = attack.time_charged/descriptor.time_to_charge as f32;
             for i in 0..(percent * 100.0).floor() as usize {
-                let dd = sprite.draw_data_rotated(attack.rotation * 180.0/PI, attack.x, attack.y, descriptor.reach, descriptor.width, self.viewpoint_width, self.viewpoint_height, entity_attack_draw_data.vertex.len() as u32, -1 * self.camera_x.floor() as i32, -1 * self.camera_y.floor() as i32);
+                let dd = sprite.draw_data_rotated(attack.rotation * 180.0/PI, attack.x, attack.y, descriptor.reach, descriptor.width, self.viewpoint_width, self.viewpoint_height, entity_attack_draw_data.vertex.len() as u32, -self.camera_x.floor() as i32, -self.camera_y.floor() as i32);
                 entity_attack_draw_data.vertex.extend(dd.vertex);
                 entity_attack_draw_data.index.extend(dd.index);
             }
@@ -230,7 +230,7 @@ impl Camera{
         render_data.vertex.extend(entity_data.vertex);
         render_data.index.extend(entity_data.index);
 
-        let player_draw_data = world.player.borrow().draw_data(world, self.viewpoint_width, self.viewpoint_height, render_data.vertex.len() as u32, -1 * self.camera_x as i32, -1 * self.camera_y as i32);
+        let player_draw_data = world.player.borrow().draw_data(world, self.viewpoint_width, self.viewpoint_height, render_data.vertex.len() as u32, -self.camera_x as i32, -self.camera_y as i32);
     
         render_data.vertex.extend(player_draw_data.vertex);
         render_data.index.extend(player_draw_data.index);
@@ -272,12 +272,12 @@ impl Camera{
                 return Err(perror!("Player attack {:?} has no width or no height?", effect));
             }
             if melee {
-                let draw_data = sprite.unwrap().draw_data_rotated(effect.angle, effect.x, effect.y, width.unwrap().floor() as usize, height.unwrap().floor() as usize, self.viewpoint_width, self.viewpoint_height, player_effect_draw_data.vertex.len() as u32, -1 * self.camera_x as i32, -1 * self.camera_y as i32);
+                let draw_data = sprite.unwrap().draw_data_rotated(effect.angle, effect.x, effect.y, width.unwrap().floor() as usize, height.unwrap().floor() as usize, self.viewpoint_width, self.viewpoint_height, player_effect_draw_data.vertex.len() as u32, -self.camera_x as i32, -self.camera_y as i32);
                 player_effect_draw_data.vertex.extend(draw_data.vertex);
                 player_effect_draw_data.index.extend(draw_data.index);
                 continue;
             } else{
-                let draw_data = sprite.unwrap().draw_data_rotated(effect.angle + 90.0, effect.x, effect.y, width.unwrap().floor() as usize, height.unwrap().floor() as usize, self.viewpoint_width, self.viewpoint_height, player_effect_draw_data.vertex.len() as u32, -1 * self.camera_x as i32, -1 * self.camera_y as i32);
+                let draw_data = sprite.unwrap().draw_data_rotated(effect.angle + 90.0, effect.x, effect.y, width.unwrap().floor() as usize, height.unwrap().floor() as usize, self.viewpoint_width, self.viewpoint_height, player_effect_draw_data.vertex.len() as u32, -self.camera_x as i32, -self.camera_y as i32);
                 player_effect_draw_data.vertex.extend(draw_data.vertex);
                 player_effect_draw_data.index.extend(draw_data.index);
                 continue;
@@ -304,7 +304,7 @@ impl Camera{
         (render_data.sections_a_t, render_data.sections_a_b, render_data.sections_b_t, render_data.sections_b_b) = self.get_sections(screen_width, screen_height);
         let mut f = Vec::new();
         for text in self.temp_uie.iter() {
-            f.push(text.get_section(&self, screen_width, screen_height, 0.0, 0.0).clone());
+            f.push(text.get_section(self, screen_width, screen_height, 0.0, 0.0).clone());
         }
         render_data.sections_a_t.extend(f);
         Ok(render_data)
@@ -347,20 +347,20 @@ impl Camera{
         for (id, text) in self.text.iter(){
             match self.text_font_lookup.get(id).expect(format!("Could not find font for text with id {}", id).as_str()){
                 Font::A => {
-                    sections_a_t.push(text.get_section(&self, screen_width, screen_height, 0.0, 0.0).clone());
+                    sections_a_t.push(text.get_section(self, screen_width, screen_height, 0.0, 0.0).clone());
                 },
                 Font::B => {
-                    sections_b_t.push(text.get_section(&self, screen_width, screen_height, 0.0, 0.0).clone());
+                    sections_b_t.push(text.get_section(self, screen_width, screen_height, 0.0, 0.0).clone());
                 }
             }
         }
         for (id, text) in self.world_text.iter(){
             match self.world_text_font_lookup.get(id).expect(format!("Could not find font for text with id {}", id).as_str()){
                 Font::A => {
-                    sections_a_b.push(text.get_section(&self, screen_width, screen_height, self.camera_x * -1.0, self.camera_y * -1.0).clone());
+                    sections_a_b.push(text.get_section(self, screen_width, screen_height, self.camera_x * -1.0, self.camera_y * -1.0).clone());
                 },
                 Font::B => {
-                    sections_b_b.push(text.get_section(&self, screen_width, screen_height, self.camera_x * -1.0, self.camera_y * -1.0).clone());
+                    sections_b_b.push(text.get_section(self, screen_width, screen_height, self.camera_x * -1.0, self.camera_y * -1.0).clone());
                 }
             }
         }

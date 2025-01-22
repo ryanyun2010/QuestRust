@@ -88,5 +88,5 @@ pub fn match_terrain_tags (tags: &Vec<String>) -> Vec<TerrainTags> {
             }
         }
     }
-    return tags_;
+    tags_
 }

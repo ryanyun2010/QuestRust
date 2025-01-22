@@ -325,6 +325,7 @@ create_stat_lists!(
 );
 
 #[macro_export]
+#[allow(clippy::crate_in_macro_def)]
 macro_rules! create_stat_list {
     ($($field:ident => $value:expr),* $(,)?) => {{
         let mut stats = crate::stat::StatList::default();
@@ -357,14 +358,14 @@ pub fn crit_chance_roll(crit_chance: f32) -> bool {
     if crit_chance >= 500.0 {
         return true;
     }
-    if rand::random::<f32>() <= ((((1000.0/(1.0+2.71828_f32.powf(-0.021929*(crit_chance-100.0)))) as f32).floor())/1000.0) {
+    if rand::random::<f32>() <= ((((1000.0/(1.0+std::f32::consts::E.powf(-0.021929*(crit_chance-100.0)))) as f32).floor())/1000.0) {
         return true;
     }
     false
 }
 //Returns f32: [0, 1)
 pub fn percent_damage_blocked(defense: i32, toughness: i32, damage: i32) -> f32 {
-    (defense as f32/(100.0+defense as f32))*2.0*(1.0-(1.0/1.0+2.71828_f32.powf(-(damage as f32/((toughness as f32).powf(0.8))))))
+    (defense as f32/(100.0+defense as f32))*2.0*(1.0-(1.0/(1.0+std::f32::consts::E.powf(-(damage as f32/((toughness as f32).powf(0.8)))))))
 }
 pub fn healing_with_vitality(incoming_healing: i32, vitality: i32) -> i32 {
     (((vitality as f32 + 100.0)/100.0)).min((vitality as f32).powf(0.5)/(incoming_healing as f32).powf(0.5)).ceil() as i32

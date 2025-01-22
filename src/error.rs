@@ -29,7 +29,7 @@ impl PE {
 }
 impl ErrorDescriptor {
     pub fn as_string(&self) -> String {
-        format!("{}", self.desc)
+        self.desc.clone()
     }
     pub fn as_location(&self) -> String {
         format!("{}:{}", self.location.file, self.location.line)
@@ -65,6 +65,7 @@ impl PError{
     }
 }
 #[macro_export]
+#[allow(clippy::crate_in_macro_def)]
 macro_rules! perror {
     ($error_variant:ident, $desc:expr, $($args:tt)*) => {{
         crate::error::PError::new(
@@ -134,7 +135,7 @@ impl fmt::Display for PError {
 
 
         write!(f, "\n{}", self.error.as_string())?;
-        write!(f, "{}", "\n\nCaused by: \n\n")?;
+        write!(f, "\n\nCaused by: \n\n")?;
 
         let mut i = 1;
         for s in self.trace.iter(){
@@ -144,13 +145,13 @@ impl fmt::Display for PError {
             let mut d = false;
             let pad = 4.0 - f32::log10(i as f32).floor();
             let pads = " ".repeat(pad as usize);
-            write!(f, "{}:{}  →  {}\n", i, pads, chunks[0])?; 
+            writeln!(f, "{}:{}  →  {}", i, pads, chunks[0])?; 
             for chunk in chunks.iter(){
-                if d == false {
+                if !d {
                     d = true;
                     continue;
                 }
-                write!(f, "           {}\n", chunk.trim_start())?;
+                writeln!(f, "           {}", chunk.trim_start())?;
             }
 
             i += 1;
@@ -175,6 +176,7 @@ pub struct Location {
 }
 
 #[macro_export]
+#[allow(clippy::crate_in_macro_def)]
 macro_rules! ptry {
     ($result:expr, $error_variant:ident,  $desc:expr, $($args:tt)*) => {{
         match $result {
@@ -294,6 +296,7 @@ macro_rules! ptry {
 }
 
 #[macro_export]
+#[allow(clippy::crate_in_macro_def)]
 macro_rules! punwrap {
     ($option:expr) => {{
         match $option {
@@ -433,6 +436,7 @@ macro_rules! punwrap {
 }
 
 #[macro_export]
+#[allow(clippy::crate_in_macro_def)]
 macro_rules! error_prolif {
     ($error:expr) => {{
         return Err(crate::error::PError::new(
@@ -452,6 +456,7 @@ macro_rules! error_prolif {
 }
 
 #[macro_export]
+#[allow(clippy::crate_in_macro_def)]
 macro_rules! error_prolif_allow {
     ($result:expr, $($error_variant:ident)*) => {{
         match $result {

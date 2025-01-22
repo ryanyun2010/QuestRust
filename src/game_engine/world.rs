@@ -96,7 +96,7 @@ impl World{
             terrain_archetype_tags_lookup: Vec::new(),
             terrain_archetype_lookup: HashMap::new(),
             terrain: HashMap::new(),
-            inventory: Inventory::new(),
+            inventory: Inventory::default(),
             item_archetype_lookup: HashMap::new(),
             loaded_chunks: Vec::new(),
             collision_cache: RefCell::new(HashMap::new()),
@@ -132,7 +132,7 @@ impl World{
             return new_chunk_id;
         }else{
             let cr = chunkref.unwrap();
-            let new_chunk_id = cr.len() as usize; 
+            let new_chunk_id = cr.len(); 
             cr.push(
                 Chunk{
                     chunk_id: new_chunk_id,

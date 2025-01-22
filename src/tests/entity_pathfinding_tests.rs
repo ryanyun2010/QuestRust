@@ -59,7 +59,7 @@ async fn test_terrain_should_block_entities(){
     world.add_attack_component(entity, entity_components::EntityAttackComponent::default());
     world.add_health_component(entity, entity_components::HealthComponent{health: 100.0, max_health: 100});
     world.add_pathfinding_component(entity, entity_components::PathfindingComponent::default());
-    world.add_aggro_component(entity, entity_components::AggroComponent::new());
+    world.add_aggro_component(entity, entity_components::AggroComponent::default());
     let player_starting_position_x = world.player.borrow().x;
     let player_starting_position_y = world.player.borrow().y;
     let mut headless = HeadlessGame::new(world, camera);
@@ -138,7 +138,7 @@ async fn test_entities_should_pathfind_around_terrain(){
     world.add_attack_component(entity, entity_components::EntityAttackComponent::default());
     world.add_health_component(entity, entity_components::HealthComponent{health: 100.0, max_health: 100});
     world.add_pathfinding_component(entity, entity_components::PathfindingComponent::default());
-    world.add_aggro_component(entity, entity_components::AggroComponent::new());
+    world.add_aggro_component(entity, entity_components::AggroComponent::default());
     let player_starting_position_x = world.player.borrow().x;
     let player_starting_position_y = world.player.borrow().y;
 

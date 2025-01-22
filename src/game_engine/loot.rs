@@ -15,7 +15,7 @@ pub struct Loot {
 impl Loot{
     pub fn new(tables: Vec<LootTable>) -> Self {
         Self {
-            tables: tables,
+            tables,
         }
     }
 }
@@ -35,9 +35,9 @@ impl LootTable {
             self.entries[entry].initialize_range(total_weight);
         }
         Self {
-            entries: entries,
-            total_weight: total_weight,
-            rarity: rarity
+            entries,
+            total_weight,
+            rarity
         }
     }
     pub fn roll(&self) -> Option<Item> {
@@ -72,8 +72,8 @@ pub struct LootTableEntry {
 impl LootTableEntry {
     pub fn new(item: Option<Item>, weight: usize) -> Self {
         Self {
-            item: item,
-            weight: weight,
+            item,
+            weight,
             weight_range: 0,
         }
     }

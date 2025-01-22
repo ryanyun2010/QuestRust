@@ -72,7 +72,7 @@ pub fn pathfind_by_block(position_component: PositionComponent, collision_compon
 
 
     while let Some(current) = open_set.pop() {
-        let distance_from_goal = f32::sqrt(((player_x as f32 - current.x as f32).powf(2.0) as f32 + (player_y as f32 - current.y as f32).powf(2.0)) as f32);
+        let distance_from_goal = f32::sqrt((player_x as f32 - current.x as f32).powf(2.0) + (player_y as f32 - current.y as f32).powf(2.0));
 
         if distance_from_goal < 2.0 {
             let mut path = Vec::new();

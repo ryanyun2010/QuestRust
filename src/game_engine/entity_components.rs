@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 
 use super::pathfinding::EntityDirectionOptions;
-use std::cell::RefCell;
 
 #[derive(Clone, Debug, Copy, PartialEq)]
 pub struct PositionComponent{
@@ -14,8 +13,8 @@ pub struct EntityAttackComponent{
     pub cur_attack: usize,
     pub cur_attack_cooldown: f32,
 }
-impl EntityAttackComponent{
-    pub fn default() -> Self{
+impl Default for EntityAttackComponent{
+    fn default() -> Self{
         Self{
             cur_attack: 0,
             cur_attack_cooldown: 0.0,
@@ -28,8 +27,8 @@ pub struct PathfindingComponent{
     pub cur_direction: EntityDirectionOptions,
     pub aggroed_to_player: bool,
 }
-impl PathfindingComponent{
-    pub fn default() -> Self{
+impl Default for PathfindingComponent{
+    fn default() -> Self{
         Self{
             cur_direction: EntityDirectionOptions::None,
             aggroed_to_player: false,
@@ -45,7 +44,7 @@ impl HealthComponent{
     pub fn new(max_health: usize) -> Self{
         Self{
             health: max_health as f32,
-            max_health: max_health,
+            max_health,
         }
     }
 }
@@ -53,8 +52,8 @@ impl HealthComponent{
 pub struct AggroComponent{
     pub aggroed: bool,
 }
-impl AggroComponent{
-    pub fn new() -> Self{
+impl Default for AggroComponent{
+    fn default() -> Self{
         Self{
             aggroed: false
         }
@@ -68,30 +67,3 @@ pub struct CollisionBox{
     pub w: f32,
     pub h: f32,
 }
-macro_rules! setup_components {
-    ( $( $name:ident => $component:ty ),* ) => {
-        #[derive(Debug, Clone)]
-        pub struct EntityComponentHolder{
-            $(
-                pub $name: RefCell<Option<$component>>,
-            )*
-        }
-        impl EntityComponentHolder{
-            pub fn new() -> Self{
-                Self{
-                    $(
-                        $name: RefCell::new(None),
-                    )*
-                }
-            }
-        }
-    };
-}
-
-setup_components!(
-    position => PositionComponent,
-    attack => EntityAttackComponent, 
-    pathfinding => PathfindingComponent,
-    health => HealthComponent,
-    aggro => AggroComponent);
-    

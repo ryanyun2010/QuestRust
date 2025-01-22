@@ -1,6 +1,5 @@
 use crate::error::PError;
 use crate::loot::Loot;
-use crate::game_engine::item::Item;
 use crate::{perror, ptry, punwrap};
 use std::cell::{RefCell, RefMut};
 use super::entity_attacks::EntityAttackBox;
@@ -26,10 +25,8 @@ impl World {
                     continue;
                 }else{
                     let tile_potentially = collision_cache_ref.get_mut(tile);
-                    if tile_potentially.is_none(){
-                        continue;
-                    }else{
-                        tile_potentially.unwrap().retain(|&x| x != *entity_id);
+                    if let Some(tile) = tile_potentially{
+                        tile.retain(|&x| x != *entity_id);
                     }
                 }
             }
@@ -38,12 +35,11 @@ impl World {
         position_component.y += movement[1];
 
         let new_chunk_potentially = self.get_chunk_from_xy(position_component.x as usize, position_component.y as usize);
-        let new_chunk: usize;
-        if new_chunk_potentially.is_none(){
-            new_chunk = self.new_chunk(World::coord_to_chunk_coord(position_component.x as usize), World::coord_to_chunk_coord(position_component.y as usize), Some(chunkref));
+        let new_chunk = if let Some(new_chunk) = new_chunk_potentially{
+            new_chunk
         }else{
-            new_chunk = new_chunk_potentially.unwrap();
-        }
+            self.new_chunk(World::coord_to_chunk_coord(position_component.x as usize), World::coord_to_chunk_coord(position_component.y as usize), Some(chunkref))
+        };
 
         if new_chunk != prev_chunk {
             chunkref[prev_chunk].entities_ids.retain(|x| *x != *entity_id);
@@ -54,7 +50,7 @@ impl World {
     pub fn update_entities(&mut self) -> Result<(), PError> {
         // self.entity_attacks.borrow_mut().clear();
         self.pathfinding_frame += 1;
-        self.pathfinding_frame = self.pathfinding_frame % 5;
+        self.pathfinding_frame %= 5;
         let player: Player = self.player.borrow().clone();
         for chunk in self.loaded_chunks.iter() {
             let chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>> = &mut self.chunks.borrow_mut();
@@ -122,7 +118,7 @@ impl World {
         }
         
         if follows_player {
-            let position_component = punwrap!(self.entity_position_components.get(entity_id), Expected, "all entities with follow player tag should have entity position component").borrow().clone();
+            let position_component = punwrap!(self.entity_position_components.get(entity_id), Expected, "all entities with follow player tag should have entity position component").borrow();
             let px = player_x + self.player.borrow().collision_box.x_offset;
             let py = player_y + self.player.borrow().collision_box.y_offset;
             distance = f64::sqrt(
@@ -133,7 +129,7 @@ impl World {
         
         if aggressive {
             let mut aggro = punwrap!(self.entity_aggro_components.get(entity_id), Expected, "all entities with the aggressive tag should have an aggro component").borrow_mut();
-            let position_component = punwrap!(self.entity_position_components.get(entity_id), "all entities with the follow player tag should have a position component").borrow().clone();
+            let position_component = punwrap!(self.entity_position_components.get(entity_id), "all entities with the follow player tag should have a position component").borrow();
             let px = player_x + self.player.borrow().collision_box.x_offset;
             let py = player_y + self.player.borrow().collision_box.y_offset;
             let distance = f64::sqrt(
@@ -152,12 +148,12 @@ impl World {
         }
         if can_attack_player && aggressive {
             let attack_pattern: &EntityAttackPattern = punwrap!(attacks, Expected, "all entities with the aggressive tag should have an attack pattern");
-            let mut attack_component = punwrap!(self.entity_attack_components.get(&entity_id), Expected, "all aggressive entities should have an attack component").borrow_mut();
+            let mut attack_component = punwrap!(self.entity_attack_components.get(entity_id), Expected, "all aggressive entities should have an attack component").borrow_mut();
 
             if attack_component.cur_attack_cooldown <= 0.0 {
                 // self.player.borrow_mut().health -= attack_pattern.attacks[attack_component.cur_attack].attack();
                 
-                let position = punwrap!(self.entity_position_components.get(entity_id), Expected, "all entities that can attack should have a position component").borrow().clone();
+                let position = punwrap!(self.entity_position_components.get(entity_id), Expected, "all entities that can attack should have a position component").borrow();
                 let px = player_x + self.player.borrow().collision_box.x_offset;
                 let py = player_y + self.player.borrow().collision_box.y_offset;
                 let direction_to_player_unnormalized = [
@@ -260,7 +256,6 @@ impl World {
                         ptry!(self.move_entity(position_component, entity_id, [movement_speed, 0.0], chunkref, respects_collision, has_collision));
                     },
                     EntityDirectionOptions::None => {
-                        ()
                     },
                 }
                 return Ok(());
@@ -269,7 +264,7 @@ impl World {
         let magnitude: f32 = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
         if respects_collision {
             if magnitude > 128.0{
-                let direction: EntityDirectionOptions = pathfinding::pathfind_by_block(position_component.clone(), *collision_box, *entity_id, self);
+                let direction: EntityDirectionOptions = pathfinding::pathfind_by_block(*position_component, *collision_box, *entity_id, self);
                 match direction {
                     EntityDirectionOptions::Down => {
                         ptry!(self.move_entity(position_component, entity_id, [0.0, movement_speed], chunkref, respects_collision, has_collision));
@@ -292,7 +287,7 @@ impl World {
                     },
                 };
             } else if magnitude > 60.0{
-                let direction: EntityDirectionOptions = pathfinding::pathfind_high_granularity(position_component.clone(), *collision_box,*entity_id, self);
+                let direction: EntityDirectionOptions = pathfinding::pathfind_high_granularity(*position_component, *collision_box,*entity_id, self);
                 match direction {
                     EntityDirectionOptions::Down => {
                         pathfinding_component.cur_direction = EntityDirectionOptions::Down;
@@ -327,17 +322,16 @@ impl World {
     pub fn add_entity(&mut self, x: f32, y: f32) -> usize{
         let new_entity_pathfinding_frame = self.next_pathfinding_frame_for_entity;
         self.next_pathfinding_frame_for_entity += 1;
-        self.next_pathfinding_frame_for_entity = self.next_pathfinding_frame_for_entity % 5;
+        self.next_pathfinding_frame_for_entity %= 5;
         let chunk_id_potentially: Option<usize> = self.get_chunk_from_xy(x.floor() as usize, y.floor() as usize);
-        let chunk_id: usize;
-        if chunk_id_potentially.is_none() {
-            chunk_id = self.new_chunk(World::coord_to_chunk_coord(x.floor() as usize), World::coord_to_chunk_coord(y.floor() as usize), None);
+        let chunk_id = if let Some(cid) = chunk_id_potentially {
+            cid
         } else{
-            chunk_id = chunk_id_potentially.unwrap();
-        }
+            self.new_chunk(World::coord_to_chunk_coord(x.floor() as usize), World::coord_to_chunk_coord(y.floor() as usize), None)
+        };
         self.element_id += 1;
         self.chunks.borrow_mut()[chunk_id].entities_ids.push(self.element_id - 1);
-        self.entity_position_components.insert(self.element_id - 1, RefCell::new(PositionComponent{x: x, y: y}));
+        self.entity_position_components.insert(self.element_id - 1, RefCell::new(PositionComponent{x, y}));
         self.pathfinding_frames.insert(self.element_id - 1, new_entity_pathfinding_frame);
         self.element_id - 1
     }
@@ -387,7 +381,7 @@ impl World {
             self.add_health_component(entity, entity_components::HealthComponent{health: health as f32, max_health: health});
         }
         if needs_aggro_component{
-            self.add_aggro_component(entity, entity_components::AggroComponent::new());
+            self.add_aggro_component(entity, entity_components::AggroComponent::default());
         }
         entity
     }
@@ -401,11 +395,8 @@ impl World {
         self.entity_archetype_lookup.get(element_id)
     }
     pub fn get_entity_tags(&self, element_id: usize) -> Option<&Vec<EntityTags>>{
-        let entity_archetype_id = self.get_entity_archetype(&element_id);
-        if entity_archetype_id.is_none(){
-            return None;
-        }
-        return self.entity_archetype_tags_lookup.get(entity_archetype_id.unwrap());
+        let entity_archetype_id = self.get_entity_archetype(&element_id)?;
+        self.entity_archetype_tags_lookup.get(entity_archetype_id)
     }
     pub fn set_entity_archetype(&mut self, element_id: usize, archetype_id: String){
         self.entity_archetype_lookup.insert(element_id, archetype_id);
@@ -444,7 +435,6 @@ pub enum EntityTags {
     AttackType(AttackType),
     Attacks(EntityAttackPattern),
     MovementSpeed(f32),
-    Item(Item),
     Drops(Loot),
     BaseHealth(usize),
     Damageable(CollisionBox)
@@ -458,8 +448,8 @@ pub struct EntityAttackPattern {
 impl EntityAttackPattern{
     pub fn new(attacks: Vec<String>, attack_cooldowns: Vec<f32>) -> Self{
         Self{
-            attacks: attacks,
-            attack_cooldowns: attack_cooldowns,
+            attacks,
+            attack_cooldowns,
         }
     }
     // pub fn in_range_to_attack(&mut self) -> Option<EntityAttack>{

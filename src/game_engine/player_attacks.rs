@@ -17,7 +17,7 @@ impl PlayerAttack{
         Self{
             stats,
             sprite,
-            attack_type: attack_type,
+            attack_type,
             time_alive: 0.0,
             x,
             y,
