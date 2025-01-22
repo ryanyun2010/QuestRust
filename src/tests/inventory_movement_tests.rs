@@ -538,6 +538,7 @@ pub async fn test_melee_player_attack_after_inventory_movement() {
             name: String::from("test_sword"),
             attack_sprite: String::from("melee_attack"),
             item_type: ItemType::MeleeWeapon,
+            width_to_length_ratio: None,
             lore: String::from("test"),
             sprite: String::from("sword"),
             stats: create_stat_list!(

@@ -217,6 +217,7 @@ pub struct Item {
     pub lore: String,
     pub name: String,
     pub item_type: ItemType,
+    pub width_to_length_ratio: Option<f32>,
     pub sprite: String,
     pub attack_sprite: String,
 }
@@ -227,6 +228,7 @@ pub struct ItemArchetype {
     pub stats: GearStatList,
     pub lore: String,
     pub item_type: ItemType,
+    pub width_to_length_ratio: Option<f32>,
     pub sprite: String,
     pub attack_sprite: String
 }

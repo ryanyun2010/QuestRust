@@ -33,6 +33,7 @@ pub async fn basic_world() -> world::World {
         name: String::from("test1"),
         attack_sprite: String::from("melee_attack"),
         item_type: crate::game_engine::item::ItemType::MeleeWeapon,
+        width_to_length_ratio: None,
         lore: String::from("test"),
         sprite: String::from("sword"),
         stats: create_stat_list!(
@@ -45,6 +46,7 @@ pub async fn basic_world() -> world::World {
         name: String::from("test2"),
         attack_sprite: String::from("melee_attack"),
         item_type: crate::game_engine::item::ItemType::MeleeWeapon,
+        width_to_length_ratio: None,
         lore: String::from("test"),
         sprite: String::from("spear"),
         stats: create_stat_list!(

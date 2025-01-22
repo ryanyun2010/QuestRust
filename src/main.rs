@@ -33,12 +33,19 @@ fn main() {
     let spear = world.inventory.add_item(
         world.create_item_with_archetype("test_spear".to_string())
     );
+    let g = world.inventory.add_item(
+        world.create_item_with_archetype("funny spear".to_string())
+    );
     world.inventory.init_ui();
     match world.inventory.set_hotbar_slot_item(0, sword) {
         Ok(_) => {},
         Err(e) => println!("Error: {}", e)
     };
     match world.inventory.set_hotbar_slot_item(1, spear) {
+        Ok(_) => {},
+        Err(e) => println!("Error: {}", e)
+    }
+    match world.inventory.set_slot_item(8, g) {
         Ok(_) => {},
         Err(e) => println!("Error: {}", e)
     }

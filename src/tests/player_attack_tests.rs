@@ -22,6 +22,7 @@ pub async fn test_melee_player_attack() {
             name: String::from("test_sword"),
             attack_sprite: String::from("melee_attack"),
             item_type: ItemType::MeleeWeapon,
+            width_to_length_ratio: None,
             lore: String::from("test"),
             sprite: String::from("sword"),
             stats: create_stat_list!(
@@ -76,6 +77,7 @@ pub async fn test_ranged_player_attack() {
             name: String::from("test_spear"),
             attack_sprite: String::from("spear"),
             item_type: ItemType::RangedWeapon,
+            width_to_length_ratio: None,
             lore: String::from("test"),
             sprite: String::from("spear"),
             stats: create_stat_list!(

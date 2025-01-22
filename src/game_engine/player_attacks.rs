@@ -6,6 +6,7 @@ pub struct PlayerAttack{
     pub stats: StatList,
     pub attack_type: AttackType,
     pub sprite: String,
+    pub width_to_length_ratio: f32,
     pub time_alive: f32,
     pub x: f32,
     pub y: f32,
@@ -13,11 +14,12 @@ pub struct PlayerAttack{
     pub dealt_damage: bool
 }
 impl PlayerAttack{
-    pub fn new(stats: StatList, attack_type: AttackType,  sprite: String, x: f32, y: f32, angle: f32) -> Self{
+    pub fn new(stats: StatList, attack_type: AttackType,  sprite: String, width_to_length_ratio: f32, x: f32, y: f32, angle: f32) -> Self{
         Self{
             stats,
             sprite,
             attack_type,
+            width_to_length_ratio,
             time_alive: 0.0,
             x,
             y,

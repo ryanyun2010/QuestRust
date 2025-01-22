@@ -26,5 +26,33 @@
             "AOE": {"average": 15.0, "variation": 2.5},
             "size": {"average": 20.0, "variation": 2.5}
         }
+    },
+    {
+        "name": "god_sword",
+        "sprite": "sword",
+        "item_type": "MeleeWeapon",
+        "lore": "good sword",
+        "attack_sprite": "melee_attack",
+        "stats": {
+            "damage": {"average": 100.0, "variation": 999999.0},
+            "width": {"average": 0.0, "variation": 500.0},
+            "reach": {"average": 0.0, "variation": 900.0}
+        }
+    },
+    {
+        "name": "funny spear",
+        "sprite": "spear",
+        "item_type": "RangedWeapon",
+        "lore": "good spear",
+        "attack_sprite": "spear",
+        "width_to_length_ratio": 0.5,
+        "stats": {
+            "damage": {"average": 999999.0, "variation": 0.0},
+            "speed": {"average": 2.4, "variation": 0.0},
+            "lifetime": {"average": 999999.0, "variation": 0.0},
+            "AOE": {"average": 50.0, "variation": 0.0},
+            "size": {"average": 90.0, "variation": 0.0}
+        }
     }
+
 ]

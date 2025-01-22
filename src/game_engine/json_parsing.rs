@@ -175,6 +175,7 @@ pub struct item_archetype_json {
     pub name: String,
     pub sprite: String,
     pub attack_sprite: String,
+    pub width_to_length_ratio: Option<f32>,
     pub item_type: ItemType,
     pub lore: String,
     pub stats: GearStatList
@@ -351,6 +352,7 @@ impl JSON_parser {
                 stats: item_archetype.stats.clone(),
                 lore: item_archetype.lore.clone(),
                 item_type: item_archetype.item_type.clone(),
+                width_to_length_ratio: item_archetype.width_to_length_ratio,
                 sprite: item_archetype.sprite.clone(),
                 attack_sprite: item_archetype.attack_sprite.clone()
         });
