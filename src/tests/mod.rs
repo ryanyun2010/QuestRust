@@ -1,5 +1,5 @@
 pub mod lib;
-pub mod tests;
+pub mod test_framework;
 pub mod player_movement_tests;
 pub mod basic_tests;
 pub mod entity_attack_tests;

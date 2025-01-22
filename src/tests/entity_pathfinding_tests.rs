@@ -2,7 +2,7 @@
 use crate::game_engine::entities::{EntityAttackPattern, EntityTags};
 use crate::game_engine::entity_attacks::EntityAttackDescriptor;
 use crate::game_engine::terrain::TerrainTags;
-use crate::tests::tests::{basic_camera, basic_world};
+use crate::tests::test_framework::{basic_camera, basic_world};
 use crate::tests::lib::headless::HeadlessGame;
 use crate::game_engine::entity_components;
 

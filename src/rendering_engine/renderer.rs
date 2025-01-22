@@ -32,7 +32,7 @@ pub struct Renderer<'a> {
 }
 
 impl<'a> Renderer<'a> { 
-    pub async fn new(window: &'a Window, sprites_to_load_json: &Vec<String>) -> Renderer<'a> {
+    pub async fn new(window: &'a Window, sprites_to_load_json: &[String]) -> Renderer<'a> {
         let size = window.inner_size();
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,

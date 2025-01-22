@@ -368,10 +368,10 @@ pub fn percent_damage_blocked(defense: i32, toughness: i32, damage: i32) -> f32 
     (defense as f32/(100.0+defense as f32))*2.0*(1.0-(1.0/(1.0+std::f32::consts::E.powf(-(damage as f32/((toughness as f32).powf(0.8)))))))
 }
 pub fn healing_with_vitality(incoming_healing: i32, vitality: i32) -> i32 {
-    (((vitality as f32 + 100.0)/100.0)).min((vitality as f32).powf(0.5)/(incoming_healing as f32).powf(0.5)).ceil() as i32
+    ((vitality as f32 + 100.0)/100.0).min((vitality as f32).powf(0.5)/(incoming_healing as f32).powf(0.5)).ceil() as i32
 }
 pub fn mana_regen_with_regen(incoming_mana: i32, mana_regen: i32) -> i32 {
-    (((mana_regen as f32 + 100.0)/100.0)).min((mana_regen as f32).powf(0.5)/(incoming_mana as f32).powf(0.5)).ceil() as i32
+    ((mana_regen as f32 + 100.0)/100.0).min((mana_regen as f32).powf(0.5)/(incoming_mana as f32).powf(0.5)).ceil() as i32
 }
 //healing_tick_with_vitality is run on an entity when a healing tick is triggered.
 //Healing ticks can be triggered once every 60 frames (1 second) or on ability procs.
@@ -385,8 +385,8 @@ pub fn mana_regen_tick_with_regen(max_mana: i32, current_mana: i32, mana_regen: 
 pub fn calculate_scaling_damage(multipliers: Vec<f32>, damage: i32, crit_chance: f32, crit_damage: i32) -> i32 {
     //Multipliers are additive
     let mut total_multipliers: f32 = 0.0;
-    for i in 0..multipliers.len() {
-        total_multipliers += multipliers[i];
+    for multiplier in multipliers {
+        total_multipliers += multiplier;
     }
     if crit_chance_roll(crit_chance) {
         return (total_multipliers*(damage as f32)*(crit_damage as f32+100.0)/100.0).ceil() as i32

@@ -215,8 +215,7 @@ impl SpriteContainer{
         }
         let sss = SpriteSheetSheet::create_from_json(&sprite_sheets, 0);
         sprites_to_load.push(sss.path.clone());
-        let mut i = 0;
-        for sheet in sprite_sheets.iter(){
+        for (i, sheet) in sprite_sheets.iter().enumerate(){
             sprites_to_load.push(sheet.path.clone());
             let mut sprite_positions = Vec::new();
             let mut names = Vec::new();
@@ -229,7 +228,6 @@ impl SpriteContainer{
                 sprites.push(spritesd[i]);
                 sprite_id_lookup.insert(names[i].to_string(), sprites.len() - 1);
             }
-            i += 1;
         }
         (sprites_to_load, SpriteContainer{
             sprites,
@@ -238,12 +236,8 @@ impl SpriteContainer{
     }
 
     pub fn get_sprite_by_name(&self, name: &str) -> Option<&Sprite>{
-        let potential_id = self.sprite_id_lookup.get(name);
-        if potential_id.is_none(){
-            None
-        }else{
-            Some(&self.sprites[*potential_id.unwrap()])
-        }
+        let id = self.sprite_id_lookup.get(name)?;
+        self.sprites.get(*id)
     }
     pub fn get_sprite_id(&self, name: &str) -> Option<usize>{
         self.sprite_id_lookup.get(name).copied()
@@ -252,12 +246,8 @@ impl SpriteContainer{
         self.sprites.get(id)
     }
     pub fn get_texture_index_by_name(&self, name: &str) -> Option<i32>{
-        let potential_id = self.sprite_id_lookup.get(name);
-        if potential_id.is_none(){
-            None
-        }else{
-            Some(self.sprites[*potential_id.unwrap()].texture_index)
-        }
+        let id = self.sprite_id_lookup.get(name)?;
+        self.sprites.get(*id).map(|s| s.texture_index)
     }
 }
 

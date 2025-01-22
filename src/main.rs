@@ -8,6 +8,7 @@
 #![allow(clippy::expect_fun_call)]
 #![allow(clippy::derivable_impls)]
 #![allow(clippy::single_match)]
+#![allow(clippy::unnecessary_get_then_check)]
 use std::{env, path::Path, time::Instant};
 pub mod rendering_engine;
 use rendering_engine::{renderer, texture, vertex, window};

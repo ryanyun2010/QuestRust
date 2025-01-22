@@ -1,5 +1,5 @@
 #![cfg(test)]
-use crate::tests::{lib::headless::HeadlessGame, tests::{basic_world, basic_camera}};
+use crate::tests::{lib::headless::HeadlessGame, test_framework::{basic_world, basic_camera}};
 
 #[tokio::test]
 async fn test_player_movement_right() {

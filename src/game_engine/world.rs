@@ -2,7 +2,6 @@ use core::f32;
 use std::collections::{HashMap, HashSet};
 use std::cell::{RefCell, RefMut};
 use std::f32::consts::PI;
-use anyhow::anyhow;
 
 use crate::error::PError;
 use crate::ptry;
@@ -179,12 +178,11 @@ impl World{
         
         let chunk_id_potentially: Option<usize> = self.get_chunk_from_chunk_xy(World::coord_to_chunk_coord(new_terrain.x), World::coord_to_chunk_coord(new_terrain.y));
         
-        let chunk_id: usize;
-        if chunk_id_potentially.is_none() {
-            chunk_id = self.new_chunk(World::coord_to_chunk_coord(new_terrain.x), World::coord_to_chunk_coord(new_terrain.y), None);
-        }else{
-            chunk_id = chunk_id_potentially.unwrap();
-        }
+        let chunk_id: usize = if let Some(chunk_id) = chunk_id_potentially{
+            chunk_id
+        }else {
+            self.new_chunk(World::coord_to_chunk_coord(new_terrain.x), World::coord_to_chunk_coord(new_terrain.y), None)
+        };
 
         self.element_id += 1;
         self.chunks.borrow_mut()[chunk_id].terrain_ids.push(self.element_id - 1);
@@ -199,11 +197,8 @@ impl World{
         self.terrain_archetype_lookup.insert(id, archetype_id);
     }
     pub fn get_terrain_tags(&self, id: usize) -> Option<&Vec<TerrainTags>>{
-        let potential_archetype = self.terrain_archetype_lookup.get(&id);
-        if potential_archetype.is_some(){
-            return Some(&self.terrain_archetype_tags_lookup[*potential_archetype.unwrap()]);
-        }
-        None
+        let potential_archetype = self.terrain_archetype_lookup.get(&id)?;
+        self.terrain_archetype_tags_lookup.get(*potential_archetype)
     }
     pub fn get_terrain_archetype(&self, id: usize) -> Option<&usize> {
         self.terrain_archetype_lookup.get(&id)
@@ -266,8 +261,8 @@ impl World{
                         let tiles_blocked: Vec<[usize; 2]> = World::get_terrain_tiles(terrain.x, terrain.y, 32, 32);
                         for tile in tiles_blocked.iter(){
                             let collision_cache_entry = collision_cache_ref.get_mut(&[tile[0],tile[1]]);
-                            if collision_cache_entry.is_some(){    
-                                collision_cache_entry.unwrap().push(*terrain_id);
+                            if let Some(entry) = collision_cache_entry {
+                                entry.push(*terrain_id);
                             }else{
                                 collision_cache_ref.insert([tile[0],tile[1]], vec![*terrain_id]);
                             }
@@ -292,8 +287,8 @@ impl World{
                             let tiles_blocked: Vec<[usize; 2]> = World::get_terrain_tiles((position_component.x + cbox.x_offset) as usize, (position_component.y + cbox.y_offset) as usize, cbox.w as usize, cbox.h as usize);
                             for tile in tiles_blocked.iter(){
                                 let collision_cache_entry = collision_cache_ref.get_mut(&[tile[0],tile[1]]);
-                                if collision_cache_entry.is_some(){    
-                                    collision_cache_entry.unwrap().push(*entity_id);
+                                if let Some(entry) = collision_cache_entry {
+                                    entry.push(*entity_id);
                                 }else{
                                     collision_cache_ref.insert([tile[0],tile[1]], vec![*entity_id]);
                                 }
@@ -303,8 +298,8 @@ impl World{
                             let tiles_blocked: Vec<[usize; 2]> = World::get_terrain_tiles((position_component.x + dbox.x_offset) as usize, (position_component.y + dbox.y_offset) as usize, dbox.w as usize, dbox.h as usize);
                             for tile in tiles_blocked.iter(){
                                 let damage_cache_entry = damage_cache_ref.get_mut(&[tile[0],tile[1]]);
-                                if damage_cache_entry.is_some(){    
-                                    damage_cache_entry.unwrap().push(*entity_id);
+                                if let Some(entry) = damage_cache_entry {
+                                    entry.push(*entity_id);
                                 }else{
                                     damage_cache_ref.insert([tile[0],tile[1]], vec![*entity_id]);
                                 }
@@ -648,8 +643,7 @@ impl World{
     pub fn update_entity_attacks(&self){
         let mut attacks = self.entity_attacks.borrow_mut();
         let mut attacks_to_be_deleted = Vec::new();
-        let mut i = 0;
-        for attack in attacks.iter_mut(){
+        for (i, attack) in attacks.iter_mut().enumerate(){
             attack.time_charged += 1.0;
             let desciptor = self.get_attack_descriptor(attack).expect("Couldn't find entity attack descriptor?");
             if attack.time_charged.floor() as usize >= desciptor.time_to_charge {
@@ -658,12 +652,9 @@ impl World{
                 }
                 attacks_to_be_deleted.push(i);
             }
-            i += 1;
         }
-        let mut offset = 0;
-        for index in attacks_to_be_deleted.iter(){
+        for (offset, index) in attacks_to_be_deleted.iter().enumerate(){
             attacks.remove(*index - offset);
-            offset += 1;
         }
     }
     pub fn update_player_attacks(&self, camera: &mut Camera){
@@ -687,7 +678,7 @@ impl World{
                         let width = attack.stats.width.unwrap_or(0.0);
                         let collisions = self.get_attacked_rotated_rect(true, None, attack.x as usize, attack.y as usize, height.floor() as usize, width.floor() as usize,attack.angle, true);
                         for collision in collisions.iter(){
-                            if self.entity_health_components.get(collision).is_some(){
+                            if self.entity_health_components.contains_key(collision){
                                 let health_component = self.entity_health_components.get(collision).unwrap().borrow_mut();
                                 let entity_position = self.entity_position_components.get(collision).unwrap().borrow();
                                 let aggro_potentially = self.entity_aggro_components.get(collision);
@@ -718,7 +709,7 @@ impl World{
                     let collisions = self.get_attacked(true, None, attack.x as usize - size/2, attack.y as usize - size/2, attack.stats.size.unwrap_or(0.0).floor() as usize, attack.stats.size.unwrap_or(0.0).floor() as usize, true);
                     let mut hit = false;
                     for collision in collisions.iter(){
-                        if self.entity_health_components.get(collision).is_some(){
+                        if self.entity_health_components.contains_key(collision){
                             hit = true;
                             attacks_to_be_deleted.push(i);
                             attack.dealt_damage = true;
@@ -729,7 +720,7 @@ impl World{
                         let aoesize = attack.stats.AOE.unwrap_or(0.0) + attack.stats.size.unwrap_or(0.0);
                         let aoe_collisions = self.get_attacked(true, None, attack.x as usize - (aoesize/2.0) as usize, attack.y as usize - (aoesize/2.0) as usize, aoesize.floor() as usize, aoesize.floor() as usize, true);
                         for collision in aoe_collisions.iter(){
-                            if self.entity_health_components.get(collision).is_some(){
+                            if self.entity_health_components.contains_key(collision){
                                 let health_component = self.entity_health_components.get(collision).unwrap().borrow_mut();
                                 let entity_position = self.entity_position_components.get(collision).unwrap().borrow();
                                 let aggro_potentially = self.entity_aggro_components.get(collision);
@@ -755,10 +746,8 @@ impl World{
             }
             i += 1;
         }
-        let mut offset = 0;
-        for index in attacks_to_be_deleted.iter(){
+        for (offset, index) in attacks_to_be_deleted.iter().enumerate(){
             attacks.remove(*index - offset);
-            offset += 1;
         }
     }
 
@@ -810,7 +799,7 @@ impl World{
     pub fn get_attack_descriptor_by_name(&self, archetype_name: &String) -> Option<&EntityAttackDescriptor>{
         self.entity_attack_descriptor_lookup.get(archetype_name)
     }
-    pub fn on_key_down(&mut self, key: &String){
+    pub fn on_key_down(&mut self, key: &str){
         if key.chars().all(char::is_numeric) {
             let num = key.parse::<usize>().unwrap();
             if num < 6 && num > 0 {
@@ -893,8 +882,7 @@ impl World{
     }
     pub fn update_damage_text(&self, camera: &mut Camera) -> Result<(), PError> {
         let mut dt_to_remove = Vec::new();
-        let mut i = 0;
-        for damage_text in self.damage_text.borrow_mut().iter_mut(){
+        for (i, damage_text) in self.damage_text.borrow_mut().iter_mut().enumerate(){
             camera.get_world_text_mut(damage_text.world_text_id).unwrap().y -= 0.6;
             camera.get_world_text_mut(damage_text.world_text_id).unwrap().color[3] -= 0.016_666_668;
             damage_text.lifespan += 1.0;
@@ -902,12 +890,9 @@ impl World{
                 ptry!(camera.remove_world_text(damage_text.world_text_id), "Trying to remove non-existent world text?");
                 dt_to_remove.push(i);
             }
-            i += 1;
         }
-        let mut offset = 0;
-        for dt in dt_to_remove.iter(){
+        for (offset, dt )in dt_to_remove.iter().enumerate(){
             self.damage_text.borrow_mut().remove(*dt - offset);
-            offset += 1;
         }
         Ok(())
     }

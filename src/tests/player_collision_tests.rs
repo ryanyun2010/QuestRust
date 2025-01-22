@@ -1,5 +1,5 @@
 #![cfg(test)]
-use crate::tests::tests::{basic_camera, basic_world};
+use crate::tests::test_framework::{basic_camera, basic_world};
 use crate::tests::lib::headless::HeadlessGame;
 use crate::game_engine::{terrain::TerrainTags, entities::EntityTags, entity_components};
 

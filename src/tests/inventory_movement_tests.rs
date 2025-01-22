@@ -1,7 +1,7 @@
 
 #![cfg(test)]
 
-use crate::{create_stat_list, game_engine::{entity_components::CollisionBox, game::MousePosition, item::{Item, ItemType}}, tests::{lib::headless::HeadlessGame, tests::{basic_camera, basic_world}}};
+use crate::{create_stat_list, game_engine::{entity_components::CollisionBox, game::MousePosition, item::{Item, ItemType}}, tests::{lib::headless::HeadlessGame, test_framework::{basic_camera, basic_world}}};
 
 #[tokio::test]
 async fn test_inventory_clicking_blank_slot_in_blank_inventory(){

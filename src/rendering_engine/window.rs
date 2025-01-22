@@ -9,7 +9,7 @@ use crate::renderer::Renderer;
 use crate::world::World;
 use crate::camera::Camera;
 
-pub async fn run(world: World, camera: Camera, sprites_json_to_load: &Vec<String>) {
+pub async fn run(world: World, camera: Camera, sprites_json_to_load: &[String]) {
     let event_loop = EventLoop::new().unwrap();
     let title = "小丰";
     let window = WindowBuilder::new().with_title(title).with_inner_size(winit::dpi::LogicalSize::new(1152, 720)).build(&event_loop).unwrap();

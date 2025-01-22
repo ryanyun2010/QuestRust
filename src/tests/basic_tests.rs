@@ -1,5 +1,5 @@
 #![cfg(test)]
-use crate::tests::tests::{basic_world, basic_camera};
+use crate::tests::test_framework::{basic_world, basic_camera};
 use super::lib::headless::HeadlessGame;
 
 #[tokio::test]

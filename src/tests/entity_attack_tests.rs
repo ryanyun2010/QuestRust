@@ -1,7 +1,7 @@
 #![cfg(test)]
 use crate::game_engine::entity_attacks::EntityAttackDescriptor;
 use crate::game_engine::entity_components;
-use crate::tests::tests::{basic_world, basic_camera};
+use crate::tests::test_framework::{basic_world, basic_camera};
 use crate::tests::lib::headless::HeadlessGame;
 use crate::game_engine::entities::EntityAttackPattern;
 use crate::game_engine::entities::EntityTags;
