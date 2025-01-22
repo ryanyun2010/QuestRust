@@ -23,7 +23,6 @@
             "damage": {"average": 6.0, "variation": 2.5},
             "speed": {"average": 10.0, "variation": 2.5},
             "lifetime": {"average": 90.0, "variation": 10.0},
-            "AOE": {"average": 15.0, "variation": 2.5},
             "size": {"average": 20.0, "variation": 2.5}
         }
     },
@@ -48,10 +47,9 @@
         "width_to_length_ratio": 0.6,
         "stats": {
             "damage": {"average": 999999.0, "variation": 0.0},
-            "speed": {"average": 23.4, "variation": 0.0},
+            "speed": {"average": 1.4, "variation": 0.0},
             "lifetime": {"average": 999999.0, "variation": 0.0},
-            "AOE": {"average": 50.0, "variation": 0.0},
-            "size": {"average": 90.0, "variation": 0.0}
+            "size": {"average": 9.0, "variation": 0.0}
         }
     }
 

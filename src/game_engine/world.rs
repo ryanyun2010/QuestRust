@@ -718,11 +718,7 @@ impl World{
                         }
                     }
                     if hit {
-                        let aoesize = attack.stats.AOE.unwrap_or(0.0);
-                    let length = (attack.stats.size.unwrap_or(0.0).floor() + aoesize) as usize;
-                    let width = (attack.width_to_length_ratio * length as f32 + aoesize) as usize;
-                        let aoe_collisions = self.get_attacked_rotated_rect(true, None, (attack.x - length as f32/2.0) as usize, (attack.y - width as f32 /2.0) as usize, length, width,attack.angle, true);
-                        for collision in aoe_collisions.iter(){
+                        for collision in collisions.iter(){
                             if self.entity_health_components.contains_key(collision){
                                 let health_component = self.entity_health_components.get(collision).unwrap().borrow_mut();
                                 let entity_position = self.entity_position_components.get(collision).unwrap().borrow();
@@ -736,12 +732,12 @@ impl World{
                         }
                         
                     }else {
-                        let length = attack.stats.size.unwrap_or(0.0).floor();
-                        let width = attack.width_to_length_ratio * length;
-                        let c = self.check_collision_non_damageable(true, None, (attack.x - length/2.0) as usize, (attack.y-width/2.0) as usize, length as usize, width as usize, true);
-                        if c{
-                            attacks_to_be_deleted.push(i);
-                        }
+                        // let length = attack.stats.size.unwrap_or(0.0).floor();
+                        // let width = attack.width_to_length_ratio * length;
+                        // let c = self.check_collision_non_damageable(true, None, (attack.x - length/2.0) as usize, (attack.y-width/2.0) as usize, length as usize, width as usize, true);
+                        // if c{
+                        //     attacks_to_be_deleted.push(i);
+                        // }
                     }
                 }
                 AttackType::Magic => {

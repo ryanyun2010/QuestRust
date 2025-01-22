@@ -320,8 +320,7 @@ create_stat_lists!(
     lifetime,
     speed,
     ability_damage,
-    size,
-    AOE
+    size
 );
 
 #[macro_export]
