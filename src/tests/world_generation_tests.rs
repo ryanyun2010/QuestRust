@@ -100,12 +100,12 @@ async fn json_parsing_test(){
     assert!(terrain_archetype.sprites.len() == 1, "There should be one sprite");
     assert!(terrain_archetype.sprites[0] == "outside", "The one sprite should be outside");
 
-    let entity = parsed_data.starting_level_descriptor.entities.get(0).expect("There should be an entity");
+    let entity = parsed_data.starting_level_descriptor.entities.first().expect("There should be an entity");
     assert!(entity.x == 900.0, "Entity x should be 900.0");
     assert!(entity.y == 405.0, "Entity y should be 405.0");
     assert!(entity.archetype == "ghost", "Entity archetype should be ghost");
     assert!(entity.sprite == "ghost", "Entity sprite should be ghost");
-    let terrain = parsed_data.starting_level_descriptor.terrain.get(0).expect("There should be a terrain");
+    let terrain = parsed_data.starting_level_descriptor.terrain.first().expect("There should be a terrain");
     assert!(terrain.x == 0, "Terrain x should be 0");
     assert!(terrain.y == 0, "Terrain y should be 0");
     assert!(terrain.width == 1, "Terrain width should be 1");
@@ -133,7 +133,7 @@ async fn world_generation_test(){
     assert!(chunk.entities_ids.len() == 1, "There should be one entity in the chunk");
     assert!(chunk.terrain_ids.len() == 1, "There should be one terrain in the chunk");
     let entity_id = chunk.entities_ids[0];
-    let enitty_position = world.entity_position_components.get(&entity_id).expect("There should be an entity position component").borrow().clone();
+    let enitty_position = *world.entity_position_components.get(&entity_id).expect("There should be an entity position component").borrow();
     assert!(enitty_position.x == 900.0, "Entity x should be 900.0");
     assert!(enitty_position.y == 405.0, "Entity y should be 405.0");
     let entity_collision_box = world.get_entity_collision_box(entity_id).expect("There should be an entity collision box component");
@@ -141,9 +141,9 @@ async fn world_generation_test(){
     assert!(entity_collision_box.h == 32.0, "Entity collision box height should be 32.0");
     assert!(entity_collision_box.x_offset == 0.0, "Entity collision box x offset should be 0.0");
     assert!(entity_collision_box.y_offset == 0.0, "Entity collision box y offset should be 0.0");
-    let entity_pathfinding = world.entity_pathfinding_components.get(&entity_id).expect("There should be an entity pathfinding component").borrow().clone();
+    let entity_pathfinding = *world.entity_pathfinding_components.get(&entity_id).expect("There should be an entity pathfinding component").borrow();
     assert!(entity_pathfinding.cur_direction ==EntityDirectionOptions::None,  "Entity direction should be none priot to the update of the world");
-    let entity_attack = world.entity_attack_components.get(&entity_id).expect("There should be an entity attack component").borrow().clone();
+    let entity_attack = *world.entity_attack_components.get(&entity_id).expect("There should be an entity attack component").borrow();
     assert!(entity_attack.cur_attack == 0, "The entity should start at attack 0");
     assert!(entity_attack.cur_attack_cooldown == 0.0, "The entity should start with a cooldown of 0.0");
     let entity_archetype = world.get_entity_archetype(&entity_id).expect("There should be an entity archetype").clone();

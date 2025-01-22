@@ -18,12 +18,9 @@ async fn test_player_terrain_collision_moving_right(){
     let player_starting_x = world.player.borrow().x;
     let mut headless = HeadlessGame::new(world, camera);
     headless.state.keys_down.insert(String::from("d"), true);
-     match headless.run(200).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(200).await {
+         panic!("{}", e)
+     }
     assert!(
         headless.world.player.borrow().x < player_starting_x + 50.0,
         "Player should not be able to move right through a terrain blocker"
@@ -45,12 +42,9 @@ async fn test_player_terrain_collision_moving_left(){
     let player_starting_x = world.player.borrow().x;
     let mut headless = HeadlessGame::new(world, camera);
     headless.state.keys_down.insert(String::from("a"), true);
-     match headless.run(200).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(200).await {
+         panic!("{}", e)
+     }
     assert!(
         headless.world.player.borrow().x > player_starting_x - 50.0,
         "Player should not be able to move left through a terrain blocker"
@@ -72,12 +66,9 @@ async fn test_player_terrain_collision_moving_up(){
     let player_starting_y = world.player.borrow().y;
     let mut headless = HeadlessGame::new(world, camera);
     headless.state.keys_down.insert(String::from("w"), true);
-     match headless.run(200).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(200).await {
+         panic!("{}", e)
+     }
     assert!(
         headless.world.player.borrow().y > player_starting_y - 50.0,
         "Player should not be able to move up through a terrain blocker"
@@ -99,12 +90,9 @@ async fn test_player_terrain_collision_moving_down(){
     let player_starting_y = world.player.borrow().y;
     let mut headless = HeadlessGame::new(world, camera);
     headless.state.keys_down.insert(String::from("s"), true);
-     match headless.run(200).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(200).await {
+         panic!("{}", e)
+     }
     assert!(
         headless.world.player.borrow().y < player_starting_y + 50.0,
         "Player should not be able to move down through a terrain blocker"
@@ -134,12 +122,9 @@ async fn test_player_entity_collision_moving_down(){
     let player_starting_y = world.player.borrow().y;
     let mut headless = HeadlessGame::new(world, camera);
     headless.state.keys_down.insert(String::from("s"), true);
-     match headless.run(200).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(200).await {
+         panic!("{}", e)
+     }
     assert!(
         headless.world.player.borrow().y < player_starting_y + 50.0,
         "Player should not be able to move down through an entity blocker"
@@ -169,12 +154,9 @@ async fn test_player_entity_collision_moving_up(){
     let player_starting_y = world.player.borrow().y;
     let mut headless = HeadlessGame::new(world, camera);
     headless.state.keys_down.insert(String::from("w"), true);
-     match headless.run(200).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(200).await {
+         panic!("{}", e)
+     }
     assert!(
         headless.world.player.borrow().y > player_starting_y - 50.0,
         "Player should not be able to move through an entity blocker"
@@ -204,12 +186,9 @@ async fn test_player_entity_collision_moving_left(){
     let player_starting_x = world.player.borrow().x;
     let mut headless = HeadlessGame::new(world, camera);
     headless.state.keys_down.insert(String::from("a"), true);
-     match headless.run(200).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(200).await {
+         panic!("{}", e)
+     }
     assert!(
         headless.world.player.borrow().x > player_starting_x - 50.0,
         "Player should not be able to move left through an entity blocker"
@@ -239,12 +218,9 @@ async fn test_player_entity_collision_moving_right(){
     let player_starting_x = world.player.borrow().x;
     let mut headless = HeadlessGame::new(world, camera);
     headless.state.keys_down.insert(String::from("d"), true);
-     match headless.run(200).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(200).await {
+         panic!("{}", e)
+     }
     println!("Player X: {}", headless.world.player.borrow().x);
     assert!(
         headless.world.player.borrow().x < player_starting_x + 50.0,

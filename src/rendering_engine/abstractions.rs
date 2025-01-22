@@ -59,7 +59,7 @@ impl Sprite {
             Vertex { position: [x, y + h, 0.0], tex_coords: [self.tex_x, self.tex_y], index: self.texture_index },
         ];
 
-        let index: Vec<u32> = vec![0 + index_offset, 1 + index_offset, 2 + index_offset, 0 + index_offset, 2 + index_offset, 3 + index_offset];
+        let index: Vec<u32> = vec![index_offset, 1 + index_offset, 2 + index_offset, index_offset, 2 + index_offset, 3 + index_offset];
 
         RenderData { vertex, index }
     }
@@ -70,7 +70,7 @@ impl Sprite {
                     y: screen_y,
                     width: screen_w as f32,
                     height: screen_h as f32,
-                    rotation: rotation
+                    rotation
                 }
             );
             let v_array: [(f32, f32); 4] = [
@@ -87,7 +87,7 @@ impl Sprite {
 
         let mut vertex = Vec::new();
         
-        let mut ps = points.clone();
+        let mut ps = points;
         ps.reverse();
         let tex = [[self.tex_x, self.tex_y + self.tex_h], [self.tex_x + self.tex_w, self.tex_y + self.tex_h], [self.tex_x + self.tex_w, self.tex_y], [self.tex_x, self.tex_y]];
 
@@ -102,7 +102,7 @@ impl Sprite {
             });
         }
 
-        let index: Vec<u32> = vec![0 + index_offset, 1 + index_offset, 2 + index_offset, 0 + index_offset, 2 + index_offset, 3 + index_offset];
+        let index: Vec<u32> = vec![index_offset, 1 + index_offset, 2 + index_offset, index_offset, 2 + index_offset, 3 + index_offset];
 
         RenderData { vertex, index }
     }
@@ -117,6 +117,12 @@ impl Sprite {
 pub struct RenderData{
     pub vertex: Vec<Vertex>,
     pub index: Vec<u32>
+}
+
+impl Default for RenderData {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl RenderData{
@@ -152,6 +158,12 @@ pub struct RenderDataFull<'a>{
 
 }
 
+impl Default for RenderDataFull<'_> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RenderDataFull<'_>{
     pub fn new() -> Self{
         Self{ vertex: Vec::new(), index: Vec::new(), sections_a_b: Vec::new(), sections_b_b: Vec::new(), sections_a_t: Vec::new(), sections_b_t: Vec::new(), index_behind_text: 0 }
@@ -162,6 +174,12 @@ impl RenderDataFull<'_>{
 pub struct SpriteContainer{
     pub sprites: Vec<Sprite>,
     pub sprite_id_lookup: HashMap<String, usize>
+}
+
+impl Default for SpriteContainer {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl SpriteContainer{
@@ -213,18 +231,18 @@ impl SpriteContainer{
             }
             i += 1;
         }
-        return (sprites_to_load, SpriteContainer{
+        (sprites_to_load, SpriteContainer{
             sprites,
             sprite_id_lookup
-        });
+        })
     }
 
     pub fn get_sprite_by_name(&self, name: &str) -> Option<&Sprite>{
         let potential_id = self.sprite_id_lookup.get(name);
         if potential_id.is_none(){
-            return None;
+            None
         }else{
-            return Some(&self.sprites[*potential_id.unwrap()]);
+            Some(&self.sprites[*potential_id.unwrap()])
         }
     }
     pub fn get_sprite_id(&self, name: &str) -> Option<usize>{
@@ -236,9 +254,9 @@ impl SpriteContainer{
     pub fn get_texture_index_by_name(&self, name: &str) -> Option<i32>{
         let potential_id = self.sprite_id_lookup.get(name);
         if potential_id.is_none(){
-            return None;
+            None
         }else{
-            return Some(self.sprites[*potential_id.unwrap()].texture_index);
+            Some(self.sprites[*potential_id.unwrap()].texture_index)
         }
     }
 }

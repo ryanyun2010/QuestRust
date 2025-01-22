@@ -63,11 +63,8 @@ async fn test_terrain_should_block_entities(){
     let player_starting_position_x = world.player.borrow().x;
     let player_starting_position_y = world.player.borrow().y;
     let mut headless = HeadlessGame::new(world, camera);
-    match headless.run(1000).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
+    if let Err(e) = headless.run(1000).await {
+        panic!("{}", e)
     }
 
     assert!(
@@ -143,11 +140,8 @@ async fn test_entities_should_pathfind_around_terrain(){
     let player_starting_position_y = world.player.borrow().y;
 
     let mut headless = HeadlessGame::new(world, camera);
-    match headless.run(1000).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
+    if let Err(e) = headless.run(1000).await {
+        panic!("{}", e)
     }
 
     assert!(

@@ -221,6 +221,12 @@ macro_rules! from_JSON_entity_tag_parsing_under {
     };
 }
 
+impl Default for JSON_parser {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl JSON_parser {
     pub fn new() -> Self {
         Self {
@@ -448,6 +454,12 @@ pub struct ParsedData{
     pub sprites: SpriteContainer,
     pub starting_level_descriptor: starting_level_json,
     pub item_archetypes: HashMap<String, ItemArchetype>,
+}
+
+impl Default for ParsedData {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ParsedData{

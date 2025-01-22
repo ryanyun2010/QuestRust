@@ -18,6 +18,12 @@ pub struct HeadlessState{
     pub right_mouse_button_down: bool,
 }
 
+impl Default for HeadlessState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl HeadlessState{
     pub fn new() -> Self{
         Self{

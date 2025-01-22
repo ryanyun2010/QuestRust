@@ -10,12 +10,9 @@ async fn test_player_movement_right() {
 
     headless.state.keys_down.insert(String::from("d"), true);
     let player_starting_x = headless.world.player.borrow().x;
-     match headless.run(20).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(20).await {
+         panic!("{}", e)
+     }
 
     assert!(
         headless.world.player.borrow().x > player_starting_x,
@@ -31,12 +28,9 @@ async fn test_player_movement_left() {
 
     headless.state.keys_down.insert(String::from("a"), true);
     let player_starting_x = headless.world.player.borrow().x;
-     match headless.run(20).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(20).await {
+         panic!("{}", e)
+     }
 
     assert!(
         headless.world.player.borrow().x < player_starting_x,
@@ -52,12 +46,9 @@ async fn test_player_movement_down() {
 
     headless.state.keys_down.insert(String::from("s"), true);
     let player_starting_y = headless.world.player.borrow().y;
-     match headless.run(20).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(20).await {
+         panic!("{}", e)
+     }
 
     assert!(
         headless.world.player.borrow().y > player_starting_y,
@@ -73,12 +64,9 @@ async fn test_player_movement_up() {
 
     headless.state.keys_down.insert(String::from("w"), true);
     let player_starting_y = headless.world.player.borrow().y;
-     match headless.run(20).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(20).await {
+         panic!("{}", e)
+     }
 
     assert!(
         headless.world.player.borrow().y < player_starting_y,
@@ -96,12 +84,9 @@ async fn test_movement_both_d_and_a() {
     headless.state.keys_down.insert(String::from("a"), true);
     let player_starting_x = headless.world.player.borrow().x;
     let player_starting_y = headless.world.player.borrow().y;
-     match headless.run(20).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(20).await {
+         panic!("{}", e)
+     }
 
     assert!(
         headless.world.player.borrow().x == player_starting_x && headless.world.player.borrow().y == player_starting_y,
@@ -119,12 +104,9 @@ async fn test_movement_both_w_and_s() {
     headless.state.keys_down.insert(String::from("s"), true);
     let player_starting_x = headless.world.player.borrow().x;
     let player_starting_y = headless.world.player.borrow().y;
-     match headless.run(20).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(20).await {
+         panic!("{}", e)
+     }
 
     assert!(
         headless.world.player.borrow().x == player_starting_x && headless.world.player.borrow().y == player_starting_y,
@@ -142,12 +124,9 @@ async fn test_movement_w_and_d() {
     headless.state.keys_down.insert(String::from("d"), true);
     let player_starting_x = headless.world.player.borrow().x;
     let player_starting_y = headless.world.player.borrow().y;
-     match headless.run(20).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(20).await {
+         panic!("{}", e)
+     }
 
     assert!(
         headless.world.player.borrow().x > player_starting_x && headless.world.player.borrow().y < player_starting_y,
@@ -169,12 +148,9 @@ async fn test_movement_w_and_a() {
     headless.state.keys_down.insert(String::from("a"), true);
     let player_starting_x = headless.world.player.borrow().x;
     let player_starting_y = headless.world.player.borrow().y;
-     match headless.run(20).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(20).await {
+         panic!("{}", e)
+     }
 
     assert!(
         headless.world.player.borrow().x < player_starting_x && headless.world.player.borrow().y < player_starting_y,
@@ -196,12 +172,9 @@ async fn test_movement_s_and_d() {
     headless.state.keys_down.insert(String::from("d"), true);
     let player_starting_x = headless.world.player.borrow().x;
     let player_starting_y = headless.world.player.borrow().y;
-     match headless.run(20).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(20).await {
+         panic!("{}", e)
+     }
 
     assert!(
         headless.world.player.borrow().x > player_starting_x && headless.world.player.borrow().y > player_starting_y,
@@ -223,11 +196,8 @@ async fn test_movement_s_and_a() {
     headless.state.keys_down.insert(String::from("a"), true);
     let player_starting_x = headless.world.player.borrow().x;
     let player_starting_y = headless.world.player.borrow().y;
-    match headless.run(20).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
+    if let Err(e) = headless.run(20).await {
+        panic!("{}", e)
     }
 
     assert!(

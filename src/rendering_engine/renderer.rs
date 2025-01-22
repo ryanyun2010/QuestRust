@@ -139,14 +139,14 @@ impl<'a> Renderer<'a> {
                 cache: None,
             });
         Self {
-            window: window,
-            surface: surface,
-            device: device,
-            queue: queue,
-            config: config,
-            size: size,
-            render_pipeline: render_pipeline,
-            diffuse_bind_group: diffuse_bind_group,
+            window,
+            surface,
+            device,
+            queue,
+            config,
+            size,
+            render_pipeline,
+            diffuse_bind_group,
             text_brush_a: brush_a,
             text_brush_b: brush_b,
         }
@@ -154,7 +154,7 @@ impl<'a> Renderer<'a> {
     }
 
     pub fn window(&self) -> &Window {
-        &self.window
+        self.window
     }
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
@@ -171,13 +171,13 @@ impl<'a> Renderer<'a> {
 
     pub fn render(&mut self, render_data: RenderDataFull) -> Result<(), wgpu::SurfaceError> {
         let vertices = &render_data.vertex;
-        if vertices.len() < 1 {
+        if vertices.is_empty() {
             return Ok(());
         }
         let vertex_buffer = self.device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some("Vertex Buffer"),
-                contents: bytemuck::cast_slice(&vertices),
+                contents: bytemuck::cast_slice(vertices),
                 usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             }
         );
@@ -188,7 +188,7 @@ impl<'a> Renderer<'a> {
         let index_buffer = self.device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some("Index Buffer"),
-                contents: bytemuck::cast_slice(&indicies),
+                contents: bytemuck::cast_slice(indicies),
                 usage: wgpu::BufferUsages::INDEX,
             }
         );

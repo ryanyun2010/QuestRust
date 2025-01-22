@@ -32,10 +32,10 @@ impl SpriteSheetSheet{
         }
         for sheet in sheets.iter() {
             sprite_sheets.push(SpriteSheet{
-                texture_id: texture_id,
-                total_width: total_width,
+                texture_id,
+                total_width,
                 width: sheet.width,
-                x_offset: x_offset,
+                x_offset,
                 height: real_height,
                 sprite_width: sheet.sprite_width,
                 sprite_height: sheet.sprite_height,

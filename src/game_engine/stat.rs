@@ -358,7 +358,7 @@ pub fn crit_chance_roll(crit_chance: f32) -> bool {
     if crit_chance >= 500.0 {
         return true;
     }
-    if rand::random::<f32>() <= ((((1000.0/(1.0+std::f32::consts::E.powf(-0.021929*(crit_chance-100.0)))) as f32).floor())/1000.0) {
+    if rand::random::<f32>() <= (((1000.0/(1.0+std::f32::consts::E.powf(-0.021929*(crit_chance-100.0)))).floor())/1000.0) {
         return true;
     }
     false
@@ -391,5 +391,5 @@ pub fn calculate_scaling_damage(multipliers: Vec<f32>, damage: i32, crit_chance:
     if crit_chance_roll(crit_chance) {
         return (total_multipliers*(damage as f32)*(crit_damage as f32+100.0)/100.0).ceil() as i32
     }
-    return (total_multipliers*(damage as f32)).ceil() as i32
+    (total_multipliers*(damage as f32)).ceil() as i32
 }

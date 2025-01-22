@@ -119,7 +119,7 @@ impl World{
     }
     pub fn new_chunk(&self, chunk_x: usize, chunk_y: usize, chunkref: Option<&mut std::cell::RefMut<'_, Vec<Chunk>>>) -> usize{
         if chunkref.is_none(){
-            let new_chunk_id = self.chunks.borrow().len() as usize; 
+            let new_chunk_id = self.chunks.borrow().len(); 
             self.chunks.borrow_mut().push(
                 Chunk{
                     chunk_id: new_chunk_id,
@@ -129,7 +129,7 @@ impl World{
                     entities_ids: Vec::new(),
                 });
             self.chunk_lookup.borrow_mut().insert([chunk_x, chunk_y], new_chunk_id);
-            return new_chunk_id;
+            new_chunk_id
         }else{
             let cr = chunkref.unwrap();
             let new_chunk_id = cr.len(); 
@@ -142,7 +142,7 @@ impl World{
                     entities_ids: Vec::new(),
                 });
             self.chunk_lookup.borrow_mut().insert([chunk_x, chunk_y], new_chunk_id);
-            return new_chunk_id;
+            new_chunk_id
         }
     }
     pub fn remove_terrain(&mut self, element_id: usize){
@@ -175,7 +175,7 @@ impl World{
     }
     pub fn add_terrain(&mut self, x: usize, y: usize) -> usize{
         
-        let new_terrain: Terrain = Terrain{ element_id: self.element_id, x: x, y: y };
+        let new_terrain: Terrain = Terrain{ element_id: self.element_id, x, y };
         
         let chunk_id_potentially: Option<usize> = self.get_chunk_from_chunk_xy(World::coord_to_chunk_coord(new_terrain.x), World::coord_to_chunk_coord(new_terrain.y));
         
@@ -193,7 +193,7 @@ impl World{
     }
     pub fn add_terrain_archetype(&mut self, tags: Vec<TerrainTags>) -> usize{
         self.terrain_archetype_tags_lookup.push(tags);
-        return self.terrain_archetype_tags_lookup.len() - 1;
+        self.terrain_archetype_tags_lookup.len() - 1
     }
     pub fn set_terrain_archetype(&mut self, id: usize, archetype_id: usize){
         self.terrain_archetype_lookup.insert(id, archetype_id);
@@ -244,7 +244,7 @@ impl World{
                 top_most_y = Some(corner.1);
             }
         }
-        return World::get_terrain_tiles(left_most_x.unwrap().floor() as usize, top_most_y.unwrap().floor() as usize, (right_most_x.unwrap() - left_most_x.unwrap()).ceil() as usize, (bot_most_y.unwrap() - top_most_y.unwrap()).ceil() as usize);
+        World::get_terrain_tiles(left_most_x.unwrap().floor() as usize, top_most_y.unwrap().floor() as usize, (right_most_x.unwrap() - left_most_x.unwrap()).ceil() as usize, (bot_most_y.unwrap() - top_most_y.unwrap()).ceil() as usize)
     }
     pub fn generate_collision_cache_and_damage_cache(&mut self){
         let mut collision_cache_ref = self.collision_cache.borrow_mut();
@@ -263,15 +263,15 @@ impl World{
                 for tag in terrain_tags.iter(){
                     match tag{
                         TerrainTags::BlocksMovement => {
-                            let tiles_blocked: Vec<[usize; 2]> = World::get_terrain_tiles(terrain.x, terrain.y, 32, 32);
-                            for tile in tiles_blocked.iter(){
-                                let collision_cache_entry = collision_cache_ref.get_mut(&[tile[0],tile[1]]);
-                                if collision_cache_entry.is_some(){    
-                                    collision_cache_entry.unwrap().push(*terrain_id);
-                                }else{
-                                    collision_cache_ref.insert([tile[0],tile[1]], vec![*terrain_id]);
-                                }
+                        let tiles_blocked: Vec<[usize; 2]> = World::get_terrain_tiles(terrain.x, terrain.y, 32, 32);
+                        for tile in tiles_blocked.iter(){
+                            let collision_cache_entry = collision_cache_ref.get_mut(&[tile[0],tile[1]]);
+                            if collision_cache_entry.is_some(){    
+                                collision_cache_entry.unwrap().push(*terrain_id);
+                            }else{
+                                collision_cache_ref.insert([tile[0],tile[1]], vec![*terrain_id]);
                             }
+                        }
                         }
                         _ => ()
                     }
@@ -323,7 +323,7 @@ impl World{
             let ph = player.collision_box.h;
             let px = player.x + player.collision_box.x_offset;
             let py = player.y + player.collision_box.y_offset;
-            if px.floor() - 1.0 < (x + w as f32) && px.floor() + pw + 1.0 > x as f32 && py.floor() - 1.0 < (y + h as f32) && py.floor() + ph + 1.0 > y{
+            if px.floor() - 1.0 < (x + w as f32) && px.floor() + pw + 1.0 > x && py.floor() - 1.0 < (y + h as f32) && py.floor() + ph + 1.0 > y{
                 return true;
             }
         }
@@ -351,14 +351,14 @@ impl World{
                     let ey = entity_position.y + entity_collision_box.y_offset;
                     let ew = entity_collision_box.w;
                     let eh = entity_collision_box.h;
-                    if ex < (x + w as f32) && ex + ew > x as f32 && ey < (y + h as f32) && ey + eh > y as f32{
+                    if ex < (x + w as f32) && ex + ew > x && ey < (y + h as f32) && ey + eh > y{
                         return true;
                     }
                 }
                 
             }else{
                 let terrain = terrain_potentially.unwrap();
-                if (terrain.x as f32) < (x + w as f32) && terrain.x as f32 + 32.0 > x as f32 && (terrain.y as f32) < (y + h as f32) && (terrain.y as f32 + 32.0) > y{
+                if (terrain.x as f32) < (x + w as f32) && terrain.x as f32 + 32.0 > x && (terrain.y as f32) < (y + h as f32) && (terrain.y as f32 + 32.0) > y{
                     return true;
                 }
             }
@@ -401,7 +401,7 @@ impl World{
                     for tag in entity_tags.iter(){
                         match tag{
                             EntityTags::Damageable(_) => {
-                                damageable = true;
+                            damageable = true;
                             }
                             _ => ()
                         }
@@ -428,32 +428,24 @@ impl World{
         false
     }
     
-    pub fn get_entity_damage_box(&self, id: usize) -> Result<&CollisionBox, anyhow::Error> {
-        let entity_tags_potentially = self.get_entity_tags(id);
-        if entity_tags_potentially.is_none(){
-            return Err(anyhow!("Entity with id {} does not have tags", id));
-        }
-        let entity_tags = entity_tags_potentially.unwrap();
+    pub fn get_entity_damage_box(&self, id: usize) -> Option<&CollisionBox> {
+        let entity_tags = self.get_entity_tags(id)?;
         for tag in entity_tags.iter(){
             match tag{
                 EntityTags::Damageable(dbox) => {
-                    return Ok(dbox);
-                }
-                _ => ()
+                return Some(dbox);
             }
+                _ => ()
         }
-        return Err(anyhow!("Entity with id {} has tags, but does not have a damage box tag", id));
+        }
+        None
     }
     pub fn get_entity_collision_box(&self, id: usize) -> Option<&CollisionBox>{
-        let entity_tags_potentially = self.get_entity_tags(id);
-        if entity_tags_potentially.is_none(){
-            return None;
-        }
-        let entity_tags = entity_tags_potentially.unwrap();
+        let entity_tags = self.get_entity_tags(id)?;
         for tag in entity_tags.iter(){
             match tag{
                 EntityTags::HasCollision(cbox) => {
-                    return Some(cbox);
+                return Some(cbox);
                 }
                 _ => ()
             }
@@ -490,7 +482,7 @@ impl World{
                     let ew = entity_damage_box.w;
                     let eh = entity_damage_box.h;
                     if super::utils::check_collision(&Rectangle {
-                        x: x as f32, y: y as f32, width: w as f32, height: h as f32, rotation: rotation },
+                        x: x as f32, y: y as f32, width: w as f32, height: h as f32, rotation },
                         &Rectangle {
                             x: ex, y: ey, width: ew, height: eh, rotation: 0.0
                         }
@@ -502,7 +494,7 @@ impl World{
             }else{
                 let terrain = terrain_potentially.unwrap();
                 if super::utils::check_collision(&Rectangle {
-                    x: x as f32, y: y as f32, width: w as f32, height: h as f32, rotation: rotation },
+                    x: x as f32, y: y as f32, width: w as f32, height: h as f32, rotation },
                     &Rectangle {
                         x: terrain.x as f32, y: terrain.y as f32, width: 32.0, height: 32.0, rotation: 0.0
                     }
@@ -511,7 +503,7 @@ impl World{
                 }
             }
         }
-        return colliding;
+        colliding
     }
     pub fn get_attacked(&self, player: bool, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, entity: bool) -> Vec<usize>{
         if !player {
@@ -554,12 +546,12 @@ impl World{
                 }
             }
         }
-        return colliding;
+        colliding
     }
     pub fn check_collision_with_player(&self, x: f32, y: f32, w: f32, h: f32, rotation: f32) -> bool{
         let player = self.player.borrow();
-        return utils::check_collision(&Rectangle {
-            x: x, y: y, width: w, height: h, rotation: rotation },
+        utils::check_collision(&Rectangle {
+            x, y, width: w, height: h, rotation },
             &Rectangle {
                 x: player.x + player.collision_box.x_offset,
                 y: player.y + player.collision_box.y_offset,
@@ -567,7 +559,7 @@ impl World{
                 height: player.collision_box.h,
                 rotation: 0.0
             }
-        );
+        )
     }
     pub fn attempt_move_player(&self, player: &mut Player, movement: [f32; 2]){
         
@@ -578,7 +570,7 @@ impl World{
         player.y += movement[1];
     }
     pub fn can_move_player(&self, player: &mut Player, movement: [f32; 2]) -> bool{
-        if self.check_collision(true, None,(player.x.floor() + movement[0] + player.collision_box.x_offset) as f32, (player.y.floor() + movement[1] + player.collision_box.y_offset) as f32, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true){
+        if self.check_collision(true, None,player.x.floor() + movement[0] + player.collision_box.x_offset, player.y.floor() + movement[1] + player.collision_box.y_offset, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true){
             return false;
         }
         true
@@ -662,7 +654,7 @@ impl World{
             let desciptor = self.get_attack_descriptor(attack).expect("Couldn't find entity attack descriptor?");
             if attack.time_charged.floor() as usize >= desciptor.time_to_charge {
                 if self.check_collision_with_player(attack.x, attack.y, desciptor.reach as f32, desciptor.width as f32, attack.rotation * 180.0/PI){
-                    self.player.borrow_mut().health -= desciptor.damage as f32;
+                    self.player.borrow_mut().health -= desciptor.damage;
                 }
                 attacks_to_be_deleted.push(i);
             }
@@ -695,10 +687,10 @@ impl World{
                         let width = attack.stats.width.unwrap_or(0.0);
                         let collisions = self.get_attacked_rotated_rect(true, None, attack.x as usize, attack.y as usize, height.floor() as usize, width.floor() as usize,attack.angle, true);
                         for collision in collisions.iter(){
-                            if self.entity_health_components.get(&collision).is_some(){
-                                let health_component = self.entity_health_components.get(&collision).unwrap().borrow_mut();
-                                let entity_position = self.entity_position_components.get(&collision).unwrap().borrow();
-                                let aggro_potentially = self.entity_aggro_components.get(&collision);
+                            if self.entity_health_components.get(collision).is_some(){
+                                let health_component = self.entity_health_components.get(collision).unwrap().borrow_mut();
+                                let entity_position = self.entity_position_components.get(collision).unwrap().borrow();
+                                let aggro_potentially = self.entity_aggro_components.get(collision);
                                 let mut aggro = None;
                                 if aggro_potentially.is_some(){
                                     aggro = Some(aggro_potentially.unwrap().borrow_mut());
@@ -726,7 +718,7 @@ impl World{
                     let collisions = self.get_attacked(true, None, attack.x as usize - size/2, attack.y as usize - size/2, attack.stats.size.unwrap_or(0.0).floor() as usize, attack.stats.size.unwrap_or(0.0).floor() as usize, true);
                     let mut hit = false;
                     for collision in collisions.iter(){
-                        if self.entity_health_components.get(&collision).is_some(){
+                        if self.entity_health_components.get(collision).is_some(){
                             hit = true;
                             attacks_to_be_deleted.push(i);
                             attack.dealt_damage = true;
@@ -735,12 +727,12 @@ impl World{
                     }
                     if hit {
                         let aoesize = attack.stats.AOE.unwrap_or(0.0) + attack.stats.size.unwrap_or(0.0);
-                        let aoe_collisions = self.get_attacked(true, None, attack.x as usize - (aoesize as f32/2.0) as usize, attack.y as usize - (aoesize as f32/2.0) as usize, aoesize.floor() as usize, aoesize.floor() as usize, true);
+                        let aoe_collisions = self.get_attacked(true, None, attack.x as usize - (aoesize/2.0) as usize, attack.y as usize - (aoesize/2.0) as usize, aoesize.floor() as usize, aoesize.floor() as usize, true);
                         for collision in aoe_collisions.iter(){
-                            if self.entity_health_components.get(&collision).is_some(){
-                                let health_component = self.entity_health_components.get(&collision).unwrap().borrow_mut();
-                                let entity_position = self.entity_position_components.get(&collision).unwrap().borrow();
-                                let aggro_potentially = self.entity_aggro_components.get(&collision);
+                            if self.entity_health_components.get(collision).is_some(){
+                                let health_component = self.entity_health_components.get(collision).unwrap().borrow_mut();
+                                let entity_position = self.entity_position_components.get(collision).unwrap().borrow();
+                                let aggro_potentially = self.entity_aggro_components.get(collision);
                                 let mut aggro = None;
                                 if aggro_potentially.is_some(){
                                     aggro = Some(aggro_potentially.unwrap().borrow_mut());
@@ -787,7 +779,7 @@ impl World{
     }
     
     pub fn remove_entity(&mut self, entity_id: usize){
-        let entity_position = self.entity_position_components.get(&entity_id).expect("All entities should have position components").borrow().clone();
+        let entity_position = *self.entity_position_components.get(&entity_id).expect("All entities should have position components").borrow();
         let chunk_id = self.get_chunk_from_xy(entity_position.x as usize, entity_position.y as usize);
         if chunk_id.is_some(){
             let chunk_id = chunk_id.unwrap();
@@ -886,15 +878,15 @@ impl World{
     }
     pub fn create_item_with_archetype(&self, archetype: String) -> Item {
         let archetype_i = self.get_item_archetype(&archetype).expect(format!("Could not find item archetype: {}", archetype).as_str());
-        let item = Item {
+        
+        Item {
             name: archetype_i.name.clone(),
             attack_sprite: archetype_i.attack_sprite.clone(),
             item_type: archetype_i.item_type.clone(),
             lore: archetype_i.lore.clone(),
             sprite: archetype_i.sprite.clone(),
             stats: archetype_i.stats.get_variation()
-        };
-        item
+        }
     }
     pub fn get_item_archetype(&self, archetype: &String) -> Option<&ItemArchetype>{
         self.item_archetype_lookup.get(archetype)
@@ -904,7 +896,7 @@ impl World{
         let mut i = 0;
         for damage_text in self.damage_text.borrow_mut().iter_mut(){
             camera.get_world_text_mut(damage_text.world_text_id).unwrap().y -= 0.6;
-            camera.get_world_text_mut(damage_text.world_text_id).unwrap().color[3] -= 0.01666666666;
+            camera.get_world_text_mut(damage_text.world_text_id).unwrap().color[3] -= 0.016_666_668;
             damage_text.lifespan += 1.0;
             if damage_text.lifespan > 60.0 {
                 ptry!(camera.remove_world_text(damage_text.world_text_id), "Trying to remove non-existent world text?");

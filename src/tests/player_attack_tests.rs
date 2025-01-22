@@ -47,12 +47,9 @@ pub async fn test_melee_player_attack() {
         headless.world.entity_health_components.get(&0).is_some(),
         "Entity should have a health component prior to player attack"
     );
-     match headless.run(20).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(20).await {
+         panic!("{}", e)
+     }
     assert!(
         headless.world.entity_health_components.get(&0).is_none(),
         "Entity should be killed by player attack"
@@ -106,12 +103,9 @@ pub async fn test_ranged_player_attack() {
         headless.world.entity_health_components.get(&0).is_some(),
         "Entity should have a health component prior to player attack"
     );
-     match headless.run(200).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(200).await {
+         panic!("{}", e)
+     }
     assert!(
         headless.world.entity_health_components.get(&0).is_none(),
         "Entity should be killed by player attack"

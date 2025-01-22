@@ -16,11 +16,8 @@ async fn test_inventory_clicking_blank_slot_in_blank_inventory(){
             i
         );
     }
-    match headless.run(5).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
+    if let Err(e) = headless.run(5).await {
+        panic!("{}", e)
     }
     headless.world.inventory.on_mouse_click(MousePosition{
         x_screen: 579.0,
@@ -28,11 +25,8 @@ async fn test_inventory_clicking_blank_slot_in_blank_inventory(){
         x_world: 579.0 + headless.camera.camera_x,
         y_world: 201.0 + headless.camera.camera_y,
     }, true, false);
-    match headless.run(5).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
+    if let Err(e) = headless.run(5).await {
+        panic!("{}", e)
     }
     headless.world.process_mouse_input(MousePosition {
         x_screen: 521.0,
@@ -40,11 +34,8 @@ async fn test_inventory_clicking_blank_slot_in_blank_inventory(){
         x_world: 521.0 + headless.camera.camera_x,
         y_world: 201.0 + headless.camera.camera_y,
     }, false, false);
-    match headless.run(5).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
+    if let Err(e) = headless.run(5).await {
+        panic!("{}", e)
     }
     headless.world.inventory.on_mouse_click(MousePosition{
         x_screen: 521.0,
@@ -52,11 +43,8 @@ async fn test_inventory_clicking_blank_slot_in_blank_inventory(){
         x_world: 521.0 + headless.camera.camera_x,
         y_world: 201.0 + headless.camera.camera_y,
     }, true, false); 
-    match headless.run(5).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
+    if let Err(e) = headless.run(5).await {
+        panic!("{}", e)
     }
     for i in 0..headless.world.inventory.slots.len(){
         assert!(
@@ -105,11 +93,8 @@ async fn test_inventory_clicking_blank_slot_in_inventory_with_items(){
             );
         }
     }
-    match headless.run(5).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
+    if let Err(e) = headless.run(5).await {
+        panic!("{}", e)
     }
     headless.world.inventory.on_mouse_click(MousePosition{
         x_screen: 579.0,
@@ -117,11 +102,8 @@ async fn test_inventory_clicking_blank_slot_in_inventory_with_items(){
         x_world: 579.0 + headless.camera.camera_x,
         y_world: 201.0 + headless.camera.camera_y,
     }, true, false);
-    match headless.run(5).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
+    if let Err(e) = headless.run(5).await {
+        panic!("{}", e)
     }
     headless.world.process_mouse_input(MousePosition {
         x_screen: 521.0,
@@ -129,11 +111,8 @@ async fn test_inventory_clicking_blank_slot_in_inventory_with_items(){
         x_world: 521.0 + headless.camera.camera_x,
         y_world: 201.0 + headless.camera.camera_y,
     }, false, false);
-    match headless.run(5).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
+    if let Err(e) = headless.run(5).await {
+        panic!("{}", e)
     }
     headless.world.inventory.on_mouse_click(MousePosition{
         x_screen: 521.0,
@@ -141,11 +120,8 @@ async fn test_inventory_clicking_blank_slot_in_inventory_with_items(){
         x_world: 521.0 + headless.camera.camera_x,
         y_world: 201.0 + headless.camera.camera_y,
     }, true, false); 
-    match headless.run(5).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
+    if let Err(e) = headless.run(5).await {
+        panic!("{}", e)
     }
     assert!(
         headless.world.inventory.get_slot(&7).unwrap().item.is_some(),
@@ -207,11 +183,8 @@ async fn test_inventory_item_move(){
             );
         }
     }
-    match headless.run(5).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
+    if let Err(e) = headless.run(5).await {
+        panic!("{}", e)
     }
     headless.world.inventory.on_mouse_click(MousePosition{
         x_screen: 579.0,
@@ -219,11 +192,8 @@ async fn test_inventory_item_move(){
         x_world: 579.0 + headless.camera.camera_x,
         y_world: 201.0 + headless.camera.camera_y,
     }, true, false);
-    match headless.run(5).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
+    if let Err(e) = headless.run(5).await {
+        panic!("{}", e)
     }
     headless.world.process_mouse_input(MousePosition {
         x_screen: 521.0,
@@ -231,11 +201,8 @@ async fn test_inventory_item_move(){
         x_world: 521.0 + headless.camera.camera_x,
         y_world: 201.0 + headless.camera.camera_y,
     }, false, false);
-    match headless.run(5).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
+    if let Err(e) = headless.run(5).await {
+        panic!("{}", e)
     }
     headless.world.inventory.on_mouse_click(MousePosition{
         x_screen: 521.0,
@@ -243,11 +210,8 @@ async fn test_inventory_item_move(){
         x_world: 521.0 + headless.camera.camera_x,
         y_world: 201.0 + headless.camera.camera_y,
     }, true, false); 
-    match headless.run(5).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
+    if let Err(e) = headless.run(5).await {
+        panic!("{}", e)
     }
     assert!(
         headless.world.inventory.get_slot(&5).unwrap().item.is_some(),
@@ -313,60 +277,45 @@ async fn test_inventory_item_swap(){
             );
         }
     }
-     match headless.run(5).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(5).await {
+         panic!("{}", e)
+     }
     headless.world.inventory.on_mouse_click(MousePosition{
         x_screen: 579.0,
         y_screen: 201.0,
         x_world: 579.0 + headless.camera.camera_x,
         y_world: 201.0 + headless.camera.camera_y,
     }, true, false);
-     match headless.run(5).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(5).await {
+         panic!("{}", e)
+     }
     headless.world.process_mouse_input(MousePosition {
         x_screen: 521.0,
         y_screen: 201.0,
         x_world: 521.0 + headless.camera.camera_x,
         y_world: 201.0 + headless.camera.camera_y,
     }, false, false);
-     match headless.run(5).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(5).await {
+         panic!("{}", e)
+     }
     headless.world.inventory.on_mouse_click(MousePosition{
         x_screen: 521.0,
         y_screen: 201.0,
         x_world: 521.0 + headless.camera.camera_x,
         y_world: 201.0 + headless.camera.camera_y,
     }, true, false); 
-     match headless.run(5).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(5).await {
+         panic!("{}", e)
+     }
     headless.world.process_mouse_input(MousePosition {
         x_screen: 579.0,
         y_screen: 201.0,
         x_world: 579.0 + headless.camera.camera_x,
         y_world: 201.0 + headless.camera.camera_y,
     }, false, false);
-     match headless.run(5).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(5).await {
+         panic!("{}", e)
+     }
     headless.world.inventory.on_mouse_click(MousePosition{
         x_screen: 579.0,
         y_screen: 201.0,
@@ -428,35 +377,26 @@ async fn test_close_inventory_with_item_held_basic(){
             );
         }
     }
-     match headless.run(5).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(5).await {
+         panic!("{}", e)
+     }
     headless.world.inventory.on_mouse_click(MousePosition{
         x_screen: 579.0,
         y_screen: 201.0,
         x_world: 579.0 + headless.camera.camera_x,
         y_world: 201.0 + headless.camera.camera_y,
     }, true, false);
-     match headless.run(5).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(5).await {
+         panic!("{}", e)
+     }
     
     match headless.world.inventory.hide_inventory() {
         Ok(_) => {},
         Err(e) => panic!("{}", e)
     }
-     match headless.run(5).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(5).await {
+         panic!("{}", e)
+     }
     assert!(
         headless.world.inventory.get_slot(&6).unwrap().item.is_some(),
         "There should be an item in slot 6"
@@ -514,58 +454,43 @@ async fn test_close_inventory_with_item_held_after_swap(){
             );
         }
     }
-     match headless.run(5).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(5).await {
+         panic!("{}", e)
+     }
     headless.world.inventory.on_mouse_click(MousePosition{
         x_screen: 579.0,
         y_screen: 201.0,
         x_world: 579.0 + headless.camera.camera_x,
         y_world: 201.0 + headless.camera.camera_y,
     }, true, false);
-     match headless.run(5).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(5).await {
+         panic!("{}", e)
+     }
     headless.world.process_mouse_input(MousePosition {
         x_screen: 521.0,
         y_screen: 201.0,
         x_world: 521.0 + headless.camera.camera_x,
         y_world: 201.0 + headless.camera.camera_y,
     }, false, false);
-     match headless.run(5).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(5).await {
+         panic!("{}", e)
+     }
     headless.world.inventory.on_mouse_click(MousePosition{
         x_screen: 521.0,
         y_screen: 201.0,
         x_world: 521.0 + headless.camera.camera_x,
         y_world: 201.0 + headless.camera.camera_y,
     }, true, false); 
-     match headless.run(5).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(5).await {
+         panic!("{}", e)
+     }
     match headless.world.inventory.hide_inventory() {
         Ok(_) => {},
         Err(e) => panic!("{}", e)
     }
-     match headless.run(5).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(5).await {
+         panic!("{}", e)
+     }
     assert!(
         headless.world.inventory.get_slot(&6).unwrap().item.is_some(),
         "There should be an item in slot 6"
@@ -629,58 +554,43 @@ pub async fn test_melee_player_attack_after_inventory_movement() {
     }
     world.inventory.show_inventory();
     let mut headless = HeadlessGame::new(world, camera);
-     match headless.run(5).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(5).await {
+         panic!("{}", e)
+     }
     headless.world.inventory.on_mouse_click(MousePosition{
         x_screen: 579.0,
         y_screen: 201.0,
         x_world: 579.0 + headless.camera.camera_x,
         y_world: 201.0 + headless.camera.camera_y,
     }, true, false);
-     match headless.run(5).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(5).await {
+         panic!("{}", e)
+     }
     headless.world.process_mouse_input(MousePosition {
         x_screen: 521.0,
         y_screen: 381.0,
         x_world: 521.0 + headless.camera.camera_x,
         y_world: 381.0 + headless.camera.camera_y,
     }, false, false);    
-     match headless.run(5).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    } 
+     if let Err(e) = headless.run(5).await {
+         panic!("{}", e)
+     } 
     headless.world.inventory.on_mouse_click(MousePosition{
         x_screen: 521.0,
         y_screen: 381.0,
         x_world: 521.0 + headless.camera.camera_x,
         y_world: 381.0 + headless.camera.camera_y,
     }, true, false);
-     match headless.run(5).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(5).await {
+         panic!("{}", e)
+     }
     match headless.world.inventory.hide_inventory() {
         Ok(_) => {},
         Err(e) => panic!("{}", e)
     }
-     match headless.run(5).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
-    }
+     if let Err(e) = headless.run(5).await {
+         panic!("{}", e)
+     }
     headless.world.on_mouse_click(MousePosition {
             x_screen: 639.0,
             y_screen: 400.0,
@@ -691,11 +601,8 @@ pub async fn test_melee_player_attack_after_inventory_movement() {
         headless.world.entity_health_components.get(&0).is_some(),
         "Entity should have a health component prior to player attack"
     );
-    match headless.run(20).await {
-        Err(e) => {
-            panic!("{}", e)
-        }
-        _ => {}
+    if let Err(e) = headless.run(20).await {
+        panic!("{}", e)
     }
     assert!(
         headless.world.entity_health_components.get(&0).is_none(),
