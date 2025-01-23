@@ -153,11 +153,11 @@ impl<'a> Game<'a> {
         }
         Ok(())
     }
-    pub fn key_input(&mut self, event: winit::event::KeyEvent) {
+    pub fn key_input(&mut self, event: winit::event::KeyEvent) -> Result<(), PError> {
 
         if self.state == GameState::start {
             self.state = GameState::play;
-            return;
+            return Ok(());
         }
 
         let mut key = event.logical_key.to_text();
@@ -178,7 +178,7 @@ impl<'a> Game<'a> {
             _ => {}
         }
         if key.is_none(){
-            return;
+            return Ok(());
         }
         let string_key = key.unwrap().to_string().to_lowercase();
         let press = match event.state {
@@ -187,13 +187,14 @@ impl<'a> Game<'a> {
         };
 
         if press {
-            self.on_key_down(&string_key);
+            ptry!(self.on_key_down(&string_key));
         }
         
         self.input.keys_down.insert(string_key, press);
+        Ok(())
     }
 
-    pub fn on_key_down(&mut self, key: &String){
+    pub fn on_key_down(&mut self, key: &String) -> Result<(), PError>{
         if key == "e" {
             self.state = match self.state {
                 GameState::play => {
@@ -202,7 +203,9 @@ impl<'a> Game<'a> {
                 },
                 GameState::inventory => {
                     match self.world.inventory.hide_inventory() {
-                        Ok(_) => (),
+                        Ok(_) => {
+                            ptry!(self.world.process_inventory_close())
+                        },
                         Err(e) => {
                             println!("Error hiding inventory: {:?}", e);
                         }
@@ -211,13 +214,14 @@ impl<'a> Game<'a> {
                 },
                 _ => self.state,
             };
-            return;
+            return Ok(());
         }
         if self.state == GameState::play {
             self.world.on_key_down(key);
         } else if self.state == GameState::inventory {
             self.world.inventory.on_key_down(key);
         }
+        Ok(())
     }
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {

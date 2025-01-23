@@ -11,6 +11,7 @@
 #![allow(clippy::unnecessary_get_then_check)]
 use std::{env, path::Path, time::Instant};
 pub mod rendering_engine;
+use error::{PError, PE};
 use rendering_engine::{renderer, texture, vertex, window};
 pub mod game_engine;
 use game_engine::{camera, entities, json_parsing::{self, PATH_BUNDLE}, loot, starting_level_generator, stat, ui::UIElementDescriptor, world};
@@ -146,9 +147,9 @@ fn main() {
     //     visible: true
     // });
 
-
     // world.player.borrow_mut().holding_texture_sprite = Some(world.sprites.get_sprite_id("sword").unwrap());
     println!("Time to load: {:?} ms", load_time.elapsed().as_millis());
     pollster::block_on(window::run(world, camera, &parsed_data.sprites_to_load_json));
 
 }
+

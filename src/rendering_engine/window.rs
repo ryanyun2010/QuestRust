@@ -25,7 +25,13 @@ pub async fn run(world: World, camera: Camera, sprites_json_to_load: &[String]) 
         } if window_id == game.window().id() =>{
             match event {
                 WindowEvent::KeyboardInput {  event,.. } => { 
-                    game.key_input(event);
+                    match game.key_input(event) {
+                        Ok(_) => {}
+                        Err(e) => {
+                            print_error!(e);
+                            control_flow.exit();
+                        }
+                    }
                 },
                 WindowEvent::CloseRequested => control_flow.exit(),
                 WindowEvent::Resized(physical_size) => {

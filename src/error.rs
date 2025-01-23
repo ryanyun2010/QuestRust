@@ -461,16 +461,18 @@ macro_rules! error_prolif {
 #[allow(clippy::crate_in_macro_def)]
 macro_rules! error_prolif_allow {
     ($result:expr, $($error_variant:ident)*) => {{
-        match $result {
-            Ok(value) => $result,
-            Err(perror) => {
-                match perror.error {
-                    $(
-                        crate::error::PE::$error_variant(_) => $result,
-                    )*
-                    _ => crate::error_prolif!(perror),
-                }
+        let result = $result;
+        if let Err(perror) = &result {
+            match perror.error {
+                $(
+                    crate::error::PE::$error_variant(_) => {
+                        result
+                    },
+                )*
+                _ => crate::error_prolif!(perror),
             }
+        }else{
+            result
         }
     }} 
 }

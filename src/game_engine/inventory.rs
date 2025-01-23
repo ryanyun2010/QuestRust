@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 use crate::{error::PError, game_engine::item::Item, perror, ptry, rendering_engine::abstractions::{TextSprite, UIEFull}};
 
-use super::{game::MousePosition, ui::UIESprite};
+use super::{game::MousePosition, item, ui::UIESprite};
 
 #[derive(Debug, Clone)]
 pub struct ItemOnMouse{
@@ -19,7 +19,8 @@ pub struct Inventory {
     item_id: usize,
     pub show_inventory: bool,
     item_on_mouse: Option<ItemOnMouse>,
-    mouse_position: MousePosition
+    mouse_position: MousePosition,
+    pub items_waiting_to_be_dropped: Vec<usize>
 }
 #[derive(Debug, Clone)]
 pub struct Slot {
@@ -45,7 +46,7 @@ impl Slot {
             }),
             item_image: None,
             x,
-            y,
+            y
         }
     }
     pub fn get_ui(&self) -> Vec<UIESprite>{
@@ -103,6 +104,7 @@ impl Default for Inventory{
             show_inventory: false,
             item_on_mouse: None,
             mouse_position: MousePosition::default(),
+            items_waiting_to_be_dropped: Vec::new()
         }
     }
 }
@@ -166,6 +168,14 @@ impl Inventory {
             slot.alter_position(20 + i * 58, 652);
         }
         Ok(())
+    }
+    pub fn remove_item(&mut self, id: usize) -> Result<(), PError> { 
+        // DANGEROUS, THIS REMOVES ITEM WITHOUT REMOVING REFS TO IT IN SLOTS, MAKE SURE ITEM ISN'T IN A SLOT BEFORE DOING THIS
+        if self.items.remove(&id).is_some() {
+            Ok(())
+        } else{
+            Err(perror!(NotFound, "attempted to remove item with id {} that doesn't exist", id))
+        }
     }
     pub fn set_hotbar_slot_item(&mut self, slot: usize, item_id: usize) -> Result<(), PError> {
         let slot_potentially = self.hotbar.get(slot).and_then(
@@ -357,7 +367,19 @@ impl Inventory {
         }
     }
     pub fn process_input(&mut self, keys: &HashMap<String, bool>){
-
+        if *keys.get("q").unwrap_or(&false) {
+            let mut items_dropped = Vec::new();
+            for slot in self.slots.iter_mut() {
+                if slot.x < self.mouse_position.x_screen as usize && slot.x + 48 > self.mouse_position.x_screen as usize && slot.y < self.mouse_position.y_screen as usize && slot.y + 48 > self.mouse_position.y_screen as usize {
+                    if let Some(i) = slot.item {
+                        items_dropped.push(i);
+                    }
+                    slot.remove_item();
+                    break;
+                }
+            } 
+            self.items_waiting_to_be_dropped.extend(items_dropped);
+        }
     }
     pub fn process_mouse_input(&mut self, position: MousePosition, left: bool, right: bool){
         self.mouse_position = position;

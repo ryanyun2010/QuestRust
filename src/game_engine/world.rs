@@ -4,7 +4,7 @@ use std::cell::{RefCell, RefMut};
 use std::f32::consts::PI;
 
 use crate::error::PError;
-use crate::{error_prolif_allow, ptry};
+use crate::{error_prolif_allow, ptry, punwrap};
 use crate::rendering_engine::abstractions::SpriteContainer;
 use crate::entities::EntityTags;
 use crate::game_engine::player::Player;
@@ -920,6 +920,22 @@ impl World{
         }
         Ok(())
     }
+    pub fn process_inventory_close(&mut self) -> Result<(), PError> {
+        let iwt = self.inventory.items_waiting_to_be_dropped.clone();
+        for item in iwt.iter(){
+            let i = punwrap!(self.inventory.get_item(item), "Item with id {} waiting to drop does not exist?", item);
+            self.items_on_floor.borrow_mut().push(
+                ItemOnFloor {
+                    x: self.player.borrow().x + 40.0,
+                    y: self.player.borrow().y - 30.0,
+                    item: i.clone()
+                }
+            );
+            ptry!(self.inventory.remove_item(*item), "while closing inventory");
+        }
+        self.inventory.items_waiting_to_be_dropped.clear();
+        Ok(())
+    }
     pub fn update_items_on_ground(&mut self) -> Result<(), PError> {
         let mut items_on_ground = self.items_on_floor.borrow_mut();
         let player = self.player.borrow();
@@ -936,7 +952,9 @@ impl World{
                 item.y += dir_to_player_normalized[1] * speed;
             }
             else if dist_from_player <= 15.0 {
-                let e = error_prolif_allow!(self.inventory.add_to_slot(item.item.clone()), NoSpace);
+                let e = error_prolif_allow!(
+                    self.inventory.add_to_slot(item.item.clone()),
+                    NoSpace);
                 if e.is_err(){
                     continue;
                 }
