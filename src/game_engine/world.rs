@@ -924,10 +924,12 @@ impl World{
         let iwt = self.inventory.items_waiting_to_be_dropped.clone();
         for item in iwt.iter(){
             let i = punwrap!(self.inventory.get_item(item), "Item with id {} waiting to drop does not exist?", item);
+            let rand_direction = [rand::random::<f32>() - 0.5, rand::random::<f32>() - 0.5];
+            let rand_direction_normalized = [rand_direction[0] / f32::sqrt(rand_direction[0].powf(2.0) + rand_direction[1].powf(2.0)), rand_direction[1] / f32::sqrt(rand_direction[0].powf(2.0) + rand_direction[1].powf(2.0))];
             self.items_on_floor.borrow_mut().push(
                 ItemOnFloor {
-                    x: self.player.borrow().x + 40.0,
-                    y: self.player.borrow().y - 30.0,
+                    x: self.player.borrow().x + (rand_direction_normalized[0]) * 50.0,
+                    y: self.player.borrow().y + (rand_direction_normalized[1]) * 50.0,
                     item: i.clone()
                 }
             );
