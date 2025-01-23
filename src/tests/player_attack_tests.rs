@@ -85,7 +85,6 @@ pub async fn test_ranged_player_attack() {
                 lifetime => 400.0,
                 speed => 10.0,
                 size => 30.0,
-                AOE => 30.0
             )
         }
     );

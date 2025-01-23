@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
-use anyhow::anyhow;
 
-use crate::{game_engine::item::Item, rendering_engine::abstractions::{TextSprite, UIEFull}};
+use crate::{error::PError, game_engine::item::Item, perror, ptry, rendering_engine::abstractions::{TextSprite, UIEFull}};
 
 use super::{game::MousePosition, ui::UIESprite};
 
@@ -69,10 +68,10 @@ impl Slot {
             mi.y = self.y as f32;
         }
     }
-    pub fn set_item(&mut self, item: usize, items: &HashMap<usize, Item>) -> Result<(), anyhow::Error>{
+    pub fn set_item(&mut self, item: usize, items: &HashMap<usize, Item>) -> Result<(), PError>{
         let i = items.get(&item);
         if i.is_none() {
-            return Err(anyhow!("couldn't find item with id {}", item))
+            return Err(perror!(NotFound, "no item with id {}", item));
         }
         self.item = Some(item);
         self.item_image = Some(
@@ -168,17 +167,27 @@ impl Inventory {
         }
         Ok(())
     }
-    pub fn set_hotbar_slot_item(&mut self, slot: usize, item_id: usize) -> Result<(), anyhow::Error> {
+    pub fn set_hotbar_slot_item(&mut self, slot: usize, item_id: usize) -> Result<(), PError> {
         let slot_potentially = self.hotbar.get(slot).and_then(
             |x| self.slots.get_mut(*x)
         );
         if slot_potentially.is_some() {
-            slot_potentially.unwrap().set_item(item_id, &self.items)?;
+            ptry!(slot_potentially.unwrap().set_item(item_id, &self.items), "While setting hotbar slot {} to item {}", slot, item_id);
         }
         Ok(())
     }
     pub fn get_slot(&self, slot: &usize) -> Option<&Slot> {
         self.slots.get(*slot)
+    }
+    pub fn add_to_slot(&mut self, item: Item) -> Result<(), PError> {
+        let it = self.add_item(item);
+        for slot in self.slots.iter_mut() {
+            if slot.item.is_none() {
+                ptry!(slot.set_item(it, &self.items));
+                return Ok(());
+            }
+        }
+        Err(perror!(NoSpace, "No space for item"))
     }
     pub fn set_slot_item(&mut self, slot: usize, item_id: usize) -> Result<(), anyhow::Error> {
         let slot_potentially = self.slots.get_mut(slot);

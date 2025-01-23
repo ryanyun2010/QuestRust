@@ -9,7 +9,8 @@ pub enum PE {
     Error(ErrorDescriptor),
     UnwrapFailure(ErrorDescriptor),
     MissingExpectedGlobalSprite(ErrorDescriptor),
-    SurfaceError(wgpu::SurfaceError)
+    SurfaceError(wgpu::SurfaceError),
+    NoSpace(ErrorDescriptor),
 }
 
 
@@ -23,7 +24,8 @@ impl PE {
             PE::Invalid(e) => format!("Invalid Error at {}: {}",e.as_location(), e.as_string()),
             PE::UnwrapFailure(e) => format!("Unwrap Failure at {}: {}",e.as_location(), e.as_string()),
             PE::MissingExpectedGlobalSprite(e) => format!("Missing Expected Global Sprite at {}: {}",e.as_location(), e.as_string()),
-            PE::SurfaceError(e) => format!("Surface Error: {}", e)
+            PE::SurfaceError(e) => format!("Surface Error: {}", e),
+            PE::NoSpace(e) => format!("No Space in Inventory Error at {}: {}", e.as_location(), e.as_string()),
         }
     }
 }

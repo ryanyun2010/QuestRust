@@ -18,3 +18,4 @@ pub mod entity_components;
 pub mod player_attacks;
 pub mod utils;
 pub mod entity_attacks;
+pub mod items_on_floor;

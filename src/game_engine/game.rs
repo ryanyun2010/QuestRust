@@ -141,6 +141,7 @@ impl<'a> Game<'a> {
             self.world.update_entity_attacks();
             self.world.update_player_attacks(&mut self.camera);
             ptry!(self.world.update_damage_text(&mut self.camera));
+            ptry!(self.world.update_items_on_ground());
             self.world.kill_entities_to_be_killed();
             self.input.mouse_position.x_world = self.camera.camera_x + self.input.mouse_position.x_screen;
             self.input.mouse_position.y_world = self.camera.camera_y + self.input.mouse_position.y_screen;

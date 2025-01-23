@@ -33,7 +33,8 @@ pub struct Camera{
     pub text_font_lookup: HashMap<usize, Font>,
     pub text_id: usize,
     pub test: f32,
-    pub temp_uie: Vec<TextSprite>
+    pub temp_uie: Vec<TextSprite>,
+    pub temp_uie2: Vec<TextSprite>
 }
 
 impl Camera{
@@ -54,7 +55,8 @@ impl Camera{
             text_id: 0,
             world_text_id: 0,
             test: 0.0,
-            temp_uie: Vec::new()
+            temp_uie: Vec::new(),
+            temp_uie2: Vec::new()
         }
     }
     pub fn update_ui(&mut self, world: &mut World) -> Result<(), PError>{
@@ -211,6 +213,8 @@ impl Camera{
         }
         render_data.vertex.extend(terrain_data.vertex);
         render_data.index.extend(terrain_data.index);
+
+
         self.test += 1.0;
         let mut entity_attack_draw_data = RenderData::new();
         for attack in world.entity_attacks.borrow().iter() {
@@ -230,6 +234,8 @@ impl Camera{
         render_data.vertex.extend(entity_data.vertex);
         render_data.index.extend(entity_data.index);
 
+
+
         let player_draw_data = world.player.borrow().draw_data(world, self.viewpoint_width, self.viewpoint_height, render_data.vertex.len() as u32, -self.camera_x as i32, -self.camera_y as i32);
     
         render_data.vertex.extend(player_draw_data.vertex);
@@ -238,6 +244,21 @@ impl Camera{
         extra_data.offset(render_data.vertex.len() as u32);    
         render_data.vertex.extend(extra_data.vertex);
         render_data.index.extend(extra_data.index);
+
+        let mut item_on_floor_render_data = RenderData::new();
+        for item_on_floor in world.items_on_floor.borrow().iter() {
+            let sprite_id = punwrap!(world.sprites.get_sprite_id(&item_on_floor.item.sprite), Expected, "Item on floor with refers to a non-existent sprite {}", item_on_floor.item.sprite);
+            let sprite = punwrap!(world.sprites.get_sprite(sprite_id), Expected, "Item on floor with refers to a non-existent sprite {}", item_on_floor.item.sprite);
+            let draw_data = sprite.draw_data(item_on_floor.x, item_on_floor.y, 24, 24, self.viewpoint_width, self.viewpoint_height, item_on_floor_render_data.vertex.len() as u32, -self.camera_x.floor() as i32, -self.camera_y.floor() as i32);
+            let player = world.player.borrow();
+            item_on_floor_render_data.vertex.extend(draw_data.vertex);
+            item_on_floor_render_data.index.extend(draw_data.index);
+        }
+       
+        item_on_floor_render_data.offset(render_data.vertex.len() as u32);
+        render_data.vertex.extend(item_on_floor_render_data.vertex);
+        render_data.index.extend(item_on_floor_render_data.index);
+        
 
        
         let mut melee = false;
@@ -301,7 +322,11 @@ impl Camera{
         }
         let temp_uie_clone = uie.text.clone();
         self.temp_uie = temp_uie_clone; // THIS IS THE JANKIEST THING IVE EVER SEEN BUT ITS THE ONLY WAY IT WORKS FOR SOME REASON
-        (render_data.sections_a_t, render_data.sections_a_b, render_data.sections_b_t, render_data.sections_b_b) = self.get_sections(screen_width, screen_height);
+        let (rat, rab, rbt, rbb) = self.get_sections(screen_width, screen_height);
+        render_data.sections_a_t.extend(rat);
+        render_data.sections_a_b.extend(rab);
+        render_data.sections_b_t.extend(rbt);
+        render_data.sections_b_b.extend(rbb);
         let mut f = Vec::new();
         for text in self.temp_uie.iter() {
             f.push(text.get_section(self, screen_width, screen_height, 0.0, 0.0).clone());

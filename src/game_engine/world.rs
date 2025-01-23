@@ -4,7 +4,7 @@ use std::cell::{RefCell, RefMut};
 use std::f32::consts::PI;
 
 use crate::error::PError;
-use crate::ptry;
+use crate::{error_prolif_allow, ptry};
 use crate::rendering_engine::abstractions::SpriteContainer;
 use crate::entities::EntityTags;
 use crate::game_engine::player::Player;
@@ -17,6 +17,7 @@ use super::entity_components::{self, AggroComponent, CollisionBox, HealthCompone
 use super::game::MousePosition;
 use super::inventory::Inventory;
 use super::item::{Item, ItemArchetype, ItemType};
+use super::items_on_floor::ItemOnFloor;
 use super::player_attacks::PlayerAttack;
 use super::utils::{self, Rectangle};
 
@@ -79,10 +80,30 @@ pub struct World{
     pub entity_attack_descriptor_lookup: HashMap<String, EntityAttackDescriptor>,
 
     pub damage_text: RefCell<Vec<DamageTextDescriptor>>,
+
+    pub items_on_floor: RefCell<Vec<ItemOnFloor>>,
 }
 
 impl World{ 
     pub fn new(player: Player, sprite_container: SpriteContainer) -> Self{
+        let iof = vec![ItemOnFloor {
+            x: 700.0,
+            y: 500.0,
+            item: Item {
+                name: String::from("test1"),
+                attack_sprite: String::from("melee_attack"),
+                item_type: ItemType::MeleeWeapon,
+                width_to_length_ratio: None,
+                lore: String::from("test"),
+                sprite: String::from("sword"),
+                stats: crate::create_stat_list!(
+                    damage => 150.0,
+                    width => 50.0,
+                    reach => 65.0
+                )
+            }
+        }];
+
         Self{
             chunks: RefCell::new(Vec::new()),
             player: RefCell::new(player),
@@ -114,6 +135,7 @@ impl World{
             entity_attacks: RefCell::new(Vec::new()),
             entity_attack_descriptor_lookup: HashMap::new(),
             damage_text: RefCell::new(Vec::new()),
+            items_on_floor: RefCell::new(iof),
         }
     }
     pub fn new_chunk(&self, chunk_x: usize, chunk_y: usize, chunkref: Option<&mut std::cell::RefMut<'_, Vec<Chunk>>>) -> usize{
@@ -732,12 +754,12 @@ impl World{
                         }
                         
                     }else {
-                        // let length = attack.stats.size.unwrap_or(0.0).floor();
-                        // let width = attack.width_to_length_ratio * length;
-                        // let c = self.check_collision_non_damageable(true, None, (attack.x - length/2.0) as usize, (attack.y-width/2.0) as usize, length as usize, width as usize, true);
-                        // if c{
-                        //     attacks_to_be_deleted.push(i);
-                        // }
+                        let length = attack.stats.size.unwrap_or(0.0).floor();
+                        let width = attack.width_to_length_ratio * length;
+                        let c = self.check_collision_non_damageable(true, None, (attack.x - length/2.0) as usize, (attack.y-width/2.0) as usize, length as usize, width as usize, true);
+                        if c{
+                            attacks_to_be_deleted.push(i);
+                        }
                     }
                 }
                 AttackType::Magic => {
@@ -895,6 +917,34 @@ impl World{
         }
         for (offset, dt )in dt_to_remove.iter().enumerate(){
             self.damage_text.borrow_mut().remove(*dt - offset);
+        }
+        Ok(())
+    }
+    pub fn update_items_on_ground(&mut self) -> Result<(), PError> {
+        let mut items_on_ground = self.items_on_floor.borrow_mut();
+        let player = self.player.borrow();
+        let px = player.x + 16.0;
+        let py = player.y + 22.0;
+        let mut to_be_removed = Vec::new();
+        for (i, item) in items_on_ground.iter_mut().enumerate(){
+            let dir_to_player = [px - item.x, py - item.y];
+            let dist_from_player = f32::sqrt(dir_to_player[0].powf(2.0) + dir_to_player[1].powf(2.0));
+            let dir_to_player_normalized = [dir_to_player[0] / dist_from_player, dir_to_player[1] / dist_from_player];
+            if dist_from_player <= 120.0 && dist_from_player > 15.0 {
+                let speed = 2.6/120.0 * (120.0 - dist_from_player) + 0.2;
+                item.x += dir_to_player_normalized[0] * speed;
+                item.y += dir_to_player_normalized[1] * speed;
+            }
+            else if dist_from_player <= 15.0 {
+                let e = error_prolif_allow!(self.inventory.add_to_slot(item.item.clone()), NoSpace);
+                if e.is_err(){
+                    continue;
+                }
+                to_be_removed.push(i);
+            }
+        }
+        for (offset, item) in to_be_removed.iter().enumerate(){
+            items_on_ground.remove(*item - offset);
         }
         Ok(())
     }
