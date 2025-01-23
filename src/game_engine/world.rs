@@ -841,12 +841,17 @@ impl World{
                     mouse_direction_unnormalized[0] / magnitude,
                     mouse_direction_unnormalized[1] / magnitude
                 ];
-                let angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]);
-                self.add_player_attack(
-                    item, 
-                    self.player.borrow().x + 16.0 + mouse_direction_normalized[0] * 25.0,
-                    self.player.borrow().y + 22.0 + mouse_direction_normalized[1] * 25.0,
-                    angle * 180.0/PI);
+                let angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]) - item.stats.shots.unwrap_or(1.0) * PI/16.0;
+                for i in 0..item.stats.shots.unwrap_or(1.0) as usize {
+                    let ang_adjusted = angle + PI/8.0 * i as f32;
+                    println!("angle: {}", angle);
+                    self.add_player_attack(
+                        item, 
+                        self.player.borrow().x + 16.0 + ang_adjusted.cos() * 25.0 + i as f32 * 5.0,
+                        self.player.borrow().y + 22.0 + ang_adjusted.sin() * 25.0,
+                        ang_adjusted * 180.0/PI);
+                }
+                
             }
         }
         // if self.cur_hotbar_slot == 0 {

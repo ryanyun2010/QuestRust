@@ -23,7 +23,8 @@
             "damage": {"average": 6.0, "variation": 2.5},
             "speed": {"average": 10.0, "variation": 2.5},
             "lifetime": {"average": 90.0, "variation": 10.0},
-            "size": {"average": 20.0, "variation": 2.5}
+            "size": {"average": 20.0, "variation": 2.5},
+            "shots": {"average": 1.0, "variation": 0.0}
         }
     },
     {
@@ -40,16 +41,17 @@
     },
     {
         "name": "funny spear",
-        "sprite": "spear",
+        "sprite": "ghost",
         "item_type": "RangedWeapon",
-        "lore": "good spear",
-        "attack_sprite": "spear",
+        "lore": "ghost",
+        "attack_sprite": "ghost",
         "width_to_length_ratio": 0.6,
         "stats": {
-            "damage": {"average": 999999.0, "variation": 0.0},
+            "damage": {"average": 12.0, "variation": 3.0},
             "speed": {"average": 1.4, "variation": 0.0},
             "lifetime": {"average": 999999.0, "variation": 0.0},
-            "size": {"average": 9.0, "variation": 0.0}
+            "size": {"average": 40.0, "variation": 0.0},
+            "shots": {"average": 3.0, "variation": 0.0}
         }
     }
 
