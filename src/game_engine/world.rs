@@ -844,7 +844,7 @@ impl World{
                 if item.stats.shots.unwrap_or(1.0) > 1.0 {
                     let mut spread = f32::min(PI/8.0, PI/item.stats.shots.unwrap_or(1.0));
                     spread /= item.stats.focus.unwrap_or(1.0);
-                    let angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]) - item.stats.shots.unwrap_or(1.0) * spread/2.0;
+                    let angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]) - (item.stats.shots.unwrap_or(1.0) - 1.0) * spread/2.0;
                     for i in 0..item.stats.shots.unwrap_or(1.0) as usize {
                         let ang_adjusted = angle + spread * i as f32;
                         self.add_player_attack(
