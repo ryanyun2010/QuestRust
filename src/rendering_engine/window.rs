@@ -86,7 +86,6 @@ pub async fn run(world: World, camera: Camera, sprites_json_to_load: &[String]) 
                                         }
                                         wgpu::SurfaceError::Timeout => {
                                             print_error!("Surface timeout");
-                                            log::warn!("Surface timeout")
                                         }
                                         _ => {
                                             print_error!(format!("Surface error: {}", se));
