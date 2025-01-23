@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-
+use rustc_hash::FxHashMap;
 
 use crate::{error::PError, game_engine::item::Item, perror, ptry, rendering_engine::abstractions::{TextSprite, UIEFull}};
 
@@ -12,7 +11,7 @@ pub struct ItemOnMouse{
 }
 #[derive(Debug)]
 pub struct Inventory {
-    items: HashMap<usize, Item>,
+    items: FxHashMap<usize, Item>,
     hotbar: Vec<usize>, // slot id of hotbar slots
     cur_hotbar_slot: usize,
     pub slots: Vec<Slot>,
@@ -69,7 +68,7 @@ impl Slot {
             mi.y = self.y as f32;
         }
     }
-    pub fn set_item(&mut self, item: usize, items: &HashMap<usize, Item>) -> Result<(), PError>{
+    pub fn set_item(&mut self, item: usize, items: &FxHashMap<usize, Item>) -> Result<(), PError>{
         let i = items.get(&item);
         if i.is_none() {
             return Err(perror!(NotFound, "no item with id {}", item));
@@ -98,7 +97,7 @@ impl Default for Inventory{
         Self {
             hotbar: Vec::new(),
             cur_hotbar_slot: 0,
-            items: HashMap::new(),
+            items: FxHashMap::default(),
             item_id: 0,
             slots: Vec::new(),
             show_inventory: false,
@@ -366,7 +365,7 @@ impl Inventory {
             }
         }
     }
-    pub fn process_input(&mut self, keys: &HashMap<String, bool>){
+    pub fn process_input(&mut self, keys: &FxHashMap<String, bool>){
         if *keys.get("q").unwrap_or(&false) {
             let mut items_dropped = Vec::new();
             for slot in self.slots.iter_mut() {

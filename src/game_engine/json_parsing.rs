@@ -1,3 +1,4 @@
+use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
 use std::io::{BufReader, BufWriter, Write};
 use std::fs::File;
@@ -185,10 +186,10 @@ pub struct item_archetype_json {
 
 #[derive(Clone)]
 pub struct JSON_parser {
-    pub entity_archetypes_json: HashMap<String, entity_archetype_json>,
-    pub entity_attack_patterns_json: HashMap<String, entity_attack_pattern_json>,
-    pub entity_attacks_json: HashMap<String, entity_attack_descriptor_json>,
-    pub terrain_archetypes_json: HashMap<String, terrain_archetype_json>,
+    pub entity_archetypes_json: FxHashMap<String, entity_archetype_json>,
+    pub entity_attack_patterns_json: FxHashMap<String, entity_attack_pattern_json>,
+    pub entity_attacks_json: FxHashMap<String, entity_attack_descriptor_json>,
+    pub terrain_archetypes_json: FxHashMap<String, terrain_archetype_json>,
     pub sprites_json: sprites_json_descriptor,
     pub starting_level_json: starting_level_json,
     pub item_archetype_json: Vec<item_archetype_json>
@@ -231,10 +232,10 @@ impl Default for JSON_parser {
 impl JSON_parser {
     pub fn new() -> Self {
         Self {
-            entity_archetypes_json: HashMap::new(),
-            entity_attack_patterns_json: HashMap::new(),
-            terrain_archetypes_json: HashMap::new(),
-            entity_attacks_json: HashMap::new(),
+            entity_archetypes_json: FxHashMap::default(),
+            entity_attack_patterns_json: FxHashMap::default(),
+            terrain_archetypes_json: FxHashMap::default(),
+            entity_attacks_json: FxHashMap::default(),
             sprites_json: sprites_json_descriptor {
                 basic_sprites: Vec::new(),
                 spritesheets: Vec::new()
@@ -448,14 +449,14 @@ impl JSON_parser {
 
 #[derive(Debug, Clone)]
 pub struct ParsedData{
-    pub entity_archetypes: HashMap<String, Vec<EntityTags>>,
-    pub entity_attack_patterns: HashMap<String, EntityAttackPattern>,
-    pub entity_attacks: HashMap<String, EntityAttackDescriptor>,
-    pub terrain_archetypes: HashMap<String, terrain_archetype_json>,
+    pub entity_archetypes: FxHashMap<String, Vec<EntityTags>>,
+    pub entity_attack_patterns: FxHashMap<String, EntityAttackPattern>,
+    pub entity_attacks: FxHashMap<String, EntityAttackDescriptor>,
+    pub terrain_archetypes: FxHashMap<String, terrain_archetype_json>,
     pub sprites_to_load_json: Vec<String>,
     pub sprites: SpriteContainer,
     pub starting_level_descriptor: starting_level_json,
-    pub item_archetypes: HashMap<String, ItemArchetype>,
+    pub item_archetypes: FxHashMap<String, ItemArchetype>,
 }
 
 impl Default for ParsedData {
@@ -467,13 +468,13 @@ impl Default for ParsedData {
 impl ParsedData{
     pub fn new() -> Self{
         Self{
-            entity_archetypes: HashMap::new(),
-            entity_attack_patterns: HashMap::new(),
-            entity_attacks: HashMap::new(),
-            terrain_archetypes: HashMap::new(),
+            entity_archetypes: FxHashMap::default(),
+            entity_attack_patterns: FxHashMap::default(),
+            entity_attacks: FxHashMap::default(),
+            terrain_archetypes: FxHashMap::default(),
             sprites_to_load_json: Vec::new(),
             sprites: SpriteContainer::new(),
-            item_archetypes: HashMap::new(),
+            item_archetypes: FxHashMap::default(),
             starting_level_descriptor: starting_level_json {
                 player: player_json {
                     x: 0.0,

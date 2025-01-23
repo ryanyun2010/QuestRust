@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use rustc_hash::FxHashMap;
 
 use winit::{event, keyboard::{Key, NamedKey}};
 
@@ -24,7 +24,7 @@ impl Default for MousePosition{
     }
 }
 pub struct InputState {
-    pub keys_down: HashMap<String, bool>,
+    pub keys_down: FxHashMap<String, bool>,
     pub mouse_position: MousePosition,
     pub mouse_left: bool,
     pub mouse_right: bool,
@@ -54,7 +54,7 @@ impl<'a> Game<'a> {
             renderer,
             state: GameState::start,
             input: InputState {
-                keys_down: HashMap::new(),
+                keys_down: FxHashMap::default(),
                 mouse_position: MousePosition { 
                     x_screen: 0.0,
                     y_screen: 0.0,

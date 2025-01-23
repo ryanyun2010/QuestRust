@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::f32::consts::PI;
 
 use crate::error::PError;
@@ -7,6 +7,7 @@ use crate::world::World;
 use crate::rendering_engine::abstractions::{RenderData, RenderDataFull, TextSprite, UIEFull};
 use crate::game_engine::ui::UIElement;
 use wgpu_text::glyph_brush::{HorizontalAlign, Section as TextSection};
+use rustc_hash::FxHashMap;
 
 use super::entities::AttackType;
 use super::ui::UIESprite;
@@ -22,15 +23,15 @@ pub struct Camera{
     pub viewpoint_height: usize,
     pub camera_x: f32, // top left corner of the camera in world/element coordinates
     pub camera_y: f32,
-    pub ui_element_names: HashMap<String, usize>,
-    pub ui_elements: HashMap<usize, UIElement>,
+    pub ui_element_names: FxHashMap<String, usize>,
+    pub ui_elements: FxHashMap<usize, UIElement>,
     pub ui_element_id: usize,
     pub level_editor: bool,
     pub text: BTreeMap<usize, TextSprite>,
     pub world_text: BTreeMap<usize, TextSprite>,
     pub world_text_id: usize,
-    pub world_text_font_lookup: HashMap<usize, Font>,
-    pub text_font_lookup: HashMap<usize, Font>,
+    pub world_text_font_lookup: FxHashMap<usize, Font>,
+    pub text_font_lookup: FxHashMap<usize, Font>,
     pub text_id: usize,
     pub test: f32,
     pub temp_uie: Vec<TextSprite>,
@@ -44,14 +45,14 @@ impl Camera{
             viewpoint_height,
             camera_x: 20.0,
             camera_y: 40.0,
-            ui_elements: HashMap::new(),
-            ui_element_names: HashMap::new(),
+            ui_elements: FxHashMap::default(),
+            ui_element_names: FxHashMap::default(),
             ui_element_id: 0,
             level_editor: false,
             text: BTreeMap::new(),
             world_text: BTreeMap::new(),
-            world_text_font_lookup: HashMap::new(),
-            text_font_lookup: HashMap::new(),
+            world_text_font_lookup: FxHashMap::default(),
+            text_font_lookup: FxHashMap::default(),
             text_id: 0,
             world_text_id: 0,
             test: 0.0,

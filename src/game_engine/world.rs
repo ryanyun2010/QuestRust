@@ -1,5 +1,6 @@
 use core::f32;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
+use rustc_hash::FxHashMap;
 use std::cell::{RefCell, RefMut};
 use std::f32::consts::PI;
 
@@ -41,15 +42,15 @@ pub struct World{
     pub chunks: RefCell<Vec<Chunk>>,
     pub player: RefCell<Player>,
     pub element_id: usize,
-    pub chunk_lookup: RefCell<HashMap<[usize; 2],usize>>, // corresponds chunk x,y to id
+    pub chunk_lookup: RefCell<FxHashMap<[usize; 2],usize>>, // corresponds chunk x,y to id
 
     pub inventory: Inventory,
-    pub item_archetype_lookup: HashMap<String, ItemArchetype>,
+    pub item_archetype_lookup: FxHashMap<String, ItemArchetype>,
 
-    pub collision_cache: RefCell<HashMap<[usize; 2], Vec<usize>>>,
-    pub damage_cache: RefCell<HashMap<[usize; 2], Vec<usize>>>, 
+    pub collision_cache: RefCell<FxHashMap<[usize; 2], Vec<usize>>>,
+    pub damage_cache: RefCell<FxHashMap<[usize; 2], Vec<usize>>>, 
    
-    pub pathfinding_frames: HashMap<usize, usize>, // entity id to frame of pathfinding
+    pub pathfinding_frames: FxHashMap<usize, usize>, // entity id to frame of pathfinding
     pub next_pathfinding_frame_for_entity: usize,
     pub pathfinding_frame: usize,
     
@@ -57,27 +58,27 @@ pub struct World{
 
     pub loaded_chunks: Vec<usize>, // DANGEROUS: chunk ids that are currently loaded, this is created as a SIDE EFFECT of the camera, and should not be edited in the world
     
-    pub terrain: HashMap<usize, Terrain>, // corresponds element id to Terrain element
+    pub terrain: FxHashMap<usize, Terrain>, // corresponds element id to Terrain element
     pub terrain_archetype_tags_lookup: Vec<Vec<TerrainTags>>,
-    pub terrain_archetype_lookup: HashMap<usize, usize>,
+    pub terrain_archetype_lookup: FxHashMap<usize, usize>,
 
-    pub entity_archetype_tags_lookup: HashMap<String,Vec<EntityTags>>, // corresponds entity_archetype name to the entity's tags
-    pub entity_archetype_lookup: HashMap<usize,String>, // corresponds element_ids to entity_archetype
+    pub entity_archetype_tags_lookup: FxHashMap<String,Vec<EntityTags>>, // corresponds entity_archetype name to the entity's tags
+    pub entity_archetype_lookup: FxHashMap<usize,String>, // corresponds element_ids to entity_archetype
 
-    pub entity_position_components: HashMap<usize, RefCell<entity_components::PositionComponent>>,
-    pub entity_attack_components: HashMap<usize, RefCell<entity_components::EntityAttackComponent>>,
-    pub entity_health_components: HashMap<usize, RefCell<entity_components::HealthComponent>>,
-    pub entity_pathfinding_components: HashMap<usize, RefCell<entity_components::PathfindingComponent>>,
-    pub entity_aggro_components: HashMap<usize, RefCell<entity_components::AggroComponent>>,
+    pub entity_position_components: FxHashMap<usize, RefCell<entity_components::PositionComponent>>,
+    pub entity_attack_components: FxHashMap<usize, RefCell<entity_components::EntityAttackComponent>>,
+    pub entity_health_components: FxHashMap<usize, RefCell<entity_components::HealthComponent>>,
+    pub entity_pathfinding_components: FxHashMap<usize, RefCell<entity_components::PathfindingComponent>>,
+    pub entity_aggro_components: FxHashMap<usize, RefCell<entity_components::AggroComponent>>,
 
     pub sprites: SpriteContainer,
-    pub sprite_lookup: HashMap<usize, usize>, // corresponds element id to sprite id
+    pub sprite_lookup: FxHashMap<usize, usize>, // corresponds element id to sprite id
 
     pub player_attacks: RefCell<Vec<PlayerAttack>>,
     pub entities_to_be_killed_at_end_of_frame: RefCell<Vec<usize>>,
 
     pub entity_attacks: RefCell<Vec<EntityAttackBox>>,
-    pub entity_attack_descriptor_lookup: HashMap<String, EntityAttackDescriptor>,
+    pub entity_attack_descriptor_lookup: FxHashMap<String, EntityAttackDescriptor>,
 
     pub damage_text: RefCell<Vec<DamageTextDescriptor>>,
 
@@ -109,31 +110,31 @@ impl World{
             player: RefCell::new(player),
             element_id: 0, 
             sprites: sprite_container,
-            sprite_lookup: HashMap::new(),
-            chunk_lookup: RefCell::new(HashMap::new()),
-            entity_archetype_lookup: HashMap::new(),
-            entity_archetype_tags_lookup: HashMap::new(),
+            sprite_lookup: FxHashMap::default(),
+            chunk_lookup: RefCell::new(FxHashMap::default()),
+            entity_archetype_lookup: FxHashMap::default(),
+            entity_archetype_tags_lookup: FxHashMap::default(),
             terrain_archetype_tags_lookup: Vec::new(),
-            terrain_archetype_lookup: HashMap::new(),
-            terrain: HashMap::new(),
+            terrain_archetype_lookup: FxHashMap::default(),
+            terrain: FxHashMap::default(),
             inventory: Inventory::default(),
-            item_archetype_lookup: HashMap::new(),
+            item_archetype_lookup: FxHashMap::default(),
             loaded_chunks: Vec::new(),
-            collision_cache: RefCell::new(HashMap::new()),
-            damage_cache: RefCell::new(HashMap::new()),
-            pathfinding_frames: HashMap::new(),
+            collision_cache: RefCell::new(FxHashMap::default()),
+            damage_cache: RefCell::new(FxHashMap::default()),
+            pathfinding_frames: FxHashMap::default(),
             next_pathfinding_frame_for_entity: 0,
             pathfinding_frame: 0,
             level_editor: false,
-            entity_attack_components: HashMap::new(),
-            entity_health_components: HashMap::new(),
-            entity_position_components: HashMap::new(),
-            entity_pathfinding_components: HashMap::new(),
-            entity_aggro_components: HashMap::new(),
+            entity_attack_components: FxHashMap::default(),
+            entity_health_components: FxHashMap::default(),
+            entity_position_components: FxHashMap::default(),
+            entity_pathfinding_components: FxHashMap::default(),
+            entity_aggro_components: FxHashMap::default(),
             player_attacks: RefCell::new(Vec::new()),
             entities_to_be_killed_at_end_of_frame: RefCell::new(Vec::new()),
             entity_attacks: RefCell::new(Vec::new()),
-            entity_attack_descriptor_lookup: HashMap::new(),
+            entity_attack_descriptor_lookup: FxHashMap::default(),
             damage_text: RefCell::new(Vec::new()),
             items_on_floor: RefCell::new(iof),
         }
@@ -598,7 +599,7 @@ impl World{
     pub fn get_sprite(&self, element_id: usize) -> Option<usize>{
         self.sprite_lookup.get(&element_id).copied()
     }
-    pub fn process_player_input(&mut self, keys: &HashMap<String,bool>){
+    pub fn process_player_input(&mut self, keys: &FxHashMap<String,bool>){
         let mut direction: [f32; 2] = [0.0,0.0];
         let mut player: std::cell::RefMut<'_, Player> = self.player.borrow_mut();
         if *keys.get("w").unwrap_or(&false) || *keys.get("arrowup").unwrap_or(&false){
@@ -874,7 +875,7 @@ impl World{
     pub fn process_mouse_input(&mut self, mouse_position: MousePosition, mouse_left: bool, mouse_right: bool){
 
     }
-    pub fn process_input(&mut self, keys: &HashMap<String,bool>, camera: &mut Camera){
+    pub fn process_input(&mut self, keys: &FxHashMap<String,bool>, camera: &mut Camera){
         self.process_player_input(keys);
         let player = self.player.borrow();
         camera.update_camera_position(player.x, player.y);

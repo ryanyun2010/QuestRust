@@ -17,6 +17,7 @@ pub async fn run(world: World, camera: Camera, sprites_json_to_load: &[String]) 
     let mut game = Game::new(world, camera, renderer);
     let mut focused: bool = false;
 
+    let mut rolling_average = Vec::new();
     event_loop.run(move |event, control_flow| match event {
         
         Event::WindowEvent {
@@ -53,6 +54,7 @@ pub async fn run(world: World, camera: Camera, sprites_json_to_load: &[String]) 
                     if focused{
                         game.window().request_redraw();
                     }
+                    let time = std::time::Instant::now();
                     match game.update() {
                         Ok(_) => {}
                         Err(e) => {
@@ -60,6 +62,14 @@ pub async fn run(world: World, camera: Camera, sprites_json_to_load: &[String]) 
                             control_flow.exit();
                         }
                     }
+                    rolling_average.push(time.elapsed().as_nanos());
+                    if rolling_average.len() > 100 {
+                        rolling_average.remove(0);
+                    }
+                    let sum: u128 = rolling_average.iter().sum();
+                    let avg = sum / rolling_average.len() as u128;
+                    println!("Average frame time: {} ms", avg as f64/1_000_000.0);
+
                     match game.render() {
                         Ok(_) => {}
                         Err(e) => {
