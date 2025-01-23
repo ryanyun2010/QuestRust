@@ -1,6 +1,5 @@
 use core::f32;
-use std::collections::HashSet;
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxHashMap, FxHashSet};
 use std::cell::{RefCell, RefMut};
 use std::f32::consts::PI;
 
@@ -475,7 +474,7 @@ impl World{
             unimplemented!("non-player get attacks not implemented");
         }
         let tiles_to_check = World::get_collision_tiles_rotated_rect(x, y, w, h, rotation);
-        let mut ids_to_check = HashSet::new();
+        let mut ids_to_check = FxHashSet::default();
         for tile in tiles_to_check.iter(){
             if self.damage_cache.borrow().get(&[tile[0],tile[1]]).is_none(){
                 continue;
@@ -528,7 +527,7 @@ impl World{
             unimplemented!("non-player get_attack not implemented");
         }
         let tiles_to_check = World::get_terrain_tiles(x, y, w, h);
-        let mut ids_to_check = HashSet::new();
+        let mut ids_to_check = FxHashSet::default();
         for tile in tiles_to_check.iter(){
             if self.damage_cache.borrow().get(&[tile[0],tile[1]]).is_none(){
                 continue;
