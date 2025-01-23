@@ -2,7 +2,6 @@ use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
 use std::io::{BufReader, BufWriter, Write};
 use std::fs::File;
-use std::collections::HashMap;
 use crate::game_engine::entities::{EntityTags, EntityAttackPattern};
 use crate::rendering_engine::abstractions::SpriteContainer;
 

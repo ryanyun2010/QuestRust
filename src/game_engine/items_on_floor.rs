@@ -1,6 +1,5 @@
-use crate::rendering_engine::abstractions::{TextSprite, UIEFull};
 
-use super::{item::Item, ui::UIESprite};
+use super::item::Item;
 
 #[derive(Clone, Debug)]
 pub struct ItemOnFloor {

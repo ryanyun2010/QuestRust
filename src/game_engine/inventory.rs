@@ -2,7 +2,7 @@ use rustc_hash::FxHashMap;
 
 use crate::{error::PError, game_engine::item::Item, perror, ptry, rendering_engine::abstractions::{TextSprite, UIEFull}};
 
-use super::{game::MousePosition, item, ui::UIESprite};
+use super::{game::MousePosition, ui::UIESprite};
 
 #[derive(Debug, Clone)]
 pub struct ItemOnMouse{

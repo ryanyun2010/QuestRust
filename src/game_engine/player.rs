@@ -40,13 +40,14 @@ impl Player {
         let sprite = world.sprites.get_sprite(self.sprite_id).expect("Could not find player sprite?");
         let mut dd = sprite.draw_data(self.x.floor(), self.y.floor(), 38, 52,window_size_width, window_size_height, index_offset, vertex_offset_x, vertex_offset_y);
         if self.holding_texture_sprite.is_none(){
-            return dd;
+            dd
         }else{
             let sprite = world.sprites.get_sprite(self.holding_texture_sprite.unwrap()).expect("Could not find player sprite?");
             let d = sprite.draw_data(self.x.floor() + 16.0, self.y.floor() + 28.0, 24, 24,window_size_width, window_size_height, index_offset + dd.vertex.len() as u32, vertex_offset_x, vertex_offset_y);
             dd.index.extend(d.index);
             dd.vertex.extend(d.vertex);
-            return dd;
+
+            dd
         }
     }
 }

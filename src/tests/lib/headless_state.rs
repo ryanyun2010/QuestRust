@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use rustc_hash::FxHashMap;
 
 use crate::error::PError;
