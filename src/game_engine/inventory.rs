@@ -237,7 +237,7 @@ impl Inventory {
                         for stat in stats.into_iter() {
                             if stat.1.is_some(){
                                 t.push_str(
-                                    format!("{}: {} \n", stat.0, stat.1.unwrap()).as_str()
+                                    format!("{}: {} \n", stat.0, (stat.1.unwrap() * 10.0).round() /10.0).as_str()
                                 );
                             }
                         }

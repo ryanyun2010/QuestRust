@@ -321,7 +321,8 @@ create_stat_lists!(
     speed,
     ability_damage,
     size,
-    shots
+    shots,
+    focus
 );
 
 #[macro_export]
@@ -350,7 +351,7 @@ impl GearStat {
     }
     pub fn get_variation(&self) -> f32 {
         let mut rng = rand::thread_rng();
-        (self.average + self.variation * 2.0 * rng.gen::<f32>() - self.variation).round()
+        self.average + self.variation * 2.0 * rng.gen::<f32>() - self.variation
     }
 }
 

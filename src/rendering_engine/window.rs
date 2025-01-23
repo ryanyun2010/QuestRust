@@ -68,7 +68,7 @@ pub async fn run(world: World, camera: Camera, sprites_json_to_load: &[String]) 
                     }
                     let sum: u128 = rolling_average.iter().sum();
                     let avg = sum / rolling_average.len() as u128;
-                    println!("Average frame time: {} ms", avg as f64/1_000_000.0);
+                    // println!("Average frame time: {} ms", avg as f64/1_000_000.0);
 
                     match game.render() {
                         Ok(_) => {}

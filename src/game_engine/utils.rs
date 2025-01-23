@@ -14,6 +14,7 @@ fn deg_to_rad(degrees: f32) -> f32 {
 }
 
 fn rotate_point(x: f32, y: f32, angle: f32) -> (f32, f32) {
+    let angle = angle % 360.0;
     let angle_rad = deg_to_rad(angle);
     let x_rot = x * angle_rad.cos() - y * angle_rad.sin();
     let y_rot = x * angle_rad.sin() + y * angle_rad.cos();
@@ -30,11 +31,12 @@ pub fn get_rotated_corners(rect: &Rectangle) -> Vec<(f32, f32)> {
         (hw, hh),
         (-hw, hh),
     ];
+    let rotation = rect.rotation % 360.0;
 
     corners
         .into_iter()
         .map(|(x, y)| {
-            let (x_rot, y_rot) = rotate_point(x, y, rect.rotation);
+            let (x_rot, y_rot) = rotate_point(x, y, rotation);
             (x_rot + rect.x, y_rot + rect.y)
         })
         .collect()

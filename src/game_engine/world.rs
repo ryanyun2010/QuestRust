@@ -778,8 +778,8 @@ impl World{
         if entity_health_component.is_some() {
             entity_health_component.unwrap().health -= damage;
         }
-        let text_1 = camera.add_world_text(damage.to_string(), super::camera::Font::B, entity_position_component.x + 11.0, entity_position_component.y + 7.0, 50.0, 50.0, 50.0, [0.0, 0.0, 0.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
-        let text_2 = camera.add_world_text(damage.to_string(), super::camera::Font::B, entity_position_component.x + 9.0, entity_position_component.y + 5.0, 50.0, 50.0, 50.0, [1.0, 1.0, 1.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
+        let text_1 = camera.add_world_text(((damage * 10.0).round() / 10.0).to_string(), super::camera::Font::B, entity_position_component.x + 11.0, entity_position_component.y + 7.0, 50.0, 50.0, 50.0, [0.0, 0.0, 0.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
+        let text_2 = camera.add_world_text(((damage * 10.0).round() / 10.0).to_string(), super::camera::Font::B, entity_position_component.x + 9.0, entity_position_component.y + 5.0, 50.0, 50.0, 50.0, [1.0, 1.0, 1.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
         if entity_aggro_component.is_some() {
             let mut aggro = entity_aggro_component.unwrap();
             if !aggro.aggroed{
@@ -841,15 +841,25 @@ impl World{
                     mouse_direction_unnormalized[0] / magnitude,
                     mouse_direction_unnormalized[1] / magnitude
                 ];
-                let angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]) - item.stats.shots.unwrap_or(1.0) * PI/16.0;
-                for i in 0..item.stats.shots.unwrap_or(1.0) as usize {
-                    let ang_adjusted = angle + PI/8.0 * i as f32;
-                    println!("angle: {}", angle);
+                if item.stats.shots.unwrap_or(1.0) > 1.0 {
+                    let mut spread = f32::min(PI/8.0, PI/item.stats.shots.unwrap_or(1.0));
+                    spread /= item.stats.focus.unwrap_or(1.0);
+                    let angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]) - item.stats.shots.unwrap_or(1.0) * spread/2.0;
+                    for i in 0..item.stats.shots.unwrap_or(1.0) as usize {
+                        let ang_adjusted = angle + spread * i as f32;
+                        self.add_player_attack(
+                            item, 
+                            self.player.borrow().x + 16.0 + ang_adjusted.cos() * 25.0,
+                            self.player.borrow().y + 22.0 + ang_adjusted.sin() * 25.0,
+                            ang_adjusted * 180.0/PI);
+                    }
+                } else {
+                    let angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]);
                     self.add_player_attack(
                         item, 
-                        self.player.borrow().x + 16.0 + ang_adjusted.cos() * 25.0 + i as f32 * 5.0,
-                        self.player.borrow().y + 22.0 + ang_adjusted.sin() * 25.0,
-                        ang_adjusted * 180.0/PI);
+                        self.player.borrow().x + 16.0 + angle.cos() * 25.0,
+                        self.player.borrow().y + 22.0 + angle.sin() * 25.0,
+                        angle * 180.0/PI);
                 }
                 
             }
