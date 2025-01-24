@@ -1,5 +1,6 @@
 use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::io::{BufReader, BufWriter, Write};
 use std::fs::File;
 use crate::game_engine::entities::{EntityTags, EntityAttackPattern};
@@ -9,6 +10,7 @@ use super::entities::AttackType;
 use super::entity_attacks::EntityAttackDescriptor;
 use super::entity_components::CollisionBox;
 use super::item::{ItemArchetype, ItemType};
+use super::loot::{LootTable, LootTableEntry};
 use super::stat::GearStatList;
 
 
@@ -19,7 +21,8 @@ pub struct PathBundle{
     pub terrain_archetypes_path: &'static str,
     pub sprites_path: &'static str,
     pub starting_level_path: &'static str,
-    pub item_archetypes_path: &'static str
+    pub item_archetypes_path: &'static str,
+    pub loot_table_path: &'static str
 }
 
 pub const PATH_BUNDLE: PathBundle = PathBundle{
@@ -29,7 +32,8 @@ pub const PATH_BUNDLE: PathBundle = PathBundle{
     terrain_archetypes_path: "src/game_data/terrain_archetypes.json",
     sprites_path: "src/game_data/sprites.json",
     starting_level_path: "src/game_data/starting_level.json",
-    item_archetypes_path: "src/game_data/items.json"
+    item_archetypes_path: "src/game_data/items.json",
+    loot_table_path: "src/game_data/loot_tables.json"
 };
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -57,7 +61,8 @@ pub struct entity_archetype_json {
     pub range: usize,
     pub aggro_range: usize,
     pub attack_type: String,
-    pub attack_pattern: String
+    pub attack_pattern: String,
+    pub loot_table: Vec<String>
 }
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct entity_attack_pattern_json {
@@ -182,6 +187,16 @@ pub struct item_archetype_json {
 }
 
 
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct item_loot_table_json {
+    pub name: String,
+    pub loot: Vec<loot_table_entry_json> 
+}
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct loot_table_entry_json {
+    pub item: String,
+    pub weight: usize
+}
 
 #[derive(Clone)]
 pub struct JSON_parser {
@@ -191,7 +206,8 @@ pub struct JSON_parser {
     pub terrain_archetypes_json: FxHashMap<String, terrain_archetype_json>,
     pub sprites_json: sprites_json_descriptor,
     pub starting_level_json: starting_level_json,
-    pub item_archetype_json: Vec<item_archetype_json>
+    pub item_archetype_json: Vec<item_archetype_json>,
+    pub loot_table_json: Vec<item_loot_table_json>
 }
 
 #[macro_export]
@@ -252,6 +268,7 @@ impl JSON_parser {
                 entities: Vec::new(),
                 terrain: Vec::new()
             },
+            loot_table_json: Vec::new(),
         }
     }
 
@@ -306,6 +323,13 @@ impl JSON_parser {
         let data: Vec<item_archetype_json> = serde_json::from_reader(reader).expect("JSON was not well-formatted");
         self.item_archetype_json = data;
     }
+
+    pub fn parse_loot_tables(&mut self, path: &str) {
+        let file = File::open(path).expect("Could not open file");
+        let reader = BufReader::new(file);
+        let data: Vec<item_loot_table_json> = serde_json::from_reader(reader).expect("JSON was not well-formatted");
+        self.loot_table_json = data;
+    }
     
     pub fn convert(&self) -> ParsedData {
         // Convert the JSON data into the game's data structures
@@ -334,8 +358,26 @@ impl JSON_parser {
             data.entity_attack_patterns.insert(name.clone(), EntityAttackPattern::new(entity_attack_pattern.attacks.clone(), entity_attack_pattern.cooldowns.clone()));
         }
 
+
+        let mut ltid_lookup: HashMap<String, usize>  = HashMap::new();
+        let mut tables= Vec::new();
+        for loot_table in self.loot_table_json.iter() {
+            let mut entries = Vec::new();
+            for entry in loot_table.loot.iter() {
+                entries.push(
+                    LootTableEntry{
+                        item: entry.item.clone(), 
+                        weight: entry.weight
+                    });
+            }
+            ltid_lookup.insert(loot_table.name.clone(), tables.len());
+            tables.push(LootTable::new(entries));
+        }
+
+        data.loot_table_lookup = tables;
+
         for (.., entity_archetype) in &self.entity_archetypes_json {
-            let tags = self.convert_archetype(entity_archetype, &data);
+            let tags = self.convert_archetype(entity_archetype, &data, &ltid_lookup);
             data.entity_archetypes.insert(entity_archetype.name.clone(), tags);
             
         }
@@ -360,8 +402,16 @@ impl JSON_parser {
 
         data
     }
-    pub fn convert_archetype(&self, entity_archetype: &entity_archetype_json, data: &ParsedData) -> Vec<EntityTags> {
+    pub fn convert_archetype(&self, entity_archetype: &entity_archetype_json, data: &ParsedData, ltid: &HashMap<String,usize>) -> Vec<EntityTags> {
         let mut tags = Vec::new();
+
+        let mut tables = Vec::new();
+        for table in entity_archetype.loot_table.iter() {
+            tables.push(*ltid.get(table).expect(&format!("When parsing entity archetypes, loot table: {} in archetype: {} was not found", table, entity_archetype.name)));
+        }
+        if !tables.is_empty() {
+            tags.push(EntityTags::Drops(tables));
+        }
         from_JSON_entity_tag_parsing_basic!(tags, &entity_archetype.basic_tags);
         if entity_archetype.collision_box.is_some() {
             tags.push(EntityTags::HasCollision(entity_archetype.collision_box.unwrap()));
@@ -427,6 +477,7 @@ impl JSON_parser {
         self.parse_sprites(paths.sprites_path);
         self.parse_starting_level(paths.starting_level_path);
         self.parse_item_archetypes(paths.item_archetypes_path);
+        self.parse_loot_tables(paths.loot_table_path);
         self.convert()
     }
 
@@ -456,6 +507,7 @@ pub struct ParsedData{
     pub sprites: SpriteContainer,
     pub starting_level_descriptor: starting_level_json,
     pub item_archetypes: FxHashMap<String, ItemArchetype>,
+    pub loot_table_lookup: Vec<LootTable>,
 }
 
 impl Default for ParsedData {
@@ -485,7 +537,8 @@ impl ParsedData{
                 },
                 entities: Vec::new(),
                 terrain: Vec::new()
-            }
+            },
+            loot_table_lookup: Vec::new()
         }
     }
     pub fn get_entity_archetype(&self, name: &str) -> Option<&Vec<EntityTags>> {

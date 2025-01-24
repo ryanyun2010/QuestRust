@@ -1,83 +1,34 @@
-// i think realistically
-// it should be LootTable contains a vector of loot table entrys
-// each entry has an Item + a Rarity just as a number between 0 and 1
-// Then the loot table goes through each entry and checks if you got it
-// LootTableRarity seems overengineered
-// No.
-
-
-
-use crate::game_engine::item::Item;
-#[derive(Clone, Debug)]
-pub struct Loot {
-    tables: Vec<LootTable>,
-}
-impl Loot{
-    pub fn new(tables: Vec<LootTable>) -> Self {
-        Self {
-            tables,
-        }
-    }
-}
-
+use rand::Rng;
 #[derive(Clone, Debug)]
 pub struct LootTable {
     entries: Vec<LootTableEntry>,
-    total_weight: usize,
-    rarity: Rarity
 }
-
-impl LootTable {
-    pub fn new(&mut self, entries: Vec<LootTableEntry>, rarity: Rarity) -> Self {
-        let mut total_weight: usize = 0;
-        for entry in 0..self.entries.len()-1 {
-            total_weight += self.entries[entry].weight;
-            self.entries[entry].initialize_range(total_weight);
-        }
-        Self {
-            entries,
-            total_weight,
-            rarity
-        }
+impl LootTable{
+    pub fn new(entries: Vec<LootTableEntry>) -> Self{
+        Self{entries}
     }
-    pub fn roll(&self) -> Option<Item> {
-        let rand: f32 = rand::random();
-        let roll: usize = (rand*(self.total_weight as f32)).floor() as usize;
-        for entry in 0..self.entries.len()-1 {
-            if roll <= self.entries[entry].weight_range {
-                return self.entries[entry].item.clone()
+    pub fn roll(&self) -> Vec<String> { // returns item archetypes
+        let mut total_weight = 0;
+        for entry in &self.entries {
+            total_weight += entry.weight;
+        }
+        let mut rng = rand::thread_rng();
+        let num = rng.gen_range(0..total_weight);
+        let mut current_weight = 0;
+        for entry in &self.entries {
+            current_weight += entry.weight;
+            if num < current_weight {
+                return vec![entry.item.clone()];
             }
         }
-        None
+        vec![]
     }
 }
 
-#[derive(Clone, Debug)]
-pub enum Rarity {
-    Common,
-    Rare,
-    Epic,
-    Mythical,
-    Legendary,
-    SUPREME
-}
+
 
 #[derive(Clone, Debug)]
 pub struct LootTableEntry {
-    item: Option<Item>,
-    weight: usize,
-    weight_range: usize
-}
-
-impl LootTableEntry {
-    pub fn new(item: Option<Item>, weight: usize) -> Self {
-        Self {
-            item,
-            weight,
-            weight_range: 0,
-        }
-    }
-    pub fn initialize_range(&mut self, weight_range: usize) {
-        self.weight_range = weight_range;
-    }
+    pub item: String,
+    pub weight: usize,
 }

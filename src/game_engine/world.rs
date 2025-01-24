@@ -18,6 +18,7 @@ use super::game::MousePosition;
 use super::inventory::Inventory;
 use super::item::{Item, ItemArchetype, ItemType};
 use super::items_on_floor::ItemOnFloor;
+use super::loot::LootTable;
 use super::player_attacks::PlayerAttack;
 use super::utils::{self, Rectangle};
 
@@ -82,6 +83,9 @@ pub struct World{
     pub damage_text: RefCell<Vec<DamageTextDescriptor>>,
 
     pub items_on_floor: RefCell<Vec<ItemOnFloor>>,
+
+    pub entity_loot_lookup: FxHashMap<usize, Vec<usize>>, // entity id to loot table ids
+    pub loot_table_lookup: Vec<LootTable>, // loot table id to loot table object
 }
 
 impl World{ 
@@ -136,6 +140,8 @@ impl World{
             entity_attack_descriptor_lookup: FxHashMap::default(),
             damage_text: RefCell::new(Vec::new()),
             items_on_floor: RefCell::new(iof),
+            entity_loot_lookup: FxHashMap::default(),
+            loot_table_lookup: Vec::new(),
         }
     }
     pub fn new_chunk(&self, chunk_x: usize, chunk_y: usize, chunkref: Option<&mut std::cell::RefMut<'_, Vec<Chunk>>>) -> usize{
@@ -812,6 +818,25 @@ impl World{
     pub fn kill_entities_to_be_killed(&mut self){
         let entities = self.entities_to_be_killed_at_end_of_frame.borrow().clone();
         for entity in entities{
+            if let Some(tags) = self.get_entity_tags(entity) {
+                let entity_position = self.entity_position_components.get(&entity).expect("All entities should have position components").borrow();
+                for tag in tags.iter(){
+                    if let EntityTags::Drops(ref tables) = tag {
+                        for table in tables.iter() {
+                            let table = self.loot_table_lookup.get(*table).expect(format!("Could not find loot table: {}", table).as_str());
+                            let items = table.roll();
+                            for item in items.iter() {
+                                let it = self.create_item_with_archetype(item.clone());
+                                self.items_on_floor.borrow_mut().push(ItemOnFloor{
+                                    item: it,
+                                    x: entity_position.x,
+                                    y: entity_position.y,
+                                });
+                            }
+                        }
+                    }
+                }
+            }
             self.remove_entity(entity);
         }
         self.entities_to_be_killed_at_end_of_frame.borrow_mut().clear();

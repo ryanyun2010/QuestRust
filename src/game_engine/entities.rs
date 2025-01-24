@@ -1,5 +1,4 @@
 use crate::error::PError;
-use crate::loot::Loot;
 use crate::{perror, ptry, punwrap};
 use std::cell::{RefCell, RefMut};
 use super::entity_attacks::EntityAttackBox;
@@ -435,7 +434,7 @@ pub enum EntityTags {
     AttackType(AttackType),
     Attacks(EntityAttackPattern),
     MovementSpeed(f32),
-    Drops(Loot),
+    Drops(Vec<usize>), // loot table ids
     BaseHealth(usize),
     Damageable(CollisionBox)
 }

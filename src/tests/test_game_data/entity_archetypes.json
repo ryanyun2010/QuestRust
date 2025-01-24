@@ -20,6 +20,7 @@
         "range": 47,
         "aggro_range": 1000,
         "attack_type": "Melee",
-        "attack_pattern": "ghost_attack_pattern"
+        "attack_pattern": "ghost_attack_pattern",
+        "loot_table": []
     }
 ]

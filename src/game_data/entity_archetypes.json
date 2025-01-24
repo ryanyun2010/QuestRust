@@ -20,7 +20,8 @@
         "range": 70,
         "aggro_range": 300,
         "attack_type": "Melee",
-        "attack_pattern": "ghost_attack_pattern"
+        "attack_pattern": "ghost_attack_pattern",
+        "loot_table": []
     },
     {
         "name": "wizard",
@@ -43,6 +44,7 @@
         "range": 190,
         "aggro_range": 400,
         "attack_type": "Ranged",
-        "attack_pattern": "wizard_attack_pattern"
+        "attack_pattern": "wizard_attack_pattern",
+        "loot_table": ["ghost_loot_table"]
     }
 ]

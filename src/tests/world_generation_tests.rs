@@ -9,6 +9,7 @@ pub const TEST_PATH_BUNDLE: PathBundle = PathBundle{
     starting_level_path: "src/tests/test_game_data/starting_level.json",
     terrain_archetypes_path: "src/tests/test_game_data/terrain_archetypes.json",
     item_archetypes_path: "src/tests/test_game_data/items.json",
+    loot_table_path: "src/tests/test_game_data/loot_tables.json",
 };
 
 

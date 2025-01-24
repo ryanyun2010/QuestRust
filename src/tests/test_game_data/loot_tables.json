@@ -1,0 +1,15 @@
+[
+    {
+        "name": "ghost_loot_table",
+        "loot": [
+            {
+                "weight": 1,
+                "item": "funny spear"
+            },
+            {
+                "weight": 10,
+                "item": "test_sword"
+            }
+        ]
+    }
+]
