@@ -130,6 +130,16 @@ impl Inventory {
         self.add_slot(Slot::new(636, 200));
         self.add_slot(Slot::new(694, 200));
         self.add_slot(Slot::new(752, 200));
+        self.add_slot(Slot::new(520, 258));
+        self.add_slot(Slot::new(578, 258));
+        self.add_slot(Slot::new(636, 258));
+        self.add_slot(Slot::new(694, 258));
+        self.add_slot(Slot::new(752, 258));
+        self.add_slot(Slot::new(520, 316));
+        self.add_slot(Slot::new(578, 316));
+        self.add_slot(Slot::new(636, 316));
+        self.add_slot(Slot::new(694, 316));
+        self.add_slot(Slot::new(752, 316));
     }
     pub fn add_hotbar_slot(&mut self, slot: Slot) {
         self.hotbar.push(self.slots.len());
@@ -152,7 +162,7 @@ impl Inventory {
         self.show_inventory = true;
         for i in 0..self.hotbar.len(){
             let slot = self.get_hotbar_slot_mut(i).unwrap();
-            slot.alter_position(520 + i * 58, 380);
+            slot.alter_position(520 + i * 58, 374);
         }
     }
     pub fn hide_inventory(&mut self) -> Result<(), anyhow::Error>{
