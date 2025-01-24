@@ -10,7 +10,6 @@ use wgpu_text::glyph_brush::{HorizontalAlign, Section as TextSection};
 use rustc_hash::FxHashMap;
 
 use super::entities::AttackType;
-use super::item::{self, Item};
 use super::ui::UIESprite;
 
 #[derive(Debug, Clone)]
