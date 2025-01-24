@@ -29,13 +29,13 @@ pub struct Camera{
     pub level_editor: bool,
     pub text: BTreeMap<usize, TextSprite>,
     pub world_text: BTreeMap<usize, TextSprite>,
-    pub world_text_id: usize,
+    world_text_id: usize,
     pub world_text_font_lookup: FxHashMap<usize, Font>,
     pub text_font_lookup: FxHashMap<usize, Font>,
-    pub text_id: usize,
-    pub test: f32,
-    pub temp_uie: Vec<TextSprite>,
-    pub temp_uie2: Vec<TextSprite>
+    text_id: usize,
+    test: f32,
+    temp_uie: Vec<TextSprite>,
+    temp_uie2: Vec<TextSprite>
 }
 
 impl Camera{
