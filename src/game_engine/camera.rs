@@ -275,9 +275,8 @@ impl Camera{
         render_data.index.extend(item_on_floor_render_data.index);
         
         for text in self.temp_uie2.iter() {
-            println!("text: {:?}", text);
             let dd = text.get_section(self, screen_width, screen_height, -self.camera_x, -self.camera_y);
-            render_data.sections_a_t.push(dd);
+            render_data.sections_a_b.push(dd);
         }
 
        
