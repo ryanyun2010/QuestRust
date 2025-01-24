@@ -28,6 +28,7 @@ pub async fn basic_world() -> world::World {
     sprites.sprite_id_lookup.insert(String::from("inventory_background"), 0);
     sprites.sprite_id_lookup.insert(String::from("health_bar_back"), 0);
     sprites.sprite_id_lookup.insert(String::from("health"), 0);
+    sprites.sprite_id_lookup.insert(String::from("level_editor_menu_background"), 0);
     let mut world = world::World::new(player::Player::new(596.0, 400.0, 10.0, 10, 1.0, 0),sprites);
     world.inventory.add_item(Item {
         name: String::from("test1"),
