@@ -11,10 +11,6 @@
                 "item": "test_spear"
             },
             {
-                "weight": 3000,
-                "item": "god_sword"
-            },
-            {
                 "weight": 6
             }
         ]
@@ -27,7 +23,7 @@
                 "item": "test_sword"
             },
             {
-                "weight": 3000,
+                "weight": 1,
                 "item": "god_sword"
             },
             {
