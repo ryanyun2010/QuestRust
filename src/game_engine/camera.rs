@@ -273,7 +273,6 @@ impl Camera{
         item_on_floor_render_data.offset(render_data.vertex.len() as u32);
         render_data.vertex.extend(item_on_floor_render_data.vertex);
         render_data.index.extend(item_on_floor_render_data.index);
-        
         for text in self.temp_uie2.iter() {
             let dd = text.get_section(self, screen_width, screen_height, -self.camera_x, -self.camera_y);
             render_data.sections_a_b.push(dd);
@@ -341,6 +340,7 @@ impl Camera{
         }
         let temp_uie_clone = uie.text.clone();
         self.temp_uie = temp_uie_clone; // THIS IS THE JANKIEST THING IVE EVER SEEN BUT ITS THE ONLY WAY IT WORKS FOR SOME REASON
+        
         let (rat, rab, rbt, rbb) = self.get_sections(screen_width, screen_height);
         render_data.sections_a_t.extend(rat);
         render_data.sections_a_b.extend(rab);

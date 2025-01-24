@@ -230,8 +230,10 @@ impl<'a> Game<'a> {
             self.renderer.config.width = new_size.width;
             self.renderer.config.height = new_size.height;
             self.renderer.surface.configure(&self.renderer.device, &self.renderer.config);
-            self.renderer.text_brush_a.resize_view(self.renderer.config.width as f32, self.renderer.config.height as f32, &self.renderer.queue);
-            self.renderer.text_brush_b.resize_view(self.renderer.config.width as f32, self.renderer.config.height as f32, &self.renderer.queue);
+            self.renderer.text_brush_a_b.resize_view(self.renderer.config.width as f32, self.renderer.config.height as f32, &self.renderer.queue);
+            self.renderer.text_brush_b_b.resize_view(self.renderer.config.width as f32, self.renderer.config.height as f32, &self.renderer.queue);
+            self.renderer.text_brush_a_t.resize_view(self.renderer.config.width as f32, self.renderer.config.height as f32, &self.renderer.queue);
+            self.renderer.text_brush_b_t.resize_view(self.renderer.config.width as f32, self.renderer.config.height as f32, &self.renderer.queue);
         }
     }
 

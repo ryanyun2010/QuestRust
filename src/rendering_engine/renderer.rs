@@ -26,8 +26,10 @@ pub struct Renderer<'a> {
     pub size: winit::dpi::PhysicalSize<u32>,
     pub render_pipeline: wgpu::RenderPipeline,
     pub diffuse_bind_group: wgpu::BindGroup,
-    pub text_brush_a: TextBrush<FontRef<'a>>,
-    pub text_brush_b: TextBrush<FontRef<'a>>,
+    pub text_brush_a_b: TextBrush<FontRef<'a>>,
+    pub text_brush_b_b: TextBrush<FontRef<'a>>,
+    pub text_brush_a_t: TextBrush<FontRef<'a>>,
+    pub text_brush_b_t: TextBrush<FontRef<'a>>,
     window: &'a Window,
 }
 
@@ -91,6 +93,11 @@ impl<'a> Renderer<'a> {
         let bytes_b = include_bytes!("./img/fontb.ttf");
         let brush_b: TextBrush<FontRef<'_>> = BrushBuilder::using_font_bytes(bytes_b).unwrap().build(&device, config.width, config.height, config.format);
 
+        let bytes_a_2 = include_bytes!("./img/font.ttf");
+        let brush_a_2: TextBrush<FontRef<'_>> = BrushBuilder::using_font_bytes(bytes_a_2).unwrap().build(&device, config.width, config.height, config.format);
+        let bytes_b_2 = include_bytes!("./img/fontb.ttf");
+        let brush_b_2: TextBrush<FontRef<'_>> = BrushBuilder::using_font_bytes(bytes_b_2).unwrap().build(&device, config.width, config.height, config.format);
+
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
@@ -147,8 +154,10 @@ impl<'a> Renderer<'a> {
             size,
             render_pipeline,
             diffuse_bind_group,
-            text_brush_a: brush_a,
-            text_brush_b: brush_b,
+            text_brush_a_b: brush_a,
+            text_brush_b_b: brush_b,
+            text_brush_a_t: brush_a_2,
+            text_brush_b_t: brush_b_2,
         }
  
     }
@@ -163,8 +172,10 @@ impl<'a> Renderer<'a> {
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
-            self.text_brush_a.resize_view(self.config.width as f32, self.config.height as f32, &self.queue);
-            self.text_brush_b.resize_view(self.config.width as f32, self.config.height as f32, &self.queue);
+            self.text_brush_a_b.resize_view(self.config.width as f32, self.config.height as f32, &self.queue);
+            self.text_brush_b_b.resize_view(self.config.width as f32, self.config.height as f32, &self.queue);
+            self.text_brush_a_t.resize_view(self.config.width as f32, self.config.height as f32, &self.queue);
+            self.text_brush_b_t.resize_view(self.config.width as f32, self.config.height as f32, &self.queue);
         }
     }
 
@@ -203,8 +214,8 @@ impl<'a> Renderer<'a> {
         {
             let sections_a = render_data.sections_a_b.clone();
             let sections_b = render_data.sections_b_b.clone();
-            self.text_brush_a.queue(&self.device, &self.queue, sections_a).unwrap();
-            self.text_brush_b.queue(&self.device, &self.queue, sections_b).unwrap();
+            self.text_brush_a_b.queue(&self.device, &self.queue, sections_a).unwrap();
+            self.text_brush_b_b.queue(&self.device, &self.queue, sections_b).unwrap();
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -225,15 +236,15 @@ impl<'a> Renderer<'a> {
             render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
             render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint32);
             render_pass.draw_indexed(0..render_data.index_behind_text,0, 0..1);
-            self.text_brush_a.draw(&mut render_pass);
-            self.text_brush_b.draw(&mut render_pass);
+            self.text_brush_a_b.draw(&mut render_pass);
+            self.text_brush_b_b.draw(&mut render_pass);
         }
 
         {
             let sections_a = render_data.sections_a_t.clone();
             let sections_b = render_data.sections_b_t.clone();
-            self.text_brush_a.queue(&self.device, &self.queue, sections_a).unwrap();
-            self.text_brush_b.queue(&self.device, &self.queue, sections_b).unwrap();
+            self.text_brush_a_t.queue(&self.device, &self.queue, sections_a).unwrap();
+            self.text_brush_b_t.queue(&self.device, &self.queue, sections_b).unwrap();
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -254,8 +265,8 @@ impl<'a> Renderer<'a> {
             render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
             render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint32);
             render_pass.draw_indexed(render_data.index_behind_text..num_indicies,0, 0..1);
-            self.text_brush_a.draw(&mut render_pass);
-            self.text_brush_b.draw(&mut render_pass);
+            self.text_brush_a_t.draw(&mut render_pass);
+            self.text_brush_b_t.draw(&mut render_pass);
         }
         self.queue.submit(std::iter::once(encoder.finish()));
     
