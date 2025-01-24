@@ -815,23 +815,25 @@ impl World{
     pub fn kill_entity(&self, entity_id: usize){
         self.entities_to_be_killed_at_end_of_frame.borrow_mut().push(entity_id);
     }
-    pub fn kill_entities_to_be_killed(&mut self){
+    pub fn kill_entities_to_be_killed(&mut self) -> Result<(), PError>{
         let entities = self.entities_to_be_killed_at_end_of_frame.borrow().clone();
         for entity in entities{
             if let Some(tags) = self.get_entity_tags(entity) {
-                let entity_position = self.entity_position_components.get(&entity).expect("All entities should have position components").borrow();
-                for tag in tags.iter(){
-                    if let EntityTags::Drops(ref tables) = tag {
-                        for table in tables.iter() {
-                            let table = self.loot_table_lookup.get(*table).expect(format!("Could not find loot table: {}", table).as_str());
-                            let items = table.roll();
-                            for item in items.iter() {
-                                let it = self.create_item_with_archetype(item.clone());
-                                self.items_on_floor.borrow_mut().push(ItemOnFloor{
-                                    item: it,
-                                    x: entity_position.x,
-                                    y: entity_position.y,
-                                });
+                if let Some(entity_position) = self.entity_position_components.get(&entity) {
+                    let entity_position = entity_position.borrow();
+                    for tag in tags.iter(){
+                        if let EntityTags::Drops(ref tables) = tag {
+                            for table in tables.iter() {
+                                let table = punwrap!(self.loot_table_lookup.get(*table), "entity with id {} has a loot table with id {} which doesn't exist", entity, table);
+                                let items = table.roll();
+                                for item in items.iter() {
+                                    let it = self.create_item_with_archetype(item.clone());
+                                    self.items_on_floor.borrow_mut().push(ItemOnFloor{
+                                        item: it,
+                                        x: entity_position.x,
+                                        y: entity_position.y,
+                                    });
+                                }
                             }
                         }
                     }
@@ -840,6 +842,7 @@ impl World{
             self.remove_entity(entity);
         }
         self.entities_to_be_killed_at_end_of_frame.borrow_mut().clear();
+        Ok(())
     }
     pub fn get_attack_descriptor(&self, attack: &EntityAttackBox) -> Option<&EntityAttackDescriptor>{
         self.entity_attack_descriptor_lookup.get(&attack.archetype)
