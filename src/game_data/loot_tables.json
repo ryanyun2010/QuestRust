@@ -1,17 +1,41 @@
 [
     {
-        "name": "ghost_loot_table",
+        "name": "wizard_loot_table",
         "loot": [
             {
                 "weight": 1,
                 "item": "funny spear"
             },
             {
-                "weight": 10,
+                "weight": 5,
+                "item": "test_spear"
+            },
+            {
+                "weight": 6
+            }
+        ]
+    },
+    {
+        "name": "ghost_loot_table",
+        "loot": [
+            {
+                "weight": 15,
                 "item": "test_sword"
             },
             {
-                "weight": 20
+                "weight": 1,
+                "item": "god_sword"
+            },
+            {
+                "weight": 1,
+                "item": "funny spear"
+            },
+            {
+                "weight": 3,
+                "item": "test_spear"
+            },
+            {
+                "weight": 25
             }
         ]
     }
