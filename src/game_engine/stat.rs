@@ -264,7 +264,7 @@ macro_rules! create_stat_lists {
         pub struct StatList {
             $(pub $stat_name: Option<f32>,)*
         }
-        #[derive(Debug, Clone, Serialize, Deserialize)]
+        #[derive(Debug, Clone, Serialize, Deserialize, Default)]
         pub struct GearStatList {
             $(pub $stat_name: Option<GearStat>,)*
         }

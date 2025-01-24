@@ -84,7 +84,6 @@ pub struct World{
 
     pub items_on_floor: RefCell<Vec<ItemOnFloor>>,
 
-    pub entity_loot_lookup: FxHashMap<usize, Vec<usize>>, // entity id to loot table ids
     pub loot_table_lookup: Vec<LootTable>, // loot table id to loot table object
 }
 
@@ -140,7 +139,6 @@ impl World{
             entity_attack_descriptor_lookup: FxHashMap::default(),
             damage_text: RefCell::new(Vec::new()),
             items_on_floor: RefCell::new(iof),
-            entity_loot_lookup: FxHashMap::default(),
             loot_table_lookup: Vec::new(),
         }
     }
@@ -828,6 +826,7 @@ impl World{
                                 let items = table.roll();
                                 for item in items.iter() {
                                     let it = self.create_item_with_archetype(item.clone());
+                                    println!("spawning item {:?} at {}, {}", it, entity_position.x, entity_position.y);
                                     self.items_on_floor.borrow_mut().push(ItemOnFloor{
                                         item: it,
                                         x: entity_position.x,

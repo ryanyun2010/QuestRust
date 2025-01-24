@@ -1,6 +1,9 @@
 
 #![cfg(test)]
 
+use core::panic;
+use rustc_hash::FxHashMap;
+
 use crate::{create_stat_list, game_engine::{entity_components::CollisionBox, game::MousePosition, item::{Item, ItemType}}, tests::{lib::headless::HeadlessGame, test_framework::{basic_camera, basic_world}}};
 
 #[tokio::test]
@@ -54,6 +57,7 @@ async fn test_inventory_clicking_blank_slot_in_blank_inventory(){
         );
     }
 }
+
 #[tokio::test]
 async fn test_inventory_clicking_blank_slot_in_inventory_with_items(){
     let mut world = basic_world().await;
@@ -611,3 +615,71 @@ pub async fn test_melee_player_attack_after_inventory_movement() {
     );
 }
 
+
+
+#[tokio::test]
+async fn test_item_drop_from_inventory(){
+    let mut world = basic_world().await;
+    let camera = basic_camera(&mut world).await;
+    let mut headless = crate::tests::lib::headless::HeadlessGame::new(world, camera);
+    headless.world.inventory.show_inventory();
+    let res = headless.world.inventory.set_slot_item(6, 1);
+    if res.is_err() {
+        panic!("set slot 6 to item 1 failed with error: {}", res.err().unwrap())
+    }
+    assert!(
+        headless.world.inventory.get_slot(&6).unwrap().item.is_some(),
+        "There should be an item in slot 6"
+    );
+    assert!(
+        headless.world.inventory.get_slot(&6).unwrap().item.unwrap() == 1,
+        "Item 1 should be in slot 6"
+    );
+    for i in 0..headless.world.inventory.slots.len(){
+        if i != 6{
+            assert!(
+                headless.world.inventory.get_slot(&i).unwrap().item.is_none(),
+                "There should be no item in slot {}",
+                i
+            );
+        }
+    }
+    if let Err(e) = headless.run(5).await {
+        panic!("{}", e)
+    }
+    headless.world.inventory.process_mouse_input(MousePosition{
+        x_screen: 579.0,
+        y_screen: 201.0,
+        x_world: 579.0 + headless.camera.camera_x,
+        y_world: 201.0 + headless.camera.camera_y,
+    }, true, false);
+    if let Err(e) = headless.run(5).await {
+        panic!("{}", e)
+    }
+    let mut hash = FxHashMap::default();
+    hash.insert("q".to_string(), true);
+    headless.world.inventory.process_input(
+        &hash
+    );
+    if let Err(e) = headless.run(4).await {
+        panic!("{}", e)
+    }
+    if let Err(e) = headless.world.inventory.hide_inventory() {
+        panic!("{}", e)
+    }
+    if let Err(e) = headless.world.process_inventory_close() {
+        panic!("{}", e)
+    }
+    if let Err(e) = headless.run(5).await {
+        panic!("{}", e)
+    }
+
+    for i in 0..headless.world.inventory.slots.len(){
+        assert!(
+            headless.world.inventory.get_slot(&i).unwrap().item.is_none(),
+            "There should be no item in slot {}",
+            i
+        );
+    }
+    
+}

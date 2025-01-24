@@ -165,11 +165,11 @@ impl Inventory {
             slot.alter_position(520 + i * 58, 374);
         }
     }
-    pub fn hide_inventory(&mut self) -> Result<(), anyhow::Error>{
+    pub fn hide_inventory(&mut self) -> Result<(), PError>{
         self.show_inventory = false;
         if self.item_on_mouse.is_some(){
             let iom = self.item_on_mouse.as_ref().unwrap();
-            self.set_slot_item(iom.slot_belonging, iom.item_id)?;
+            ptry!(self.set_slot_item(iom.slot_belonging, iom.item_id));
             self.item_on_mouse = None;
         }
         for i in 0..self.hotbar.len(){
@@ -208,10 +208,10 @@ impl Inventory {
         }
         Err(perror!(NoSpace, "No space for item"))
     }
-    pub fn set_slot_item(&mut self, slot: usize, item_id: usize) -> Result<(), anyhow::Error> {
+    pub fn set_slot_item(&mut self, slot: usize, item_id: usize) -> Result<(), PError> {
         let slot_potentially = self.slots.get_mut(slot);
         if slot_potentially.is_some() {
-            slot_potentially.unwrap().set_item(item_id, &self.items)?;
+            ptry!(slot_potentially.unwrap().set_item(item_id, &self.items));
         }
         Ok(())
     }
