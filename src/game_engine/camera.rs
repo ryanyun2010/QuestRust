@@ -10,6 +10,7 @@ use wgpu_text::glyph_brush::{HorizontalAlign, Section as TextSection};
 use rustc_hash::FxHashMap;
 
 use super::entities::AttackType;
+use super::item::{self, Item};
 use super::ui::UIESprite;
 
 #[derive(Debug, Clone)]
@@ -247,6 +248,7 @@ impl Camera{
         render_data.index.extend(extra_data.index);
 
         let mut item_on_floor_render_data = RenderData::new();
+        self.temp_uie2.clear();
         for item_on_floor in world.items_on_floor.borrow().iter() {
             let sprite_id = punwrap!(world.sprites.get_sprite_id(&item_on_floor.item.sprite), Expected, "Item on floor with refers to a non-existent sprite {}", item_on_floor.item.sprite);
             let sprite = punwrap!(world.sprites.get_sprite(sprite_id), Expected, "Item on floor with refers to a non-existent sprite {}", item_on_floor.item.sprite);
@@ -254,12 +256,29 @@ impl Camera{
             let player = world.player.borrow();
             item_on_floor_render_data.vertex.extend(draw_data.vertex);
             item_on_floor_render_data.index.extend(draw_data.index);
+
+            let display = item_on_floor.display();
+            for text in display.text{
+                self.temp_uie2.push(text);
+            }
+            for ui in display.sprites {
+                let sprite_id = punwrap!(world.sprites.get_sprite_id(&ui.sprite), Expected, "item on floor display refers to a non-existent sprite {}", ui.sprite);
+                let sprite = punwrap!(world.sprites.get_sprite(sprite_id), Expected, "item on floor display refers to a non-existent sprite {}", ui.sprite);
+                let draw_data = sprite.draw_data(ui.x, ui.y, ui.width as usize, ui.height as usize, self.viewpoint_width, self.viewpoint_height, item_on_floor_render_data.vertex.len() as u32, -self.camera_x.floor() as i32, -self.camera_y.floor() as i32);
+                item_on_floor_render_data.vertex.extend(draw_data.vertex);
+                item_on_floor_render_data.index.extend(draw_data.index);
+            }
         }
        
         item_on_floor_render_data.offset(render_data.vertex.len() as u32);
         render_data.vertex.extend(item_on_floor_render_data.vertex);
         render_data.index.extend(item_on_floor_render_data.index);
         
+        for text in self.temp_uie2.iter() {
+            println!("text: {:?}", text);
+            let dd = text.get_section(self, screen_width, screen_height, -self.camera_x, -self.camera_y);
+            render_data.sections_a_t.push(dd);
+        }
 
        
         let mut melee = false;
