@@ -194,7 +194,7 @@ pub struct item_loot_table_json {
 }
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct loot_table_entry_json {
-    pub item: String,
+    pub item: Option<String>,
     pub weight: usize
 }
 

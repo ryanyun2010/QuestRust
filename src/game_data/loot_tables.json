@@ -9,6 +9,9 @@
             {
                 "weight": 10,
                 "item": "test_sword"
+            },
+            {
+                "weight": 20
             }
         ]
     }

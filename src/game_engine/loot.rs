@@ -16,9 +16,11 @@ impl LootTable{
         let num = rng.gen_range(0..total_weight);
         let mut current_weight = 0;
         for entry in &self.entries {
-            current_weight += entry.weight;
-            if num < current_weight {
-                return vec![entry.item.clone()];
+            if let Some(item) = &entry.item {
+                current_weight += entry.weight;
+                if num < current_weight {
+                    return vec![item.clone()];
+                }
             }
         }
         vec![]
@@ -29,6 +31,6 @@ impl LootTable{
 
 #[derive(Clone, Debug)]
 pub struct LootTableEntry {
-    pub item: String,
+    pub item: Option<String>,
     pub weight: usize,
 }
