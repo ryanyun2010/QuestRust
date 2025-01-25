@@ -170,16 +170,15 @@ impl World{
             new_chunk_id
         }
     }
-    pub fn remove_terrain(&mut self, element_id: usize){
-        let terrain = self.terrain.get(&element_id).expect(format!("Tried to remove element_id {} which wasn't terrain or didnt exist", element_id).as_str());
-        let chunk_id = self.get_chunk_from_xy(terrain.x, terrain.y);
-        if chunk_id.is_some(){
-            let chunk = &mut self.chunks.borrow_mut()[chunk_id.unwrap()];
-            let index = chunk.terrain_ids.iter().position(|&x| x == element_id).unwrap();
-            chunk.terrain_ids.remove(index);
-        }
+    pub fn remove_terrain(&mut self, element_id: usize) -> Result<(), PError>{
+        let terrain = punwrap!(self.terrain.get(&element_id), NotFound, "Tried to remove terrain with id {}, but it wasn't found", element_id);
+        let chunk_id = punwrap!(self.get_chunk_from_xy(terrain.x, terrain.y), Invalid, "Tried to remove terrain with id {}, but it wasn't in a chunk?", element_id);
+        let chunk = &mut self.chunks.borrow_mut()[chunk_id];
+        let index = punwrap!(chunk.terrain_ids.iter().position(|&x| x == element_id), Invalid, "Tried to remove terrain with id {}, but it wasn't in the chunk expected, chunk with id {}", element_id, chunk_id);
+        chunk.terrain_ids.remove(index);
         self.terrain.remove(&element_id);
         self.terrain_archetype_lookup.remove(&element_id);
+        Ok(())
     }
     pub fn set_loaded_chunks(&mut self, chunk_ids: Vec<usize>){
         self.loaded_chunks = chunk_ids;
@@ -267,15 +266,15 @@ impl World{
         }
         World::get_terrain_tiles(left_most_x.unwrap().floor() as usize, top_most_y.unwrap().floor() as usize, (right_most_x.unwrap() - left_most_x.unwrap()).ceil() as usize, (bot_most_y.unwrap() - top_most_y.unwrap()).ceil() as usize)
     }
-    pub fn generate_collision_cache_and_damage_cache(&mut self){
+    pub fn generate_collision_cache_and_damage_cache(&mut self) -> Result<(), PError>{
         let mut collision_cache_ref = self.collision_cache.borrow_mut();
         let mut damage_cache_ref = self.damage_cache.borrow_mut();
         collision_cache_ref.clear();
         damage_cache_ref.clear();
-        for chunk in self.loaded_chunks.iter(){ 
-            let chunk = &self.chunks.borrow()[*chunk];
+        for chunk_id in self.loaded_chunks.iter(){ 
+            let chunk = &self.chunks.borrow()[*chunk_id];
             for terrain_id in chunk.terrain_ids.iter(){
-                let terrain = self.terrain.get(terrain_id).unwrap();
+                let terrain = punwrap!(self.terrain.get(terrain_id), Invalid, "chunk with id {} refers to terrain with id {}, but there is no terrain with id {}", chunk_id, terrain_id, terrain_id);
                 let terrain_tags_potentially = self.get_terrain_tags(*terrain_id);
                 if terrain_tags_potentially.is_none(){
                     continue;
@@ -300,7 +299,7 @@ impl World{
             }
 
             for entity_id in chunk.entities_ids.iter(){
-                let position_component = self.entity_position_components.get(entity_id).unwrap().borrow();
+                let position_component = punwrap!(self.entity_position_components.get(entity_id), Expected, "all entities should have a position component").borrow();
                 
                 let entity_tags_potentially = self.get_entity_tags(*entity_id);
                 if entity_tags_potentially.is_none(){
@@ -336,8 +335,9 @@ impl World{
                 }
             }
         }  
+        Ok(())
     }
-    pub fn check_collision(&self, player: bool, id_to_ignore: Option<usize>, x: f32, y: f32, w: usize, h: usize, entity: bool) -> bool{
+    pub fn check_collision(&self, player: bool, id_to_ignore: Option<usize>, x: f32, y: f32, w: usize, h: usize, entity: bool) -> Result<bool, PError>{
         if !player {
             let player = self.player.borrow();
             let pw = player.collision_box.w;
@@ -345,7 +345,7 @@ impl World{
             let px = player.x + player.collision_box.x_offset;
             let py = player.y + player.collision_box.y_offset;
             if px.floor() - 1.0 < (x + w as f32) && px.floor() + pw + 1.0 > x && py.floor() - 1.0 < (y + h as f32) && py.floor() + ph + 1.0 > y{
-                return true;
+                return Ok(true);
             }
         }
         let tiles_to_check = World::get_terrain_tiles(x.floor() as usize, y.floor() as usize, w, h);
@@ -366,25 +366,25 @@ impl World{
             
             if terrain_potentially.is_none(){
                 if entity{
-                    let entity_collision_box = self.get_entity_collision_box(id).unwrap();
-                    let entity_position = self.entity_position_components.get(&id).unwrap().borrow();
+                    let entity_collision_box = punwrap!(self.get_entity_collision_box(id), Invalid, "all entities in the collision cache should have a collision box, but entity with id {} does not have one", id);
+                    let entity_position = punwrap!(self.entity_position_components.get(&id), Expected, "all entities should have a position component").borrow();
                     let ex = entity_position.x + entity_collision_box.x_offset;
                     let ey = entity_position.y + entity_collision_box.y_offset;
                     let ew = entity_collision_box.w;
                     let eh = entity_collision_box.h;
                     if ex < (x + w as f32) && ex + ew > x && ey < (y + h as f32) && ey + eh > y{
-                        return true;
+                        return Ok(true);
                     }
                 }
                 
             }else{
                 let terrain = terrain_potentially.unwrap();
                 if (terrain.x as f32) < (x + w as f32) && terrain.x as f32 + 32.0 > x && (terrain.y as f32) < (y + h as f32) && (terrain.y as f32 + 32.0) > y{
-                    return true;
+                    return Ok(true);
                 }
             }
         }
-        false
+        Ok(false)
     }
     pub fn check_collision_non_damageable(&self, player: bool, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, entity: bool) -> bool{
         if !player {
@@ -582,19 +582,20 @@ impl World{
             }
         )
     }
-    pub fn attempt_move_player(&self, player: &mut Player, movement: [f32; 2]){
+    pub fn attempt_move_player(&self, player: &mut Player, movement: [f32; 2]) -> Result<(), PError>{
         
-        if self.check_collision(true, None,player.x.floor() + movement[0] + player.collision_box.x_offset, player.y.floor() + movement[1] + player.collision_box.y_offset, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true){
-            return;
+        if ptry!(self.check_collision(true, None,player.x.floor() + movement[0] + player.collision_box.x_offset, player.y.floor() + movement[1] + player.collision_box.y_offset, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true)){
+            return Ok(());
         }
         player.x += movement[0];
         player.y += movement[1];
+        Ok(())
     }
-    pub fn can_move_player(&self, player: &mut Player, movement: [f32; 2]) -> bool{
-        if self.check_collision(true, None,player.x.floor() + movement[0] + player.collision_box.x_offset, player.y.floor() + movement[1] + player.collision_box.y_offset, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true){
-            return false;
+    pub fn can_move_player(&self, player: &mut Player, movement: [f32; 2]) -> Result<bool, PError>{
+        if ptry!(self.check_collision(true, None,player.x.floor() + movement[0] + player.collision_box.x_offset, player.y.floor() + movement[1] + player.collision_box.y_offset, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true)){
+            return Ok(false);
         }
-        true
+        Ok(true)
     }
     pub fn set_sprite(&mut self, element_id: usize, sprite_id: usize){
         self.sprite_lookup.insert(element_id, sprite_id);
@@ -602,7 +603,7 @@ impl World{
     pub fn get_sprite(&self, element_id: usize) -> Option<usize>{
         self.sprite_lookup.get(&element_id).copied()
     }
-    pub fn process_player_input(&mut self, keys: &FxHashMap<String,bool>){
+    pub fn process_player_input(&mut self, keys: &FxHashMap<String,bool>) -> Result<(), PError>{
         let mut direction: [f32; 2] = [0.0,0.0];
         let mut player: std::cell::RefMut<'_, Player> = self.player.borrow_mut();
         if *keys.get("w").unwrap_or(&false) || *keys.get("arrowup").unwrap_or(&false){
@@ -633,12 +634,12 @@ impl World{
             let movement = [(direction[0] / magnitude * player.movement_speed), (direction[1] / magnitude * player.movement_speed)];
             let player_movement_speed = player.movement_speed;
             
-            if !self.can_move_player(&mut player, [movement[0], 0.0]){
-                self.attempt_move_player(&mut player, [0.0, (direction[1] * player_movement_speed)]);
-            }else if !self.can_move_player(&mut player, [0.0, movement[1]]){
-                self.attempt_move_player(&mut player, [(direction[0] * player_movement_speed), 0.0]);
+            if !ptry!(self.can_move_player(&mut player, [movement[0], 0.0])){
+                ptry!(self.attempt_move_player(&mut player, [0.0, (direction[1] * player_movement_speed)]));
+            }else if !ptry!(self.can_move_player(&mut player, [0.0, movement[1]])){
+                ptry!(self.attempt_move_player(&mut player, [(direction[0] * player_movement_speed), 0.0]));
             }else{
-                self.attempt_move_player(&mut player, movement);
+                ptry!(self.attempt_move_player(&mut player, movement));
             }
         }
 
@@ -648,6 +649,7 @@ impl World{
         if player.x.floor() < player.movement_speed {
             player.x = player.movement_speed;
         }
+        Ok(())
     }
    
     pub fn add_player_attack(&self, item: &Item, x: f32, y: f32, angle: f32) {    
@@ -916,8 +918,8 @@ impl World{
     pub fn process_mouse_input(&mut self, mouse_position: MousePosition, mouse_left: bool, mouse_right: bool){
 
     }
-    pub fn process_input(&mut self, keys: &FxHashMap<String,bool>, camera: &mut Camera){
-        self.process_player_input(keys);
+    pub fn process_input(&mut self, keys: &FxHashMap<String,bool>, camera: &mut Camera) -> Result<(), PError>{
+        ptry!(self.process_player_input(keys));
         let player = self.player.borrow();
         camera.update_camera_position(player.x, player.y);
         drop(player);
@@ -928,6 +930,7 @@ impl World{
         }else{
             self.player.borrow_mut().holding_texture_sprite = None; 
         }
+        Ok(())
         
     }
     pub fn create_item_with_archetype(&self, archetype: String) -> Item {
@@ -949,11 +952,12 @@ impl World{
     pub fn update_damage_text(&self, camera: &mut Camera) -> Result<(), PError> {
         let mut dt_to_remove = Vec::new();
         for (i, damage_text) in self.damage_text.borrow_mut().iter_mut().enumerate(){
-            camera.get_world_text_mut(damage_text.world_text_id).unwrap().y -= 0.6;
-            camera.get_world_text_mut(damage_text.world_text_id).unwrap().color[3] -= 0.016_666_668;
+            let text_mut_ref = punwrap!(camera.get_world_text_mut(damage_text.world_text_id),Invalid, "damage text descriptor with index {} and value {:?} refers to non-existent world text with id {}", i, damage_text, damage_text.world_text_id);
+            text_mut_ref.y -= 0.6;
+            text_mut_ref.color[3] -= 0.016_666_668;
             damage_text.lifespan += 1.0;
             if damage_text.lifespan > 60.0 {
-                ptry!(camera.remove_world_text(damage_text.world_text_id), "Trying to remove non-existent world text?");
+                ptry!(camera.remove_world_text(damage_text.world_text_id), NotFound, "Trying to remove non-existent world text with id {} refered to be damage text descriptor with index {} and value {:?}", damage_text.world_text_id, i, damage_text);
                 dt_to_remove.push(i);
             }
         }

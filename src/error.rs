@@ -183,7 +183,7 @@ macro_rules! ptry {
     ($result:expr, $error_variant:ident,  $desc:expr, $($args:tt)*) => {{
         match $result {
             Ok(value) => value,
-            Err(mut perror) => {
+            Err(perror) => {
                 return Err(crate::error::PError::new(
                     crate::error::PE::$error_variant(
                         crate::error::ErrorDescriptor {

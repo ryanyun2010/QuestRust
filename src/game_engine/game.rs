@@ -103,14 +103,15 @@ impl<'a> Game<'a> {
             self.world.inventory.on_mouse_click(self.input.mouse_position, self.input.mouse_left, self.input.mouse_right);
         }
     }
-    pub fn process_input(&mut self){
+    pub fn process_input(&mut self) -> Result<(), PError> {
         if self.state == GameState::play {
-            self.world.process_input(&self.input.keys_down, &mut self.camera);
+            ptry!(self.world.process_input(&self.input.keys_down, &mut self.camera));
             self.world.process_mouse_input(self.input.mouse_position, self.input.mouse_left, self.input.mouse_right);
         }else if self.state == GameState::inventory {
             self.world.inventory.process_input(&self.input.keys_down);
             self.world.inventory.process_mouse_input(self.input.mouse_position, self.input.mouse_left, self.input.mouse_right);
         }
+        Ok(())
     }
     pub fn render(&mut self) -> Result<(), PError> {
         if self.state == GameState::start {
@@ -135,8 +136,8 @@ impl<'a> Game<'a> {
     pub fn update(&mut self) -> Result<(), PError> {
         if self.state == GameState::play {
             ptry!(self.camera.update_ui(&mut self.world));
-            self.world.generate_collision_cache_and_damage_cache();
-            self.process_input();
+            ptry!(self.world.generate_collision_cache_and_damage_cache());
+            ptry!(self.process_input());
             ptry!(self.world.update_entities());
             self.world.update_entity_attacks();
             self.world.update_player_attacks(&mut self.camera);
@@ -147,7 +148,7 @@ impl<'a> Game<'a> {
             self.input.mouse_position.y_world = self.camera.camera_y + self.input.mouse_position.y_screen;
         }else if self.state == GameState::inventory {
             ptry!(self.camera.update_ui(&mut self.world));
-            self.process_input();
+            ptry!(self.process_input());
             self.input.mouse_position.x_world = self.camera.camera_x + self.input.mouse_position.x_screen;
             self.input.mouse_position.y_world = self.camera.camera_y + self.input.mouse_position.y_screen;
         }

@@ -9,7 +9,7 @@ use super::pathfinding::{self, EntityDirectionOptions};
 
 impl World {
     pub fn move_entity(&self, mut position_component: RefMut<PositionComponent>, entity_id: &usize, movement: [f32; 2], chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>, respects_collision: bool, has_collision: bool) -> Result<(), PError>{ 
-        if respects_collision && self.check_collision(false, Some(*entity_id), (position_component.x + movement[0]).floor(), (position_component.y + movement[1]).floor(), 32,32, true){
+        if respects_collision && ptry!(self.check_collision(false, Some(*entity_id), (position_component.x + movement[0]).floor(), (position_component.y + movement[1]).floor(), 32,32, true)){
             return Ok(());
         }
         let prev_chunk = punwrap!(self.get_chunk_from_xy(position_component.x as usize, position_component.y as usize), "entity with id {} doesn't have a current chunk?", entity_id);
@@ -259,7 +259,7 @@ impl World {
         let magnitude: f32 = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
         if respects_collision {
             if magnitude > 128.0{
-                let direction: EntityDirectionOptions = pathfinding::pathfind_by_block(*position_component, *collision_box, *entity_id, self);
+                let direction: EntityDirectionOptions= ptry!(pathfinding::pathfind_by_block(*position_component, *collision_box, *entity_id, self));
                 match direction {
                     EntityDirectionOptions::Down => {
                         ptry!(self.move_entity(position_component, entity_id, [0.0, movement_speed], chunkref, respects_collision, has_collision));
@@ -282,7 +282,7 @@ impl World {
                     },
                 };
             } else if magnitude > 60.0{
-                let direction: EntityDirectionOptions = pathfinding::pathfind_high_granularity(*position_component, *collision_box,*entity_id, self);
+                let direction: EntityDirectionOptions = ptry!(pathfinding::pathfind_high_granularity(*position_component, *collision_box,*entity_id, self));
                 match direction {
                     EntityDirectionOptions::Down => {
                         pathfinding_component.cur_direction = EntityDirectionOptions::Down;
