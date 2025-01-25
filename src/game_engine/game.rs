@@ -2,7 +2,7 @@ use rustc_hash::FxHashMap;
 
 use winit::{event, keyboard::{Key, NamedKey}};
 
-use crate::{error::PError, ptry, rendering_engine::renderer::Renderer};
+use crate::{error::PError, ptry, punwrap, rendering_engine::renderer::Renderer};
 
 use super::{camera::Camera, world::World};
 #[derive(Debug, Copy, Clone)]
@@ -115,7 +115,7 @@ impl<'a> Game<'a> {
     pub fn render(&mut self) -> Result<(), PError> {
         if self.state == GameState::start {
             match self.renderer.render(
-                self.world.sprites.get_sprite_by_name("start_screen").expect("No start_screen sprite?").draw_data(0.0, 0.0, self.camera.viewpoint_width, self.camera.viewpoint_height, self.camera.viewpoint_width, self.camera.viewpoint_height, 0, 0, 0).to_full()
+                punwrap!(self.world.sprites.get_sprite_by_name("start_screen"), MissingExpectedGlobalSprite, "no start screen sprite").draw_data(0.0, 0.0, self.camera.viewpoint_width, self.camera.viewpoint_height, self.camera.viewpoint_width, self.camera.viewpoint_height, 0, 0, 0).to_full()
             ) {
                 Ok(_) => {}
                 Err(e) => {
@@ -124,7 +124,7 @@ impl<'a> Game<'a> {
             }
             return Ok(());
         }
-        let uie = self.world.inventory.render_ui();
+        let uie = ptry!(self.world.inventory.render_ui());
         match self.renderer.render(ptry!(self.camera.render(&mut self.world, uie, self.renderer.config.width as f32, self.renderer.config.height as f32))){
             Ok(_) => {Ok(())}
             Err(e) => {

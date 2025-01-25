@@ -1,6 +1,6 @@
 use rustc_hash::FxHashMap;
 
-use crate::{error::PError, game_engine::item::Item, perror, ptry, rendering_engine::abstractions::{TextSprite, UIEFull}};
+use crate::{error::PError, game_engine::item::Item, perror, ptry, punwrap, rendering_engine::abstractions::{TextSprite, UIEFull}};
 
 use super::{game::MousePosition, ui::UIESprite};
 
@@ -57,22 +57,17 @@ impl Slot {
     pub fn alter_position(&mut self, new_x: usize, new_y: usize) {
         self.x = new_x;
         self.y = new_y;
-        if self.item_image.is_some(){
-            let ii = self.item_image.as_mut().unwrap();
+        if let Some(ii) = self.item_image.as_mut(){
             ii.x = self.x as f32 + 8.0;
             ii.y = self.y as f32 + 8.0;
         }
-        if self.main_image.is_some(){
-            let mi = self.main_image.as_mut().unwrap();
+        if let Some(mi) = self.main_image.as_mut(){ 
             mi.x = self.x as f32;
             mi.y = self.y as f32;
         }
     }
     pub fn set_item(&mut self, item: usize, items: &FxHashMap<usize, Item>) -> Result<(), PError>{
-        let i = items.get(&item);
-        if i.is_none() {
-            return Err(perror!(NotFound, "no item with id {}", item));
-        }
+        let i = punwrap!(items.get(&item), NotFound, "no item with id {}", item);
         self.item = Some(item);
         self.item_image = Some(
             UIESprite {
@@ -81,7 +76,7 @@ impl Slot {
                 z: 5.2,
                 width: 32.0,
                 height: 32.0,
-                sprite: i.unwrap().sprite.clone()
+                sprite: i.sprite.clone()
             }
         );
         Ok(())
@@ -190,8 +185,8 @@ impl Inventory {
         let slot_potentially = self.hotbar.get(slot).and_then(
             |x| self.slots.get_mut(*x)
         );
-        if slot_potentially.is_some() {
-            ptry!(slot_potentially.unwrap().set_item(item_id, &self.items), "While setting hotbar slot {} to item {}", slot, item_id);
+        if let Some(s) = slot_potentially {
+            ptry!(s.set_item(item_id, &self.items), "While setting hotbar slot {} to item {}", slot, item_id);
         }
         Ok(())
     }
@@ -210,12 +205,12 @@ impl Inventory {
     }
     pub fn set_slot_item(&mut self, slot: usize, item_id: usize) -> Result<(), PError> {
         let slot_potentially = self.slots.get_mut(slot);
-        if slot_potentially.is_some() {
-            ptry!(slot_potentially.unwrap().set_item(item_id, &self.items));
+        if let Some(s) = slot_potentially {
+            ptry!(s.set_item(item_id, &self.items));
         }
         Ok(())
     }
-    pub fn render_ui(&mut self) -> UIEFull {
+    pub fn render_ui(&mut self) -> Result<UIEFull, PError> {
         let mut ui = Vec::new();
         let mut text = Vec::new(); 
         if self.show_inventory {
@@ -239,7 +234,7 @@ impl Inventory {
                 ui.extend(slot.get_ui());
                 if (slot.x as f32) < self.mouse_position.x_screen && (slot.x as f32 + 48.0) > self.mouse_position.x_screen && (slot.y as f32) < self.mouse_position.y_screen && (slot.y as f32 + 48.0) > self.mouse_position.y_screen{
                     if let Some(i) = slot.item{
-                        let item = self.get_item(&i).unwrap();
+                        let item = punwrap!(self.get_item(&i), Invalid, "slot: {:?} is refering a non-existent item with id {}", slot, i);
                         let mut t = format!(
                             "{}\n----------------------------------------\n\n{}\n\n", item.name, item.lore
                         );
@@ -276,10 +271,8 @@ impl Inventory {
                     }
                 }
             }
-
-            if self.item_on_mouse.is_some() {
-                let iom = self.item_on_mouse.as_ref().unwrap();
-                let item = self.get_item(&iom.item_id);
+            if let Some(item_on_mouse) = self.item_on_mouse.as_ref(){
+                let item = self.get_item(&item_on_mouse.item_id);
                 if let Some(item) = item{
                     ui.push(UIESprite {
                         x: self.mouse_position.x_screen - 12.0,
@@ -294,7 +287,7 @@ impl Inventory {
         }
         else {
             for slot in self.hotbar.iter() {
-                ui.extend(self.get_slot(slot).unwrap().get_ui());
+                ui.extend(punwrap!(self.get_slot(slot), Invalid, "hotbar ids includes slot id {}, but there is no slot with id {}", slot, slot).get_ui());
             }
             ui.push(
                 UIESprite{
@@ -307,10 +300,10 @@ impl Inventory {
                 }
             )
         }
-        UIEFull {
+        Ok(UIEFull {
             sprites: ui,
             text,
-        }
+        })
         
         
     }
@@ -337,8 +330,7 @@ impl Inventory {
                 }
                 i += 1;
             }
-            if slot_clicked.is_some() {
-                let slot = slot_clicked.unwrap();
+            if let Some(slot) = slot_clicked {
                 if slot.item.is_some() {
                     if self.item_on_mouse.is_none() {
                         self.item_on_mouse = Some(
