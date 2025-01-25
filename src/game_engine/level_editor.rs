@@ -1,28 +1,23 @@
-// use core::arch;
+// #![allow(warnings)]
 // use std::collections::HashMap;
 // use std::error::Error;
-// use std::fmt::format;
-// use std::hash::Hash;
 // use std::vec;
-// use wgpu::util::DeviceExt;
+// use rustc_hash::FxHashMap;
 // use wgpu_text::glyph_brush::HorizontalAlign;
 // use winit::dpi::PhysicalSize;
 // use winit::event::{ElementState, MouseButton, *};
 // use winit::event_loop::EventLoop;
 // use winit::keyboard::{Key, NamedKey};
 // use winit::window::{Window, WindowBuilder};
-// use super::game::InputState;
+// use super::game::{InputState, MousePosition};
 // use super::json_parsing::{entity_json, terrain_json, JSON_parser, ParsedData};
 // use super::starting_level_generator::match_terrain_tags;
 // use super::terrain::Terrain;
 // use super::ui::UIElementDescriptor;
 // use super::world::World;
-// use super::camera::{self, Camera};
-// use crate::rendering_engine::abstractions::{RenderData, RenderDataFull, Sprite, SpriteIDContainer};
+// use super::camera::Camera;use crate::rendering_engine::abstractions::{RenderData, RenderDataFull, SpriteContainer};
 // use crate::rendering_engine::renderer::Renderer;
 // use super::player::Player;
-// use super::command_line_input;
-// use crate::renderer::BACKGROUND_COLOR;
 // use super::json_parsing::PATH_BUNDLE;
 // #[derive(Debug, Clone, PartialEq)]
 // pub enum EditableProperty{
@@ -164,7 +159,7 @@
 //     pub parser: JSON_parser,
 //     pub parsed_data: ParsedData,
 //     pub world: World,
-//     pub sprites: SpriteIDContainer,
+//     pub sprites: SpriteContainer,
 //     pub not_real_elements: HashMap<usize, bool>,
 //     pub object_descriptor_hash: HashMap<usize, ObjectJSONContainer>,
 //     pub query_at_text: Option<usize>,
@@ -178,17 +173,17 @@
 //     pub renderer: Renderer<'a>,
 // }
 // impl<'a> LevelEditor<'a>{
-//     pub fn new(world: World, renderer: Renderer<'a>, camera: Camera, sprites: SpriteIDContainer, parser: JSON_parser, hash: HashMap<usize, ObjectJSONContainer>) -> Self{
+//     pub fn new(world: World, renderer: Renderer<'a>, camera: Camera, sprites: SpriteContainer, parser: JSON_parser, hash: HashMap<usize, ObjectJSONContainer>) -> Self{
 //         let parsed_data = parser.clone().convert();
 //         Self {
 //             highlighted: None,
-//             world: world,
-//             parser: parser,
+//             world,
+//             parser,
 //             grid: Vec::new(),
 //             grid_sprite: None,
-//             camera: camera,
-//             parsed_data: parsed_data,
-//             sprites: sprites,
+//             camera,
+//             parsed_data,
+//             sprites,
 //             not_real_elements: HashMap::new(),
 //             object_descriptor_hash: hash,
 //             last_query: None,
@@ -197,9 +192,9 @@
 //             cur_editing: None,
 //             query_unique_ui_elements: Vec::new(),
 //             query_unique_text_elements: Vec::new(),
-//             renderer: renderer,
+//             renderer,
 //             input: InputState {
-//                 keys_down: HashMap::new(),
+//                 keys_down: FxHashMap::default(),
 //                 mouse_position: MousePosition::default(),
 //                 mouse_left: false,
 //                 mouse_right: false,
@@ -208,27 +203,29 @@
 //     }
 //     pub fn init(&mut self){
 //         self.world.set_level_editor();
-//         self.add_level_editor_grid(self.sprites.get_sprite("grid").unwrap());
-//         self.grid_sprite = Some(self.sprites.get_sprite("grid").unwrap());
+//         self.add_level_editor_grid(self.sprites.get_sprite_id("grid").unwrap());
+//         self.grid_sprite = Some(self.sprites.get_sprite_id("grid").unwrap());
 //         self.camera.add_ui_element("menu".to_string(), super::ui::UIElementDescriptor {
 //             x: 932.0,
 //             y: 40.0,
+//             z: 1.0,
 //             width: 200.0,
 //             height: 640.0,
-//             texture_id: self.sprites.get_texture_id("level_editor_menu_background").unwrap(),
+//             sprite: "level_editor_menu_background".to_string(),
 //             visible: true
 //         });
-//         self.camera.add_text("Level Editor".to_string(), 938.0, 45.0,60.0, 24.5, 24.5, [0.7,0.7,0.7,1.0], HorizontalAlign::Left);
+//         self.camera.add_text("Level Editor".to_string(), super::camera::Font::A,938.0, 45.0,60.0, 24.5, 24.5, [0.7,0.7,0.7,1.0], HorizontalAlign::Left);
 //         self.camera.add_ui_element("save_button".to_string(), super::ui::UIElementDescriptor {
 //             x: 1008.0,
 //             y: 45.0,
 //             width: 40.0,
+//             z: 1.0,
 //             height: 12.5,
-//             texture_id: self.sprites.get_texture_id("level_editor_button_background").unwrap(),
+//             sprite: "level_editor_button_background".to_string(),
 //             visible: true
 //         });
-//         self.camera.add_text("Save".to_string(), 1028.0, 45.0,60.0, 22.0, 22.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Center);
-//         self.query_at_text = Some(self.camera.add_text("".to_string(), 942.0, 70.0,180.0, 25.0, 25.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+//         self.camera.add_text("Save".to_string(),super::camera::Font::A, 1028.0, 45.0,60.0, 22.0, 22.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Center);
+//         self.query_at_text = Some(self.camera.add_text("".to_string(),super::camera::Font::A, 942.0, 70.0,180.0, 25.0, 25.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
 //     }
 //     pub fn save_edits(&self) -> Result<(), Box<dyn Error>>{
 //         self.parser.write(PATH_BUNDLE)
@@ -361,7 +358,7 @@
 //                     _ => {}
 //                 }
 //                 let entity_id = update_entity_property_json!(self, sprite, nv.clone(), String);
-//                 self.world.set_sprite(entity_id, self.sprites.get_sprite(&nv).expect(format!("Could not find sprite: {}", nv).as_str()));
+//                 self.world.set_sprite(entity_id, self.sprites.get_sprite_id(&nv).expect(format!("Could not find sprite: {}", nv).as_str()));
 //             },
 //             EditableProperty::EntityArchetype => {
 //                 let mut nv = String::new();
@@ -432,7 +429,7 @@
 //                             self.update_entity_property(self.cur_editing.clone().unwrap(), EntityPropertyValue::Y(self.typed.parse::<f32>().unwrap()));
 //                         },
 //                         EditableProperty::EntitySprite => {
-//                             if self.sprites.get_sprite(&self.typed).is_none(){
+//                             if self.sprites.get_sprite_id(&self.typed).is_none(){
 //                                 self.typed = String::new();
 //                                 self.cur_editing = None;
 //                                 return;
@@ -533,7 +530,7 @@
 //         }
 //         self.input.mouse_position.x_world = self.camera.camera_x + self.input.mouse_position.x_screen;
 //         self.input.mouse_position.y_world = self.camera.camera_y + self.input.mouse_position.y_screen;
-//         self.camera.update_camera_position(&self.world, player.x.floor(), player.y.floor());
+//         self.camera.update_camera_position(player.x.floor(), player.y.floor());
 //     }
 //     pub fn on_click(&mut self, mouse: MouseButton){
 //         if mouse == MouseButton::Left {
@@ -598,13 +595,13 @@
 //                 let new_ter_descriptor_id = self.parser.starting_level_json.terrain.len() - 1;
 //                 let new_terrain = self.world.add_terrain(x, y);
 //                 self.object_descriptor_hash.insert(new_terrain, ObjectJSONContainer::Terrain((terrain_json, new_ter_descriptor_id)));
-//                 self.world.set_sprite(new_terrain, self.sprites.get_sprite("wall").unwrap());
+//                 self.world.set_sprite(new_terrain, self.sprites.get_sprite_id("wall").unwrap());
 //             }
 //         }
 //     }
 //     pub fn highlight_square(&mut self){
 //         if (!LevelEditor::check_click_on_menu(self.input.mouse_position.x_screen, self.input.mouse_position.y_screen)){
-//             let sprite_id = self.sprites.get_sprite("highlight").unwrap();
+//             let sprite_id = self.sprites.get_sprite_id("highlight").unwrap();
 //             let tx = (self.input.mouse_position.x_world as f32 / 32.0).floor() as usize * 32;
 //             let ty = (self.input.mouse_position.y_world as f32 / 32.0).floor() as usize * 32;
 //             let terrain = self.world.add_terrain(tx, ty);
@@ -650,10 +647,10 @@
 //                 let queried_object = self.last_query.clone().unwrap().objects[0].clone();
 //                 match queried_object.object.clone(){
 //                     ObjectJSONContainer::Entity(entity) => {
-//                         self.camera.text.get_mut(&self.query_at_text.unwrap()).unwrap().text = format!("Following Entity");
+//                         self.camera.get_text_mut(self.query_at_text.unwrap()).unwrap().text = format!("Following Entity");
 //                     },
 //                     ObjectJSONContainer::Terrain(terrain) => {
-//                         self.camera.text.get_mut(&self.query_at_text.unwrap()).unwrap().text = format!("Following Terrain");
+//                         self.camera.get_text_mut(self.query_at_text.unwrap()).unwrap().text = format!("Following Terrain");
 //                     }
 //                 }
 //                 let (unique_ui, unique_text) = self.display_query_element(queried_object.object);
@@ -661,7 +658,7 @@
 //                 self.query_unique_text_elements.extend(unique_text);
 //             },
 //             QueryType::Position => {
-//                 self.camera.text.get_mut(&self.query_at_text.unwrap()).unwrap().text = format!("Query at: {}, {}", lq.position.unwrap().0, lq.position.unwrap().1);
+//                 self.camera.get_text_mut(self.query_at_text.unwrap()).unwrap().text = format!("Query at: {}, {}", lq.position.unwrap().0, lq.position.unwrap().1);
 //                 let mut i = 0;
 //                 for element in self.last_query.clone().unwrap().objects{
 //                     self.query_unique_ui_elements.push(self.camera.add_ui_element(format!("level_editor_query_button_{}", i), UIElementDescriptor{
@@ -669,7 +666,8 @@
 //                         y: 90.0,
 //                         width: 40.0,
 //                         height: 15.0,
-//                         texture_id: self.sprites.get_texture_id("level_editor_button_background").unwrap(),
+//                         z: 1.0,
+//                         sprite: "level_editor_button_background".to_string(),
 //                         visible: true
 //                     }));
 //                     let text: String = match element.object {
@@ -680,7 +678,7 @@
 //                             format!("{}. Terrain", i + 1)
 //                         }
 //                     };
-//                     self.query_unique_text_elements.push(self.camera.add_text(text, 962.0 + 45.0 * i as f32, 93.0, 40.0, 18.0, 18.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Center));
+//                     self.query_unique_text_elements.push(self.camera.add_text(text, super::camera::Font::A, 962.0 + 45.0 * i as f32, 93.0, 40.0, 18.0, 18.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Center));
 //                     i+= 1;
 //                 }
 //             }
@@ -697,17 +695,18 @@
 //                     y,
 //                     width: 25.0,
 //                     height: 9.0,
-//                     texture_id: self.sprites.get_texture_id("level_editor_button_background").unwrap(),
+//                     sprite: "level_editor_button_background".to_string(),
+//                     z: 1.0,
 //                     visible: true
 //                 })
 //             );
-//             unique_text.push(camera.add_text(String::from("Edit"), x + 11.5, y + 1.0, 25.0, 9.0, 13.0, [1.0, 1.0, 1.0, 1.0], HorizontalAlign::Center));
+//             unique_text.push(camera.add_text(String::from("Edit"), super::camera::Font::A, x + 11.5, y + 1.0, 25.0, 9.0, 13.0, [1.0, 1.0, 1.0, 1.0], HorizontalAlign::Center));
 //         };
 //         let mut potentially_editable_button_display = |label: &str, edit_name: &str, being_edited: bool, value_normal: String, x: f32, y: f32, font_size: f32, unique_ui: &mut Vec<usize>, unique_text: &mut Vec<usize>, camera: &mut Camera| {
 //             if being_edited{
-//                 unique_text.push(camera.add_text(format!("{}: {}",label,  self.typed), x, y, 200.0, 20.0, font_size, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+//                 unique_text.push(camera.add_text(format!("{}: {}",label,  self.typed),super::camera::Font::A, x, y, 200.0, 20.0, font_size, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
 //             } else {
-//                 unique_text.push(camera.add_text(format!("{}: {}", label, value_normal), x, y, 200.0, 20.0, font_size, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+//                 unique_text.push(camera.add_text(format!("{}: {}", label, value_normal), super::camera::Font::A, x, y, 200.0, 20.0, font_size, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
 //                 edit_button(edit_name, x + 1.0, y + font_size/2.0 + 2.0, unique_ui, unique_text, camera);
 //             }
 //         };
@@ -715,7 +714,7 @@
 //         match element {
 //             ObjectJSONContainer::Entity(ej) => {
 //                 let entity = ej.0;
-//                 unique_text.push(self.camera.add_text(format!("Entity:"), 945.0, 115.0, 50.0, 25.0, 25.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+//                 unique_text.push(self.camera.add_text(format!("Entity:"),super::camera::Font::A, 945.0, 115.0, 50.0, 25.0, 25.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
 //                 potentially_editable_button_display(
 //                     "x", "entity_x", self.cur_editing == Some(EditableProperty::EntityX), 
 //                     entity.x.to_string(), 946.0, 140.0, 20.0, &mut unique_ui, &mut unique_text, &mut self.camera);
@@ -733,17 +732,17 @@
 //                     entity.archetype.to_string(), 945.0, 195.0, 25.0, &mut unique_ui, &mut unique_text, &mut self.camera);
 
 //                 let archetype = self.parser.get_entity_archetype_json(&entity.archetype).unwrap();
-//                 unique_text.push(self.camera.add_text(format!("Monster Type: {}", archetype.monster_type), 945.0, 225.0, 100.0, 15.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
-//                 unique_text.push(self.camera.add_text(format!("Range: {}", archetype.range), 1036.0, 225.0, 100.0, 15.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
-//                 unique_text.push(self.camera.add_text(format!("Aggro Range: {}", archetype.aggro_range), 945.0, 240.0, 100.0, 15.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
-//                 unique_text.push(self.camera.add_text(format!("Movement Speed: {}", archetype.movement_speed), 1036.0, 240.0, 100.0, 15.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
-//                 unique_text.push(self.camera.add_text(format!("Attack Type: {}", archetype.attack_type), 945.0, 255.0, 100.0, 15.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
-//                 unique_text.push(self.camera.add_text(format!("Attack Pattern: {}", archetype.attack_pattern), 945.0, 270.0, 290.0, 30.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
-//                 unique_text.push(self.camera.add_text(format!("Basic Tags: {:?}", archetype.basic_tags), 945.0, 285.0, 200.0, 30.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+//                 unique_text.push(self.camera.add_text(format!("Monster Type: {}", archetype.monster_type), super::camera::Font::A, 945.0, 225.0, 100.0, 15.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+//                 unique_text.push(self.camera.add_text(format!("Range: {}", archetype.range), super::camera::Font::A, 1036.0, 225.0, 100.0, 15.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+//                 unique_text.push(self.camera.add_text(format!("Aggro Range: {}", archetype.aggro_range), super::camera::Font::A, 945.0, 240.0, 100.0, 15.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+//                 unique_text.push(self.camera.add_text(format!("Movement Speed: {}", archetype.movement_speed), super::camera::Font::A, 1036.0, 240.0, 100.0, 15.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+//                 unique_text.push(self.camera.add_text(format!("Attack Type: {}", archetype.attack_type), super::camera::Font::A, 945.0, 255.0, 100.0, 15.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+//                 unique_text.push(self.camera.add_text(format!("Attack Pattern: {}", archetype.attack_pattern), super::camera::Font::A, 945.0, 270.0, 290.0, 30.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+//                 unique_text.push(self.camera.add_text(format!("Basic Tags: {:?}", archetype.basic_tags), super::camera::Font::A, 945.0, 285.0, 200.0, 30.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
 //             },
 //             ObjectJSONContainer::Terrain(tj) => {
 //                 let terrain = tj.0;
-//                 unique_text.push(self.camera.add_text(format!("Terrain Block:"), 945.0, 115.0, 200.0, 25.0, 25.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+//                 unique_text.push(self.camera.add_text(format!("Terrain Block:"), super::camera::Font::A, 945.0, 115.0, 200.0, 25.0, 25.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
 //                 potentially_editable_button_display(
 //                     "x", "terrain_x", self.cur_editing == Some(EditableProperty::TerrainX), 
 //                     terrain.x.to_string(), 946.0, 140.0, 20.0, &mut unique_ui, &mut unique_text, &mut self.camera);
@@ -760,14 +759,14 @@
 //                 potentially_editable_button_display(
 //                     "Archetype", "terrain_archetype", self.cur_editing == Some(EditableProperty::TerrainArchetype), 
 //                     terrain.terrain_archetype.to_string(), 946.0, 190.0, 25.0, &mut unique_ui, &mut unique_text, &mut self.camera);
-//                 unique_text.push(self.camera.add_text(format!("Type: {:?}", descriptor.r#type), 946.0, 220.0, 200.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+//                 unique_text.push(self.camera.add_text(format!("Type: {:?}", descriptor.r#type), super::camera::Font::A, 946.0, 220.0, 200.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
 //                 if (descriptor.random_chances.is_some()){
-//                     unique_text.push(self.camera.add_text(format!("Random Chances: {:?}", descriptor.random_chances.unwrap_or(Vec::new())), 946.0, 235.0, 200.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
-//                     unique_text.push(self.camera.add_text(format!("Sprites: {:?}", descriptor.sprites), 946.0, 250.0, 200.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
-//                     unique_text.push(self.camera.add_text(format!("Basic Tags: {:?}", descriptor.basic_tags), 946.0, 265.0, 200.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+//                     unique_text.push(self.camera.add_text(format!("Random Chances: {:?}", descriptor.random_chances.unwrap_or(Vec::new())), super::camera::Font::A, 946.0, 235.0, 200.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+//                     unique_text.push(self.camera.add_text(format!("Sprites: {:?}", descriptor.sprites), super::camera::Font::A, 946.0, 250.0, 200.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+//                     unique_text.push(self.camera.add_text(format!("Basic Tags: {:?}", descriptor.basic_tags), super::camera::Font::A, 946.0, 265.0, 200.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
 //                 }else{
-//                     unique_text.push(self.camera.add_text(format!("Sprites: {:?}", descriptor.sprites), 946.0, 235.0, 200.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
-//                     unique_text.push(self.camera.add_text(format!("Basic Tags: {:?}", descriptor.basic_tags), 946.0, 250.0, 200.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+//                     unique_text.push(self.camera.add_text(format!("Sprites: {:?}", descriptor.sprites), super::camera::Font::A, 946.0, 235.0, 200.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
+//                     unique_text.push(self.camera.add_text(format!("Basic Tags: {:?}", descriptor.basic_tags), super::camera::Font::A, 946.0, 250.0, 200.0, 20.0, 20.0, [1.0,1.0,1.0,1.0], HorizontalAlign::Left));
 //                 }
 //             }
 //         }
@@ -820,11 +819,11 @@
 //     pub fn set_level_editor(&mut self){
 //         self.level_editor = true;
 //     }
-//     pub fn level_editor_render(&mut self, world: &mut World, sprites: &SpriteIDContainer, grid: &Vec<Terrain>, screen_width: f32, screen_height: f32) -> RenderDataFull{
+//     pub fn level_editor_render(&mut self, world: &mut World, sprites: &SpriteContainer, grid: &Vec<Terrain>, screen_width: f32, screen_height: f32) -> RenderDataFull{
 //         let mut render_data = RenderDataFull::new();
 //         let mut terrain_data: RenderData = RenderData::new();
 //         let mut entity_data: RenderData = RenderData::new();
-//         let mut index_offset: u16 = 0;
+//         let mut index_offset: u32 = 0;
 //         let player = world.player.borrow(); 
 
 
@@ -852,7 +851,7 @@
 //                         continue;
 //                     }
 //                     let sprite_id = potentially_sprite_id.unwrap();
-//                     let sprite = &world.sprites[sprite_id];
+//                     let sprite = &world.sprites.get_sprite(sprite_id).unwrap();
 
                     
 //                     let vertex_offset_x = -1 * self.camera_x as i32;
@@ -870,7 +869,7 @@
 //                         continue;
 //                     }
 //                     let sprite_id = potentially_sprite_id.unwrap();
-//                     let sprite = &world.sprites[sprite_id];
+//                     let sprite = &world.sprites.get_sprite(sprite_id).unwrap();
                     
 //                     let vertex_offset_x = -1 * self.camera_x as i32;
 //                     let vertex_offset_y = -1 * self.camera_y as i32;
@@ -894,36 +893,45 @@
 //                 continue;
 //             }
 //             let index_offset = render_data.vertex.len() as u16;
-//             let draw_data = element.draw_data(self.viewpoint_width, self.viewpoint_height, index_offset);
+//             let sprite = sprites.get_sprite_by_name(&element.sprite.sprite).expect(format!("Could not find sprite: {}", element.sprite.sprite).as_str());
+            
+            
+//             let draw_data = sprite.draw_data(element.sprite.x, element.sprite.y, element.sprite.width as usize, element.sprite.height as usize, self.viewpoint_width, self.viewpoint_height, index_offset as u32, 0, 0);
 //             render_data.vertex.extend(draw_data.vertex);
 //             render_data.index.extend(draw_data.index);
 //         }
-//         let grid_sprite_id = sprites.get_sprite("grid");
+//         let grid_sprite_id = sprites.get_sprite_id("grid");
 //         if grid_sprite_id.is_none(){
 //             return render_data;
 //         }
-//         let grid_sprite = &world.sprites[grid_sprite_id.unwrap()];
+//         let grid_sprite = &world.sprites.get_sprite(grid_sprite_id.unwrap()).unwrap();
 //         for grid_cell in grid.iter(){
 //             if(grid_cell.x > self.camera_x as usize + self.viewpoint_width || grid_cell.x + 32 < self.camera_x as usize || grid_cell.y > self.camera_y as usize + self.viewpoint_height || grid_cell.y + 32 < self.camera_y as usize){
 //                 continue;
 //             }
 //             let vertex_offset_x = -1 * self.camera_x as i32;
 //             let vertex_offset_y = -1 * self.camera_y as i32;
-//             let draw_data = grid_sprite.draw_data(grid_cell.x as f32, grid_cell.y as f32, 32, 32, self.viewpoint_width, self.viewpoint_height, render_data.vertex.len() as u16, vertex_offset_x, vertex_offset_y);
+//             let draw_data = grid_sprite.draw_data(grid_cell.x as f32, grid_cell.y as f32, 32, 32, self.viewpoint_width, self.viewpoint_height, render_data.vertex.len() as u32, vertex_offset_x, vertex_offset_y);
 //             render_data.vertex.extend(draw_data.vertex);
 //             render_data.index.extend(draw_data.index);
 //         }
-//         render_data.sections = self.get_sections(screen_width, screen_height);
+//         let (sections_0, sections_1, sections_2, sections_3) =self.get_sections(screen_width, screen_height).unwrap();
+//         let mut sections = vec![];
+//         sections.extend(sections_0);
+//         sections.extend(sections_1);
+//         sections.extend(sections_2);
+//         sections.extend(sections_3); 
+//         render_data.sections_a_t = sections;
         
 //         render_data
 //     }
 // }
 
-// pub async fn run(world: World, sprites: SpriteIDContainer,parser: JSON_parser, hash: HashMap<usize, ObjectJSONContainer>, camera: Camera, sprites_json_to_load: Vec<String>) {
+// pub async fn run(world: World, sprites: SpriteContainer,parser: JSON_parser, hash: HashMap<usize, ObjectJSONContainer>, camera: Camera, sprites_json_to_load: Vec<String>) {
 //     let event_loop = EventLoop::new().unwrap();
 //     let title = "Level Editor";
 //     let window = WindowBuilder::new().with_title(title).with_inner_size(winit::dpi::LogicalSize::new(1152, 720)).build(&event_loop).unwrap();
-//     let mut renderer = Renderer::new(&window, sprites_json_to_load.clone()).await;
+//     let mut renderer = Renderer::new(&window, &sprites_json_to_load.clone()).await;
 //     let mut level_editor = LevelEditor::new(world, renderer, camera, sprites, parser, hash);
 //     level_editor.init();
 
@@ -938,10 +946,7 @@
 //                     level_editor.process_key_input(event.clone());
 //                 },
 //                 WindowEvent::CloseRequested => {
-//                     let response = command_line_input::prompt_string("Save changes? (y/n)");
-//                     if response.unwrap_or(String::from("n")) == "y"{
-//                         level_editor.save_edits();
-//                     }
+//                     level_editor.save_edits();
 //                     control_flow.exit();
 //                 },
 //                 WindowEvent::Resized(physical_size) => {
@@ -958,15 +963,8 @@
 //                     level_editor.update();
 //                     match level_editor.render() {
 //                         Ok(_) => {}
-//                         Err(
-//                             wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated,
-//                         ) => level_editor.resize(level_editor.renderer.size),
-//                         Err(wgpu::SurfaceError::OutOfMemory) => {
-//                             log::error!("OutOfMemory");
-//                             control_flow.exit();
-//                         }
-//                         Err(wgpu::SurfaceError::Timeout) => {
-//                             log::warn!("Surface timeout")
+//                         Err(e) => {
+//                             eprintln!("Error rendering: {:?}", e);
 //                         }
 //                     }
                     
@@ -978,13 +976,13 @@
 //     }).unwrap();
 // }
 
-// pub fn level_editor_generate_world_from_json_parsed_data(data: &ParsedData) -> (World, SpriteIDContainer, HashMap<usize, ObjectJSONContainer>) {
+// pub fn level_editor_generate_world_from_json_parsed_data(data: &ParsedData) -> (World, SpriteContainer, HashMap<usize, ObjectJSONContainer>) {
 
     
 //     let starting_level_descriptor = data.starting_level_descriptor.clone();
 //     let player_descriptor = starting_level_descriptor.player;
-//     let mut world = World::new(Player::new(player_descriptor.x, player_descriptor.y, player_descriptor.health, player_descriptor.max_health, player_descriptor.movement_speed, data.get_texture_id(&player_descriptor.sprite)));
-//     let sprites = SpriteIDContainer::generate_from_json_parsed_data(data, &mut world);
+//     let mut world = World::new(Player::new(player_descriptor.x, player_descriptor.y, player_descriptor.health, player_descriptor.max_health, player_descriptor.movement_speed, data.get_texture_id(&player_descriptor.sprite)), sprites);
+//     let sprites = SpriteContainer::generate_from_json_parsed_data(data, &mut world);
 //     let mut hash = HashMap::new();
 //     let mut i = 0;
 //     for archetype in data.entity_archetypes.iter(){

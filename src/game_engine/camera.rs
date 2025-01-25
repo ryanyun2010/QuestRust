@@ -24,9 +24,9 @@ pub struct Camera{
     pub camera_x: f32, // top left corner of the camera in world/element coordinates
     pub camera_y: f32,
     ui_element_names: FxHashMap<String, usize>,
-    ui_elements: FxHashMap<usize, UIElement>,
+    pub ui_elements: FxHashMap<usize, UIElement>,
     ui_element_id: usize,
-    level_editor: bool,
+    pub level_editor: bool,
     text: BTreeMap<usize, TextSprite>,
     world_text: BTreeMap<usize, TextSprite>,
     world_text_id: usize,
