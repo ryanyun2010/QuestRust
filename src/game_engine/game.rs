@@ -40,8 +40,8 @@ pub struct Game<'a> {
     pub world: World,
     pub camera: Camera,
     pub renderer: Renderer<'a>,
-    pub input: InputState,
-    pub state: GameState,
+    input: InputState,
+    state: GameState,
 }
 
 impl<'a> Game<'a> {
