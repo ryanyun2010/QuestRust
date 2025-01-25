@@ -673,7 +673,6 @@ async fn test_item_drop_from_inventory(){
     if let Err(e) = headless.run(5).await {
         panic!("{}", e)
     }
-
     for i in 0..headless.world.inventory.slots.len(){
         assert!(
             headless.world.inventory.get_slot(&i).unwrap().item.is_none(),
@@ -681,5 +680,13 @@ async fn test_item_drop_from_inventory(){
             i
         );
     }
+
+    if let Err(e) = headless.run(50000).await {
+        panic!("{}", e)
+    } 
+    assert!(
+        headless.world.inventory.get_hotbar_slot(1).unwrap().item.is_some(),
+        "There should be an item in hotbar slot 1"
+    );
     
 }
