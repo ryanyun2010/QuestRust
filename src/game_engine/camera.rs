@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::f32::consts::PI;
 
 use crate::error::PError;
-use crate::{error_prolif_allow, perror, punwrap};
+use crate::{error_prolif_allow, perror, ptry, punwrap};
 use crate::world::World;
 use crate::rendering_engine::abstractions::{RenderData, RenderDataFull, TextSprite, UIEFull};
 use crate::game_engine::ui::UIElement;
@@ -129,19 +129,19 @@ impl Camera{
         let vertex_offset_y = (-1.0 * self.camera_y).floor() as i32;
         
 
-        let entity_position_component = world.entity_position_components.get(&entity_id).expect("All entities with sprites should have a position component").borrow();
+        let entity_position_component = punwrap!(world.entity_position_components.get(&entity_id), Expected, "all entities with sprites should have a position component").borrow();
 
         let draw_data_main = sprite.draw_data(entity_position_component.x, entity_position_component.y, 32, 32, self.viewpoint_width, self.viewpoint_height, entity_index_offset, vertex_offset_x, vertex_offset_y);
         let mut draw_data_other = RenderData::new();
 
         let potentially_health_component = world.entity_health_components.get(&entity_id);
-        if potentially_health_component.is_some(){
-            let health_component = potentially_health_component.unwrap().borrow();
+        if let Some(health_component) = potentially_health_component {
+            let health_component = health_component.borrow();
             let potentially_health_bar_back_id = world.sprites.get_sprite_id("health_bar_back");
             if potentially_health_bar_back_id.is_none() {
                 return Err(perror!(MissingExpectedGlobalSprite, "There was no health bar back sprite"));
             }
-            let entity_health_bar_sprite = world.sprites.get_sprite(potentially_health_bar_back_id.unwrap()).expect("Could not find health bar back sprite");
+            let entity_health_bar_sprite = punwrap!(world.sprites.get_sprite(potentially_health_bar_back_id.unwrap()), Invalid, "health bar back sprite was found with id {} but there is no sprite with id {}?", potentially_health_bar_back_id.unwrap(), potentially_health_bar_back_id.unwrap());
             let health_bar_draw_data = entity_health_bar_sprite.draw_data(entity_position_component.x - 4.0, entity_position_component.y - 15.0, 40, 12, self.viewpoint_width, self.viewpoint_height, extra_index_offset + draw_data_other.vertex.len() as u32, vertex_offset_x, vertex_offset_y);
             draw_data_other.vertex.extend(health_bar_draw_data.vertex);
             draw_data_other.index.extend(health_bar_draw_data.index);
@@ -149,7 +149,7 @@ impl Camera{
             if potentially_health_bar_id.is_none() {
                 return Err(perror!(MissingExpectedGlobalSprite, "There was no health bar inside sprite"));
             }
-            let entity_health_sprite = world.sprites.get_sprite(potentially_health_bar_id.unwrap()).expect("Could not find health bar sprite");
+            let entity_health_sprite = punwrap!(world.sprites.get_sprite(potentially_health_bar_id.unwrap()), Invalid, "health bar inside sprite was found with id {} but there is no sprite with id {}?", potentially_health_bar_back_id.unwrap(), potentially_health_bar_back_id.unwrap());
             let health_bar_inner_draw_data = entity_health_sprite.draw_data(entity_position_component.x - 3.0, entity_position_component.y - 14.0, (38.0 * health_component.health/health_component.max_health as f32).floor() as usize, 10, self.viewpoint_width, self.viewpoint_height, extra_index_offset + draw_data_other.vertex.len() as u32, vertex_offset_x, vertex_offset_y);
             draw_data_other.vertex.extend(health_bar_inner_draw_data.vertex);
             draw_data_other.index.extend(health_bar_inner_draw_data.index);
@@ -179,9 +179,11 @@ impl Camera{
                 if chunk_id.is_none(){
                     continue;
                 }
-                let chunk = &world.chunks.borrow()[chunk_id.unwrap()];
+                let chunk_id = chunk_id.unwrap();
 
-                chunks_loaded.push(chunk_id.unwrap());
+                let chunk = &world.chunks.borrow()[chunk_id];
+
+                chunks_loaded.push(chunk_id);
                 for terrain_id in chunk.terrain_ids.iter(){
                     let sprite_id = punwrap!(world.get_sprite(*terrain_id), Expected, "Could not find sprite for terrain with id {}", terrain_id);
                     let sprite = punwrap!(world.sprites.get_sprite(sprite_id), Expected, "Sprite in sprite_lookup for terrain with id {} is a non-existent sprite", terrain_id);
@@ -189,7 +191,7 @@ impl Camera{
                     let vertex_offset_x = -self.camera_x as i32;
                     let vertex_offset_y = -self.camera_y as i32;
 
-                    let terrain = world.get_terrain(*terrain_id).unwrap();
+                    let terrain = punwrap!(world.get_terrain(*terrain_id), Invalid, "chunk with id {} contains terrain with id {} but that terrain does not exist", chunk_id, terrain_id);
                     let draw_data = sprite.draw_data(terrain.x as f32, terrain.y as f32, 32, 32, self.viewpoint_width, self.viewpoint_height, terrain_index_offset, vertex_offset_x, vertex_offset_y);
                     terrain_index_offset += 4;
                     terrain_data.vertex.extend(draw_data.vertex);
@@ -199,8 +201,8 @@ impl Camera{
                 for entity_id in chunk.entities_ids.iter(){
 
                     let dd = error_prolif_allow!(self.render_entity(world, *entity_id, entity_index_offset, extra_data.vertex.len() as u32), NotFound);
-                    if dd.is_ok() {
-                        let (draw_data, other_draw_data) = dd.unwrap();
+                    if let Ok(dd) = dd {
+                        let (draw_data, other_draw_data) = dd;
                         entity_data.vertex.extend(draw_data.vertex);
                         entity_data.index.extend(draw_data.index);
                         extra_data.vertex.extend(other_draw_data.vertex);
@@ -309,13 +311,16 @@ impl Camera{
             if width.is_none() || height.is_none(){
                 return Err(perror!("Player attack {:?} has no width or no height?", effect));
             }
+            let sprite = sprite.unwrap();
+            let width = width.unwrap();
+            let height = height.unwrap();
             if melee {
-                let draw_data = sprite.unwrap().draw_data_rotated(effect.angle, effect.x, effect.y, width.unwrap().floor() as usize, height.unwrap().floor() as usize, self.viewpoint_width, self.viewpoint_height, player_effect_draw_data.vertex.len() as u32, -self.camera_x as i32, -self.camera_y as i32);
+                let draw_data = sprite.draw_data_rotated(effect.angle, effect.x, effect.y, width.floor() as usize, height.floor() as usize, self.viewpoint_width, self.viewpoint_height, player_effect_draw_data.vertex.len() as u32, -self.camera_x as i32, -self.camera_y as i32);
                 player_effect_draw_data.vertex.extend(draw_data.vertex);
                 player_effect_draw_data.index.extend(draw_data.index);
                 continue;
             } else{
-                let draw_data = sprite.unwrap().draw_data_rotated(effect.angle + 90.0, effect.x, effect.y, width.unwrap().floor() as usize, height.unwrap().floor() as usize, self.viewpoint_width, self.viewpoint_height, player_effect_draw_data.vertex.len() as u32, -self.camera_x as i32, -self.camera_y as i32);
+                let draw_data = sprite.draw_data_rotated(effect.angle + 90.0, effect.x, effect.y, width.floor() as usize, height.floor() as usize, self.viewpoint_width, self.viewpoint_height, player_effect_draw_data.vertex.len() as u32, -self.camera_x as i32, -self.camera_y as i32);
                 player_effect_draw_data.vertex.extend(draw_data.vertex);
                 player_effect_draw_data.index.extend(draw_data.index);
                 continue;
@@ -340,7 +345,7 @@ impl Camera{
         let temp_uie_clone = uie.text.clone();
         self.temp_uie = temp_uie_clone; // THIS IS THE JANKIEST THING IVE EVER SEEN BUT ITS THE ONLY WAY IT WORKS FOR SOME REASON
         
-        let (rat, rab, rbt, rbb) = self.get_sections(screen_width, screen_height);
+        let (rat, rab, rbt, rbb) = ptry!(self.get_sections(screen_width, screen_height), "failed to get text sections");
         render_data.sections_a_t.extend(rat);
         render_data.sections_a_b.extend(rab);
         render_data.sections_b_t.extend(rbt);
@@ -382,13 +387,14 @@ impl Camera{
     pub fn get_text_mut(&mut self, id: usize) -> Option<&mut TextSprite>{
         self.text.get_mut(&id)
     }
-    pub fn get_sections(&self, screen_width: f32, screen_height: f32) -> (Vec<TextSection>, Vec<TextSection>, Vec<TextSection>, Vec<TextSection>){
+    #[allow(clippy::type_complexity)]
+    pub fn get_sections(&self, screen_width: f32, screen_height: f32) -> Result<(Vec<TextSection>, Vec<TextSection>, Vec<TextSection>, Vec<TextSection>), PError>{
         let mut sections_a_t = Vec::new();
         let mut sections_a_b = Vec::new();
         let mut sections_b_t = Vec::new();
         let mut sections_b_b = Vec::new();
         for (id, text) in self.text.iter(){
-            match self.text_font_lookup.get(id).expect(format!("Could not find font for text with id {}", id).as_str()){
+            match punwrap!(self.text_font_lookup.get(id), "could not find a font for text with id {} with text {}", id, text.text){
                 Font::A => {
                     sections_a_t.push(text.get_section(self, screen_width, screen_height, 0.0, 0.0).clone());
                 },
@@ -398,7 +404,7 @@ impl Camera{
             }
         }
         for (id, text) in self.world_text.iter(){
-            match self.world_text_font_lookup.get(id).expect(format!("Could not find font for text with id {}", id).as_str()){
+            match punwrap!(self.world_text_font_lookup.get(id), "could not find a font for world text with id {} with text {}", id, text.text){
                 Font::A => {
                     sections_a_b.push(text.get_section(self, screen_width, screen_height, self.camera_x * -1.0, self.camera_y * -1.0).clone());
                 },
@@ -407,6 +413,6 @@ impl Camera{
                 }
             }
         }
-        (sections_a_t, sections_a_b, sections_b_t, sections_b_b)
+        Ok((sections_a_t, sections_a_b, sections_b_t, sections_b_b))
     }
 }

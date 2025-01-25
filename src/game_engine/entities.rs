@@ -1,5 +1,5 @@
 use crate::error::PError;
-use crate::{perror, ptry, punwrap};
+use crate::{ptry, punwrap};
 use std::cell::{RefCell, RefMut};
 use super::entity_attacks::EntityAttackBox;
 use super::entity_components::{self, CollisionBox, EntityAttackComponent, PathfindingComponent, PositionComponent};
@@ -60,11 +60,7 @@ impl World {
         Ok(())
     }
     pub fn update_entity(&self, entity_id: &usize, player_x: f32, player_y: f32, chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>) -> Result<(), PError>{
-        let entity_tags_potentially: Option<&Vec<EntityTags>> = self.get_entity_tags(*entity_id);
-        if entity_tags_potentially.is_none() {
-            return Err(perror!(NotFound, "Entity with id {} doesn't have any tags", entity_id));
-        }
-        let entity_tags: &Vec<EntityTags> = entity_tags_potentially.unwrap();
+        let entity_tags = punwrap!(self.get_entity_tags(*entity_id), NotFound, "Entity with id {} doesn't have any tags", entity_id);
         let mut distance: f64 = f64::MAX;
         let mut follows_player: bool = false;
         let mut aggro_range = 0;
@@ -108,8 +104,8 @@ impl World {
         }
         
         let health_component = self.entity_health_components.get(entity_id);
-        if health_component.is_some() {
-            let health_component = health_component.unwrap().borrow();
+        if let Some(health_component) = health_component {
+            let health_component = health_component.borrow();
             if health_component.health <= 0.0 {
                 self.kill_entity(*entity_id);
                 return Ok(());
@@ -216,8 +212,8 @@ impl World {
         let mut aggroed_to_entity = false;
         if aggressive {
             let aggro_potentially = self.entity_aggro_components.get(entity_id);
-            if aggro_potentially.is_some() {
-                aggroed_to_entity = aggro_potentially.unwrap().borrow().aggroed;
+            if let Some(aggro) = aggro_potentially {
+                aggroed_to_entity = aggro.borrow().aggroed;
             }
         }
         if aggroed_to_entity{
@@ -234,7 +230,7 @@ impl World {
     }
     pub fn move_entity_towards_player(&self, entity_id: &usize,collision_box: &CollisionBox, position_component: RefMut<PositionComponent>, mut pathfinding_component: RefMut<PathfindingComponent>, chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>, player_x: f32, player_y: f32, respects_collision: bool, has_collision: bool, movement_speed: f32) -> Result<(), PError>{
         let direction: [f32; 2] = [player_x - position_component.x, player_y - position_component.y];
-        let entity_pathfinding_frame = self.pathfinding_frames.get(entity_id).unwrap();
+        let entity_pathfinding_frame = punwrap!(self.pathfinding_frames.get(entity_id), Expected, "all entities that follow player should have a pathfinding frame, entity with id {} doesn't, was the entity properly created?", entity_id);
         if direction[0] == 0.0 && direction[1] == 0.0 {
             return Ok(());
         }
