@@ -249,8 +249,13 @@ function display_terrain(id: number) {
 function save() {
 	json1.terrain = terrain;
 	json1.entities = entities;
-	console.log(JSON.stringify(json1));
-	alert("CHECK CONSOLE FOR GAME DATA, COPY DATA INTO STARTING_LEVEL.JSON");
+	const blob = new Blob([JSON.stringify(json1)], { type: 'application/json' });
+	const link = document.createElement('a');
+	link.href = window.URL.createObjectURL(blob);
+	link.download = 'starting_level.json';
+	link.click();
+
+	alert("GAME DATA DOWNLOAD SHOULD BEGIN, MOVE DATA INTO GAME DATA FOLDER, rename the file to starting_level.json if it isn't");
 }
 
 function display_entity(id: number) {

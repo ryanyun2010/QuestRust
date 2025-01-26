@@ -9,5 +9,6 @@ const path = require('path');
         alias: {
           'node_modules': path.join(__dirname, 'node_modules'),
         }
-      }
+      },
     };
+
