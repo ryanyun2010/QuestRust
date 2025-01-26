@@ -208,6 +208,7 @@ function display_ent_being_made() {
 	let ihtml = "";
 	ihtml += "<label> x: </label> <input class = 'query_input' type='number' id='cex' value='" + ent_being_made.x + "'><br><br>";
 	ihtml += "<label> y: </label> <input class = 'query_input' type='number' id='cey' value='" + ent_being_made.y + "'><br><br>";
+	ihtml += "<button id = 'pick' style = 'position:absolute; right:20px; top:72px'> Pick</button>";
 
 	let select = "<select class = 'query_input' id = 'ces'>";
 	if (ent_being_made.sprite != undefined) {
@@ -297,6 +298,10 @@ function display_ent_being_made() {
 		document.getElementById("query_text").innerHTML = "Click somewhere on the map to query";
 		document.getElementById("query_data").innerHTML = "";
 	});
+	document.getElementById("pick").addEventListener("click", function() {
+		picking = true;
+		console.log("PiCK");
+	});
 
 };
 document.getElementById("new_entity").addEventListener("click", function() {
@@ -315,6 +320,7 @@ function display_terrain(id: number) {
 	let ihtml = "";
 	ihtml += "<label> x: </label> <input class = 'query_input' type='number' id='ctx' value='" + ter.x + "'><br><br>";
 	ihtml += "<label> y: </label> <input class = 'query_input' type='number' id='cty' value='" + ter.y + "'><br><br>";
+	ihtml += "<button id = 'pick' style = 'position:absolute; right:20px; top:72px'> Pick</button>";
 	ihtml += "<label> w: </label> <input class = 'query_input' type='number' id='ctw' value='" + ter.width + "'><br><br>";
 	ihtml += "<label> h: </label> <input class = 'query_input' type='number' id='cth' value='" + ter.height + "'><br><br>";
 	let select = "<select class = 'query_input' id = 'cta'>";
@@ -357,6 +363,7 @@ function display_terrain(id: number) {
 		ihtml += ta.basic_tags[i] + ", ";
 	}
 	ihtml += "</p>";
+	ihtml += "<button id = 'delete_terrain' style = 'position: absolute; bottom: 40px; left: 10px'> Delete Terrain</button>";
 	cur_query = new TerrainQuery(id);
 	document.getElementById("query_text").innerHTML = "Terrain";
 	document.getElementById("query_data").innerHTML = ihtml;
@@ -365,6 +372,15 @@ function display_terrain(id: number) {
 	document.getElementById("ctw").addEventListener("change", function() { ter.width = parseInt((<HTMLInputElement>document.getElementById("ctw")).value); });
 	document.getElementById("cth").addEventListener("change", function() { ter.height = parseInt((<HTMLInputElement>document.getElementById("cth")).value); });
 	document.getElementById("cta").addEventListener("change", function() { ter.terrain_archetype = (<HTMLSelectElement>document.getElementById("cta")).value; display_terrain(id); });
+	document.getElementById("delete_terrain").addEventListener("click", function() {
+		terrain.splice(id, 1);
+		document.getElementById("query_text").innerHTML = "Click somewhere on the map to query";
+		document.getElementById("query_data").innerHTML = "";
+	});
+	document.getElementById("pick").addEventListener("click", function() {
+		picking = true;
+		console.log("PiCK");
+	});
 }
 
 function display_ter_being_made() {
@@ -376,6 +392,7 @@ function display_ter_being_made() {
 	let ihtml = "";
 	ihtml += "<label> x: </label> <input class = 'query_input' type='number' id='ctx' value='" + ter_being_made.x + "'><br><br>";
 	ihtml += "<label> y: </label> <input class = 'query_input' type='number' id='cty' value='" + ter_being_made.y + "'><br><br>";
+	ihtml += "<button id = 'pick' style = 'position:absolute; right:20px; top:72px'> Pick</button>";
 	ihtml += "<label> w: </label> <input class = 'query_input' type='number' id='ctw' value='" + ter_being_made.width + "'><br><br>";
 	ihtml += "<label> h: </label> <input class = 'query_input' type='number' id='cth' value='" + ter_being_made.height + "'><br><br>";
 	let select = "<select class = 'query_input' id = 'cta'>";
@@ -441,6 +458,10 @@ function display_ter_being_made() {
 		document.getElementById("query_text").innerHTML = "Click somewhere on the map to query";
 		document.getElementById("query_data").innerHTML = "";
 	});
+	document.getElementById("pick").addEventListener("click", function() {
+		picking = true;
+		console.log("PiCK");
+	});
 };
 
 function save() {
@@ -454,6 +475,7 @@ function save() {
 
 	alert("GAME DATA DOWNLOAD SHOULD BEGIN, MOVE DATA INTO GAME DATA FOLDER, rename the file to starting_level.json if it isn't");
 }
+let picking = false;
 
 function display_entity(id: number) {
 	let ent = entities[id];
@@ -462,6 +484,7 @@ function display_entity(id: number) {
 	let ihtml = "";
 	ihtml += "<label> x: </label> <input class = 'query_input' type='number' id='cex' value='" + ent.x + "'><br><br>";
 	ihtml += "<label> y: </label> <input class = 'query_input' type='number' id='cey' value='" + ent.y + "'><br><br>";
+	ihtml += "<button id = 'pick' style = 'position:absolute; right:20px; top:72px'> Pick</button>";
 	let select = "<select class = 'query_input' id = 'ces'>";
 	sprites.forEach((value, key) => {
 		if (key === ent.sprite) {
@@ -519,6 +542,7 @@ function display_entity(id: number) {
 		ihtml += ea.loot_table[i] + ", ";
 	}
 	ihtml += "</p>";
+	ihtml += "<button id = 'delete_entity' style = 'position: absolute; bottom: 40px; left: 10px'> Delete Entity</button>";
 	cur_query = new EntityQuery(id);
 	document.getElementById("query_text").innerHTML = "Entity";
 	document.getElementById("query_data").innerHTML = ihtml;
@@ -526,6 +550,15 @@ function display_entity(id: number) {
 	document.getElementById("cey").addEventListener("change", function() { ent.y = parseInt((<HTMLInputElement>document.getElementById("cey")).value); });
 	document.getElementById("ces").addEventListener("change", function() { ent.sprite = (<HTMLInputElement>document.getElementById("ces")).value; });
 	document.getElementById("cea").addEventListener("change", function() { ent.archetype = (<HTMLSelectElement>document.getElementById("cea")).value;  display_entity(id);});
+	document.getElementById("delete_entity").addEventListener("click", function() {
+		entities.splice(id, 1);
+		document.getElementById("query_text").innerHTML = "Click somewhere on the map to query";
+		document.getElementById("query_data").innerHTML = "";
+	});	
+	document.getElementById("pick").addEventListener("click", function() {
+		picking = true;
+		console.log("PiCK");
+	});
 }
 
 const sketch = (p5: P5) => { 
@@ -706,38 +739,69 @@ const sketch = (p5: P5) => {
 		if (p5.mouseX > p5.width - 5 || p5.mouseY > p5.height - 5) return;
 		let mouse_rect_x = Math.floor(mouse_x / 32) * 32;
 		let mouse_rect_y = Math.floor(mouse_y / 32) * 32;
-		document.getElementById("query_text").innerHTML = "Query at x: " + mouse_rect_x + " y: " + mouse_rect_y;
-		ent_being_made = null;
-		ter_being_made = null;
-		let ihtml = "";
-		let terrain_queried = [];
-		let entity_queried = [];
-		for (let i = 0; i < terrain.length; i++) {
-			if (terrain[i].x <= mouse_rect_x/32 && terrain[i].x + terrain[i].width > mouse_rect_x/32 && terrain[i].y <= mouse_rect_y/32 && terrain[i].y + terrain[i].height > mouse_rect_y/32) {
-				ihtml += "<button id = 'cqueryt" + i + "'> "+ terrain[i].terrain_archetype + "</button>";
-				terrain_queried.push(i);
+		if (picking) {
+			console.log("PICKING");
+			if (ent_being_made != null) {
+					ent_being_made.x = mouse_rect_x;
+					ent_being_made.y = mouse_rect_y;
+					display_ent_being_made();
+					picking = false;
+					return;
+			} else if (ter_being_made != null) {
+					ter_being_made.x = mouse_rect_x/32;
+					ter_being_made.y = mouse_rect_y/32;
+					display_ter_being_made();
+					picking = false;
+					return;
+			} else if (cur_query instanceof EntityQuery) {
+				entities[cur_query.entity_id].x = mouse_rect_x;
+				entities[cur_query.entity_id].y = mouse_rect_y;
+				display_entity(cur_query.entity_id);
+				picking = false;
+				return;
+			} else if (cur_query instanceof TerrainQuery) {
+				terrain[cur_query.terrain_id].x = mouse_rect_x/32;
+				terrain[cur_query.terrain_id].y = mouse_rect_y/32;
+				display_terrain(cur_query.terrain_id);
+				picking = false;
+				return;
+			} else{
+				picking = false;
 			}
-		}
-		for (let i = 0; i < entities.length; i++) {
-			if (entities[i].x <= mouse_x && entities[i].x + 32 >= mouse_x && entities[i].y <= mouse_y && entities[i].y + 32 >= mouse_y) {
-				ihtml += "<button id = 'cquerye" + i + "'> "+ entities[i].archetype + "</button>";
-				entity_queried.push(i);
+		}else {
+			document.getElementById("query_text").innerHTML = "Query at x: " + mouse_rect_x + " y: " + mouse_rect_y;
+			ent_being_made = null;
+			ter_being_made = null;
+			let ihtml = "";
+			let terrain_queried = [];
+			let entity_queried = [];
+			for (let i = 0; i < terrain.length; i++) {
+				if (terrain[i].x <= mouse_rect_x/32 && terrain[i].x + terrain[i].width > mouse_rect_x/32 && terrain[i].y <= mouse_rect_y/32 && terrain[i].y + terrain[i].height > mouse_rect_y/32) {
+					ihtml += "<button id = 'cqueryt" + i + "'> "+ terrain[i].terrain_archetype + "</button>";
+					terrain_queried.push(i);
+				}
 			}
-		}
+			for (let i = 0; i < entities.length; i++) {
+				if (entities[i].x <= mouse_x && entities[i].x + 32 >= mouse_x && entities[i].y <= mouse_y && entities[i].y + 32 >= mouse_y) {
+					ihtml += "<button id = 'cquerye" + i + "'> "+ entities[i].archetype + "</button>";
+					entity_queried.push(i);
+				}
+			}
 
-		cur_query = new GeneralQuery(mouse_rect_x, mouse_rect_y, terrain_queried, entity_queried);
-	
+			cur_query = new GeneralQuery(mouse_rect_x, mouse_rect_y, terrain_queried, entity_queried);
+		
 
-		document.getElementById("query_data").innerHTML = ihtml;
-		for (let i = 0; i < terrain_queried.length; i++) {
-			document.getElementById("cqueryt" + terrain_queried[i]).addEventListener("click", function() {
-				qb_clicked(true,i);
-			});
-		}
-		for (let i = 0; i < entity_queried.length; i++) {
-			document.getElementById("cquerye" + entity_queried[i]).addEventListener("click", function() {
-				qb_clicked(false,i);
-			});
+			document.getElementById("query_data").innerHTML = ihtml;
+			for (let i = 0; i < terrain_queried.length; i++) {
+				document.getElementById("cqueryt" + terrain_queried[i]).addEventListener("click", function() {
+					qb_clicked(true,i);
+				});
+			}
+			for (let i = 0; i < entity_queried.length; i++) {
+				document.getElementById("cquerye" + entity_queried[i]).addEventListener("click", function() {
+					qb_clicked(false,i);
+				});
+			}
 		}
 	}
 }
