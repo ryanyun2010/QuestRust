@@ -670,9 +670,6 @@ async fn test_item_drop_from_inventory(){
     if let Err(e) = headless.world.process_inventory_close() {
         panic!("{}", e)
     }
-    if let Err(e) = headless.run(5).await {
-        panic!("{}", e)
-    }
     for i in 0..headless.world.inventory.slots.len(){
         assert!(
             headless.world.inventory.get_slot(&i).unwrap().item.is_none(),
