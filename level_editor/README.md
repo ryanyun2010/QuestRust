@@ -1,6 +1,3 @@
-# TO RUN, INSTALL https://www.npmjs.com/package/live-server
-# AND USE THE COMMAND "npx live-server" IN THE ROOT DIRECTORY OF QUESTRUST, NOT THE DIRECTORY OF LEVEL-EDITOR
-=======
 # TO RUN LOCALLY
 1. Install npm live server globally by running `npm install -g live-server`
 2. Move into the live-server directory and run `npm install` to install dependencies
