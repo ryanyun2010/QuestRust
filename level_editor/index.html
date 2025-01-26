@@ -57,7 +57,6 @@
 			right: 10px;
 			top: 5px;
 			height: 25px;
-			background-color: #0A0B0B;
 			color: #eee;
 			font-size: 11px;
 			font-family: Arial, sans-serif;
@@ -67,6 +66,7 @@
 
 		button {
 			padding: 5px;
+			margin: 3px;
 			background-color: #0A0B0B;
 			color: #eee;
 			font-size: 11px;
@@ -76,7 +76,17 @@
 		}
 
 		button:hover {
-			background-color: #1C1D1D;
+			background-color: #2C2D2D;
+		}
+
+		#new_terrain {
+			position: absolute;
+			bottom: 10px;
+		}
+		#new_entity {
+			position: absolute;
+			bottom: 10px;
+			left: 90px;
 		}
 
 
@@ -89,6 +99,12 @@
 		<button id = "save">Save</button>
 		<p id = "query_text">Click on the map to query</p>
 		<p id = "query_data"></p>
+		<button id = "new_entity">
+			New Entity
+		</button>
+		<button id = "new_terrain">
+			New Terrain
+		</button>
 	</div>
 	<script src="dist/webpack.bundle.js"></script>
 </body>
