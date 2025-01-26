@@ -1,0 +1,15 @@
+
+ {
+    "compilerOptions": {
+        "target": "es2016",
+		"allowSyntheticDefaultImports": true,
+		 "outDir": "js",
+		 "esModuleInterop": true,
+		 "moduleResolution":"nodenext",
+		 "module": "nodenext"
+    },
+    "exclude": [
+        "node_modules"
+    ]
+
+}

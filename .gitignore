@@ -1,5 +1,7 @@
 /target
 Cargo.lock
-.DS_Store
-src/.DS_Store
 **/**/Thumbs.db
+**/**/.DS_Store
+**/**/package-lock.json
+**/**/node_modules/*
+level_editor/js
