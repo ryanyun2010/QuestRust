@@ -652,7 +652,7 @@ async fn test_item_drop_from_inventory(){
         y_screen: 201.0,
         x_world: 579.0 + headless.camera.camera_x,
         y_world: 201.0 + headless.camera.camera_y,
-    }, true, false);
+    }, false, false);
     if let Err(e) = headless.run(5).await {
         panic!("{}", e)
     }
