@@ -19,7 +19,10 @@ pub struct Inventory {
     pub show_inventory: bool,
     item_on_mouse: Option<ItemOnMouse>,
     mouse_position: MousePosition,
-    pub items_waiting_to_be_dropped: Vec<usize>
+    pub items_waiting_to_be_dropped: Vec<usize>,
+    chest_slot: Option<usize>,
+    helm_slot: Option<usize>,
+    boot_slot: Option<usize>
 }
 #[derive(Debug, Clone)]
 pub struct Slot {
@@ -92,6 +95,10 @@ impl Default for Inventory{
         Self {
             hotbar: Vec::new(),
             cur_hotbar_slot: 0,
+            helm_slot: None,
+            chest_slot: None,
+            boot_slot: None,
+
             items: FxHashMap::default(),
             item_id: 0,
             slots: Vec::new(),
@@ -135,13 +142,20 @@ impl Inventory {
         self.add_slot(Slot::new(636, 316));
         self.add_slot(Slot::new(694, 316));
         self.add_slot(Slot::new(752, 316));
+
+        self.helm_slot = Some(self.add_slot(Slot::new(369,242)));
+        self.chest_slot = Some(self.add_slot(Slot::new(369,300)));
+        self.boot_slot = Some(self.add_slot(Slot::new(369,358)));
+
+
     }
     pub fn add_hotbar_slot(&mut self, slot: Slot) {
         self.hotbar.push(self.slots.len());
         self.slots.push(slot);
     }
-    pub fn add_slot(&mut self, slot: Slot) {
+    pub fn add_slot(&mut self, slot: Slot) -> usize{
         self.slots.push(slot);
+        self.slots.len() - 1
     }
     pub fn get_hotbar_slot(&self, slot: usize) -> Option<&Slot>{
         self.hotbar.get(slot).and_then(

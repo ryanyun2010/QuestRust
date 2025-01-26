@@ -30,9 +30,10 @@ fn main() {
     path.pop();
     path.pop();
     path.pop();
-
-    assert!(env::set_current_dir(path.clone()).is_ok(), "QuestRust directory not found at path: {}", path.display());
-    println!("Successfully changed working directory to {}!", path.display());
+    if path.parent().is_some() {
+        assert!(env::set_current_dir(path.clone()).is_ok(), "QuestRust directory not found at path: {}", path.display());
+        println!("Successfully changed working directory to {}!", path.display());
+    }
     let mut parser = json_parsing::JSON_parser::new();
     let load_time = Instant::now();
     let parsed_data = parser.parse_and_convert_game_data(PATH_BUNDLE);
