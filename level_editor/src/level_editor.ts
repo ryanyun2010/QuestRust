@@ -770,8 +770,18 @@ const sketch = (p5: P5) => {
 			}
 		}else {
 			document.getElementById("query_text").innerHTML = "Query at x: " + mouse_rect_x + " y: " + mouse_rect_y;
-			ent_being_made = null;
-			ter_being_made = null;
+			if (ent_being_made != null) {
+				if (ent_being_made.sprite != undefined && ent_being_made.archetype != undefined) {
+					entities.push(ent_being_made);
+					ent_being_made = null;
+				}
+			}
+			if (ter_being_made != null) {
+				if (ter_being_made.terrain_archetype != undefined) {
+					terrain.push(ter_being_made);
+					ter_being_made = null;
+				}
+			}
 			let ihtml = "";
 			let terrain_queried = [];
 			let entity_queried = [];

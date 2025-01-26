@@ -19,8 +19,23 @@ pub mod error;
 
 
 fn main() {
-    let path = Path::new("/Users/ryan/Desktop/QuestRust/");
-    assert!(env::set_current_dir(path).is_ok(), "QuestRust directory not found at path: {}", path.display());
+    let username = whoami::username();
+
+    let mut p = format!("/Users/{}/Desktop/QuestRust/",username);
+    let args = env::args();
+    for arg in args.into_iter() {
+        println!("{}", arg);
+        if arg.starts_with("path=") {
+            let mut d = arg.clone();
+            for i in 0..5 {d.remove(0);};
+            if d.chars().next().expect("invalid path") == '~' {
+                d.remove(0);
+                p = format!("/Users/{}{}", username, d);
+            }
+        }
+    }
+    let path = Path::new(&p);
+    assert!(env::set_current_dir(path).is_ok(), "QuestRust directory not found at path: {}, pass the path of QuestRust with cargo run -- path=<INSERT PATH HERE> or run the executable with -- path=<INSERT PATH HERE>", path.display());
     println!("Successfully changed working directory to {}!", path.display());
     let mut parser = json_parsing::JSON_parser::new();
     let load_time = Instant::now();
@@ -33,9 +48,6 @@ fn main() {
     let spear = world.inventory.add_item(
         world.create_item_with_archetype("test_spear".to_string())
     );
-    let g = world.inventory.add_item(
-        world.create_item_with_archetype("funny spear".to_string())
-    );
     world.inventory.init_ui();
     match world.inventory.set_hotbar_slot_item(0, sword) {
         Ok(_) => {},
@@ -45,10 +57,7 @@ fn main() {
         Ok(_) => {},
         Err(e) => println!("Error: {}", e)
     }
-    match world.inventory.set_slot_item(8, g) {
-        Ok(_) => {},
-        Err(e) => println!("Error: {}", e)
-    }
+
     camera.add_ui_element(String::from("health_bar_background"), UIElementDescriptor {
         x: 32.0,
         y: 32.0,
