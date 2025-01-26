@@ -273,7 +273,7 @@ impl JSON_parser {
     }
 
     pub fn parse_entity_archetypes(&mut self, path: &str) {
-        let file = File::open(path).expect("\nCould not open entity archetypes file, is the QuestRust path correct?\nIf not, you can change it by passing a path into the executable. ie. cargo run -- path=~/QuestRust\n\n");
+        let file = File::open(path).expect("\nCould not open entity archetypes file.");
         let reader = BufReader::new(file);
         let data: Vec<entity_archetype_json> = serde_json::from_reader(reader).expect("JSON was not well-formatted");
         for archetype in data {
@@ -281,7 +281,7 @@ impl JSON_parser {
         }
     }
     pub fn parse_terrain_archetypes(&mut self, path: &str) {
-        let file = File::open(path).expect("\nCould not open terrain archetypes file, is the QuestRust path correct?\nIf not, you can change it by passing a path into the executable. ie. cargo run -- path=~/QuestRust\n\n");
+        let file = File::open(path).expect("\nCould not open terrain archetypes file."); 
         let reader = BufReader::new(file);
         let data: Vec<terrain_archetype_json> = serde_json::from_reader(reader).expect("JSON was not well-formatted");
         for archetype in data {
@@ -289,7 +289,7 @@ impl JSON_parser {
         }
     }
     pub fn parse_entity_attack_patterns(&mut self, path: &str) {
-        let file = File::open(path).expect("\nCould not open entity attack patterns file, is the QuestRust path correct?\nIf not, you can change it by passing a path into the executable. ie. cargo run -- path=~/QuestRust\n\n");
+        let file = File::open(path).expect("\nCould not open entity attack patterns file."); 
         let reader = BufReader::new(file);
         let data: Vec<entity_attack_pattern_json> = serde_json::from_reader(reader).expect("JSON was not well-formatted");
         for pattern in data {
@@ -297,7 +297,7 @@ impl JSON_parser {
         }
     }
     pub fn parse_entity_attacks(&mut self, path: &str) {
-        let file = File::open(path).expect("\nCould not open entity atttacks file, is the QuestRust path correct?\nIf not, you can change it by passing a path into the executable. ie. cargo run -- path=~/QuestRust\n\n");
+        let file = File::open(path).expect("\nCould not open entity atttacks file."); 
         let reader = BufReader::new(file);
         let data: Vec<entity_attack_descriptor_json> = serde_json::from_reader(reader).expect("JSON was not well-formatted");
         for attack in data {
@@ -305,27 +305,27 @@ impl JSON_parser {
         }
     }
     pub fn parse_sprites(&mut self, path: &str) {
-        let file = File::open(path).expect("\nCould not open sprites file, is the QuestRust path correct?\nIf not, you can change it by passing a path into the executable. ie. cargo run -- path=~/QuestRust\n\n");
+        let file = File::open(path).expect("\nCould not open sprites file."); 
         let reader = BufReader::new(file);
         let data: sprites_json_descriptor = serde_json::from_reader(reader).expect("JSON was not well-formatted");
         self.sprites_json = data;
     }
     pub fn parse_starting_level(&mut self, path: &str) {
-        let file = File::open(path).expect("\nCould not open starting level file, is the QuestRust path correct?\nIf not, you can change it by passing a path into the executable. ie. cargo run -- path=~/QuestRust\n\n");
+        let file = File::open(path).expect("\nCould not open starting level file."); 
         let reader = BufReader::new(file);
         let data: starting_level_json = serde_json::from_reader(reader).expect("JSON was not well-formatted");
         self.starting_level_json = data;
     }
 
     pub fn parse_item_archetypes(&mut self, path: &str) {
-        let file = File::open(path).expect("\nCould not open item archetypes file, is the QuestRust path correct?\nIf not, you can change it by passing a path into the executable. ie. cargo run -- path=~/QuestRust\n\n");
+        let file = File::open(path).expect("\nCould not open item archetypes file."); 
         let reader = BufReader::new(file);
         let data: Vec<item_archetype_json> = serde_json::from_reader(reader).expect("JSON was not well-formatted");
         self.item_archetype_json = data;
     }
 
     pub fn parse_loot_tables(&mut self, path: &str) {
-        let file = File::open(path).expect("\nCould not open the loot tables file, is the QuestRust path correct?\nIf not, you can change it by passing a path into the executable. ie. cargo run -- path=~/QuestRust\n\n");
+        let file = File::open(path).expect("\nCould not open the loot tables file."); 
         let reader = BufReader::new(file);
         let data: Vec<item_loot_table_json> = serde_json::from_reader(reader).expect("JSON was not well-formatted");
         self.loot_table_json = data;

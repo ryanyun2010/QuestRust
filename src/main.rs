@@ -9,7 +9,7 @@
 #![allow(clippy::derivable_impls)]
 #![allow(clippy::single_match)]
 #![allow(clippy::unnecessary_get_then_check)]
-use std::{env, path::Path, time::Instant};
+use std::{env, path::PathBuf, time::Instant};
 pub mod rendering_engine;
 use rendering_engine::{renderer, texture, vertex, window};
 pub mod game_engine;
@@ -21,21 +21,17 @@ pub mod error;
 fn main() {
     let username = whoami::username();
 
-    let mut p = format!("/Users/{}/Desktop/QuestRust/",username);
     let args = env::args();
+    let mut p = None;
     for arg in args.into_iter() {
-        println!("{}", arg);
-        if arg.starts_with("path=") {
-            let mut d = arg.clone();
-            for i in 0..5 {d.remove(0);};
-            if d.chars().next().expect("invalid path") == '~' {
-                d.remove(0);
-                p = format!("/Users/{}{}", username, d);
-            }
-        }
+       p = Some(arg); 
     }
-    let path = Path::new(&p);
-    assert!(env::set_current_dir(path).is_ok(), "QuestRust directory not found at path: {}, pass the path of QuestRust with cargo run -- path=<INSERT PATH HERE> or run the executable with -- path=<INSERT PATH HERE>", path.display());
+    let mut path = PathBuf::from(&p.unwrap());
+    path.pop();
+    path.pop();
+    path.pop();
+
+    assert!(env::set_current_dir(path.clone()).is_ok(), "QuestRust directory not found at path: {}", path.display());
     println!("Successfully changed working directory to {}!", path.display());
     let mut parser = json_parsing::JSON_parser::new();
     let load_time = Instant::now();
