@@ -188,18 +188,18 @@ macro_rules! ptry {
             Ok(value) => value,
             Err(perror) => {
                 return Err(crate::error::PError::new(
-                    crate::error::PE::$error_variant(
-                        crate::error::ErrorDescriptor {
-                            desc: format!($desc, $($args)*),
-                            location: crate::error::Location {
-                                file: file!().to_string(),
-                                line: line!()
+                        crate::error::PE::$error_variant(
+                            crate::error::ErrorDescriptor {
+                                desc: format!($desc, $($args)*),
+                                location: crate::error::Location {
+                                    file: file!().to_string(),
+                                    line: line!()
+                                }
                             }
-                        }
-                    ),
-                    perror.as_trace()
+                        ),
+                        perror.as_trace()
                 ));
-            }
+                }
         }
     }};
     ($result:expr, $error_variant:ident,  $desc:expr) => {{
@@ -207,18 +207,18 @@ macro_rules! ptry {
             Ok(value) => value,
             Err(mut perror) => {
                 return Err(crate::PError::new(
-                    PE::$error_variant(
-                        ErrorDescriptor {
-                            desc: format!($desc),
-                            location: Location {
-                                file: file!().to_string(),
-                                line: line!()
+                        PE::$error_variant(
+                            ErrorDescriptor {
+                                desc: format!($desc),
+                                location: Location {
+                                    file: file!().to_string(),
+                                    line: line!()
+                                }
                             }
-                        }
-                    ),
-                    perror.as_trace()
+                        ),
+                        perror.as_trace()
                 ));
-            }
+                }
         }
     }};
     ($result:expr, $desc:expr, $($args:tt)*) => {{
@@ -226,18 +226,18 @@ macro_rules! ptry {
             Ok(value) => value,
             Err(perror) => {
                 return Err(crate::error::PError::new(
-                    crate::error::PE::Error(
-                        crate::error::ErrorDescriptor {
-                            desc: format!($desc, $($args)*),
-                            location: crate::error::Location {
-                                file: file!().to_string(),
-                                line: line!()
+                        crate::error::PE::Error(
+                            crate::error::ErrorDescriptor {
+                                desc: format!($desc, $($args)*),
+                                location: crate::error::Location {
+                                    file: file!().to_string(),
+                                    line: line!()
+                                }
                             }
-                        }
-                    ),
-                    perror.as_trace()
+                        ),
+                        perror.as_trace()
                 ));
-            }
+                }
         }
     }};
     ($result:expr) => {{
@@ -245,18 +245,18 @@ macro_rules! ptry {
             Ok(value) => value,
             Err(perror) => {
                 return Err(crate::error::PError::new(
-                    crate::error::PE::Error(
-                        crate::error::ErrorDescriptor {
-                            desc: format!(""),
-                            location: crate::error::Location {
-                                file: file!().to_string(),
-                                line: line!()
+                        crate::error::PE::Error(
+                            crate::error::ErrorDescriptor {
+                                desc: format!(""),
+                                location: crate::error::Location {
+                                    file: file!().to_string(),
+                                    line: line!()
+                                }
                             }
-                        }
-                    ),
-                    perror.as_trace()
+                        ),
+                        perror.as_trace()
                 ));
-            }
+                }
         }
     }};
     ($result:expr, $desc:expr) => {{
@@ -264,18 +264,18 @@ macro_rules! ptry {
             Ok(value) => value,
             Err(perror) => {
                 return Err(crate::error::PError::new(
-                    crate::error::PE::Error(
-                        crate::error::ErrorDescriptor {
-                            desc: format!($desc),
-                            location: crate::error::Location {
-                                file: file!().to_string(),
-                                line: line!()
+                        crate::error::PE::Error(
+                            crate::error::ErrorDescriptor {
+                                desc: format!($desc),
+                                location: crate::error::Location {
+                                    file: file!().to_string(),
+                                    line: line!()
+                                }
                             }
-                        }
-                    ),
-                    perror.as_trace()
+                        ),
+                        perror.as_trace()
                 ));
-            }
+                }
         }
     }};
     ($result:expr, $error_variant:ident) => {{
@@ -283,21 +283,21 @@ macro_rules! ptry {
             Ok(value) => value,
             Err(mut perror) => {
                 return Err(crate::PError::new(
-                    PE::$error_variant(
-                        ErrorDescriptor {
-                            desc: format!(""),
-                            location: Location {
-                                file: file!().to_string(),
-                                line: line!()
+                        PE::$error_variant(
+                            ErrorDescriptor {
+                                desc: format!(""),
+                                location: Location {
+                                    file: file!().to_string(),
+                                    line: line!()
+                                }
                             }
-                        }
-                    ),
-                    perror.as_trace()
+                        ),
+                        perror.as_trace()
                 ));
-            }
+                }
         }
     }};
-   
+
 }
 
 #[macro_export]
@@ -308,18 +308,18 @@ macro_rules! punwrap {
             Some(value) => value,
             None => {
                 return Err(crate::error::PError::new(
-                    crate::error::PE::UnwrapFailure(
-                        crate::error::ErrorDescriptor {
-                            desc: format!(""),
-                            location: crate::error::Location {
-                                file: file!().to_string(),
-                                line: line!(),
+                        crate::error::PE::UnwrapFailure(
+                            crate::error::ErrorDescriptor {
+                                desc: format!(""),
+                                location: crate::error::Location {
+                                    file: file!().to_string(),
+                                    line: line!(),
+                                },
                             },
-                        },
-                    ),
-                    vec![],
+                        ),
+                        vec![],
                 ));
-            }
+                }
         }
     }};
     ($option:expr, $error_variant:ident, $desc:expr) => {{
@@ -327,19 +327,19 @@ macro_rules! punwrap {
             Some(value) => value,
             None => {
                 return Err(crate::error::PError::new(
-                    crate::error::PE::$error_variant(
-                        crate::error::ErrorDescriptor {
-                            desc: format!($desc),
-                            location: crate::error::Location {
-                                file: file!().to_string(),
-                                line: line!(),
+                        crate::error::PE::$error_variant(
+                            crate::error::ErrorDescriptor {
+                                desc: format!($desc),
+                                location: crate::error::Location {
+                                    file: file!().to_string(),
+                                    line: line!(),
+                                },
                             },
-                        },
-                    ),
-                    vec![]
+                        ),
+                        vec![]
                 ),
                 );
-            }
+                }
         }
     }};
     ($option:expr, $error_variant:ident, $desc:expr, $($args:tt)*) => {{
@@ -347,18 +347,18 @@ macro_rules! punwrap {
             Some(value) => value,
             None => {
                 return Err(crate::error::PError::new(
-                    crate::error::PE::$error_variant(
-                        crate::error::ErrorDescriptor {
-                            desc: format!($desc, $($args)*),
-                            location: crate::error::Location {
-                                file: file!().to_string(),
-                                line: line!()
+                        crate::error::PE::$error_variant(
+                            crate::error::ErrorDescriptor {
+                                desc: format!($desc, $($args)*),
+                                location: crate::error::Location {
+                                    file: file!().to_string(),
+                                    line: line!()
+                                }
                             }
-                        }
-                    ),
-                    vec![]
+                        ),
+                        vec![]
                 ));
-            }
+                }
         }
     }};
     ($option:expr, $desc:expr, $($args:tt)*) => {{
@@ -366,18 +366,18 @@ macro_rules! punwrap {
             Some(value) => value,
             None => {
                 return Err(crate::error::PError::new(
-                    crate::error::PE::UnwrapFailure(
-                        crate::error::ErrorDescriptor {
-                            desc: format!($desc, $($args)*),
-                            location: crate::error::Location {
-                                file: file!().to_string(),
-                                line: line!(),
+                        crate::error::PE::UnwrapFailure(
+                            crate::error::ErrorDescriptor {
+                                desc: format!($desc, $($args)*),
+                                location: crate::error::Location {
+                                    file: file!().to_string(),
+                                    line: line!(),
+                                },
                             },
-                        },
-                    ),
-                    vec![],
+                        ),
+                        vec![],
                 ));
-            }
+                }
         }
     }};
     ($option:expr, $desc:expr) => {{
@@ -385,18 +385,18 @@ macro_rules! punwrap {
             Some(value) => value,
             None => {
                 return Err(crate::error::PError::new(
-                    crate::error::PE::UnwrapFailure(
-                        crate::error::ErrorDescriptor {
-                            desc: format!($desc),
-                            location: crate::error::Location {
-                                file: file!().to_string(),
-                                line: line!(),
+                        crate::error::PE::UnwrapFailure(
+                            crate::error::ErrorDescriptor {
+                                desc: format!($desc),
+                                location: crate::error::Location {
+                                    file: file!().to_string(),
+                                    line: line!(),
+                                },
                             },
-                        },
-                    ),
-                    vec![],
+                        ),
+                        vec![],
                 ));
-            }
+                }
         }
     }};
     ($option:expr, $error_variant:ident) => {{
@@ -404,21 +404,21 @@ macro_rules! punwrap {
             Some(value) => value,
             None => {
                 return Err(crate::error::PError::new(
-                    crate::error::PE::$error_variant(
-                        crate::error::ErrorDescriptor {
-                            desc: format!(""),
-                            location: crate::error::Location {
-                                file: file!().to_string(),
-                                line: line!(),
+                        crate::error::PE::$error_variant(
+                            crate::error::ErrorDescriptor {
+                                desc: format!(""),
+                                location: crate::error::Location {
+                                    file: file!().to_string(),
+                                    line: line!(),
+                                },
                             },
-                        },
-                    ),
-                    vec![],
+                        ),
+                        vec![],
                 ));
-            }
+                }
         }
     }};
-   
+
     ($option:expr, $error_variant:ident, $desc:expr, $($args:tt)*) => {{
         match $option {
             Some(value) => value,
@@ -435,7 +435,7 @@ macro_rules! punwrap {
                     ),
                     vec![],
                 );
-            }
+                }
         }
     }};
 }
@@ -445,18 +445,18 @@ macro_rules! punwrap {
 macro_rules! error_prolif {
     ($error:expr) => {{
         return Err(crate::error::PError::new(
-            crate::error::PE::Error(
-                crate::error::ErrorDescriptor {
-                    desc: format!(""),
-                    location: crate::error::Location {
-                        file: file!().to_string(),
-                        line: line!()
+                crate::error::PE::Error(
+                    crate::error::ErrorDescriptor {
+                        desc: format!(""),
+                        location: crate::error::Location {
+                            file: file!().to_string(),
+                            line: line!()
+                        }
                     }
-                }
-            ),
-            $error.as_trace()
+                ),
+                $error.as_trace()
         )
-    );
+        );
     }} 
 }
 
@@ -472,7 +472,7 @@ macro_rules! error_prolif_allow {
                         result
                     },
                 )*
-                _ => crate::error_prolif!(perror),
+                    _ => crate::error_prolif!(perror),
             }
         }else{
             result

@@ -17,7 +17,6 @@ colorized = "1.0.0"
 term_size = "0.3.2"
 rustc-hash = "2.1.0"
 anyhow = "1.0.95"
-whoami = "1.5.2"
 [dependencies.image]
 version = "0.25.5"
 default-features = false

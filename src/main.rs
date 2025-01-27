@@ -19,8 +19,6 @@ pub mod error;
 
 
 fn main() {
-    let username = whoami::username();
-
     let args = env::args();
     let mut p = None;
     for arg in args.into_iter() {
