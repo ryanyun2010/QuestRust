@@ -1,8 +1,8 @@
 use rustc_hash::FxHashMap;
 
-use crate::{error::PError, game_engine::item::Item, perror, ptry, punwrap, rendering_engine::abstractions::{TextSprite, UIEFull}};
+use crate::{error::PError, error_prolif_allow, game_engine::item::Item, perror, ptry, punwrap, rendering_engine::abstractions::{TextSprite, UIEFull}};
 
-use super::{game::MousePosition, ui::UIESprite};
+use super::{game::MousePosition, item::ItemType, ui::UIESprite};
 
 #[derive(Debug, Clone)]
 pub struct ItemOnMouse{
@@ -30,14 +30,18 @@ pub struct Slot {
     main_image: Option<UIESprite>,
     item_image: Option<UIESprite>,
     x: usize,
-    y: usize
+    y: usize,
+    accepted_types: Vec<ItemType>
 }
 
+        
+
 impl Slot {
-    pub fn new(x: usize, y: usize) -> Self {
+    pub fn new(x: usize, y: usize, accepted_types: Vec<ItemType>) -> Self {
 
         Self {
             item: None,
+            accepted_types,
             main_image: Some(UIESprite{
                 x: x as f32,
                 y: y as f32,
@@ -71,6 +75,14 @@ impl Slot {
     }
     pub fn set_item(&mut self, item: usize, items: &FxHashMap<usize, Item>) -> Result<(), PError>{
         let i = punwrap!(items.get(&item), NotFound, "no item with id {}", item);
+        let mut ok_type = false;
+        for a_type in self.accepted_types.iter() {
+            if &i.item_type == a_type { ok_type = true};
+        }
+        if !ok_type {
+            return Err(perror!(WrongItemType, "this slot cannot take items of type {:?}", i.item_type));
+        }
+
         self.item = Some(item);
         self.item_image = Some(
             UIESprite {
@@ -122,32 +134,30 @@ impl Inventory {
         self.cur_hotbar_slot = slot;
     }
     pub fn init_ui(&mut self) {
-        self.add_hotbar_slot(Slot::new(20, 652));
-        self.add_hotbar_slot(Slot::new(78, 652));
-        self.add_hotbar_slot(Slot::new(136, 652));
-        self.add_hotbar_slot(Slot::new(194, 652));
-        self.add_hotbar_slot(Slot::new(252, 652));
-        self.add_slot(Slot::new(520, 200));
-        self.add_slot(Slot::new(578, 200));
-        self.add_slot(Slot::new(636, 200));
-        self.add_slot(Slot::new(694, 200));
-        self.add_slot(Slot::new(752, 200));
-        self.add_slot(Slot::new(520, 258));
-        self.add_slot(Slot::new(578, 258));
-        self.add_slot(Slot::new(636, 258));
-        self.add_slot(Slot::new(694, 258));
-        self.add_slot(Slot::new(752, 258));
-        self.add_slot(Slot::new(520, 316));
-        self.add_slot(Slot::new(578, 316));
-        self.add_slot(Slot::new(636, 316));
-        self.add_slot(Slot::new(694, 316));
-        self.add_slot(Slot::new(752, 316));
+        self.add_hotbar_slot(Slot::new(20, 652, ItemType::all()));
+        self.add_hotbar_slot(Slot::new(78, 652, ItemType::all()));
+        self.add_hotbar_slot(Slot::new(136, 652, ItemType::all()));
+        self.add_hotbar_slot(Slot::new(194, 652, ItemType::all()));
+        self.add_hotbar_slot(Slot::new(252, 652, ItemType::all()));
+        self.add_slot(Slot::new(520, 200, ItemType::all()));
+        self.add_slot(Slot::new(578, 200, ItemType::all()));
+        self.add_slot(Slot::new(636, 200, ItemType::all()));
+        self.add_slot(Slot::new(694, 200, ItemType::all()));
+        self.add_slot(Slot::new(752, 200, ItemType::all()));
+        self.add_slot(Slot::new(520, 258, ItemType::all()));
+        self.add_slot(Slot::new(578, 258, ItemType::all()));
+        self.add_slot(Slot::new(636, 258, ItemType::all()));
+        self.add_slot(Slot::new(694, 258, ItemType::all()));
+        self.add_slot(Slot::new(752, 258, ItemType::all()));
+        self.add_slot(Slot::new(520, 316, ItemType::all()));
+        self.add_slot(Slot::new(578, 316, ItemType::all()));
+        self.add_slot(Slot::new(636, 316, ItemType::all()));
+        self.add_slot(Slot::new(694, 316, ItemType::all()));
+        self.add_slot(Slot::new(752, 316, ItemType::all()));
 
-        self.helm_slot = Some(self.add_slot(Slot::new(369,242)));
-        self.chest_slot = Some(self.add_slot(Slot::new(369,300)));
-        self.boot_slot = Some(self.add_slot(Slot::new(369,358)));
-
-
+        self.helm_slot = Some(self.add_slot(Slot::new(369,242, vec![ItemType::HelmetArmor])));
+        self.chest_slot = Some(self.add_slot(Slot::new(369,300, vec![ItemType::ChestplateArmor])));
+        self.boot_slot = Some(self.add_slot(Slot::new(369,358, vec![ItemType::BootsArmor])));
     }
     pub fn add_hotbar_slot(&mut self, slot: Slot) {
         self.hotbar.push(self.slots.len());
@@ -209,7 +219,10 @@ impl Inventory {
     }
     pub fn add_to_slot(&mut self, item: Item) -> Result<(), PError> {
         let it = self.add_item(item);
-        for slot in self.slots.iter_mut() {
+        for (i, slot) in self.slots.iter_mut().enumerate() {
+            if i == self.helm_slot.unwrap_or(usize::MAX) { continue; }
+            if i == self.chest_slot.unwrap_or(usize::MAX) { continue; }
+            if i == self.boot_slot.unwrap_or(usize::MAX) { continue; }
             if slot.item.is_none() {
                 ptry!(slot.set_item(it, &self.items));
                 return Ok(());
@@ -333,7 +346,7 @@ impl Inventory {
     pub fn on_key_down(&mut self, key: &str) {
 
     }
-    pub fn on_mouse_click(&mut self, position: MousePosition, left: bool, right: bool) {
+    pub fn on_mouse_click(&mut self, position: MousePosition, left: bool, right: bool) -> Result<(), PError> {
         if left {
             let mut slot_clicked = None;
             let mut i = 0;
@@ -355,31 +368,26 @@ impl Inventory {
                         );
                         slot.remove_item();
                     }else if self.item_on_mouse.is_some() {
-                        let item_clone = self.item_on_mouse.as_ref().unwrap().clone();
-                        self.item_on_mouse = Some(
-                            ItemOnMouse {
-                                slot_belonging: item_clone.slot_belonging,
-                                item_id: slot.item.unwrap()
-                            }
-                        ); 
-                        match slot.set_item(item_clone.item_id, &self.items) {
-                            Ok(_) => (),
-                            Err(e) => {
-                                println!("Error setting item: {:?}", e)
-                            }
+                        let item_clone = slot.item;
+                        let res = error_prolif_allow!(slot.set_item(self.item_on_mouse.as_ref().unwrap().item_id, &self.items), WrongItemType);
+                        if res.is_ok() {
+                            self.item_on_mouse = Some(
+                                ItemOnMouse {
+                                    slot_belonging: self.item_on_mouse.as_ref().unwrap().slot_belonging,
+                                    item_id: item_clone.unwrap()
+                                }
+                            ); 
                         }
                     }
                 }else if self.item_on_mouse.is_some(){
-                    match slot.set_item(self.item_on_mouse.as_ref().unwrap().item_id, &self.items){
-                        Ok(_) => (),
-                        Err(e) => {
-                            println!("Error setting item: {:?}", e)
-                        }
+                    let res = error_prolif_allow!(slot.set_item(self.item_on_mouse.as_ref().unwrap().item_id, &self.items), WrongItemType);
+                    if res.is_ok() {
+                        self.item_on_mouse = None;
                     }
-                    self.item_on_mouse = None;
                 }
             }
         }
+        Ok(())
     }
     pub fn process_input(&mut self, keys: &FxHashMap<String, bool>){
         if *keys.get("q").unwrap_or(&false) {

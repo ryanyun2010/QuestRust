@@ -233,8 +233,24 @@ pub struct ItemArchetype {
     pub attack_sprite: String
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub enum ItemType {
+
+macro_rules! setup_item_types {
+    ($( $variant:ident, )*) => {
+        #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+        pub enum ItemType {
+            $( $variant, )*
+        }
+
+        impl ItemType {
+            pub fn all() -> Vec<ItemType> {
+                vec![$( ItemType::$variant, )*]
+            }
+        }
+
+
+    }
+}
+setup_item_types!{   
     MeleeWeapon,
     RangedWeapon,
     MagicWeapon,

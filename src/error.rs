@@ -11,6 +11,7 @@ pub enum PE {
     MissingExpectedGlobalSprite(ErrorDescriptor),
     SurfaceError(wgpu::SurfaceError),
     NoSpace(ErrorDescriptor),
+    WrongItemType(ErrorDescriptor)
 }
 
 
@@ -26,9 +27,11 @@ impl PE {
             PE::MissingExpectedGlobalSprite(e) => format!("Missing Expected Global Sprite at {}: {}",e.as_location(), e.as_string()),
             PE::SurfaceError(e) => format!("Surface Error: {}", e),
             PE::NoSpace(e) => format!("No Space in Inventory Error at {}: {}", e.as_location(), e.as_string()),
+            PE::WrongItemType(e) => format!("Wrong Item Type Error at {}: {}", e.as_location(), e.as_string())
         }
     }
 }
+
 impl ErrorDescriptor {
     pub fn as_string(&self) -> String {
         self.desc.clone()
@@ -488,4 +491,14 @@ fn split_into_chunks(input: &str, chunk_size: usize) -> Vec<String> {
         .chunks(chunk_size)
         .map(|chunk| chunk.iter().collect())
         .collect()
+}
+
+#[macro_export]
+macro_rules! ok_or_panic {
+    ($result:expr) => {
+        match $result {
+            Ok(_) => (),
+            Err(e) => panic!("{}", e)
+        }
+    }
 }

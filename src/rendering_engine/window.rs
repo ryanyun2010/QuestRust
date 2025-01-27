@@ -42,7 +42,10 @@ pub async fn run(world: World, camera: Camera, sprites_json_to_load: &[String]) 
                     game.process_mouse_move(position.x, position.y);
                 },
                 WindowEvent::MouseInput { state, button, .. } => {
-                    game.process_mouse_click(state, button);
+                    match game.process_mouse_click(state, button) {
+                        Ok(_) => (),
+                        Err(e) => print_error!(e)
+                    }
                 },
                 WindowEvent::Focused(bool) => {
                     focused = bool;

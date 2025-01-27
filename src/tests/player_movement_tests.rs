@@ -1,5 +1,5 @@
 #![cfg(test)]
-use crate::tests::{lib::headless::HeadlessGame, test_framework::{basic_world, basic_camera}};
+use crate::{ok_or_panic, tests::{lib::headless::HeadlessGame, test_framework::{basic_camera, basic_world}}};
 
 #[tokio::test]
 async fn test_player_movement_right() {
@@ -10,9 +10,7 @@ async fn test_player_movement_right() {
 
     headless.state.keys_down.insert(String::from("d"), true);
     let player_starting_x = headless.world.player.borrow().x;
-     if let Err(e) = headless.run(20).await {
-         panic!("{}", e)
-     }
+    ok_or_panic!(headless.run(20).await);
 
     assert!(
         headless.world.player.borrow().x > player_starting_x,
@@ -28,9 +26,7 @@ async fn test_player_movement_left() {
 
     headless.state.keys_down.insert(String::from("a"), true);
     let player_starting_x = headless.world.player.borrow().x;
-     if let Err(e) = headless.run(20).await {
-         panic!("{}", e)
-     }
+    ok_or_panic!(headless.run(20).await);
 
     assert!(
         headless.world.player.borrow().x < player_starting_x,
@@ -46,9 +42,7 @@ async fn test_player_movement_down() {
 
     headless.state.keys_down.insert(String::from("s"), true);
     let player_starting_y = headless.world.player.borrow().y;
-     if let Err(e) = headless.run(20).await {
-         panic!("{}", e)
-     }
+    ok_or_panic!(headless.run(20).await);
 
     assert!(
         headless.world.player.borrow().y > player_starting_y,
@@ -64,9 +58,7 @@ async fn test_player_movement_up() {
 
     headless.state.keys_down.insert(String::from("w"), true);
     let player_starting_y = headless.world.player.borrow().y;
-     if let Err(e) = headless.run(20).await {
-         panic!("{}", e)
-     }
+    ok_or_panic!(headless.run(20).await);
 
     assert!(
         headless.world.player.borrow().y < player_starting_y,
@@ -84,9 +76,7 @@ async fn test_movement_both_d_and_a() {
     headless.state.keys_down.insert(String::from("a"), true);
     let player_starting_x = headless.world.player.borrow().x;
     let player_starting_y = headless.world.player.borrow().y;
-     if let Err(e) = headless.run(20).await {
-         panic!("{}", e)
-     }
+    ok_or_panic!(headless.run(20).await);
 
     assert!(
         headless.world.player.borrow().x == player_starting_x && headless.world.player.borrow().y == player_starting_y,
@@ -104,9 +94,7 @@ async fn test_movement_both_w_and_s() {
     headless.state.keys_down.insert(String::from("s"), true);
     let player_starting_x = headless.world.player.borrow().x;
     let player_starting_y = headless.world.player.borrow().y;
-     if let Err(e) = headless.run(20).await {
-         panic!("{}", e)
-     }
+    ok_or_panic!(headless.run(20).await);
 
     assert!(
         headless.world.player.borrow().x == player_starting_x && headless.world.player.borrow().y == player_starting_y,
@@ -124,9 +112,7 @@ async fn test_movement_w_and_d() {
     headless.state.keys_down.insert(String::from("d"), true);
     let player_starting_x = headless.world.player.borrow().x;
     let player_starting_y = headless.world.player.borrow().y;
-     if let Err(e) = headless.run(20).await {
-         panic!("{}", e)
-     }
+    ok_or_panic!(headless.run(20).await);
 
     assert!(
         headless.world.player.borrow().x > player_starting_x && headless.world.player.borrow().y < player_starting_y,
@@ -148,9 +134,7 @@ async fn test_movement_w_and_a() {
     headless.state.keys_down.insert(String::from("a"), true);
     let player_starting_x = headless.world.player.borrow().x;
     let player_starting_y = headless.world.player.borrow().y;
-     if let Err(e) = headless.run(20).await {
-         panic!("{}", e)
-     }
+    ok_or_panic!(headless.run(20).await);
 
     assert!(
         headless.world.player.borrow().x < player_starting_x && headless.world.player.borrow().y < player_starting_y,
@@ -172,9 +156,7 @@ async fn test_movement_s_and_d() {
     headless.state.keys_down.insert(String::from("d"), true);
     let player_starting_x = headless.world.player.borrow().x;
     let player_starting_y = headless.world.player.borrow().y;
-     if let Err(e) = headless.run(20).await {
-         panic!("{}", e)
-     }
+    ok_or_panic!(headless.run(20).await);
 
     assert!(
         headless.world.player.borrow().x > player_starting_x && headless.world.player.borrow().y > player_starting_y,
@@ -196,9 +178,7 @@ async fn test_movement_s_and_a() {
     headless.state.keys_down.insert(String::from("a"), true);
     let player_starting_x = headless.world.player.borrow().x;
     let player_starting_y = headless.world.player.borrow().y;
-    if let Err(e) = headless.run(20).await {
-        panic!("{}", e)
-    }
+    ok_or_panic!(headless.run(20).await);
 
     assert!(
         headless.world.player.borrow().x < player_starting_x && headless.world.player.borrow().y > player_starting_y,

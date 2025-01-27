@@ -77,10 +77,10 @@ impl<'a> Game<'a> {
             self.input.mouse_position.y_world = self.camera.camera_y + self.input.mouse_position.y_screen;
         }
     }
-    pub fn process_mouse_click(&mut self, state: event::ElementState, button: event::MouseButton){
+    pub fn process_mouse_click(&mut self, state: event::ElementState, button: event::MouseButton) -> Result<(), PError>{
         if self.state == GameState::start {
             self.state = GameState::play;
-            return;
+            return Ok(());
         }
         match button {
             event::MouseButton::Left => {
@@ -92,16 +92,18 @@ impl<'a> Game<'a> {
             _ => {}
         }
         if state == event::ElementState::Pressed {
-            self.on_mouse_click();
+            ptry!(self.on_mouse_click());
         }
+        Ok(())
 
     }
-    pub fn on_mouse_click(&mut self) {
+    pub fn on_mouse_click(&mut self) -> Result<(), PError> {
         if self.state == GameState::play {
             self.world.on_mouse_click(self.input.mouse_position, self.input.mouse_left, self.input.mouse_right, self.camera.viewpoint_width as f32, self.camera.viewpoint_height as f32);
         }else if self.state == GameState::inventory {
-            self.world.inventory.on_mouse_click(self.input.mouse_position, self.input.mouse_left, self.input.mouse_right);
+            ptry!(self.world.inventory.on_mouse_click(self.input.mouse_position, self.input.mouse_left, self.input.mouse_right));
         }
+        Ok(())
     }
     pub fn process_input(&mut self) -> Result<(), PError> {
         if self.state == GameState::play {

@@ -1,6 +1,7 @@
 #![cfg(test)]
 use crate::game_engine::entity_attacks::EntityAttackDescriptor;
 use crate::game_engine::entity_components;
+use crate::ok_or_panic;
 use crate::tests::test_framework::{basic_world, basic_camera};
 use crate::tests::lib::headless::HeadlessGame;
 use crate::game_engine::entities::EntityAttackPattern;
@@ -47,9 +48,7 @@ async fn test_entity_can_kill_player(){
     let player_starting_position_x = world.player.borrow().x;
     let player_starting_position_y = world.player.borrow().y;
     let mut headless = HeadlessGame::new(world, camera);
-    if let Err(e) = headless.run(1000).await {
-        panic!("{}", e)
-    }
+    ok_or_panic!(headless.run(1000).await);
 
     assert!(
         headless.world.player.borrow().x == player_starting_position_x, 
