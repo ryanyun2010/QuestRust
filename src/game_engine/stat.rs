@@ -264,6 +264,17 @@ macro_rules! create_stat_lists {
         pub struct StatList {
             $(pub $stat_name: Option<f32>,)*
         }
+        impl StatList {
+            pub fn to_sum_with(&mut self, list: &StatList) {
+                $(
+                    if self.$stat_name.is_some() && list.$stat_name.is_some() {
+                        self.$stat_name = Some(self.$stat_name.unwrap() + list.$stat_name.unwrap());
+                    } else if (self.$stat_name.is_none() && list.$stat_name.is_some()) {
+                        self.$stat_name = list.$stat_name;
+                    }
+                )*
+            }
+        }
         #[derive(Debug, Clone, Serialize, Deserialize, Default)]
         pub struct GearStatList {
             $(pub $stat_name: Option<GearStat>,)*

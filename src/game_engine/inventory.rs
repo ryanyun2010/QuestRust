@@ -1,3 +1,4 @@
+use crate::stat::StatList;
 use rustc_hash::FxHashMap;
 
 use crate::{error::PError, error_prolif_allow, game_engine::item::Item, perror, ptry, punwrap, rendering_engine::abstractions::{TextSprite, UIEFull}};
@@ -177,6 +178,22 @@ impl Inventory {
             |x| self.slots.get_mut(*x)
         )
     }
+    pub fn get_combined_stats(&self) -> Result<StatList, PError> {
+        let mut stats = StatList::default();
+        if let Some(item) = self.get_cur_held_item() {
+            stats.to_sum_with(&item.stats);
+        }
+        if let Some(h) = self.helm_slot {
+            let slot = punwrap!(self.get_slot(&h), Invalid, "Helm slot is marked as a non-existent slot {}", h);
+            if let Some(i) = slot.item {
+                let item = punwrap!(self.get_item(&i), Invalid, "Helm slot refers to non-existent item with id {}", i);
+                stats.to_sum_with(&item.stats);
+            }
+        }
+
+        Ok(stats)
+    }
+
     pub fn show_inventory(&mut self){
         self.show_inventory = true;
         for i in 0..self.hotbar.len(){

@@ -63,6 +63,7 @@
 		"lore": "test",
 		"attack_sprite": "N/A",
 		"stats": {
+			"damage": {"average": 1000000.0, "variation": 1.0}
 		}
 	}
 		

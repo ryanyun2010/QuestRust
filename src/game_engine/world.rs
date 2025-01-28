@@ -20,6 +20,7 @@ use super::item::{Item, ItemArchetype, ItemType};
 use super::items_on_floor::ItemOnFloor;
 use super::loot::LootTable;
 use super::player_attacks::PlayerAttack;
+use super::stat::StatList;
 use super::utils::{self, Rectangle};
 
 #[derive(Debug, Clone)]
@@ -652,16 +653,16 @@ impl World{
         Ok(())
     }
    
-    pub fn add_player_attack(&self, item: &Item, x: f32, y: f32, angle: f32) -> Result<(), PError>{    
-        match item.item_type {
+    pub fn add_player_attack(&self, stats: &StatList, attack_item: &Item, x: f32, y: f32, angle: f32) -> Result<(), PError>{    
+        match attack_item.item_type {
             ItemType::MeleeWeapon => {
                 self.player_attacks.borrow_mut().push(
-                    PlayerAttack::new(item.stats.clone(), AttackType::Melee, punwrap!(item.attack_sprite.clone(), Expected, "all melee weapons should have an attack sprite"), item.width_to_length_ratio.unwrap_or(1.0), x, y, angle)
+                    PlayerAttack::new(stats.clone(), AttackType::Melee, punwrap!(attack_item.attack_sprite.clone(), Expected, "all melee weapons should have an attack sprite"), attack_item.width_to_length_ratio.unwrap_or(1.0), x, y, angle)
                 );
             }
             ItemType::RangedWeapon => {
                 self.player_attacks.borrow_mut().push(
-                    PlayerAttack::new(item.stats.clone(), AttackType::Ranged, punwrap!(item.attack_sprite.clone(), Expected, "all ranged weapons should have an attack sprite"),item.width_to_length_ratio.unwrap_or(1.0), x, y, angle)
+                    PlayerAttack::new(stats.clone(), AttackType::Ranged, punwrap!(attack_item.attack_sprite.clone(), Expected, "all ranged weapons should have an attack sprite"),attack_item.width_to_length_ratio.unwrap_or(1.0), x, y, angle)
                 );
             }
             _ => {}
@@ -862,22 +863,23 @@ impl World{
     }
     pub fn on_mouse_click(&mut self, mouse_position: MousePosition, mouse_left: bool, mouse_right: bool, camera_width: f32, camera_height: f32) -> Result<(), PError>{
         if mouse_left {
-            let cur_item = self.inventory.get_cur_held_item();
-            if cur_item.is_some() {
-                let item = cur_item.unwrap();
+            let stats = ptry!(self.inventory.get_combined_stats());
+            let pitem = self.inventory.get_cur_held_item();
+            if let Some(item) = pitem {
                 let mouse_direction_unnormalized = [(mouse_position.x_world - self.player.borrow().x - 16.0), (mouse_position.y_world - self.player.borrow().y - 22.0)];
                 let magnitude = f32::sqrt(mouse_direction_unnormalized[0].powf(2.0) + mouse_direction_unnormalized[1].powf(2.0));
                 let mouse_direction_normalized = [
                     mouse_direction_unnormalized[0] / magnitude,
                     mouse_direction_unnormalized[1] / magnitude
                 ];
-                if item.stats.shots.unwrap_or(1.0) > 1.0 {
-                    let mut spread = f32::min(PI/8.0, PI/item.stats.shots.unwrap_or(1.0));
-                    spread /= item.stats.focus.unwrap_or(1.0);
-                    let angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]) - (item.stats.shots.unwrap_or(1.0) - 1.0) * spread/2.0;
-                    for i in 0..item.stats.shots.unwrap_or(1.0) as usize {
+                if stats.shots.unwrap_or(1.0) > 1.0 {
+                    let mut spread = f32::min(PI/8.0, PI/stats.shots.unwrap_or(1.0));
+                    spread /= stats.focus.unwrap_or(1.0);
+                    let angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]) - (stats.shots.unwrap_or(1.0) - 1.0) * spread/2.0;
+                    for i in 0..stats.shots.unwrap_or(1.0) as usize {
                         let ang_adjusted = angle + spread * i as f32;
                         ptry!(self.add_player_attack(
+                            &stats,
                             item, 
                             self.player.borrow().x + 16.0 + ang_adjusted.cos() * 25.0,
                             self.player.borrow().y + 22.0 + ang_adjusted.sin() * 25.0,
@@ -886,13 +888,14 @@ impl World{
                 } else {
                     let angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]);
                     ptry!(self.add_player_attack(
-                        item, 
+                        &stats, 
+                        item,
                         self.player.borrow().x + 16.0 + angle.cos() * 25.0,
                         self.player.borrow().y + 22.0 + angle.sin() * 25.0,
                         angle * 180.0/PI));
                 }
-                
             }
+                
         }
         // if self.cur_hotbar_slot == 0 {
         //     self.player_attacks.borrow_mut().push(
