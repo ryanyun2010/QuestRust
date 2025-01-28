@@ -670,15 +670,19 @@ impl World{
         Ok(())
         
     }
-    pub fn update_entity_attacks(&self){
+    pub fn damage_player(&self, damage: f32) {
+        self.player.borrow_mut().health -= damage;
+    }
+
+    pub fn update_entity_attacks(&self) -> Result<(), PError>{
         let mut attacks = self.entity_attacks.borrow_mut();
-        let mut attacks_to_be_deleted = Vec::new();
+       let mut attacks_to_be_deleted = Vec::new();
         for (i, attack) in attacks.iter_mut().enumerate(){
             attack.time_charged += 1.0;
-            let desciptor = self.get_attack_descriptor(attack).expect("Couldn't find entity attack descriptor?");
-            if attack.time_charged.floor() as usize >= desciptor.time_to_charge {
-                if self.check_collision_with_player(attack.x, attack.y, desciptor.reach as f32, desciptor.width as f32, attack.rotation * 180.0/PI){
-                    self.player.borrow_mut().health -= desciptor.damage;
+            let descriptor = punwrap!(self.get_attack_descriptor(attack), Expected, "Couldn't find attack descriptor for entity attack: {:?}", attack);
+            if attack.time_charged.floor() as usize >= descriptor.time_to_charge {
+                if self.check_collision_with_player(attack.x, attack.y, descriptor.reach as f32, descriptor.width as f32, attack.rotation * 180.0/PI){
+                    self.damage_player(descriptor.damage);
                 }
                 attacks_to_be_deleted.push(i);
             }
@@ -686,6 +690,7 @@ impl World{
         for (offset, index) in attacks_to_be_deleted.iter().enumerate(){
             attacks.remove(*index - offset);
         }
+        Ok(())
     }
     pub fn update_player_attacks(&self, camera: &mut Camera){
         let mut attacks = self.player_attacks.borrow_mut();
@@ -786,8 +791,8 @@ impl World{
         if entity_health_component.is_some() {
             entity_health_component.unwrap().health -= damage;
         }
-        let text_1 = camera.add_world_text(((damage * 10.0).round() / 10.0).to_string(), super::camera::Font::B, entity_position_component.x + 11.0, entity_position_component.y + 7.0, 50.0, 50.0, 50.0, [0.0, 0.0, 0.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
-        let text_2 = camera.add_world_text(((damage * 10.0).round() / 10.0).to_string(), super::camera::Font::B, entity_position_component.x + 9.0, entity_position_component.y + 5.0, 50.0, 50.0, 50.0, [1.0, 1.0, 1.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
+        let text_1 = camera.add_world_text(((damage * 10.0).round() / 10.0).to_string(), super::camera::Font::B, entity_position_component.x + 11.0, entity_position_component.y + 7.0, 150.0, 50.0, 50.0, [0.0, 0.0, 0.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
+        let text_2 = camera.add_world_text(((damage * 10.0).round() / 10.0).to_string(), super::camera::Font::B, entity_position_component.x + 9.0, entity_position_component.y + 5.0, 150.0, 50.0, 50.0, [1.0, 1.0, 1.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
         if entity_aggro_component.is_some() {
             let mut aggro = entity_aggro_component.unwrap();
             if !aggro.aggroed{
