@@ -490,7 +490,7 @@ pub async fn test_melee_player_attack_after_inventory_movement() {
     let item = world.inventory.add_item(
         Item {
             name: String::from("test_sword"),
-            attack_sprite: String::from("melee_attack"),
+            attack_sprite: Some(String::from("melee_attack")),
             item_type: ItemType::MeleeWeapon,
             width_to_length_ratio: None,
             lore: String::from("test"),
@@ -536,12 +536,12 @@ pub async fn test_melee_player_attack_after_inventory_movement() {
         Err(e) => panic!("{}", e)
     }
     ok_or_panic!(headless.run(5).await);
-    headless.world.on_mouse_click(MousePosition {
+    ok_or_panic!(headless.world.on_mouse_click(MousePosition {
             x_screen: 639.0,
             y_screen: 400.0,
             x_world: 639.0 + headless.camera.camera_x,
             y_world: 400.0 + headless.camera.camera_y,
-    }, true, false, headless.camera.viewpoint_width as f32, headless.camera.viewpoint_height as f32);
+    }, true, false, headless.camera.viewpoint_width as f32, headless.camera.viewpoint_height as f32));
     assert!(
         headless.world.entity_health_components.get(&0).is_some(),
         "Entity should have a health component prior to player attack"

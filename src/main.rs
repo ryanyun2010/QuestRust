@@ -43,14 +43,21 @@ fn main() {
     let spear = world.inventory.add_item(
         world.create_item_with_archetype("test_spear".to_string())
     );
+    let h = world.inventory.add_item(
+        world.create_item_with_archetype("test helm".to_string())
+    );
     world.inventory.init_ui();
     match world.inventory.set_hotbar_slot_item(0, sword) {
         Ok(_) => {},
-        Err(e) => println!("Error: {}", e)
+        Err(e) => print_error!(e)
     };
     match world.inventory.set_hotbar_slot_item(1, spear) {
         Ok(_) => {},
-        Err(e) => println!("Error: {}", e)
+        Err(e) => print_error!(e)
+    }
+    match world.inventory.set_slot_item(7, h) {
+        Ok(_) => {},
+        Err(e) => print_error!(e)
     }
 
     camera.add_ui_element(String::from("health_bar_background"), UIElementDescriptor {

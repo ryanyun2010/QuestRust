@@ -94,7 +94,7 @@ impl World{
             y: 500.0,
             item: Item {
                 name: String::from("test1"),
-                attack_sprite: String::from("melee_attack"),
+                attack_sprite: Some(String::from("melee_attack")),
                 item_type: ItemType::MeleeWeapon,
                 width_to_length_ratio: None,
                 lore: String::from("test"),
@@ -652,20 +652,21 @@ impl World{
         Ok(())
     }
    
-    pub fn add_player_attack(&self, item: &Item, x: f32, y: f32, angle: f32) {    
+    pub fn add_player_attack(&self, item: &Item, x: f32, y: f32, angle: f32) -> Result<(), PError>{    
         match item.item_type {
             ItemType::MeleeWeapon => {
                 self.player_attacks.borrow_mut().push(
-                    PlayerAttack::new(item.stats.clone(), AttackType::Melee, item.attack_sprite.clone(), item.width_to_length_ratio.unwrap_or(1.0), x, y, angle)
+                    PlayerAttack::new(item.stats.clone(), AttackType::Melee, punwrap!(item.attack_sprite.clone(), Expected, "all melee weapons should have an attack sprite"), item.width_to_length_ratio.unwrap_or(1.0), x, y, angle)
                 );
             }
             ItemType::RangedWeapon => {
                 self.player_attacks.borrow_mut().push(
-                    PlayerAttack::new(item.stats.clone(), AttackType::Ranged, item.attack_sprite.clone(),item.width_to_length_ratio.unwrap_or(1.0), x, y, angle)
+                    PlayerAttack::new(item.stats.clone(), AttackType::Ranged, punwrap!(item.attack_sprite.clone(), Expected, "all ranged weapons should have an attack sprite"),item.width_to_length_ratio.unwrap_or(1.0), x, y, angle)
                 );
             }
             _ => {}
         }
+        Ok(())
         
     }
     pub fn update_entity_attacks(&self){
@@ -859,7 +860,7 @@ impl World{
             }
         }
     }
-    pub fn on_mouse_click(&mut self, mouse_position: MousePosition, mouse_left: bool, mouse_right: bool, camera_width: f32, camera_height: f32){
+    pub fn on_mouse_click(&mut self, mouse_position: MousePosition, mouse_left: bool, mouse_right: bool, camera_width: f32, camera_height: f32) -> Result<(), PError>{
         if mouse_left {
             let cur_item = self.inventory.get_cur_held_item();
             if cur_item.is_some() {
@@ -876,19 +877,19 @@ impl World{
                     let angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]) - (item.stats.shots.unwrap_or(1.0) - 1.0) * spread/2.0;
                     for i in 0..item.stats.shots.unwrap_or(1.0) as usize {
                         let ang_adjusted = angle + spread * i as f32;
-                        self.add_player_attack(
+                        ptry!(self.add_player_attack(
                             item, 
                             self.player.borrow().x + 16.0 + ang_adjusted.cos() * 25.0,
                             self.player.borrow().y + 22.0 + ang_adjusted.sin() * 25.0,
-                            ang_adjusted * 180.0/PI);
+                            ang_adjusted * 180.0/PI));
                     }
                 } else {
                     let angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]);
-                    self.add_player_attack(
+                    ptry!(self.add_player_attack(
                         item, 
                         self.player.borrow().x + 16.0 + angle.cos() * 25.0,
                         self.player.borrow().y + 22.0 + angle.sin() * 25.0,
-                        angle * 180.0/PI);
+                        angle * 180.0/PI));
                 }
                 
             }
@@ -913,7 +914,7 @@ impl World{
         //             angle * 180.0/PI)
         //     );
         // }
-        
+        Ok(())
     }
     pub fn process_mouse_input(&mut self, mouse_position: MousePosition, mouse_left: bool, mouse_right: bool){
 

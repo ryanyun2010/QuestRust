@@ -137,8 +137,6 @@ macro_rules! perror {
 
 impl fmt::Display for PError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-
-
         write!(f, "\n{}", self.error.as_string())?;
         write!(f, "\n\nCaused by: \n\n")?;
 

@@ -179,7 +179,7 @@ impl Default for player_attacks_descriptor_json {
 pub struct item_archetype_json {
     pub name: String,
     pub sprite: String,
-    pub attack_sprite: String,
+    pub attack_sprite: Option<String>,
     pub width_to_length_ratio: Option<f32>,
     pub item_type: ItemType,
     pub lore: String,

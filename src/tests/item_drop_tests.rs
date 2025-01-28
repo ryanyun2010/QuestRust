@@ -13,7 +13,7 @@ pub async fn test_enemy_item_drops() {
         item_type: ItemType::MeleeWeapon,
         width_to_length_ratio: None,
         sprite: "spear".to_string(),
-        attack_sprite: "attack_highlight".to_string()
+        attack_sprite: Some("attack_highlight".to_string())
     });
     world.loot_table_lookup = vec![
         LootTable::new(vec![LootTableEntry {
@@ -36,7 +36,7 @@ pub async fn test_enemy_item_drops() {
     let item = world.inventory.add_item(
         Item {
             name: String::from("test_sword"),
-            attack_sprite: String::from("melee_attack"),
+            attack_sprite: Some(String::from("melee_attack")),
             item_type: ItemType::MeleeWeapon,
             width_to_length_ratio: None,
             lore: String::from("test"),
@@ -51,12 +51,12 @@ pub async fn test_enemy_item_drops() {
     ok_or_panic!(world.inventory.set_hotbar_slot_item(0, item)); 
     world.create_entity_with_archetype(639.0, 400.0, String::from("test_attackable_entity"));
     let mut headless = HeadlessGame::new(world, camera);
-    headless.world.on_mouse_click(MousePosition {
+    ok_or_panic!(headless.world.on_mouse_click(MousePosition {
             x_screen: 639.0,
             y_screen: 400.0,
             x_world: 639.0 + headless.camera.camera_x,
             y_world: 400.0 + headless.camera.camera_y,
-    }, true, false, headless.camera.viewpoint_width as f32, headless.camera.viewpoint_height as f32);
+    }, true, false, headless.camera.viewpoint_width as f32, headless.camera.viewpoint_height as f32));
     assert!(
         headless.world.inventory.get_hotbar_slot(1).unwrap().item.is_none(),
         "Player should not pick up an item prior to killing enemy"

@@ -1,5 +1,4 @@
 use wgpu_text::{BrushBuilder, TextBrush, glyph_brush::ab_glyph::FontRef};
-
 use winit::window::Window;
 use wgpu::util::DeviceExt;
 use crate::vertex::Vertex;

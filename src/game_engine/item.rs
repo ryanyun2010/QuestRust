@@ -219,7 +219,7 @@ pub struct Item {
     pub item_type: ItemType,
     pub width_to_length_ratio: Option<f32>,
     pub sprite: String,
-    pub attack_sprite: String,
+    pub attack_sprite: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -230,7 +230,7 @@ pub struct ItemArchetype {
     pub item_type: ItemType,
     pub width_to_length_ratio: Option<f32>,
     pub sprite: String,
-    pub attack_sprite: String
+    pub attack_sprite: Option<String>
 }
 
 

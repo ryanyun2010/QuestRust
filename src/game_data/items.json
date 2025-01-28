@@ -55,6 +55,17 @@
             "shots": {"average": 3.0, "variation": 0.0},
             "focus": {"average": 1.5, "variation": 0.0}
         }
-    }
+    },
+	{
+		"name": "test helm",
+		"sprite": "spear",
+		"item_type": "HelmetArmor",
+		"lore": "test",
+		"attack_sprite": "N/A",
+		"stats": {
+		}
+	}
+		
+
 
 ]

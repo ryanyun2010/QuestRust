@@ -206,12 +206,10 @@ impl Inventory {
         }
     }
     pub fn set_hotbar_slot_item(&mut self, slot: usize, item_id: usize) -> Result<(), PError> {
-        let slot_potentially = self.hotbar.get(slot).and_then(
+        let s = punwrap!(self.hotbar.get(slot).and_then(
             |x| self.slots.get_mut(*x)
-        );
-        if let Some(s) = slot_potentially {
-            ptry!(s.set_item(item_id, &self.items), "While setting hotbar slot {} to item {}", slot, item_id);
-        }
+        ), NotFound, "There is no {}th hotbar slot", slot);
+        ptry!(s.set_item(item_id, &self.items), "While setting hotbar slot {} to item {}", slot, item_id);
         Ok(())
     }
     pub fn get_slot(&self, slot: &usize) -> Option<&Slot> {
@@ -231,10 +229,8 @@ impl Inventory {
         Err(perror!(NoSpace, "No space for item"))
     }
     pub fn set_slot_item(&mut self, slot: usize, item_id: usize) -> Result<(), PError> {
-        let slot_potentially = self.slots.get_mut(slot);
-        if let Some(s) = slot_potentially {
-            ptry!(s.set_item(item_id, &self.items));
-        }
+        let s = punwrap!(self.slots.get_mut(slot), NotFound, "There is no {}th slot", slot);
+        ptry!(s.set_item(item_id, &self.items));
         Ok(())
     }
     pub fn render_ui(&mut self) -> Result<UIEFull, PError> {

@@ -32,7 +32,7 @@ pub async fn basic_world() -> world::World {
     let mut world = world::World::new(player::Player::new(596.0, 400.0, 10.0, 10, 1.0, 0),sprites);
     world.inventory.add_item(Item {
         name: String::from("test1"),
-        attack_sprite: String::from("melee_attack"),
+        attack_sprite: Some(String::from("melee_attack")),
         item_type: crate::game_engine::item::ItemType::MeleeWeapon,
         width_to_length_ratio: None,
         lore: String::from("test"),
@@ -45,7 +45,7 @@ pub async fn basic_world() -> world::World {
     });
     world.inventory.add_item(Item {
         name: String::from("test2"),
-        attack_sprite: String::from("melee_attack"),
+        attack_sprite: Some(String::from("melee_attack")),
         item_type: crate::game_engine::item::ItemType::MeleeWeapon,
         width_to_length_ratio: None,
         lore: String::from("test"),

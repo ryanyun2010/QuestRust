@@ -99,7 +99,7 @@ impl<'a> Game<'a> {
     }
     pub fn on_mouse_click(&mut self) -> Result<(), PError> {
         if self.state == GameState::play {
-            self.world.on_mouse_click(self.input.mouse_position, self.input.mouse_left, self.input.mouse_right, self.camera.viewpoint_width as f32, self.camera.viewpoint_height as f32);
+            ptry!(self.world.on_mouse_click(self.input.mouse_position, self.input.mouse_left, self.input.mouse_right, self.camera.viewpoint_width as f32, self.camera.viewpoint_height as f32));
         }else if self.state == GameState::inventory {
             ptry!(self.world.inventory.on_mouse_click(self.input.mouse_position, self.input.mouse_left, self.input.mouse_right));
         }
