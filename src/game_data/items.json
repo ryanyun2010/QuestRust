@@ -58,7 +58,7 @@
     },
 	{
 		"name": "test helm",
-		"sprite": "spear",
+		"sprite": "helm",
 		"item_type": "HelmetArmor",
 		"lore": "test",
 		"attack_sprite": "N/A",
