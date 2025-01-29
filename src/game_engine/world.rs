@@ -668,10 +668,11 @@ impl World{
             _ => {}
         }
         Ok(())
-        
     }
-    pub fn damage_player(&self, damage: f32) {
-        self.player.borrow_mut().health -= damage;
+    pub fn damage_player(&self, damage: f32) -> Result<(), PError> {
+        let defense = ptry!(self.inventory.get_combined_stats()).defense.unwrap_or(0.0);
+        self.player.borrow_mut().health -= damage * 100.0/(defense + 100.0);
+        Ok(())
     }
 
     pub fn update_entity_attacks(&self) -> Result<(), PError>{
@@ -682,7 +683,7 @@ impl World{
             let descriptor = punwrap!(self.get_attack_descriptor(attack), Expected, "Couldn't find attack descriptor for entity attack: {:?}", attack);
             if attack.time_charged.floor() as usize >= descriptor.time_to_charge {
                 if self.check_collision_with_player(attack.x, attack.y, descriptor.reach as f32, descriptor.width as f32, attack.rotation * 180.0/PI){
-                    self.damage_player(descriptor.damage);
+                    ptry!(self.damage_player(descriptor.damage));
                 }
                 attacks_to_be_deleted.push(i);
             }
