@@ -790,7 +790,11 @@ impl World{
 
     pub fn damage_entity(&self, entity_position_component: &PositionComponent, entity_health_component: Option<RefMut<HealthComponent>>, entity_aggro_component: Option<RefMut<AggroComponent>>, damage: f32, camera: &mut Camera){
         if entity_health_component.is_some() {
-            entity_health_component.unwrap().health -= damage;
+            let mut ehc = entity_health_component.unwrap();
+            ehc.health -= damage;
+            if ehc.health >= ehc.max_health as f32 {
+                ehc.health = ehc.max_health as f32;
+            }
         }
         let text_1 = camera.add_world_text(((damage * 10.0).round() / 10.0).to_string(), super::camera::Font::B, entity_position_component.x + 11.0, entity_position_component.y + 7.0, 150.0, 50.0, 50.0, [0.0, 0.0, 0.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
         let text_2 = camera.add_world_text(((damage * 10.0).round() / 10.0).to_string(), super::camera::Font::B, entity_position_component.x + 9.0, entity_position_component.y + 5.0, 150.0, 50.0, 50.0, [1.0, 1.0, 1.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
@@ -876,11 +880,12 @@ impl World{
                     mouse_direction_unnormalized[0] / magnitude,
                     mouse_direction_unnormalized[1] / magnitude
                 ];
-                if stats.shots.unwrap_or(1.0) > 1.0 {
-                    let mut spread = f32::min(PI/8.0, PI/stats.shots.unwrap_or(1.0));
+                let shots = stats.shots.unwrap_or(1.0).floor() as usize;
+                if shots > 1 && (item.item_type == ItemType::RangedWeapon || item.item_type == ItemType::MagicWeapon) {
+                    let mut spread = f32::min(PI/8.0, PI/shots as f32);
                     spread /= stats.focus.unwrap_or(1.0);
-                    let angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]) - (stats.shots.unwrap_or(1.0) - 1.0) * spread/2.0;
-                    for i in 0..stats.shots.unwrap_or(1.0) as usize {
+                    let angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]) - (shots as f32 - 1.0) * spread/2.0;
+                    for i in 0..shots {
                         let ang_adjusted = angle + spread * i as f32;
                         ptry!(self.add_player_attack(
                             &stats,
@@ -901,26 +906,6 @@ impl World{
             }
                 
         }
-        // if self.cur_hotbar_slot == 0 {
-        //     self.player_attacks.borrow_mut().push(
-        //         PlayerAttack::new(
-        //             "test_melee_attack".to_string(),
-        //             0.0, 
-        //             self.player.borrow().x + mouse_direction_normalized[0] * 25.0 + 16.0,
-        //             self.player.borrow().y + mouse_direction_normalized[1] * 25.0 + 22.0, 
-        //             angle * 180.0/PI)
-        //     );
-        // }
-        // else if self.cur_hotbar_slot == 1 {
-        //     self.player_attacks.borrow_mut().push(
-        //         PlayerAttack::new(
-        //             "test_projectile".to_string(),
-        //             0.0, 
-        //             self.player.borrow().x + mouse_direction_normalized[0] * 25.0 + 16.0,
-        //             self.player.borrow().y + mouse_direction_normalized[1] * 25.0 + 22.0, 
-        //             angle * 180.0/PI)
-        //     );
-        // }
         Ok(())
     }
     pub fn process_mouse_input(&mut self, mouse_position: MousePosition, mouse_left: bool, mouse_right: bool){

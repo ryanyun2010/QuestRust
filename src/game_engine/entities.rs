@@ -122,8 +122,7 @@ impl World {
         
         let health_component = self.entity_health_components.get(entity_id);
         if let Some(health_component) = health_component {
-            let health_component = health_component.borrow();
-            if health_component.health <= 0.0 {
+            if health_component.borrow().health <= 0.0 {
                 self.kill_entity(*entity_id);
                 return Ok(());
             }
