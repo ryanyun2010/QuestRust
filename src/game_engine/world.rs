@@ -803,21 +803,19 @@ impl World{
         self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_2, lifespan: 0.0});
     }
     
-    pub fn remove_entity(&mut self, entity_id: usize){
-        let entity_position = *self.entity_position_components.get(&entity_id).expect("All entities should have position components").borrow();
-        let chunk_id = self.get_chunk_from_xy(entity_position.x as usize, entity_position.y as usize);
-        if chunk_id.is_some(){
-            let chunk_id = chunk_id.unwrap();
-            let chunk = &mut self.chunks.borrow_mut()[chunk_id];
-            let index = chunk.entities_ids.iter().position(|&x| x == entity_id).unwrap();
-            chunk.entities_ids.remove(index);
-        }
+    pub fn remove_entity(&mut self, entity_id: usize) -> Result<(), PError>{
+        let entity_position = *punwrap!(self.entity_position_components.get(&entity_id), Expected, "all entities that are being killed should have a position component").borrow();
+        let chunk_id = punwrap!(self.get_chunk_from_xy(entity_position.x as usize, entity_position.y as usize), Invalid, "there is no chunk at the position of the entity?");
+        let chunk = &mut self.chunks.borrow_mut()[chunk_id];
+        let index = chunk.entities_ids.iter().position(|&x| x == entity_id).unwrap();
+        chunk.entities_ids.remove(index);
         self.entity_attack_components.remove(&entity_id);
         self.entity_position_components.remove(&entity_id);
         self.entity_pathfinding_components.remove(&entity_id);
         self.entity_health_components.remove(&entity_id);
         self.entity_archetype_lookup.remove(&entity_id);
         self.entity_aggro_components.remove(&entity_id);
+        Ok(())
     }
     pub fn kill_entity(&self, entity_id: usize){
         self.entities_to_be_killed_at_end_of_frame.borrow_mut().push(entity_id);
@@ -834,7 +832,7 @@ impl World{
                                 let table = punwrap!(self.loot_table_lookup.get(*table), "entity with id {} has a loot table with id {} which doesn't exist", entity, table);
                                 let items = table.roll();
                                 for item in items.iter() {
-                                    let it = self.create_item_with_archetype(item.clone());
+                                    let it = ptry!(self.create_item_with_archetype(item.clone()), "while attempting to drop item {} from entity with id {}", item, entity);
                                     println!("spawning item {:?} at {}, {}", it, entity_position.x, entity_position.y);
                                     self.items_on_floor.borrow_mut().push(ItemOnFloor{
                                         item: it,
@@ -847,7 +845,7 @@ impl World{
                     }
                 }
             }
-            self.remove_entity(entity);
+            ptry!(self.remove_entity(entity));
         }
         self.entities_to_be_killed_at_end_of_frame.borrow_mut().clear();
         Ok(())
@@ -942,10 +940,9 @@ impl World{
         Ok(())
         
     }
-    pub fn create_item_with_archetype(&self, archetype: String) -> Item {
-        let archetype_i = self.get_item_archetype(&archetype).expect(format!("Could not find item archetype: {}", archetype).as_str());
-        
-        Item {
+    pub fn create_item_with_archetype(&self, archetype: String) -> Result<Item, PError> {
+        let archetype_i = punwrap!(self.get_item_archetype(&archetype), NotFound, "could not find item archetype {}", archetype);        
+        Ok(Item {
             name: archetype_i.name.clone(),
             attack_sprite: archetype_i.attack_sprite.clone(),
             item_type: archetype_i.item_type.clone(),
@@ -953,7 +950,7 @@ impl World{
             lore: archetype_i.lore.clone(),
             sprite: archetype_i.sprite.clone(),
             stats: archetype_i.stats.get_variation()
-        }
+        })
     }
     pub fn get_item_archetype(&self, archetype: &String) -> Option<&ItemArchetype>{
         self.item_archetype_lookup.get(archetype)

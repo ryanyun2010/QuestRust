@@ -495,7 +495,7 @@ fn split_into_chunks(input: &str, chunk_size: usize) -> Vec<String> {
 macro_rules! ok_or_panic {
     ($result:expr) => {
         match $result {
-            Ok(_) => (),
+            Ok(v) => v,
             Err(e) => panic!("{}", e)
         }
     }
