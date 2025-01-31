@@ -838,7 +838,6 @@ impl World{
                                 let items = table.roll();
                                 for item in items.iter() {
                                     let it = ptry!(self.create_item_with_archetype(item.clone()), "while attempting to drop item {} from entity with id {}", item, entity);
-                                    println!("spawning item {:?} at {}, {}", it, entity_position.x, entity_position.y);
                                     self.items_on_floor.borrow_mut().push(ItemOnFloor{
                                         item: it,
                                         x: entity_position.x,

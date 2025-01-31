@@ -4,7 +4,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 macro_rules! create_stat_lists {
-    ($($stat_name:ident),*) => {
+    ($($stat_name:ident => $def:expr),*) => {
         #[derive(Debug, Clone, Default)]
         pub struct StatList {
             $(pub $stat_name: Option<f32>,)*
@@ -18,6 +18,13 @@ macro_rules! create_stat_lists {
                         self.$stat_name = list.$stat_name;
                     }
                 )*
+            }
+            pub fn base() -> Self {
+                StatList {
+                    $(
+                        $stat_name: Some($def),
+                    )*
+                }
             }
         }
         #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -57,28 +64,28 @@ macro_rules! create_stat_lists {
 }
 
 create_stat_lists!(
-    health,
-    defense,
-    toughness,
-    vitality,
-    luck,
-    damage,
-    crit_luck,
-    crit_damage,
-    reach,
-    accuracy,
-    mana,
-    mana_regen,
-    cooldown_regen,
-    width,
-    load_speed,
-    range,
-    lifetime,
-    speed,
-    ability_damage,
-    size,
-    shots,
-    focus
+    health => 100.0,
+    defense => 0.0,
+    toughness => 0.0,
+    vitality => 0.0,
+    luck => 0.0,
+    damage => 0.0,
+    crit_luck => 0.0,
+    crit_damage => 0.0,
+    reach => 0.0,
+    accuracy => 0.0,
+    mana => 0.0,
+    mana_regen => 0.0,
+    cooldown_regen => 0.0,
+    width => 0.0,
+    load_speed => 0.0,
+    range => 0.0,
+    lifetime => 0.0,
+    speed => 0.0,
+    ability_damage => 0.0,
+    size => 0.0,
+    shots => 1.0,
+    focus => 1.0
 );
 
 #[macro_export]

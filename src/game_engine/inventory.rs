@@ -179,7 +179,7 @@ impl Inventory {
         )
     }
     pub fn get_combined_stats(&self) -> Result<StatList, PError> {
-        let mut stats = StatList::default();
+        let mut stats = StatList::base();
         if let Some(item) = self.get_cur_held_item() {
             stats.to_sum_with(&item.stats);
         }
@@ -221,6 +221,37 @@ impl Inventory {
         } else{
             Err(perror!(NotFound, "attempted to remove item with id {} that doesn't exist", id))
         }
+    }
+    pub fn get_stat_string(&self, list: &StatList) -> String {
+        let mut t = String::new();
+        for stat in list.into_iter() {
+            if stat.1.is_some(){
+                let num = (stat.1.unwrap() * 10.0).round() /10.0;
+
+                if num > 0.0 {
+                    t.push_str(
+                        format!("{}: +{} \n", stat.0, num).as_str()
+                    );
+                }else {
+                    t.push_str(
+                        format!("{}: {} \n", stat.0, num).as_str()
+                    );
+                }
+            }
+        }
+        t
+    }
+    pub fn get_stats_combined_string(&self) -> Result<String, PError> {
+        let list = ptry!(self.get_combined_stats());
+        let mut t = String::new();
+        for stat in list.into_iter() {
+            if stat.1.is_some(){
+                t.push_str(
+                    format!("{}: {} \n", stat.0, (stat.1.unwrap() * 10.0).round() /10.0).as_str()
+                );
+            }
+        }
+        Ok(t)
     }
     pub fn set_hotbar_slot_item(&mut self, slot: usize, item_id: usize) -> Result<(), PError> {
         let s = punwrap!(self.hotbar.get(slot).and_then(
@@ -278,14 +309,9 @@ impl Inventory {
                         let mut t = format!(
                             "{}\n----------------------------------------\n\n{}\n\n", item.name, item.lore
                         );
+
                         let stats = &item.stats;
-                        for stat in stats.into_iter() {
-                            if stat.1.is_some(){
-                                t.push_str(
-                                    format!("{}: {} \n", stat.0, (stat.1.unwrap() * 10.0).round() /10.0).as_str()
-                                );
-                            }
-                        }
+                        t.push_str(&self.get_stat_string(stats));
                         ui.push(
                             UIESprite {
                                 x: self.mouse_position.x_screen + 20.0,
@@ -311,6 +337,32 @@ impl Inventory {
                     }
                 }
             }
+
+            ui.push(
+                UIESprite {
+                    x: (520 + self.cur_hotbar_slot * 58) as f32,
+                    y: 374.0,
+                    z: 5.1,
+                    width: 48.0,
+                    height: 48.0,
+                    sprite: "slot_highlight".to_string()
+                }
+            );
+            
+
+            text.push(
+                TextSprite {
+                    text: ptry!(self.get_stats_combined_string()),
+                    font_size: 25.0,
+                    x: 80.0,
+                    y: 200.0,
+                    w: 500.0,
+                    h: 600.0,
+                    color: [1.0, 1.0, 1.0, 1.0],
+                    align: wgpu_text::glyph_brush::HorizontalAlign::Left
+                });
+
+
             if let Some(item_on_mouse) = self.item_on_mouse.as_ref(){
                 let item = self.get_item(&item_on_mouse.item_id);
                 if let Some(item) = item{
@@ -324,6 +376,8 @@ impl Inventory {
                     })
                 }
             }
+
+
         }
         else {
             for slot in self.hotbar.iter() {
