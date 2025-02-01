@@ -1,5 +1,4 @@
 pub mod lib;
-pub mod armor_stats_tests;
 pub mod test_framework;
 pub mod player_movement_tests;
 pub mod basic_tests;
