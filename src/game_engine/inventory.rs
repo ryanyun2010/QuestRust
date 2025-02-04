@@ -225,6 +225,13 @@ impl Inventory {
     pub fn get_stat_string(&self, list: &StatList) -> String {
         let mut t = String::new();
         for stat in list.into_iter() {
+            if stat.0 == "cooldown" {
+                let num = (stat.1.unwrap_or(0.0) * 10.0).round() /10.0;
+                t.push_str(
+                    format!("{}: {} \n", stat.0, num).as_str()
+                );
+                continue;
+            }
             if stat.1.is_some(){
                 let num = (stat.1.unwrap() * 10.0).round() /10.0;
 
@@ -406,12 +413,25 @@ impl Inventory {
             .and_then(|slot| slot.item)
             .and_then(|item| self.get_item(&item))
     }
+    pub fn get_cur_held_item_mut(&mut self) -> Option<&mut Item> {
+        self.get_hotbar_slot(self.cur_hotbar_slot)
+            .and_then(|slot| slot.item)
+            .and_then(|item| self.get_item_mut(&item))
+    }
     pub fn get_item(&self, id: &usize) -> Option<&Item> {
         self.items.get(id)
     }
+    pub fn get_item_mut(&mut self, id: &usize) -> Option<&mut Item> {
+        self.items.get_mut(id)
+    }
 
     pub fn on_key_down(&mut self, key: &str) {
-
+        if key.chars().all(char::is_numeric) {
+            let num = key.parse::<usize>().unwrap();
+            if num < 6 && num > 0 {
+                self.set_hotbar_slot(num - 1);
+            }
+        }
     }
     pub fn on_mouse_click(&mut self, position: MousePosition, left: bool, right: bool) -> Result<(), PError> {
         if left {
@@ -473,6 +493,12 @@ impl Inventory {
     }
     pub fn process_mouse_input(&mut self, position: MousePosition, left: bool, right: bool){
         self.mouse_position = position;
+    }
+    pub fn update_items_cd(&mut self) -> Result<(), PError> {
+        for (_, item) in self.items.iter_mut() {
+            item.time_til_usable -= 1.0; 
+        }
+        Ok(())
     }
 }
 

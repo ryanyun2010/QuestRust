@@ -220,6 +220,7 @@ pub struct Item {
     pub width_to_length_ratio: Option<f32>,
     pub sprite: String,
     pub attack_sprite: Option<String>,
+    pub time_til_usable: f32,
 }
 
 #[derive(Debug, Clone)]

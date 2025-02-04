@@ -29,7 +29,8 @@ pub async fn test_melee_player_attack() {
                 damage => 150.0,
                 width => 50.0,
                 reach => 65.0
-            )
+            ),
+            time_til_usable: 0.0
         }
     );
     ok_or_panic!(world.inventory.set_hotbar_slot_item(0, item));
@@ -80,7 +81,8 @@ pub async fn test_ranged_player_attack() {
                 lifetime => 400.0,
                 speed => 10.0,
                 size => 30.0,
-            )
+            ),
+            time_til_usable: 0.0,
         }
     );
     ok_or_panic!(world.inventory.set_hotbar_slot_item(0, item));

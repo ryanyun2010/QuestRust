@@ -499,7 +499,8 @@ pub async fn test_melee_player_attack_after_inventory_movement() {
                 damage => 150.0,
                 width => 50.0,
                 reach => 65.0
-            )
+            ),
+            time_til_usable: 0.0
         }
     );
     world.create_entity_with_archetype(639.0, 400.0, String::from("test_attackable_entity"));

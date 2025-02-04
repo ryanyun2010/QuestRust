@@ -77,6 +77,7 @@ create_stat_lists!(
     mana => 0.0,
     mana_regen => 0.0,
     cooldown_regen => 0.0,
+    cooldown => 0.0,
     width => 0.0,
     load_speed => 0.0,
     range => 0.0,

@@ -38,7 +38,7 @@ fn main() {
     let mut camera = camera::Camera::new(1152,720);
     let mut world = starting_level_generator::generate_world_from_json_parsed_data(&parsed_data);
     let sword = world.inventory.add_item(
-        ok_or_panic!(world.create_item_with_archetype("test_sword".to_string()))
+        ok_or_panic!(world.create_item_with_archetype("funny spear".to_string()))
     );
     let spear = world.inventory.add_item(
         ok_or_panic!(world.create_item_with_archetype("test_spear".to_string()))

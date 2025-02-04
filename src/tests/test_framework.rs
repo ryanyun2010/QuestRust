@@ -41,7 +41,8 @@ pub async fn basic_world() -> world::World {
             damage => 150.0,
             width => 50.0,
             reach => 65.0
-        )
+        ),
+        time_til_usable: 0.0
     });
     world.inventory.add_item(Item {
         name: String::from("test2"),
@@ -54,7 +55,8 @@ pub async fn basic_world() -> world::World {
             damage => 150.0,
             width => 50.0,
             reach => 65.0
-        )
+        ), 
+        time_til_usable: 0.0
     });
     world
 

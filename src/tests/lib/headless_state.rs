@@ -38,6 +38,7 @@ impl HeadlessState{
         ptry!(world.update_entities());
         ptry!(world.update_entity_attacks());
         world.update_player_attacks(camera);
+        ptry!(world.update_items_in_inventory_cd());
         ptry!(world.kill_entities_to_be_killed());
         ptry!(world.update_items_on_ground());
         Ok(())

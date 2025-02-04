@@ -9,7 +9,8 @@
         "stats": {
             "damage": {"average": 15.0, "variation": 2.5},
             "width": {"average": 50.0, "variation": 10.0},
-            "reach": {"average": 65.0, "variation": 10.0}
+            "reach": {"average": 65.0, "variation": 10.0},
+            "cooldown": {"average": 5.0, "variation": 3.0}
         }
     },
     {
@@ -25,7 +26,8 @@
             "lifetime": {"average": 90.0, "variation": 10.0},
             "size": {"average": 20.0, "variation": 2.5},
             "shots": {"average": 1.0, "variation": 0.0},
-            "focus": {"average": 1.0, "variation": 0.0}
+            "focus": {"average": 1.0, "variation": 0.0},
+            "cooldown": {"average": 3.0, "variation": 1.0}
         }
     },
     {
@@ -53,7 +55,8 @@
             "lifetime": {"average": 999.0, "variation": 0.0},
             "size": {"average": 9.0, "variation": 0.0},
             "shots": {"average": 3.0, "variation": 0.0},
-            "focus": {"average": 1.5, "variation": 0.0}
+            "focus": {"average": 1.5, "variation": 0.0},
+            "cooldown": {"average": 3.0, "variation": 1.9}
         }
     },
 	{

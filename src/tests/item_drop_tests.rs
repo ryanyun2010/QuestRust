@@ -45,7 +45,8 @@ pub async fn test_enemy_item_drops() {
                 damage => 150.0,
                 width => 50.0,
                 reach => 65.0
-            )
+            ),
+            time_til_usable: 0.0
         }
     );
     ok_or_panic!(world.inventory.set_hotbar_slot_item(0, item)); 
