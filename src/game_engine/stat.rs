@@ -89,6 +89,8 @@ create_stat_lists!(
     focus => 1.0
 );
 
+// cooldown is number of frames, 60 fps, the display is adjusted. so for a 1s cooldown, do a cooldown of 60.
+
 #[macro_export]
 #[allow(clippy::crate_in_macro_def)]
 macro_rules! create_stat_list {
