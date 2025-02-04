@@ -1,5 +1,7 @@
 use std::{error::Error, fmt};
 
+use terminal_size::{Height, Width};
+
 #[derive(Debug, Clone)]
 pub enum PE {
     NotFound(ErrorDescriptor),
@@ -142,22 +144,24 @@ impl fmt::Display for PError {
 
         let mut i = 1;
         for s in self.trace.iter(){
-            let dim = term_size::dimensions();
-            let chunk_size = dim.unwrap().0;
-            let chunks = split_into_chunks(s, chunk_size - 12);
-            let mut d = false;
-            let pad = 4.0 - f32::log10(i as f32).floor();
-            let pads = " ".repeat(pad as usize);
-            writeln!(f, "{}:{}  →  {}", i, pads, chunks[0])?; 
-            for chunk in chunks.iter(){
-                if !d {
-                    d = true;
-                    continue;
+            let dim = terminal_size::terminal_size();
+            if let Some((Width(chunk_size), Height(h))) = dim {
+                let chunks = split_into_chunks(s, chunk_size as usize - 12);
+                let mut d = false;
+                let pad = 4.0 - f32::log10(i as f32).floor();
+                let pads = " ".repeat(pad as usize);
+                writeln!(f, "{}:{}  →  {}", i, pads, chunks[0])?; 
+                for chunk in chunks.iter(){
+                    if !d {
+                        d = true;
+                        continue;
+                    }
+                    writeln!(f, "           {}", chunk.trim_start())?;
                 }
-                writeln!(f, "           {}", chunk.trim_start())?;
-            }
 
-            i += 1;
+                i += 1;
+            }
+            writeln!(f, "{}:  →  {}", i,s)?; 
         }
         Ok(())
     }
