@@ -379,7 +379,6 @@ impl World{
                         return Ok(true);
                     }
                 }
-                
             }else{
                 let terrain = terrain_potentially.unwrap();
                 if (terrain.x as f32) < (x + w as f32) && terrain.x as f32 + 32.0 > x && (terrain.y as f32) < (y + h as f32) && (terrain.y as f32 + 32.0) > y{
@@ -871,6 +870,10 @@ impl World{
         }
     }
     pub fn on_mouse_click(&mut self, mouse_position: MousePosition, mouse_left: bool, mouse_right: bool, camera_width: f32, camera_height: f32) -> Result<(), PError>{
+        Ok(())
+    }
+    pub fn process_mouse_input(&mut self, mouse_position: MousePosition, mouse_left: bool, mouse_right: bool) -> Result<(), PError>{
+
         if mouse_left{
             let stats = ptry!(self.inventory.get_combined_stats());
             let pitem = self.inventory.get_cur_held_item();
@@ -917,9 +920,6 @@ impl World{
                 
         }
         Ok(())
-    }
-    pub fn process_mouse_input(&mut self, mouse_position: MousePosition, mouse_left: bool, mouse_right: bool){
-
     }
     pub fn process_input(&mut self, keys: &FxHashMap<String,bool>, camera: &mut Camera) -> Result<(), PError>{
         ptry!(self.process_player_input(keys));

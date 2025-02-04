@@ -108,7 +108,7 @@ impl<'a> Game<'a> {
     pub fn process_input(&mut self) -> Result<(), PError> {
         if self.state == GameState::play {
             ptry!(self.world.process_input(&self.input.keys_down, &mut self.camera));
-            self.world.process_mouse_input(self.input.mouse_position, self.input.mouse_left, self.input.mouse_right);
+            ptry!(self.world.process_mouse_input(self.input.mouse_position, self.input.mouse_left, self.input.mouse_right));
         }else if self.state == GameState::inventory {
             self.world.inventory.process_input(&self.input.keys_down);
             self.world.inventory.process_mouse_input(self.input.mouse_position, self.input.mouse_left, self.input.mouse_right);

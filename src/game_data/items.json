@@ -56,7 +56,7 @@
             "size": {"average": 9.0, "variation": 0.0},
             "shots": {"average": 3.0, "variation": 0.0},
             "focus": {"average": 1.5, "variation": 0.0},
-            "cooldown": {"average": 3.0, "variation": 1.9}
+            "cooldown": {"average": 20.0, "variation": 1.9}
         }
     },
 	{
