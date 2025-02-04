@@ -870,6 +870,52 @@ impl World{
         }
     }
     pub fn on_mouse_click(&mut self, mouse_position: MousePosition, mouse_left: bool, mouse_right: bool, camera_width: f32, camera_height: f32) -> Result<(), PError>{
+        if mouse_left{
+            let stats = ptry!(self.inventory.get_combined_stats());
+            let pitem = self.inventory.get_cur_held_item();
+            let mut attacked = false;
+            if let Some(item) = pitem {
+                if item.time_til_usable <= 0.0 && (item.item_type == ItemType::MeleeWeapon || item.item_type == ItemType::MagicWeapon){
+                    let mouse_direction_unnormalized = [(mouse_position.x_world - self.player.borrow().x - 16.0), (mouse_position.y_world - self.player.borrow().y - 22.0)];
+                    let magnitude = f32::sqrt(mouse_direction_unnormalized[0].powf(2.0) + mouse_direction_unnormalized[1].powf(2.0));
+                    let mouse_direction_normalized = [
+                        mouse_direction_unnormalized[0] / magnitude,
+                        mouse_direction_unnormalized[1] / magnitude
+                    ];
+                    let shots = stats.shots.unwrap_or(1.0).floor() as usize;
+                    if shots > 1 && (item.item_type == ItemType::RangedWeapon || item.item_type == ItemType::MagicWeapon) {
+                        let mut spread = f32::min(PI/8.0, PI/shots as f32);
+                        spread /= stats.focus.unwrap_or(1.0);
+                        let angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]) - (shots as f32 - 1.0) * spread/2.0;
+                        for i in 0..shots {
+                            let ang_adjusted = angle + spread * i as f32;
+                            ptry!(self.add_player_attack(
+                                    &stats,
+                                    item, 
+                                    self.player.borrow().x + 16.0 + ang_adjusted.cos() * 25.0,
+                                    self.player.borrow().y + 22.0 + ang_adjusted.sin() * 25.0,
+                                    ang_adjusted * 180.0/PI));
+                        }
+                        attacked = true;
+                    } else {
+                        let angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]);
+                        ptry!(self.add_player_attack(
+                                &stats, 
+                                item,
+                                self.player.borrow().x + 16.0 + angle.cos() * 25.0,
+                                self.player.borrow().y + 22.0 + angle.sin() * 25.0,
+                                angle * 180.0/PI));
+                        attacked = true;
+                    }
+                }
+            }
+            if attacked {
+                println!("attacked");
+                let item = punwrap!(self.inventory.get_cur_held_item_mut(), Expected, "attacked with no item?");
+                item.time_til_usable = stats.cooldown.unwrap_or(0.0);
+            }
+                
+        }
         Ok(())
     }
     pub fn process_mouse_input(&mut self, mouse_position: MousePosition, mouse_left: bool, mouse_right: bool) -> Result<(), PError>{
@@ -879,7 +925,7 @@ impl World{
             let pitem = self.inventory.get_cur_held_item();
             let mut attacked = false;
             if let Some(item) = pitem {
-                if item.time_til_usable <= 0.0 {
+                if item.time_til_usable <= 0.0 && item.item_type == ItemType::RangedWeapon {
                     let mouse_direction_unnormalized = [(mouse_position.x_world - self.player.borrow().x - 16.0), (mouse_position.y_world - self.player.borrow().y - 22.0)];
                     let magnitude = f32::sqrt(mouse_direction_unnormalized[0].powf(2.0) + mouse_direction_unnormalized[1].powf(2.0));
                     let mouse_direction_normalized = [

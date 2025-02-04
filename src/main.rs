@@ -41,7 +41,7 @@ fn main() {
         ok_or_panic!(world.create_item_with_archetype("funny spear".to_string()))
     );
     let spear = world.inventory.add_item(
-        ok_or_panic!(world.create_item_with_archetype("test_spear".to_string()))
+        ok_or_panic!(world.create_item_with_archetype("god_sword".to_string()))
     );
     let h = world.inventory.add_item(
         ok_or_panic!(world.create_item_with_archetype("test helm".to_string()))
