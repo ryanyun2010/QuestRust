@@ -226,9 +226,9 @@ impl Inventory {
         let mut t = String::new();
         for stat in list.into_iter() {
             if stat.0 == "cooldown" {
-                let num = (stat.1.unwrap_or(0.0) * 10.0).round() /10.0;
+                let num = (stat.1.unwrap_or(0.0)/60.0 * 100.0).round() /100.0;
                 t.push_str(
-                    format!("{}: {} \n", stat.0, num).as_str()
+                    format!("{}: {}s \n", stat.0, num).as_str()
                 );
                 continue;
             }
@@ -252,6 +252,13 @@ impl Inventory {
         let list = ptry!(self.get_combined_stats());
         let mut t = String::new();
         for stat in list.into_iter() {
+            if stat.0 == "cooldown" {
+                let num = (stat.1.unwrap_or(0.0)/60.0 * 100.0).round() /100.0;
+                t.push_str(
+                    format!("{}: {}s \n", stat.0, num).as_str()
+                );
+                continue;
+            }
             if stat.1.is_some(){
                 t.push_str(
                     format!("{}: {} \n", stat.0, (stat.1.unwrap() * 10.0).round() /10.0).as_str()
