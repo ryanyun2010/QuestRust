@@ -2,6 +2,15 @@ use crate::rendering_engine::abstractions::RenderData;
 
 use super::entity_components::CollisionBox;
 use super::world::World;
+#[derive(Clone, Debug, PartialEq)]
+pub enum PlayerDir {
+    Up,
+    Down,
+    Left,
+    Right
+}
+
+
 #[derive(Clone, Debug)]
 pub struct Player {
     pub x: f32,
@@ -12,6 +21,7 @@ pub struct Player {
     pub movement_speed: f32,
     pub holding_texture_sprite: Option<usize>,
     pub collision_box: CollisionBox,
+    pub direction: PlayerDir
 }
 #[macro_export]
 macro_rules! repeat_token {
@@ -34,20 +44,56 @@ impl Player {
             sprite_id,
             movement_speed,
             holding_texture_sprite: None,
+            direction: PlayerDir::Down,
         }
     }
-    pub fn draw_data(&self, world: &World, window_size_width: usize, window_size_height: usize, index_offset:u32, vertex_offset_x: i32, vertex_offset_y: i32) -> RenderData{
-        let sprite = world.sprites.get_sprite(self.sprite_id).expect("Could not find player sprite?");
-        let mut dd = sprite.draw_data(self.x.floor(), self.y.floor(), 38, 52,window_size_width, window_size_height, index_offset, vertex_offset_x, vertex_offset_y);
-        if self.holding_texture_sprite.is_none(){
-            dd
-        }else{
-            let sprite = world.sprites.get_sprite(self.holding_texture_sprite.unwrap()).expect("Could not find player sprite?");
-            let d = sprite.draw_data(self.x.floor() + 16.0, self.y.floor() + 28.0, 24, 24,window_size_width, window_size_height, index_offset + dd.vertex.len() as u32, vertex_offset_x, vertex_offset_y);
-            dd.index.extend(d.index);
-            dd.vertex.extend(d.vertex);
-
-            dd
+    pub fn get_held_item_position(&self) -> (f32, f32) {
+        match self.direction {
+            PlayerDir::Up => {
+                (self.x.floor() + 21.0, self.y.floor() + 15.0)
+            },
+            PlayerDir::Down => {
+                (self.x.floor() + 16.0, self.y.floor() + 28.0)
+            },
+            PlayerDir::Right => {
+                (self.x.floor() + 28.0, self.y.floor() + 21.0)
+            },
+            PlayerDir::Left => {
+                (self.x.floor() - 13.0, self.y.floor() + 21.0)
+            }
         }
+    }
+
+    pub fn draw_data(&self, world: &World, window_size_width: usize, window_size_height: usize, index_offset:u32, vertex_offset_x: i32, vertex_offset_y: i32) -> RenderData{
+        let held_item_pos = self.get_held_item_position();
+        if self.direction == PlayerDir::Up {
+            let mut d = RenderData::new();
+            if self.holding_texture_sprite.is_some(){
+                let sprite = world.sprites.get_sprite(self.holding_texture_sprite.unwrap()).expect("Could not find player sprite?");
+                let s = sprite.draw_data(held_item_pos.0, held_item_pos.1, 24, 24,window_size_width, window_size_height, index_offset, vertex_offset_x, vertex_offset_y);
+                d.vertex.extend(s.vertex);
+                d.index.extend(s.index);
+            }
+            let sprite = world.sprites.get_sprite(self.sprite_id).expect("Could not find player sprite?");
+            let dd = sprite.draw_data(self.x.floor(), self.y.floor(), 38, 52,window_size_width, window_size_height, index_offset + d.vertex.len() as u32, vertex_offset_x, vertex_offset_y);
+            d.vertex.extend(dd.vertex);
+            d.index.extend(dd.index);
+            return d;
+        }
+        let mut d = RenderData::new();
+        let sprite = world.sprites.get_sprite(self.sprite_id).expect("Could not find player sprite?");
+        let dd = sprite.draw_data(self.x.floor(), self.y.floor(), 38, 52,window_size_width, window_size_height, index_offset + d.vertex.len() as u32, vertex_offset_x, vertex_offset_y);
+        d.vertex.extend(dd.vertex);
+        d.index.extend(dd.index);
+        if self.holding_texture_sprite.is_some(){
+            let sprite = world.sprites.get_sprite(self.holding_texture_sprite.unwrap()).expect("Could not find player sprite?");
+            let s = sprite.draw_data(held_item_pos.0, held_item_pos.1, 24, 24,window_size_width, window_size_height, index_offset + d.vertex.len() as u32, vertex_offset_x, vertex_offset_y);
+            d.vertex.extend(s.vertex);
+            d.index.extend(s.index);
+        }
+        let sprite = world.sprites.get_sprite(self.sprite_id).expect("Could not find player sprite?");
+
+        d
+        // TODO: PROPER ERROR HANDLING HERE
     }
 }

@@ -19,6 +19,7 @@ use super::inventory::Inventory;
 use super::item::{Item, ItemArchetype, ItemType};
 use super::items_on_floor::ItemOnFloor;
 use super::loot::LootTable;
+use super::player::PlayerDir;
 use super::player_attacks::PlayerAttack;
 use super::stat::StatList;
 use super::utils::{self, Rectangle};
@@ -623,12 +624,16 @@ impl World{
 
         if direction[0] == 0.0 && direction[1] < 0.0{
             player.sprite_id = self.sprites.get_sprite_id("player_back").expect("Could not find sprite id for player_back");
+            player.direction = PlayerDir::Up;
         } else if direction[0] == 0.0 && direction[1] > 0.0 {
             player.sprite_id = self.sprites.get_sprite_id("player_front").expect("Could not find sprite id for player_front");
+            player.direction = PlayerDir::Down;
         } else if direction[0] > 0.0 {
             player.sprite_id = self.sprites.get_sprite_id("player_right").expect("Could not find sprite id for player_right");
+            player.direction = PlayerDir::Right;
         } else if direction[0] < 0.0{
             player.sprite_id = self.sprites.get_sprite_id("player_left").expect("Could not find sprite id for player_left");
+            player.direction = PlayerDir::Left;
         }
         let magnitude: f32 = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
         
