@@ -88,12 +88,12 @@ pub async fn test_ranged_player_attack() {
     ok_or_panic!(world.inventory.set_hotbar_slot_item(0, item));
     world.create_entity_with_archetype(689.0, 400.0, String::from("test_attackable_entity"));
     let mut headless = HeadlessGame::new(world, camera);
-    ok_or_panic!(headless.world.on_mouse_click(MousePosition {
+    ok_or_panic!(headless.world.process_mouse_input(MousePosition {
             x_screen: 689.0,
             y_screen: 400.0,
             x_world: 689.0 + headless.camera.camera_x,
             y_world: 400.0 + headless.camera.camera_y,
-    }, true, false, headless.camera.viewpoint_width as f32, headless.camera.viewpoint_height as f32));
+    }, true, false));
     assert!(
         headless.world.entity_health_components.get(&0).is_some(),
         "Entity should have a health component prior to player attack"

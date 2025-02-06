@@ -27,12 +27,12 @@ async fn test_inventory_clicking_blank_slot_in_blank_inventory(){
         y_world: 201.0 + headless.camera.camera_y,
     }, true, false));
     ok_or_panic!(headless.run(5).await);
-    headless.world.process_mouse_input(MousePosition {
+    ok_or_panic!(headless.world.process_mouse_input(MousePosition {
         x_screen: 521.0,
         y_screen: 201.0,
         x_world: 521.0 + headless.camera.camera_x,
         y_world: 201.0 + headless.camera.camera_y,
-    }, false, false);
+    }, false, false));
     ok_or_panic!(headless.run(5).await);
     ok_or_panic!(headless.world.inventory.on_mouse_click(MousePosition{
         x_screen: 521.0,
@@ -97,12 +97,12 @@ async fn test_inventory_clicking_blank_slot_in_inventory_with_items(){
         y_world: 201.0 + headless.camera.camera_y,
     }, true, false));
     ok_or_panic!(headless.run(5).await);
-    headless.world.process_mouse_input(MousePosition {
+    ok_or_panic!(headless.world.process_mouse_input(MousePosition {
         x_screen: 521.0,
         y_screen: 201.0,
         x_world: 521.0 + headless.camera.camera_x,
         y_world: 201.0 + headless.camera.camera_y,
-    }, false, false);
+    }, false, false));
     ok_or_panic!(headless.run(5).await);
     ok_or_panic!(headless.world.inventory.on_mouse_click(MousePosition{
         x_screen: 521.0,
@@ -179,12 +179,12 @@ async fn test_inventory_item_move(){
         y_world: 201.0 + headless.camera.camera_y,
     }, true, false));
     ok_or_panic!(headless.run(5).await);
-    headless.world.process_mouse_input(MousePosition {
+    ok_or_panic!(headless.world.process_mouse_input(MousePosition {
         x_screen: 521.0,
         y_screen: 201.0,
         x_world: 521.0 + headless.camera.camera_x,
         y_world: 201.0 + headless.camera.camera_y,
-    }, false, false);
+    }, false, false));
     ok_or_panic!(headless.run(5).await);
     ok_or_panic!(headless.world.inventory.on_mouse_click(MousePosition{
         x_screen: 521.0,
@@ -265,12 +265,12 @@ async fn test_inventory_item_swap(){
         y_world: 201.0 + headless.camera.camera_y,
     }, true, false));
     ok_or_panic!(headless.run(5).await);
-    headless.world.process_mouse_input(MousePosition {
+    ok_or_panic!(headless.world.process_mouse_input(MousePosition {
         x_screen: 521.0,
         y_screen: 201.0,
         x_world: 521.0 + headless.camera.camera_x,
         y_world: 201.0 + headless.camera.camera_y,
-    }, false, false);
+    }, false, false));
     ok_or_panic!(headless.run(5).await);
     ok_or_panic!(headless.world.inventory.on_mouse_click(MousePosition{
         x_screen: 521.0,
@@ -279,12 +279,12 @@ async fn test_inventory_item_swap(){
         y_world: 201.0 + headless.camera.camera_y,
     }, true, false)); 
     ok_or_panic!(headless.run(5).await);
-    headless.world.process_mouse_input(MousePosition {
+    ok_or_panic!(headless.world.process_mouse_input(MousePosition {
         x_screen: 579.0,
         y_screen: 201.0,
         x_world: 579.0 + headless.camera.camera_x,
         y_world: 201.0 + headless.camera.camera_y,
-    }, false, false);
+    }, false, false));
     ok_or_panic!(headless.run(5).await);
     ok_or_panic!(headless.world.inventory.on_mouse_click(MousePosition{
         x_screen: 579.0,
@@ -426,12 +426,12 @@ async fn test_close_inventory_with_item_held_after_swap(){
         y_world: 201.0 + headless.camera.camera_y,
     }, true, false));
     ok_or_panic!(headless.run(5).await);
-    headless.world.process_mouse_input(MousePosition {
+    ok_or_panic!(headless.world.process_mouse_input(MousePosition {
         x_screen: 521.0,
         y_screen: 201.0,
         x_world: 521.0 + headless.camera.camera_x,
         y_world: 201.0 + headless.camera.camera_y,
-    }, false, false);
+    }, false, false));
     ok_or_panic!(headless.run(5).await);
     ok_or_panic!(headless.world.inventory.on_mouse_click(MousePosition{
         x_screen: 521.0,
@@ -518,12 +518,12 @@ pub async fn test_melee_player_attack_after_inventory_movement() {
         y_world: 201.0 + headless.camera.camera_y,
     }, true, false));
     ok_or_panic!(headless.run(5).await);
-    headless.world.process_mouse_input(MousePosition {
+    ok_or_panic!(headless.world.process_mouse_input(MousePosition {
         x_screen: 521.0,
         y_screen: 381.0,
         x_world: 521.0 + headless.camera.camera_x,
         y_world: 381.0 + headless.camera.camera_y,
-    }, false, false);    
+    }, false, false));    
     ok_or_panic!(headless.run(5).await);
     ok_or_panic!(headless.world.inventory.on_mouse_click(MousePosition{
         x_screen: 521.0,
