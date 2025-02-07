@@ -98,10 +98,10 @@ macro_rules! perror {
         )
     }};
     ($desc:expr) => {{
-        crate::error::PError::new(
-            crate::error::PE::Error(crate::error::ErrorDescriptor {
+        $crate::error::PError::new(
+            $crate::error::PE::Error($crate::error::ErrorDescriptor {
                 desc: format!($desc),
-                location: crate::error::Location {
+                location: $crate::error::Location {
                     file: file!().to_string(),
                     line: line!(),
                 },
@@ -110,10 +110,10 @@ macro_rules! perror {
         )
     }};
     ($desc:expr, $($args:tt)*) => {{
-        crate::error::PError::new(
-            crate::error::PE::Error(crate::error::ErrorDescriptor {
+        $crate::error::PError::new(
+            $crate::error::PE::Error($crate::error::ErrorDescriptor {
                 desc: format!($desc, $($args)*),
-                location: crate::error::Location {
+                location: $crate::error::Location {
                     file: file!().to_string(),
                     line: line!(),
                 },
@@ -122,10 +122,10 @@ macro_rules! perror {
         )
     }};
     ($error_variant:ident) => {{
-        crate::error::PError::new(
-            crate::error::PE::Error(crate::error::ErrorDescriptor {
+        $crate::error::PError::new(
+            $crate::error::PE::Error($crate::error::ErrorDescriptor {
                 desc: Strgin::from(""),
-                location: crate::error::Location {
+                location: $crate::error::Location {
                     file: file!().to_string(),
                     line: line!(),
                 },
@@ -228,10 +228,10 @@ macro_rules! ptry {
             Ok(value) => value,
             Err(perror) => {
                 return Err($crate::error::PError::new(
-                        crate::error::PE::Error(
-                            crate::error::ErrorDescriptor {
+                        $crate::error::PE::Error(
+                            $crate::error::ErrorDescriptor {
                                 desc: format!($desc, $($args)*),
-                                location: crate::error::Location {
+                                location: $crate::error::Location {
                                     file: file!().to_string(),
                                     line: line!()
                                 }
@@ -246,11 +246,11 @@ macro_rules! ptry {
         match $result {
             Ok(value) => value,
             Err(perror) => {
-                return Err(crate::error::PError::new(
-                        crate::error::PE::Error(
-                            crate::error::ErrorDescriptor {
+                return Err($crate::error::PError::new(
+                        $crate::error::PE::Error(
+                            $crate::error::ErrorDescriptor {
                                 desc: format!(""),
-                                location: crate::error::Location {
+                                location: $crate::error::Location {
                                     file: file!().to_string(),
                                     line: line!()
                                 }
@@ -265,11 +265,11 @@ macro_rules! ptry {
         match $result {
             Ok(value) => value,
             Err(perror) => {
-                return Err(crate::error::PError::new(
-                        crate::error::PE::Error(
-                            crate::error::ErrorDescriptor {
+                return Err($crate::error::PError::new(
+                        $crate::error::PE::Error(
+                            $crate::error::ErrorDescriptor {
                                 desc: format!($desc),
-                                location: crate::error::Location {
+                                location: $crate::error::Location {
                                     file: file!().to_string(),
                                     line: line!()
                                 }
@@ -284,7 +284,7 @@ macro_rules! ptry {
         match $result {
             Ok(value) => value,
             Err(mut perror) => {
-                return Err(crate::PError::new(
+                return Err($crate::PError::new(
                         PE::$error_variant(
                             ErrorDescriptor {
                                 desc: format!(""),
