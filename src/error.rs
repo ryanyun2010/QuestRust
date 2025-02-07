@@ -72,13 +72,12 @@ impl PError{
     }
 }
 #[macro_export]
-#[allow(clippy::crate_in_macro_def)]
 macro_rules! perror {
     ($error_variant:ident, $desc:expr, $($args:tt)*) => {{
-        crate::error::PError::new(
-            crate::error::PE::$error_variant(crate::error::ErrorDescriptor {
+        $crate::error::PError::new(
+            $crate::error::PE::$error_variant($crate::error::ErrorDescriptor {
                 desc: format!($desc, $($args)*),
-                location: crate::error::Location {
+                location: $crate::error::Location {
                     file: file!().to_string(),
                     line: line!(),
                 },
@@ -87,10 +86,10 @@ macro_rules! perror {
         )
     }};
     ($error_variant:ident, $desc:expr) => {{
-        crate::error::PError::new(
-            crate::error::PE::$error_variant(crate::error::ErrorDescriptor {
+        $crate::error::PError::new(
+            $crate::error::PE::$error_variant($crate::error::ErrorDescriptor {
                 desc: format!($desc),
-                location: crate::error::Location {
+                location: $crate::error::Location {
                     file: file!().to_string(),
                     line: line!(),
                 },
@@ -146,6 +145,7 @@ impl fmt::Display for PError {
         for s in self.trace.iter(){
             let dim = terminal_size::terminal_size();
             if let Some((Width(chunk_size), Height(h))) = dim {
+        
                 let chunks = split_into_chunks(s, chunk_size as usize - 12);
                 let mut d = false;
                 let pad = 4.0 - f32::log10(i as f32).floor();
@@ -160,8 +160,9 @@ impl fmt::Display for PError {
                 }
 
                 i += 1;
+            }else{
+                writeln!(f, "{}:  →  {}", i,s)?; 
             }
-            writeln!(f, "{}:  →  {}", i,s)?; 
         }
         Ok(())
     }
@@ -183,17 +184,16 @@ pub struct Location {
 }
 
 #[macro_export]
-#[allow(clippy::crate_in_macro_def)]
 macro_rules! ptry {
     ($result:expr, $error_variant:ident,  $desc:expr, $($args:tt)*) => {{
         match $result {
             Ok(value) => value,
             Err(perror) => {
-                return Err(crate::error::PError::new(
-                        crate::error::PE::$error_variant(
-                            crate::error::ErrorDescriptor {
+                return Err($crate::error::PError::new(
+                        $crate::error::PE::$error_variant(
+                            $crate::error::ErrorDescriptor {
                                 desc: format!($desc, $($args)*),
-                                location: crate::error::Location {
+                                location: $crate::error::Location {
                                     file: file!().to_string(),
                                     line: line!()
                                 }
@@ -208,11 +208,11 @@ macro_rules! ptry {
         match $result {
             Ok(value) => value,
             Err(mut perror) => {
-                return Err(crate::PError::new(
-                        PE::$error_variant(
-                            ErrorDescriptor {
+                return Err($crate::error::PError::new(
+                        $crate::error::PE::$error_variant(
+                            $crate::error::ErrorDescriptor {
                                 desc: format!($desc),
-                                location: Location {
+                                location: $crate::error::Location {
                                     file: file!().to_string(),
                                     line: line!()
                                 }
@@ -227,7 +227,7 @@ macro_rules! ptry {
         match $result {
             Ok(value) => value,
             Err(perror) => {
-                return Err(crate::error::PError::new(
+                return Err($crate::error::PError::new(
                         crate::error::PE::Error(
                             crate::error::ErrorDescriptor {
                                 desc: format!($desc, $($args)*),
@@ -303,17 +303,16 @@ macro_rules! ptry {
 }
 
 #[macro_export]
-#[allow(clippy::crate_in_macro_def)]
 macro_rules! punwrap {
     ($option:expr) => {{
         match $option {
             Some(value) => value,
             None => {
-                return Err(crate::error::PError::new(
-                        crate::error::PE::UnwrapFailure(
-                            crate::error::ErrorDescriptor {
+                return Err($crate::error::PError::new(
+                        $crate::error::PE::UnwrapFailure(
+                            $crate::error::ErrorDescriptor {
                                 desc: format!(""),
-                                location: crate::error::Location {
+                                location: $crate::error::Location {
                                     file: file!().to_string(),
                                     line: line!(),
                                 },
@@ -328,11 +327,11 @@ macro_rules! punwrap {
         match $option {
             Some(value) => value,
             None => {
-                return Err(crate::error::PError::new(
-                        crate::error::PE::$error_variant(
-                            crate::error::ErrorDescriptor {
+                return Err($crate::error::PError::new(
+                        $crate::error::PE::$error_variant(
+                            $crate::error::ErrorDescriptor {
                                 desc: format!($desc),
-                                location: crate::error::Location {
+                                location: $crate::error::Location {
                                     file: file!().to_string(),
                                     line: line!(),
                                 },
@@ -348,11 +347,11 @@ macro_rules! punwrap {
         match $option {
             Some(value) => value,
             None => {
-                return Err(crate::error::PError::new(
-                        crate::error::PE::$error_variant(
-                            crate::error::ErrorDescriptor {
+                return Err($crate::error::PError::new(
+                        $crate::error::PE::$error_variant(
+                            $crate::error::ErrorDescriptor {
                                 desc: format!($desc, $($args)*),
-                                location: crate::error::Location {
+                                location: $crate::error::Location {
                                     file: file!().to_string(),
                                     line: line!()
                                 }
@@ -367,11 +366,11 @@ macro_rules! punwrap {
         match $option {
             Some(value) => value,
             None => {
-                return Err(crate::error::PError::new(
-                        crate::error::PE::UnwrapFailure(
-                            crate::error::ErrorDescriptor {
+                return Err($crate::error::PError::new(
+                        $crate::error::PE::UnwrapFailure(
+                            $crate::error::ErrorDescriptor {
                                 desc: format!($desc, $($args)*),
-                                location: crate::error::Location {
+                                location: $crate::error::Location {
                                     file: file!().to_string(),
                                     line: line!(),
                                 },
@@ -386,11 +385,11 @@ macro_rules! punwrap {
         match $option {
             Some(value) => value,
             None => {
-                return Err(crate::error::PError::new(
-                        crate::error::PE::UnwrapFailure(
-                            crate::error::ErrorDescriptor {
+                return Err($crate::error::PError::new(
+                        $crate::error::PE::UnwrapFailure(
+                            $crate::error::ErrorDescriptor {
                                 desc: format!($desc),
-                                location: crate::error::Location {
+                                location: $crate::error::Location {
                                     file: file!().to_string(),
                                     line: line!(),
                                 },
@@ -405,11 +404,11 @@ macro_rules! punwrap {
         match $option {
             Some(value) => value,
             None => {
-                return Err(crate::error::PError::new(
-                        crate::error::PE::$error_variant(
-                            crate::error::ErrorDescriptor {
+                return Err($crate::error::PError::new(
+                        $crate::error::PE::$error_variant(
+                            $crate::error::ErrorDescriptor {
                                 desc: format!(""),
-                                location: crate::error::Location {
+                                location: $crate::error::Location {
                                     file: file!().to_string(),
                                     line: line!(),
                                 },
@@ -425,7 +424,7 @@ macro_rules! punwrap {
         match $option {
             Some(value) => value,
             None => {
-                return crate::PError::new(
+                return $crate::PError::new(
                     PE::$error_variant(
                         ErrorDescriptor {
                             desc: format!($desc, $($args)*),
@@ -443,14 +442,13 @@ macro_rules! punwrap {
 }
 
 #[macro_export]
-#[allow(clippy::crate_in_macro_def)]
 macro_rules! error_prolif {
     ($error:expr) => {{
-        return Err(crate::error::PError::new(
-                crate::error::PE::Error(
-                    crate::error::ErrorDescriptor {
+        return Err($crate::error::PError::new(
+                $crate::error::PE::Error(
+                    $crate::error::ErrorDescriptor {
                         desc: format!(""),
-                        location: crate::error::Location {
+                        location: $crate::error::Location {
                             file: file!().to_string(),
                             line: line!()
                         }
@@ -463,18 +461,17 @@ macro_rules! error_prolif {
 }
 
 #[macro_export]
-#[allow(clippy::crate_in_macro_def)]
 macro_rules! error_prolif_allow {
     ($result:expr, $($error_variant:ident)*) => {{
         let result = $result;
         if let Err(perror) = &result {
             match perror.error {
                 $(
-                    crate::error::PE::$error_variant(_) => {
+                    $crate::error::PE::$error_variant(_) => {
                         result
                     },
                 )*
-                    _ => crate::error_prolif!(perror),
+                    _ => $crate::error_prolif!(perror),
             }
         }else{
             result
@@ -487,6 +484,15 @@ macro_rules! print_error {
         colorized::colorize_println(format!("{}", $e), colorized::Colors::BrightRedFg)
     };
 }
+
+
+#[macro_export]
+macro_rules! panic_error {
+    ($e:expr) => {
+        panic!("{}", colorized::colorize_this(format!("{}", $e),colorized::Colors::BrightRedFg))
+    };
+}
+
 fn split_into_chunks(input: &str, chunk_size: usize) -> Vec<String> {
     input.chars()
         .collect::<Vec<char>>()
@@ -500,7 +506,10 @@ macro_rules! ok_or_panic {
     ($result:expr) => {
         match $result {
             Ok(v) => v,
-            Err(e) => panic!("{}", e)
+            Err(e) => $crate::panic_error!(e)
         }
     }
 }
+
+
+

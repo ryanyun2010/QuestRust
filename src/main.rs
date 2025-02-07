@@ -9,7 +9,8 @@
 #![allow(clippy::derivable_impls)]
 #![allow(clippy::single_match)]
 #![allow(clippy::unnecessary_get_then_check)]
-use std::{env, path::PathBuf, time::Instant};
+use std::{env, time::Instant};
+use crate::error::PError;
 pub mod rendering_engine;
 use rendering_engine::{renderer, texture, vertex, window};
 pub mod game_engine;
@@ -19,8 +20,16 @@ pub mod error;
 
 
 fn main() {
-    let mut current_dir = env::current_exe().expect("Failed to get current directory");
+    ok_or_panic!(startup());
+}
 
+
+
+fn startup() -> Result<(), PError> {
+    let mut current_dir = match env::current_exe() {
+        Ok(val) => val,
+        Err(e) => return Err(perror!(NotFound, "failed to find executable path because: {}", e))
+    };
     while !current_dir.join("Cargo.toml").exists() {
         if let Some(parent) = current_dir.parent() {
             current_dir = parent.to_path_buf();
@@ -29,8 +38,10 @@ fn main() {
         }
     }
 
-    env::set_current_dir(&current_dir).expect("Failed to change working directory");
-
+    match env::set_current_dir(&current_dir) {
+        Ok(_) => (),
+        Err(e) => return Err(perror!(NotFound, "failed to change working directory to project root because: {}", e))
+    }
     println!("Changed working directory to project root: {:?}", current_dir);
     let mut parser = json_parsing::JSON_parser::new();
     let load_time = Instant::now();
@@ -38,27 +49,18 @@ fn main() {
     let mut camera = camera::Camera::new(1152,720);
     let mut world = starting_level_generator::generate_world_from_json_parsed_data(&parsed_data);
     let sword = world.inventory.add_item(
-        ok_or_panic!(world.create_item_with_archetype("funny spear".to_string()))
+        ptry!(world.create_item_with_archetype("funny spear".to_string()))
     );
     let spear = world.inventory.add_item(
-        ok_or_panic!(world.create_item_with_archetype("god_sword".to_string()))
+        ptry!(world.create_item_with_archetype("god_sword".to_string()))
     );
     let h = world.inventory.add_item(
-        ok_or_panic!(world.create_item_with_archetype("test helm".to_string()))
+        ptry!(world.create_item_with_archetype("test helm".to_string()))
     );
     world.inventory.init_ui();
-    match world.inventory.set_hotbar_slot_item(0, sword) {
-        Ok(_) => {},
-        Err(e) => print_error!(e)
-    };
-    match world.inventory.set_hotbar_slot_item(1, spear) {
-        Ok(_) => {},
-        Err(e) => print_error!(e)
-    }
-    match world.inventory.set_slot_item(7, h) {
-        Ok(_) => {},
-        Err(e) => print_error!(e)
-    }
+    ptry!(world.inventory.set_hotbar_slot_item(1, spear));
+    ptry!(world.inventory.set_slot_item(7, h));
+    ptry!(world.inventory.set_hotbar_slot_item(0, sword));
 
     camera.add_ui_element(String::from("health_bar_background"), UIElementDescriptor {
         x: 32.0,
@@ -80,6 +82,6 @@ fn main() {
     });
     println!("Time to load: {:?} ms", load_time.elapsed().as_millis());
     pollster::block_on(window::run(world, camera, &parsed_data.sprites_to_load_json));
-
+    Ok(())
 }
 
