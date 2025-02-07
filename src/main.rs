@@ -19,19 +19,19 @@ pub mod error;
 
 
 fn main() {
-    let args = env::args();
-    let mut p = None;
-    for arg in args.into_iter() {
-       p = Some(arg); 
+    let mut current_dir = env::current_exe().expect("Failed to get current directory");
+
+    while !current_dir.join("Cargo.toml").exists() {
+        if let Some(parent) = current_dir.parent() {
+            current_dir = parent.to_path_buf();
+        } else {
+            panic!("Cargo.toml not found. Is this a Rust project?");
+        }
     }
-    let mut path = PathBuf::from(&p.unwrap());
-    path.pop();
-    path.pop();
-    path.pop();
-    if path.parent().is_some() {
-        assert!(env::set_current_dir(path.clone()).is_ok(), "QuestRust directory not found at path: {}", path.display());
-        println!("Successfully changed working directory to {}!", path.display());
-    }
+
+    env::set_current_dir(&current_dir).expect("Failed to change working directory");
+
+    println!("Changed working directory to project root: {:?}", current_dir);
     let mut parser = json_parsing::JSON_parser::new();
     let load_time = Instant::now();
     let parsed_data = parser.parse_and_convert_game_data(PATH_BUNDLE);

@@ -149,6 +149,9 @@ impl<'a> Game<'a> {
             self.input.mouse_position.x_world = self.camera.camera_x + self.input.mouse_position.x_screen;
             self.input.mouse_position.y_world = self.camera.camera_y + self.input.mouse_position.y_screen;
             ptry!(self.world.update_items_in_inventory_cd());
+            if self.world.player.borrow().health <= 0.0 {
+                panic!("\n\nplayer died\n\n");
+            }
         }else if self.state == GameState::inventory {
             ptry!(self.camera.update_ui(&mut self.world));
             ptry!(self.process_input());
