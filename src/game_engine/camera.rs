@@ -239,7 +239,7 @@ impl Camera{
 
 
 
-        let player_draw_data = world.player.borrow().draw_data(world, self.viewpoint_width, self.viewpoint_height, render_data.vertex.len() as u32, -self.camera_x as i32, -self.camera_y as i32);
+        let player_draw_data = ptry!(world.player.borrow().draw_data(world, self.viewpoint_width, self.viewpoint_height, render_data.vertex.len() as u32, -self.camera_x as i32, -self.camera_y as i32));
     
         render_data.vertex.extend(player_draw_data.vertex);
         render_data.index.extend(player_draw_data.index);

@@ -1,4 +1,6 @@
 use crate::rendering_engine::abstractions::RenderData;
+use crate::error::PError;
+use crate::punwrap;
 
 use super::entity_components::CollisionBox;
 use super::world::World;
@@ -64,36 +66,34 @@ impl Player {
         }
     }
 
-    pub fn draw_data(&self, world: &World, window_size_width: usize, window_size_height: usize, index_offset:u32, vertex_offset_x: i32, vertex_offset_y: i32) -> RenderData{
+    pub fn draw_data(&self, world: &World, window_size_width: usize, window_size_height: usize, index_offset:u32, vertex_offset_x: i32, vertex_offset_y: i32) -> Result<RenderData, PError>{
         let held_item_pos = self.get_held_item_position();
         if self.direction == PlayerDir::Up {
             let mut d = RenderData::new();
-            if self.holding_texture_sprite.is_some(){
-                let sprite = world.sprites.get_sprite(self.holding_texture_sprite.unwrap()).expect("Could not find player sprite?");
+            if let Some(holding_sprite) = self.holding_texture_sprite{
+                let sprite = punwrap!(world.sprites.get_sprite(holding_sprite), Expected, "held item sprite doesnt exist");
                 let s = sprite.draw_data(held_item_pos.0, held_item_pos.1, 24, 24,window_size_width, window_size_height, index_offset, vertex_offset_x, vertex_offset_y);
                 d.vertex.extend(s.vertex);
                 d.index.extend(s.index);
             }
-            let sprite = world.sprites.get_sprite(self.sprite_id).expect("Could not find player sprite?");
+            let sprite = punwrap!(world.sprites.get_sprite(self.sprite_id), Expected, "player sprite doesn't exist");
             let dd = sprite.draw_data(self.x.floor(), self.y.floor(), 38, 52,window_size_width, window_size_height, index_offset + d.vertex.len() as u32, vertex_offset_x, vertex_offset_y);
             d.vertex.extend(dd.vertex);
             d.index.extend(dd.index);
-            return d;
+            return Ok(d);
         }
         let mut d = RenderData::new();
-        let sprite = world.sprites.get_sprite(self.sprite_id).expect("Could not find player sprite?");
+        let sprite = punwrap!(world.sprites.get_sprite(self.sprite_id), Expected, "player sprite doesn't exist");
         let dd = sprite.draw_data(self.x.floor(), self.y.floor(), 38, 52,window_size_width, window_size_height, index_offset + d.vertex.len() as u32, vertex_offset_x, vertex_offset_y);
         d.vertex.extend(dd.vertex);
         d.index.extend(dd.index);
-        if self.holding_texture_sprite.is_some(){
-            let sprite = world.sprites.get_sprite(self.holding_texture_sprite.unwrap()).expect("Could not find player sprite?");
+        if let Some(holding_sprite) = self.holding_texture_sprite{
+            let sprite = punwrap!(world.sprites.get_sprite(holding_sprite), Expected, "held item sprite doesnt exist");
             let s = sprite.draw_data(held_item_pos.0, held_item_pos.1, 24, 24,window_size_width, window_size_height, index_offset + d.vertex.len() as u32, vertex_offset_x, vertex_offset_y);
             d.vertex.extend(s.vertex);
             d.index.extend(s.index);
         }
-        let sprite = world.sprites.get_sprite(self.sprite_id).expect("Could not find player sprite?");
 
-        d
-        // TODO: PROPER ERROR HANDLING HERE
+        Ok(d)
     }
 }
