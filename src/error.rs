@@ -144,7 +144,7 @@ impl fmt::Display for PError {
         let mut i = 1;
         for s in self.trace.iter(){
             let dim = terminal_size::terminal_size();
-            if let Some((Width(chunk_size), Height(h))) = dim {
+            if let Some((Width(chunk_size), Height(_))) = dim {
         
                 let chunks = split_into_chunks(s, chunk_size as usize - 12);
                 let mut d = false;

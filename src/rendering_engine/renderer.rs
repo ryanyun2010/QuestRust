@@ -237,36 +237,20 @@ impl<'a> Renderer<'a> {
             render_pass.draw_indexed(0..render_data.index_behind_text,0, 0..1);
             self.text_brush_a_b.draw(&mut render_pass);
             self.text_brush_b_b.draw(&mut render_pass);
-        }
-
-        {
-            let sections_a = render_data.sections_a_t.clone();
-            let sections_b = render_data.sections_b_t.clone();
-            self.text_brush_a_t.queue(&self.device, &self.queue, sections_a).unwrap();
-            self.text_brush_b_t.queue(&self.device, &self.queue, sections_b).unwrap();
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Render Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Load,
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: None,
-                        occlusion_query_set: None,
-                        timestamp_writes: None,
-            });
-
             render_pass.set_pipeline(&self.render_pipeline);
             render_pass.set_bind_group(0, &self.diffuse_bind_group, &[0]);
             render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
             render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint32);
             render_pass.draw_indexed(render_data.index_behind_text..num_indicies,0, 0..1);
+            let sections_a = render_data.sections_a_t.clone();
+            let sections_b = render_data.sections_b_t.clone();
+            self.text_brush_a_t.queue(&self.device, &self.queue, sections_a).unwrap();
+            self.text_brush_b_t.queue(&self.device, &self.queue, sections_b).unwrap();
             self.text_brush_a_t.draw(&mut render_pass);
             self.text_brush_b_t.draw(&mut render_pass);
         }
+
+        
         self.queue.submit(std::iter::once(encoder.finish()));
     
 

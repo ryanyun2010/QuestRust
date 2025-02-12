@@ -5,7 +5,6 @@
 #![allow(dead_code)]
 #![allow(deprecated)]
 #![allow(clippy::too_many_arguments)]
-#![allow(clippy::expect_fun_call)]
 #![allow(clippy::derivable_impls)]
 #![allow(clippy::single_match)]
 #![allow(clippy::unnecessary_get_then_check)]

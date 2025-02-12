@@ -407,7 +407,7 @@ impl JSON_parser {
 
         let mut tables = Vec::new();
         for table in entity_archetype.loot_table.iter() {
-            tables.push(*ltid.get(table).expect(&format!("When parsing entity archetypes, loot table: {} in archetype: {} was not found", table, entity_archetype.name)));
+            tables.push(*ltid.get(table).unwrap_or_else(|| panic!("When parsing entity archetypes, loot table: {} in archetype: {} was not found", table, entity_archetype.name)));
         }
         if !tables.is_empty() {
             tags.push(EntityTags::Drops(tables));
@@ -466,7 +466,7 @@ impl JSON_parser {
                 panic!("When parsing entity archetypes, attack type: {} in archetype: {} was not recognized", entity_archetype.attack_type, entity_archetype.name);
             }
         }
-        tags.push(EntityTags::Attacks(data.entity_attack_patterns.get(&entity_archetype.attack_pattern).expect(&format!("When parsing entity archetypes, attack pattern: {} in archetype: {} was not found", entity_archetype.attack_pattern, entity_archetype.name)).clone()));
+        tags.push(EntityTags::Attacks(data.entity_attack_patterns.get(&entity_archetype.attack_pattern).unwrap_or_else(|| panic!("When parsing entity archetypes, attack pattern: {} in archetype: {} was not found", entity_archetype.attack_pattern, entity_archetype.name)).clone()));
         tags
     }
     pub fn parse_and_convert_game_data(&mut self, paths: PathBundle) -> ParsedData{

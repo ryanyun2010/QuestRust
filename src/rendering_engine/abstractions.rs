@@ -33,6 +33,8 @@ impl SpriteSheet{
         sprites
     }
 }
+
+
 #[derive(Debug, Clone, Copy)]
 pub struct Sprite{
     pub texture_index: i32,
@@ -43,7 +45,6 @@ pub struct Sprite{
 }
 impl Sprite {
     pub fn draw_data(&self, screen_x: f32, screen_y: f32, screen_w: usize, screen_h: usize, window_size_width: usize, window_size_height: usize, index_offset: u32, vertex_offset_x: i32, vertex_offset_y: i32) -> RenderData {
-
         let screen_to_render_ratio_x: f32 = 2.0 / window_size_width as f32;
         let screen_to_render_ratio_y: f32 = 2.0 / window_size_height as f32;
         
@@ -58,7 +59,6 @@ impl Sprite {
             Vertex { position: [x + w, y + h, 0.0], tex_coords: [self.tex_x + self.tex_w, self.tex_y], index: self.texture_index },
             Vertex { position: [x, y + h, 0.0], tex_coords: [self.tex_x, self.tex_y], index: self.texture_index },
         ];
-
         let index: Vec<u32> = vec![index_offset, 1 + index_offset, 2 + index_offset, index_offset, 2 + index_offset, 3 + index_offset];
 
         RenderData { vertex, index }
@@ -195,7 +195,7 @@ impl SpriteContainer{
         let mut sprites_to_load = Vec::new();
         let mut sprite_sheets = descriptor.spritesheets.clone();
         for sprite in descriptor.basic_sprites.iter(){ // TODO: THIS IS VERY JANK CODE THAT PROBABLY SHOULDN"T BE DONE LIKE THIS BUT I DONT CARE TOO MUCH ABOUT OPTIMIZING THIS
-            let size = get_image_dimensions(&sprite.path).expect(format!("Couldn't get image dimensions of image {}", &sprite.path).as_str());
+            let size = get_image_dimensions(&sprite.path).unwrap_or_else(|_| panic!("Couldn't get image dimensions of image {}", &sprite.path));
             sprite_sheets.push(sprite_sheet_json{
                 name: sprite.name.clone(),
                 path: sprite.path.clone(),

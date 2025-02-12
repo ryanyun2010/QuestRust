@@ -26,14 +26,14 @@ pub fn generate_world_from_json_parsed_data(data: &ParsedData) -> World {
     
     for entity_descriptor in starting_level_descriptor.entities.iter(){
         let entity = world.create_entity_with_archetype(entity_descriptor.x, entity_descriptor.y, entity_descriptor.archetype.clone());
-        world.set_sprite(entity, world.sprites.get_sprite_id(&entity_descriptor.sprite).expect(format!("Could not find sprite: {}", entity_descriptor.sprite).as_str()));
+        world.set_sprite(entity, world.sprites.get_sprite_id(&entity_descriptor.sprite).unwrap_or_else(|| panic!("Could not find sprite: {}", entity_descriptor.sprite)));
     }
     for terrain_json in starting_level_descriptor.terrain.iter(){
         let start_x = terrain_json.x;
         let start_y = terrain_json.y;
         let width = terrain_json.width;
         let height = terrain_json.height;
-        let descriptor = data.get_terrain_archetype(&terrain_json.terrain_archetype).expect(format!("Could not find terrain archetype: {}", terrain_json.terrain_archetype).as_str());
+        let descriptor = data.get_terrain_archetype(&terrain_json.terrain_archetype).unwrap_or_else(|| panic!("Could not find terrain archetype: {}", terrain_json.terrain_archetype));
         let tags = descriptor.basic_tags.clone();
         let archetype = world.add_terrain_archetype(match_terrain_tags(&descriptor.basic_tags));
         match descriptor.r#type.as_str() {
@@ -41,7 +41,7 @@ pub fn generate_world_from_json_parsed_data(data: &ParsedData) -> World {
                 for x in start_x..start_x + width{
                     for y in start_y..start_y + height{
                         let terrain = world.add_terrain(x * 32, y * 32);
-                        world.set_sprite(terrain, world.sprites.get_sprite_id(&descriptor.sprites[0]).expect(format!("Could not find sprite: {}", descriptor.sprites[0]).as_str()));
+                        world.set_sprite(terrain, world.sprites.get_sprite_id(&descriptor.sprites[0]).unwrap_or_else(|| panic!("Could not find sprite: {}", descriptor.sprites[0])));
                         world.set_terrain_archetype(terrain, archetype);
                     }
                 }
@@ -60,7 +60,7 @@ pub fn generate_world_from_json_parsed_data(data: &ParsedData) -> World {
                         let random_number = rand::random::<f32>();
                         for (index, chance) in random_chances_adjusted.iter().enumerate(){
                             if random_number < *chance{
-                                world.set_sprite(terrain, world.sprites.get_sprite_id(&descriptor.sprites[index]).expect(format!("Could not find sprite: {}", descriptor.sprites[index]).as_str()));
+                                world.set_sprite(terrain, world.sprites.get_sprite_id(&descriptor.sprites[index]).unwrap_or_else(|| panic!("Could not find sprite: {}", descriptor.sprites[index])));
                                 world.set_terrain_archetype(terrain, archetype);
                                 break;
                             }

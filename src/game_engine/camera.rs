@@ -224,7 +224,7 @@ impl Camera{
             let descriptor = punwrap!(world.get_attack_descriptor(attack), Expected, "Could not find attack descriptor for attack: {:?}", attack);
             let sprite = punwrap!(world.sprites.get_sprite_by_name(&descriptor.sprite), Expected, "Attack descriptor for attack: {:?}, refers to a non-existent sprite: {}", attack, descriptor.sprite);
             let percent = attack.time_charged/descriptor.time_to_charge as f32;
-            for i in 0..(percent * 100.0).floor() as usize {
+            for _ in 0..(percent * 100.0).floor() as usize {
                 let dd = sprite.draw_data_rotated(attack.rotation * 180.0/PI, attack.x, attack.y, descriptor.reach, descriptor.width, self.viewpoint_width, self.viewpoint_height, entity_attack_draw_data.vertex.len() as u32, -self.camera_x.floor() as i32, -self.camera_y.floor() as i32);
                 entity_attack_draw_data.vertex.extend(dd.vertex);
                 entity_attack_draw_data.index.extend(dd.index);
@@ -254,7 +254,6 @@ impl Camera{
             let sprite_id = punwrap!(world.sprites.get_sprite_id(&item_on_floor.item.sprite), Expected, "Item on floor with refers to a non-existent sprite {}", item_on_floor.item.sprite);
             let sprite = punwrap!(world.sprites.get_sprite(sprite_id), Expected, "Item on floor with refers to a non-existent sprite {}", item_on_floor.item.sprite);
             let draw_data = sprite.draw_data(item_on_floor.x, item_on_floor.y, 24, 24, self.viewpoint_width, self.viewpoint_height, item_on_floor_render_data.vertex.len() as u32, -self.camera_x.floor() as i32, -self.camera_y.floor() as i32);
-            let player = world.player.borrow();
             item_on_floor_render_data.vertex.extend(draw_data.vertex);
             item_on_floor_render_data.index.extend(draw_data.index);
 
