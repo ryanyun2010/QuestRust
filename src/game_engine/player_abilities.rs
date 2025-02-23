@@ -58,7 +58,7 @@ pub const CYCLONE: PlayerAbilityActionDescriptor = PlayerAbilityActionDescriptor
             if let Some(item) = pitem {
                 if ability_ref.time_to_charge_left % 1.0 == 0.0 {
                     for i in 0..10 {
-                        let angle = PI/5.0 * i as f32 + ability_ref.time_to_charge_left * 0.2 % (PI * 2.0);
+                        let angle = PI/5.0 * i as f32 + (ability_ref.adjusted_time_to_charge - ability_ref.time_to_charge_left) * 0.2 % (PI * 2.0);
                         ptry!(world.add_player_attack_custom(
 
                                 &crate::create_stat_list!(
@@ -77,7 +77,7 @@ pub const CYCLONE: PlayerAbilityActionDescriptor = PlayerAbilityActionDescriptor
                 }
                 if ability_ref.time_to_charge_left % 20.0 == 0.0 {
                     for i in 0..4 {
-                        let angle = PI/2.0 * i as f32 + ability_ref.time_to_charge_left * 5.0 % (PI * 2.0);
+                        let angle = PI/2.0 * i as f32 + (ability_ref.adjusted_time_to_charge - ability_ref.time_to_charge_left) * 5.0 % (PI * 2.0);
                         ptry!(world.add_player_attack_custom(
 
                                 &crate::create_stat_list!(
