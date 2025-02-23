@@ -1067,7 +1067,7 @@ impl World{
         }else {
             let pitem = self.inventory.get_cur_held_item();
             if let Some(item) = pitem{
-                if item.item_type == ItemType::RangedWeapon && self.player.borrow().player_state == PlayerState::Attacking {
+                if item.item_type == ItemType::RangedWeapon && player.player_state == PlayerState::Attacking {
                     player.player_state = PlayerState::Idle;
                 }
             } 
