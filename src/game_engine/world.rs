@@ -1008,7 +1008,7 @@ impl World{
     pub fn process_mouse_input(&mut self, mouse_position: MousePosition, mouse_left: bool, mouse_right: bool) -> Result<(), PError>{
         let mut player = self.player.borrow_mut();
         if mouse_left{
-            if player.player_state == PlayerState::Idle || player.player_state == PlayerState::Walking {
+            if player.player_state == PlayerState::Idle || player.player_state == PlayerState::Walking || player.player_state == PlayerState::Attacking {
                 let stats = ptry!(self.inventory.get_combined_stats());
                 let pitem = self.inventory.get_cur_held_item();
                 let mut attacked = false;
