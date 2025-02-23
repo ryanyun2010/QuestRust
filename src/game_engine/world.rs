@@ -11,7 +11,6 @@ use crate::game_engine::player::Player;
 use crate::game_engine::terrain::{Terrain, TerrainTags};
 
 use super::camera::Camera;
-use super::entities::AttackType;
 use super::entity_attacks::{EntityAttackBox, EntityAttackDescriptor};
 use super::entity_components::{self, AggroComponent, CollisionBox, HealthComponent, PositionComponent};
 use super::game::MousePosition;
@@ -19,11 +18,11 @@ use super::inventory::Inventory;
 use super::item::{Item, ItemArchetype, ItemType};
 use super::items_on_floor::ItemOnFloor;
 use super::loot::LootTable;
-use super::player::PlayerDir;
-use super::player_attacks::PlayerAttack;
+use super::player::{PlayerDir, PlayerState};
+use super::player_attacks::{PlayerAttack, PlayerAttackType};
+use super::player_abilities::{PlayerAbilityDescriptor, PlayerAbility, AbilityStateInformation, PlayerAbilityActionDescriptor};
 use super::stat::StatList;
 use super::utils::{self, Rectangle};
-
 #[derive(Debug, Clone)]
 pub struct DamageTextDescriptor {
     pub world_text_id: usize, 
@@ -86,7 +85,12 @@ pub struct World{
 
     pub items_on_floor: RefCell<Vec<ItemOnFloor>>,
 
-    pub loot_table_lookup: Vec<LootTable>, // loot table id to loot table object
+    pub loot_table_lookup: Vec<LootTable>, // loot table id to loot table object,
+
+    pub player_ability_descriptors: Vec<PlayerAbilityDescriptor>, // corresponds player ability descriptor id to object
+    pub player_abilities: Vec<PlayerAbility>, // id in vec = ability id
+    pub player_ability_hotkeys: FxHashMap<String, usize>, // Maps key to press for ability, to ability id
+    pub cur_ability_charging: Option<usize> // cur ability id charging
 }
 
 impl World{ 
@@ -110,6 +114,27 @@ impl World{
                 time_til_usable: 10.0,
             }
         }];
+
+        let test_ability_descriptors = vec![
+            PlayerAbilityDescriptor {
+                name: String::from("Cyclone"),
+                description: String::from("A cyclone of wind that knocks back enemies"),
+                cooldown: 1000.0,
+                time_to_charge: 1000.0,
+                actions: super::player_abilities::CYCLONE
+            }
+        ];
+        let test_abilities = vec![
+            PlayerAbility {
+                adjusted_time_to_charge: 1000.0,
+                adjusted_cooldown: 1000.0,
+                cooldown_time_left: 0.0,
+                time_to_charge_left: 1000.0,
+                descriptor_id: 0,
+            }
+        ];
+        let mut test_player_ability_hotkeys = FxHashMap::default();
+        test_player_ability_hotkeys.insert(String::from("1"), 0);
 
         Self{
             chunks: RefCell::new(Vec::new()),
@@ -144,6 +169,10 @@ impl World{
             damage_text: RefCell::new(Vec::new()),
             items_on_floor: RefCell::new(iof),
             loot_table_lookup: Vec::new(),
+            player_ability_descriptors: test_ability_descriptors,
+            player_abilities: test_abilities,
+            player_ability_hotkeys: test_player_ability_hotkeys,
+            cur_ability_charging: None,
         }
     }
     pub fn new_chunk(&self, chunk_x: usize, chunk_y: usize, chunkref: Option<&mut std::cell::RefMut<'_, Vec<Chunk>>>) -> usize{
@@ -606,7 +635,7 @@ impl World{
     pub fn get_sprite(&self, element_id: usize) -> Option<usize>{
         self.sprite_lookup.get(&element_id).copied()
     }
-    pub fn process_player_input(&mut self, keys: &FxHashMap<String,bool>) -> Result<(), PError>{
+    pub fn process_player_input(&mut self, keys: &FxHashMap<String,bool>, movement_speed: f32) -> Result<(), PError>{
         let mut direction: [f32; 2] = [0.0,0.0];
         let mut player: std::cell::RefMut<'_, Player> = self.player.borrow_mut();
         if *keys.get("w").unwrap_or(&false) || *keys.get("arrowup").unwrap_or(&false){
@@ -625,36 +654,49 @@ impl World{
         if direction[0] == 0.0 && direction[1] < 0.0{
             player.sprite_id = self.sprites.get_sprite_id("player_back").expect("Could not find sprite id for player_back");
             player.direction = PlayerDir::Up;
+            if player.player_state == PlayerState::Idle {
+                player.player_state = PlayerState::Walking;
+            }
         } else if direction[0] == 0.0 && direction[1] > 0.0 {
             player.sprite_id = self.sprites.get_sprite_id("player_front").expect("Could not find sprite id for player_front");
             player.direction = PlayerDir::Down;
+            if player.player_state == PlayerState::Idle {
+                player.player_state = PlayerState::Walking;
+            }
         } else if direction[0] > 0.0 {
             player.sprite_id = self.sprites.get_sprite_id("player_right").expect("Could not find sprite id for player_right");
             player.direction = PlayerDir::Right;
+            if player.player_state == PlayerState::Idle {
+                player.player_state = PlayerState::Walking;
+            }
         } else if direction[0] < 0.0{
             player.sprite_id = self.sprites.get_sprite_id("player_left").expect("Could not find sprite id for player_left");
             player.direction = PlayerDir::Left;
+            if player.player_state == PlayerState::Idle {
+                player.player_state = PlayerState::Walking;
+            }
+        } else if player.player_state == PlayerState::Walking{
+            player.player_state = PlayerState::Idle;
         }
         let magnitude: f32 = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
         
         if magnitude > 0.0{
-            let movement = [(direction[0] / magnitude * player.movement_speed), (direction[1] / magnitude * player.movement_speed)];
-            let player_movement_speed = player.movement_speed;
+            let movement = [(direction[0] / magnitude * movement_speed), (direction[1] / magnitude * movement_speed)];
             
             if !ptry!(self.can_move_player(&mut player, [movement[0], 0.0])){
-                ptry!(self.attempt_move_player(&mut player, [0.0, (direction[1] * player_movement_speed)]));
+                ptry!(self.attempt_move_player(&mut player, [0.0, (direction[1] * movement_speed)]));
             }else if !ptry!(self.can_move_player(&mut player, [0.0, movement[1]])){
-                ptry!(self.attempt_move_player(&mut player, [(direction[0] * player_movement_speed), 0.0]));
+                ptry!(self.attempt_move_player(&mut player, [(direction[0] * movement_speed), 0.0]));
             }else{
                 ptry!(self.attempt_move_player(&mut player, movement));
             }
         }
 
-        if player.y.floor() < player.movement_speed {
-            player.y = player.movement_speed;
+        if player.y.floor() < movement_speed {
+            player.y = movement_speed;
         }
-        if player.x.floor() < player.movement_speed {
-            player.x = player.movement_speed;
+        if player.x.floor() < movement_speed {
+            player.x = movement_speed;
         }
         Ok(())
     }
@@ -663,16 +705,22 @@ impl World{
         match attack_item.item_type {
             ItemType::MeleeWeapon => {
                 self.player_attacks.borrow_mut().push(
-                    PlayerAttack::new(stats.clone(), AttackType::Melee, punwrap!(attack_item.attack_sprite.clone(), Expected, "all melee weapons should have an attack sprite"), attack_item.width_to_length_ratio.unwrap_or(1.0), x, y, angle)
+                    PlayerAttack::new(stats.clone(), PlayerAttackType::Melee, punwrap!(attack_item.attack_sprite.clone(), Expected, "all melee weapons should have an attack sprite"), attack_item.width_to_length_ratio.unwrap_or(1.0), x, y, angle)
                 );
             }
             ItemType::RangedWeapon => {
                 self.player_attacks.borrow_mut().push(
-                    PlayerAttack::new(stats.clone(), AttackType::Ranged, punwrap!(attack_item.attack_sprite.clone(), Expected, "all ranged weapons should have an attack sprite"),attack_item.width_to_length_ratio.unwrap_or(1.0), x, y, angle)
+                    PlayerAttack::new(stats.clone(), PlayerAttackType::Ranged, punwrap!(attack_item.attack_sprite.clone(), Expected, "all ranged weapons should have an attack sprite"),attack_item.width_to_length_ratio.unwrap_or(1.0), x, y, angle)
                 );
             }
             _ => {}
         }
+        Ok(())
+    }
+    pub fn add_player_attack_custom(&self, stats: &StatList, attack_sprite: String, width_to_length_ratio: f32, attack_type: PlayerAttackType, x: f32, y: f32, angle: f32) -> Result<(), PError>{    
+        self.player_attacks.borrow_mut().push(
+            PlayerAttack::new(stats.clone(), attack_type, attack_sprite,width_to_length_ratio, x, y, angle)
+        );
         Ok(())
     }
     pub fn damage_player(&self, damage: f32) -> Result<(), PError> {
@@ -705,10 +753,13 @@ impl World{
         let mut i = 0;
         for attack in attacks.iter_mut(){
             match attack.attack_type{
-                AttackType::Melee => {
+                PlayerAttackType::Melee | PlayerAttackType::MeleeAbility => {
                     attack.time_alive += 1.0;
                     if attack.time_alive > 3.0{
                         attacks_to_be_deleted.push(i);
+                        if attack.attack_type == PlayerAttackType::Melee {
+                            self.player.borrow_mut().player_state = PlayerState::Idle;
+                        }
                         i += 1;
                         continue;
                     }
@@ -734,7 +785,7 @@ impl World{
                         }
                     }
                 }
-                AttackType::Ranged => {
+                PlayerAttackType::Ranged | PlayerAttackType::RangedAbility  => {
                     let angle = attack.angle * PI/180.0;
                     attack.x += angle.cos() * attack.stats.speed.unwrap_or(0.0);
                     attack.y += angle.sin() * attack.stats.speed.unwrap_or(0.0);
@@ -782,7 +833,7 @@ impl World{
                         }
                     }
                 }
-                AttackType::Magic => {
+                PlayerAttackType::Magic | PlayerAttackType::MagicAbility => {
                     todo!()
                 }
                
@@ -866,126 +917,231 @@ impl World{
     pub fn get_attack_descriptor_by_name(&self, archetype_name: &String) -> Option<&EntityAttackDescriptor>{
         self.entity_attack_descriptor_lookup.get(archetype_name)
     }
-    pub fn on_key_down(&mut self, key: &str){
+    pub fn on_key_down(&mut self, key: &str) -> Result<(), PError>{
         if key.chars().all(char::is_numeric) {
             let num = key.parse::<usize>().unwrap();
             if num < 6 && num > 0 {
                 self.inventory.set_hotbar_slot(num - 1);
             }
         }
+        let state = self.player.borrow().player_state.clone();
+        let mut ability_to_start = None;
+        let mut ability_to_start_fn = None;
+        if state == PlayerState::Idle || state == PlayerState::Walking{
+            if let Some(ability_id) = self.player_ability_hotkeys.get(key) {
+                let ability_object = punwrap!(self.player_abilities.get(*ability_id), Invalid, "Player ability hotkey hashmap maps key {} to ability with id {}, however there is no ability with id {}", key, ability_id, ability_id);
+                let ability_descriptor = punwrap!(self.player_ability_descriptors.get(ability_object.descriptor_id), Invalid, "Player ability with id: {} and descriptor:\n {:?}\n\n refers to ability descriptor with id {}, however there is no ability descriptor with id {}", ability_id, ability_object, ability_object.descriptor_id, ability_object.descriptor_id);
+                let ability_on_start = ability_descriptor.actions.on_start;
+
+                ability_to_start = Some(*ability_id);
+                ability_to_start_fn = Some(ability_on_start);
+
+            }
+        }
+        if let Some(ability_id) = ability_to_start {
+            if let Some(on_start_function) = ability_to_start_fn {
+                ptry!(on_start_function(self, ability_id, &AbilityStateInformation {
+                    ability_key_held: true
+                }), "while starting up ability with id {} that was invoked by the hotkey {}", ability_id, key);
+            }
+        }
+        Ok(())
     }
     pub fn on_mouse_click(&mut self, mouse_position: MousePosition, mouse_left: bool, mouse_right: bool, camera_width: f32, camera_height: f32) -> Result<(), PError>{
+        let mut player = self.player.borrow_mut();
         if mouse_left{
-            let stats = ptry!(self.inventory.get_combined_stats());
-            let pitem = self.inventory.get_cur_held_item();
-            let mut attacked = false;
-            if let Some(item) = pitem {
-                if item.time_til_usable <= 0.0 && (item.item_type == ItemType::MeleeWeapon || item.item_type == ItemType::MagicWeapon){
-                    let mouse_direction_unnormalized = [(mouse_position.x_world - self.player.borrow().x - 16.0), (mouse_position.y_world - self.player.borrow().y - 22.0)];
-                    let magnitude = f32::sqrt(mouse_direction_unnormalized[0].powf(2.0) + mouse_direction_unnormalized[1].powf(2.0));
-                    let mouse_direction_normalized = [
-                        mouse_direction_unnormalized[0] / magnitude,
-                        mouse_direction_unnormalized[1] / magnitude
-                    ];
-                    let shots = stats.shots.unwrap_or(1.0).floor() as usize;
-                    if shots > 1 && (item.item_type == ItemType::RangedWeapon || item.item_type == ItemType::MagicWeapon) {
-                        let mut spread = f32::min(PI/8.0, PI/shots as f32);
-                        spread /= stats.focus.unwrap_or(1.0);
-                        let angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]) - (shots as f32 - 1.0) * spread/2.0;
-                        for i in 0..shots {
-                            let ang_adjusted = angle + spread * i as f32;
+            if player.player_state == PlayerState::Idle || player.player_state == PlayerState::Walking {
+                let stats = ptry!(self.inventory.get_combined_stats());
+                let pitem = self.inventory.get_cur_held_item();
+                let mut attacked = false;
+                if let Some(item) = pitem {
+                    if item.time_til_usable <= 0.0 && (item.item_type == ItemType::MeleeWeapon || item.item_type == ItemType::MagicWeapon){
+                        let mouse_direction_unnormalized = [(mouse_position.x_world - player.x - 16.0), (mouse_position.y_world - player.y - 22.0)];
+                        let magnitude = f32::sqrt(mouse_direction_unnormalized[0].powf(2.0) + mouse_direction_unnormalized[1].powf(2.0));
+                        let mouse_direction_normalized = [
+                            mouse_direction_unnormalized[0] / magnitude,
+                            mouse_direction_unnormalized[1] / magnitude
+                        ];
+                        let shots = stats.shots.unwrap_or(1.0).floor() as usize;
+                        if shots > 1 && (item.item_type == ItemType::RangedWeapon || item.item_type == ItemType::MagicWeapon) {
+                            let mut spread = f32::min(PI/8.0, PI/shots as f32);
+                            spread /= stats.focus.unwrap_or(1.0);
+                            let angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]) - (shots as f32 - 1.0) * spread/2.0;
+                            for i in 0..shots {
+                                let ang_adjusted = angle + spread * i as f32;
+                                ptry!(self.add_player_attack(
+                                        &stats,
+                                        item, 
+                                        player.x + 16.0 + ang_adjusted.cos() * 25.0,
+                                        player.y + 22.0 + ang_adjusted.sin() * 25.0,
+                                        ang_adjusted * 180.0/PI));
+                            }
+                            attacked = true;
+                        } else {
+                            let angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]);
                             ptry!(self.add_player_attack(
-                                    &stats,
-                                    item, 
-                                    self.player.borrow().x + 16.0 + ang_adjusted.cos() * 25.0,
-                                    self.player.borrow().y + 22.0 + ang_adjusted.sin() * 25.0,
-                                    ang_adjusted * 180.0/PI));
+                                    &stats, 
+                                    item,
+                                    player.x + 16.0 + angle.cos() * 25.0,
+                                    player.y + 22.0 + angle.sin() * 25.0,
+                                    angle * 180.0/PI));
+                            attacked = true;
                         }
-                        attacked = true;
-                    } else {
-                        let angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]);
-                        ptry!(self.add_player_attack(
-                                &stats, 
-                                item,
-                                self.player.borrow().x + 16.0 + angle.cos() * 25.0,
-                                self.player.borrow().y + 22.0 + angle.sin() * 25.0,
-                                angle * 180.0/PI));
-                        attacked = true;
                     }
                 }
+                if attacked{
+                    println!("attacked");
+                    let item = punwrap!(self.inventory.get_cur_held_item_mut(), Expected, "attacked with no item?");
+                    if item.item_type == ItemType::MeleeWeapon {
+                        player.player_state = PlayerState::Attacking;
+                    }
+                    item.time_til_usable = stats.cooldown.unwrap_or(0.0);
+                }
             }
-            if attacked {
-                println!("attacked");
-                let item = punwrap!(self.inventory.get_cur_held_item_mut(), Expected, "attacked with no item?");
-                item.time_til_usable = stats.cooldown.unwrap_or(0.0);
+            else{
+                // NOTHING FOR NOW
             }
                 
         }
         Ok(())
     }
     pub fn process_mouse_input(&mut self, mouse_position: MousePosition, mouse_left: bool, mouse_right: bool) -> Result<(), PError>{
-
+        let mut player = self.player.borrow_mut();
         if mouse_left{
-            let stats = ptry!(self.inventory.get_combined_stats());
-            let pitem = self.inventory.get_cur_held_item();
-            let mut attacked = false;
-            if let Some(item) = pitem {
-                if item.time_til_usable <= 0.0 && item.item_type == ItemType::RangedWeapon {
-                    let mouse_direction_unnormalized = [(mouse_position.x_world - self.player.borrow().x - 16.0), (mouse_position.y_world - self.player.borrow().y - 22.0)];
-                    let magnitude = f32::sqrt(mouse_direction_unnormalized[0].powf(2.0) + mouse_direction_unnormalized[1].powf(2.0));
-                    let mouse_direction_normalized = [
-                        mouse_direction_unnormalized[0] / magnitude,
-                        mouse_direction_unnormalized[1] / magnitude
-                    ];
-                    let shots = stats.shots.unwrap_or(1.0).floor() as usize;
-                    if shots > 1 && (item.item_type == ItemType::RangedWeapon || item.item_type == ItemType::MagicWeapon) {
-                        let mut spread = f32::min(PI/8.0, PI/shots as f32);
-                        spread /= stats.focus.unwrap_or(1.0);
-                        let angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]) - (shots as f32 - 1.0) * spread/2.0;
-                        for i in 0..shots {
-                            let ang_adjusted = angle + spread * i as f32;
+            if player.player_state == PlayerState::Idle || player.player_state == PlayerState::Walking {
+                let stats = ptry!(self.inventory.get_combined_stats());
+                let pitem = self.inventory.get_cur_held_item();
+                let mut attacked = false;
+                let mut ranged = false;
+                if let Some(item) = pitem {
+                    if item.item_type == ItemType::RangedWeapon {
+                        ranged = true;
+                        player.player_state = PlayerState::Attacking;
+                    }
+                    if item.time_til_usable <= 0.0 && item.item_type == ItemType::RangedWeapon {
+                        let mouse_direction_unnormalized = [(mouse_position.x_world - player.x - 16.0), (mouse_position.y_world - player.y - 22.0)];
+                        let magnitude = f32::sqrt(mouse_direction_unnormalized[0].powf(2.0) + mouse_direction_unnormalized[1].powf(2.0));
+                        let mouse_direction_normalized = [
+                            mouse_direction_unnormalized[0] / magnitude,
+                            mouse_direction_unnormalized[1] / magnitude
+                        ];
+                        let shots = stats.shots.unwrap_or(1.0).floor() as usize;
+                        if shots > 1 && (item.item_type == ItemType::RangedWeapon || item.item_type == ItemType::MagicWeapon) {
+                            let mut spread = f32::min(PI/8.0, PI/shots as f32);
+                            spread /= stats.focus.unwrap_or(1.0);
+                            let angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]) - (shots as f32 - 1.0) * spread/2.0;
+                            for i in 0..shots {
+                                let ang_adjusted = angle + spread * i as f32;
+                                ptry!(self.add_player_attack(
+                                        &stats,
+                                        item, 
+                                        player.x + 16.0 + ang_adjusted.cos() * 25.0,
+                                        player.y + 22.0 + ang_adjusted.sin() * 25.0,
+                                        ang_adjusted * 180.0/PI));
+                            }
+                            attacked = true;
+                        } else {
+                            let angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]);
                             ptry!(self.add_player_attack(
-                                    &stats,
-                                    item, 
-                                    self.player.borrow().x + 16.0 + ang_adjusted.cos() * 25.0,
-                                    self.player.borrow().y + 22.0 + ang_adjusted.sin() * 25.0,
-                                    ang_adjusted * 180.0/PI));
+                                    &stats, 
+                                    item,
+                                    player.x + 16.0 + angle.cos() * 25.0,
+                                    player.y + 22.0 + angle.sin() * 25.0,
+                                    angle * 180.0/PI));
+                            attacked = true;
                         }
-                        attacked = true;
-                    } else {
-                        let angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]);
-                        ptry!(self.add_player_attack(
-                                &stats, 
-                                item,
-                                self.player.borrow().x + 16.0 + angle.cos() * 25.0,
-                                self.player.borrow().y + 22.0 + angle.sin() * 25.0,
-                                angle * 180.0/PI));
-                        attacked = true;
                     }
                 }
-            }
-            if attacked {
-                let item = punwrap!(self.inventory.get_cur_held_item_mut(), Expected, "attacked with no item?");
-                item.time_til_usable = stats.cooldown.unwrap_or(0.0);
+                if attacked {
+                    let item = punwrap!(self.inventory.get_cur_held_item_mut(), Expected, "attacked with no item?");
+                    item.time_til_usable = stats.cooldown.unwrap_or(0.0);
+                }else if ranged{
+                    let item = punwrap!(self.inventory.get_cur_held_item_mut(), Expected, "attacked with no item?");
+                    item.time_til_usable -= 1.0;
+
+                }
+            } else{
+                // NOTHING FOR NOW
             }
                 
+        }else {
+            let pitem = self.inventory.get_cur_held_item();
+            if let Some(item) = pitem{
+                if item.item_type == ItemType::RangedWeapon && self.player.borrow().player_state == PlayerState::Attacking {
+                    player.player_state = PlayerState::Idle;
+                }
+            } 
         }
         Ok(())
     }
     pub fn process_input(&mut self, keys: &FxHashMap<String,bool>, camera: &mut Camera) -> Result<(), PError>{
-        ptry!(self.process_player_input(keys));
         let player = self.player.borrow();
-        camera.update_camera_position(player.x, player.y);
-        drop(player);
-        let held_potentially = &self.inventory.get_cur_held_item();
-        if held_potentially.is_some() {
-            let sprite = &held_potentially.unwrap().sprite;
-            self.player.borrow_mut().holding_texture_sprite = self.sprites.get_sprite_id(sprite);
-        }else{
-            self.player.borrow_mut().holding_texture_sprite = None; 
+        let move_speed = player.movement_speed;
+        println!("player state: {:?}", player.player_state);
+        match player.player_state {
+            PlayerState::Idle | PlayerState::Walking => {
+                drop(player);
+                ptry!(self.process_player_input(keys, move_speed));
+                let player = self.player.borrow();
+                camera.update_camera_position(player.x, player.y);
+                drop(player);
+                let held_potentially = &self.inventory.get_cur_held_item();
+                if held_potentially.is_some() {
+                    let sprite = &held_potentially.unwrap().sprite;
+                    self.player.borrow_mut().holding_texture_sprite = self.sprites.get_sprite_id(sprite);
+                }else{
+                    self.player.borrow_mut().holding_texture_sprite = None; 
+                }
+            }
+            PlayerState::Attacking => {
+                drop(player);
+                ptry!(self.process_player_input(keys, move_speed/3.0));
+                let player = self.player.borrow();
+                camera.update_camera_position(player.x, player.y);
+                drop(player);
+                let held_potentially = &self.inventory.get_cur_held_item();
+                if held_potentially.is_some() {
+                    let sprite = &held_potentially.unwrap().sprite;
+                    self.player.borrow_mut().holding_texture_sprite = self.sprites.get_sprite_id(sprite);
+                }else{
+                    self.player.borrow_mut().holding_texture_sprite = None; 
+                }
+            }
+            PlayerState::ChargingAbility => {
+                drop(player);
+                ptry!(self.process_player_input(keys, move_speed/3.0));
+                let player = self.player.borrow();
+                camera.update_camera_position(player.x, player.y);
+                drop(player);
+                let held_potentially = &self.inventory.get_cur_held_item();
+                if held_potentially.is_some() {
+                    let sprite = &held_potentially.unwrap().sprite;
+                    self.player.borrow_mut().holding_texture_sprite = self.sprites.get_sprite_id(sprite);
+                }else{
+                    self.player.borrow_mut().holding_texture_sprite = None; 
+                }
+                let cur_ability_actions = error_prolif_allow!(self.get_cur_ability_actions(), None);
+                if let Ok(cur_ability_actions) = cur_ability_actions {
+                    let mut correct_key = false;
+                    for key in keys.iter() {
+                        if *key.1 && self.player_ability_hotkeys.get(key.0) == self.cur_ability_charging.as_ref() {
+                            correct_key = true;
+                        }
+                    }
+                    let while_charging_func = cur_ability_actions.while_charging;
+                    ptry!(while_charging_func(self, *punwrap!(self.cur_ability_charging.as_ref()), &AbilityStateInformation {ability_key_held: correct_key}), "while calling charging func on current_ability with id {}", *punwrap!(self.cur_ability_charging.as_ref())); // unwrap should never fail as for cur_ability_actions to succeed, cur_ability_charging should be Some
+                }
+
+
+            }
+
         }
         Ok(())
         
+    }
+    pub fn get_cur_ability_actions(&self) -> Result<&PlayerAbilityActionDescriptor, PError> {
+        let cur_ability = punwrap!(self.player_abilities.get(punwrap!(self.cur_ability_charging, None, "there is no ability charging currently")), Invalid, "current ability charging refers to a player ability with id {}, but there is no ability with id {}", self.cur_ability_charging.unwrap(), self.cur_ability_charging.unwrap());
+        Ok(&punwrap!(self.player_ability_descriptors.get(cur_ability.descriptor_id), "current player ability charging refers to ability with id {}, which refers to ability descriptor with id {}, however there is no ability descriptor with id {}", self.cur_ability_charging.unwrap(), cur_ability.descriptor_id, cur_ability.descriptor_id).actions)
     }
     pub fn create_item_with_archetype(&self, archetype: String) -> Result<Item, PError> {
         let archetype_i = punwrap!(self.get_item_archetype(&archetype), NotFound, "could not find item archetype {}", archetype);        
@@ -1070,6 +1226,22 @@ impl World{
     }
     pub fn update_items_in_inventory_cd(&mut self) -> Result<(), PError> {
         ptry!(self.inventory.update_items_cd());
+        Ok(())
+    }
+    pub fn update_player_abilities(&mut self) -> Result<(), PError> {
+        if let Some(cur_ability_charging) = self.cur_ability_charging {
+            let cur_ability = punwrap!(self.player_abilities.get_mut(cur_ability_charging), Invalid, "cur ability charging refers to player ability with id {} but there is no player ability with id {}", cur_ability_charging, cur_ability_charging);
+            cur_ability.time_to_charge_left -= 1.0;
+            if cur_ability.time_to_charge_left <= 0.0{
+                let cur_ability_actions = ptry!(self.get_cur_ability_actions(), "while updating player abilities");
+                let end_action = cur_ability_actions.on_end;
+                ptry!(end_action(self, cur_ability_charging, &AbilityStateInformation{
+                    ability_key_held: false
+                }));
+                let cur_ability = punwrap!(self.player_abilities.get_mut(cur_ability_charging), Invalid, "cur ability charging refers to player ability with id {} but there is no player ability with id {}", cur_ability_charging, cur_ability_charging);
+                cur_ability.time_to_charge_left = cur_ability.adjusted_time_to_charge;
+            }
+        }
         Ok(())
     }
 }

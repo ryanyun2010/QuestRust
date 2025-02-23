@@ -503,7 +503,9 @@ impl Inventory {
     }
     pub fn update_items_cd(&mut self) -> Result<(), PError> {
         for (_, item) in self.items.iter_mut() {
-            item.time_til_usable -= 1.0; 
+            if !(item.item_type == ItemType::RangedWeapon) {
+                item.time_til_usable -= 1.0; 
+            }
         }
         Ok(())
     }

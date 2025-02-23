@@ -48,16 +48,16 @@ fn startup() -> Result<(), PError> {
     let mut camera = camera::Camera::new(1152,720);
     let mut world = starting_level_generator::generate_world_from_json_parsed_data(&parsed_data);
     let sword = world.inventory.add_item(
-        ptry!(world.create_item_with_archetype("funny spear".to_string()))
+        ptry!(world.create_item_with_archetype("test_sword".to_string()))
     );
     let spear = world.inventory.add_item(
-        ptry!(world.create_item_with_archetype("god_sword".to_string()))
+        ptry!(world.create_item_with_archetype("test_spear".to_string()))
     );
     let h = world.inventory.add_item(
         ptry!(world.create_item_with_archetype("test helm".to_string()))
     );
     world.inventory.init_ui();
-    ptry!(world.inventory.set_hotbar_slot_item(1, spear));
+    ptry!(world.inventory.set_hotbar_slot_item(3, spear));
     ptry!(world.inventory.set_slot_item(7, h));
     ptry!(world.inventory.set_hotbar_slot_item(0, sword));
 

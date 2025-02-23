@@ -6,10 +6,10 @@ use crate::{error_prolif_allow, perror, ptry, punwrap};
 use crate::world::World;
 use crate::rendering_engine::abstractions::{RenderData, RenderDataFull, TextSprite, UIEFull};
 use crate::game_engine::ui::UIElement;
+use crate::game_engine::player_attacks::PlayerAttackType;
 use wgpu_text::glyph_brush::{HorizontalAlign, Section as TextSection};
 use rustc_hash::FxHashMap;
 
-use super::entities::AttackType;
 use super::ui::UIESprite;
 
 #[derive(Debug, Clone)]
@@ -287,7 +287,7 @@ impl Camera{
             let mut width = None;
             let mut height = None;
             match effect.attack_type {
-                AttackType::Melee => {
+                PlayerAttackType::Melee | PlayerAttackType::MeleeAbility => {
 
                     melee = true;
                     height = effect.stats.width;
@@ -296,7 +296,7 @@ impl Camera{
                     let sprite_id = punwrap!(world.sprites.get_sprite_id(effect.sprite.as_str()), Expected, "player melee attack {:?} refers to a non-existent sprite {}", effect, effect.sprite.as_str());
                     sprite = Some(punwrap!(world.sprites.get_sprite(sprite_id), Expected, "player melee attack {:?} refers to a non-existent sprite {}", effect, effect.sprite.as_str()));
                 }
-                AttackType::Ranged => {
+                PlayerAttackType::Ranged | PlayerAttackType::RangedAbility => {
                     width = effect.stats.size;
                     height = effect.stats.size;
                     let sprite_id = punwrap!(world.sprites.get_sprite_id(effect.sprite.as_str()), Expected, "player ranged attack {:?} refers to a non-existent sprite {}", effect, effect.sprite.as_str());

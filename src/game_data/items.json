@@ -26,7 +26,7 @@
             "lifetime": {"average": 90.0, "variation": 10.0},
             "size": {"average": 20.0, "variation": 2.5},
             "shots": {"average": 1.0, "variation": 0.0},
-            "focus": {"average": 1.0, "variation": 0.0},
+            "focus": {"average": 9.0, "variation": 0.0},
             "cooldown": {"average": 3.0, "variation": 1.0}
         }
     },

@@ -1,10 +1,10 @@
-use super::{entities::AttackType, stat::StatList};
+use super::stat::StatList;
 
 
 #[derive(Clone, Debug)]
 pub struct PlayerAttack{
     pub stats: StatList,
-    pub attack_type: AttackType,
+    pub attack_type: PlayerAttackType,
     pub sprite: String,
     pub width_to_length_ratio: f32,
     pub time_alive: f32,
@@ -14,7 +14,7 @@ pub struct PlayerAttack{
     pub dealt_damage: bool
 }
 impl PlayerAttack{
-    pub fn new(stats: StatList, attack_type: AttackType,  sprite: String, width_to_length_ratio: f32, x: f32, y: f32, angle: f32) -> Self{
+    pub fn new(stats: StatList, attack_type: PlayerAttackType,  sprite: String, width_to_length_ratio: f32, x: f32, y: f32, angle: f32) -> Self{
         Self{
             stats,
             sprite,
@@ -27,5 +27,14 @@ impl PlayerAttack{
             dealt_damage: false
         }
     }
+}
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum PlayerAttackType {
+    Melee,
+    Ranged,
+    Magic,
+    MeleeAbility,
+    RangedAbility,
+    MagicAbility
 }
 

@@ -12,6 +12,14 @@ pub enum PlayerDir {
     Right
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub enum PlayerState {
+    Idle,
+    Walking,
+    Attacking,
+    ChargingAbility
+}
+
 
 #[derive(Clone, Debug)]
 pub struct Player {
@@ -23,7 +31,8 @@ pub struct Player {
     pub movement_speed: f32,
     pub holding_texture_sprite: Option<usize>,
     pub collision_box: CollisionBox,
-    pub direction: PlayerDir
+    pub direction: PlayerDir,
+    pub player_state: PlayerState,
 }
 #[macro_export]
 macro_rules! repeat_token {
@@ -47,6 +56,7 @@ impl Player {
             movement_speed,
             holding_texture_sprite: None,
             direction: PlayerDir::Down,
+            player_state: PlayerState::Idle,
         }
     }
     pub fn get_held_item_position(&self) -> (f32, f32) {

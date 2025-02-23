@@ -37,6 +37,7 @@ impl HeadlessState{
         ptry!(world.process_input(&self.keys_down, camera));
         ptry!(world.update_entities());
         ptry!(world.update_entity_attacks());
+        ptry!(world.update_player_abilities());
         world.update_player_attacks(camera);
         ptry!(world.update_items_in_inventory_cd());
         ptry!(world.kill_entities_to_be_killed());

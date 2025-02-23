@@ -13,7 +13,8 @@ pub enum PE {
     MissingExpectedGlobalSprite(ErrorDescriptor),
     SurfaceError(wgpu::SurfaceError),
     NoSpace(ErrorDescriptor),
-    WrongItemType(ErrorDescriptor)
+    WrongItemType(ErrorDescriptor),
+    None(ErrorDescriptor)
 }
 
 
@@ -29,7 +30,8 @@ impl PE {
             PE::MissingExpectedGlobalSprite(e) => format!("Missing Expected Global Sprite at {}: {}",e.as_location(), e.as_string()),
             PE::SurfaceError(e) => format!("Surface Error: {}", e),
             PE::NoSpace(e) => format!("No Space in Inventory Error at {}: {}", e.as_location(), e.as_string()),
-            PE::WrongItemType(e) => format!("Wrong Item Type Error at {}: {}", e.as_location(), e.as_string())
+            PE::WrongItemType(e) => format!("Wrong Item Type Error at {}: {}", e.as_location(), e.as_string()),
+            PE::None(e) => format!("None Error at {}: {}", e.as_location(), e.as_string())
         }
     }
 }
