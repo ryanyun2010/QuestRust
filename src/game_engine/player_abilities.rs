@@ -75,7 +75,7 @@ pub const CYCLONE: PlayerAbilityActionDescriptor = PlayerAbilityActionDescriptor
                                 angle * 180.0/PI));
                     }
                 }
-                if ability_ref.time_to_charge_left % 20.0 == 0.0 {
+                if ability_ref.time_to_charge_left % 20.0 == 19.0 {
                     for i in 0..4 {
                         let angle = PI/2.0 * i as f32 + (ability_ref.adjusted_time_to_charge - ability_ref.time_to_charge_left) * 5.0 % (PI * 2.0);
                         ptry!(world.add_player_attack_custom(
