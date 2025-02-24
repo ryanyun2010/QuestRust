@@ -16,7 +16,8 @@ pub enum PlayerDir {
 pub enum PlayerState {
     Idle,
     Walking,
-    Attacking,
+    AttackingRanged,
+    AttackingMelee,
     ChargingAbility
 }
 

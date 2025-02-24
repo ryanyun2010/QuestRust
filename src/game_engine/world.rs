@@ -993,7 +993,7 @@ impl World{
                     println!("attacked");
                     let item = punwrap!(self.inventory.get_cur_held_item_mut(), Expected, "attacked with no item?");
                     if item.item_type == ItemType::MeleeWeapon {
-                        player.player_state = PlayerState::Attacking;
+                        player.player_state = PlayerState::AttackingMelee;
                     }
                     item.time_til_usable = stats.cooldown.unwrap_or(0.0);
                 }
@@ -1008,7 +1008,7 @@ impl World{
     pub fn process_mouse_input(&mut self, mouse_position: MousePosition, mouse_left: bool, mouse_right: bool) -> Result<(), PError>{
         let mut player = self.player.borrow_mut();
         if mouse_left{
-            if player.player_state == PlayerState::Idle || player.player_state == PlayerState::Walking || player.player_state == PlayerState::Attacking {
+            if player.player_state == PlayerState::Idle || player.player_state == PlayerState::Walking || player.player_state == PlayerState::AttackingRanged {
                 let stats = ptry!(self.inventory.get_combined_stats());
                 let pitem = self.inventory.get_cur_held_item();
                 let mut attacked = false;
@@ -1016,7 +1016,7 @@ impl World{
                 if let Some(item) = pitem {
                     if item.item_type == ItemType::RangedWeapon {
                         ranged = true;
-                        player.player_state = PlayerState::Attacking;
+                        player.player_state = PlayerState::AttackingRanged;
                     }
                     if item.time_til_usable <= 0.0 && item.item_type == ItemType::RangedWeapon {
                         let mouse_direction_unnormalized = [(mouse_position.x_world - player.x - 16.0), (mouse_position.y_world - player.y - 22.0)];
@@ -1067,7 +1067,7 @@ impl World{
         }else {
             let pitem = self.inventory.get_cur_held_item();
             if let Some(item) = pitem{
-                if item.item_type == ItemType::RangedWeapon && player.player_state == PlayerState::Attacking {
+                if player.player_state == PlayerState::AttackingRanged {
                     player.player_state = PlayerState::Idle;
                 }
             } 
@@ -1093,7 +1093,7 @@ impl World{
                     self.player.borrow_mut().holding_texture_sprite = None; 
                 }
             }
-            PlayerState::Attacking => {
+            PlayerState::AttackingRanged | PlayerState::AttackingMelee => {
                 drop(player);
                 ptry!(self.process_player_input(keys, move_speed/3.0));
                 let player = self.player.borrow();
