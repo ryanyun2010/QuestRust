@@ -87,10 +87,8 @@ pub struct World{
 
     pub loot_table_lookup: Vec<LootTable>, // loot table id to loot table object,
 
+    pub cur_ability_charging: Option<usize>, // cur ability id charging
     pub player_ability_descriptors: Vec<PlayerAbilityDescriptor>, // corresponds player ability descriptor id to object
-    pub player_abilities: Vec<PlayerAbility>, // id in vec = ability id
-    pub player_ability_hotkeys: FxHashMap<String, usize>, // Maps key to press for ability, to ability id
-    pub cur_ability_charging: Option<usize> // cur ability id charging
 }
 
 impl World{ 
@@ -114,7 +112,7 @@ impl World{
                 time_til_usable: 10.0,
             }
         }];
-
+        let mut inventory_test = Inventory::default();
         let test_ability_descriptors = vec![
             PlayerAbilityDescriptor {
                 name: String::from("Cyclone"),
@@ -131,10 +129,20 @@ impl World{
                 cooldown_time_left: 0.0,
                 time_to_charge_left: 1000.0,
                 descriptor_id: 0,
+            },
+            PlayerAbility {
+                adjusted_time_to_charge: 50.0,
+                adjusted_cooldown: 0.0,
+                time_to_charge_left: 50.0,
+                cooldown_time_left: 0.0,
+                descriptor_id: 0,
             }
         ];
         let mut test_player_ability_hotkeys = FxHashMap::default();
         test_player_ability_hotkeys.insert(String::from("1"), 0);
+        test_player_ability_hotkeys.insert(String::from("z"), 1);
+        inventory_test.player_ability_hotkeys = test_player_ability_hotkeys;
+        inventory_test.player_abilities = test_abilities;
 
         Self{
             chunks: RefCell::new(Vec::new()),
@@ -148,7 +156,7 @@ impl World{
             terrain_archetype_tags_lookup: Vec::new(),
             terrain_archetype_lookup: FxHashMap::default(),
             terrain: FxHashMap::default(),
-            inventory: Inventory::default(),
+            inventory: inventory_test,
             item_archetype_lookup: FxHashMap::default(),
             loaded_chunks: Vec::new(),
             collision_cache: RefCell::new(FxHashMap::default()),
@@ -170,8 +178,6 @@ impl World{
             items_on_floor: RefCell::new(iof),
             loot_table_lookup: Vec::new(),
             player_ability_descriptors: test_ability_descriptors,
-            player_abilities: test_abilities,
-            player_ability_hotkeys: test_player_ability_hotkeys,
             cur_ability_charging: None,
         }
     }
@@ -928,12 +934,12 @@ impl World{
         let mut ability_to_start = None;
         let mut ability_to_start_fn = None;
         if state == PlayerState::Idle || state == PlayerState::Walking{
-            if let Some(ability_id) = self.player_ability_hotkeys.get(key) {
-                let ability_object = punwrap!(self.player_abilities.get(*ability_id), Invalid, "Player ability hotkey hashmap maps key {} to ability with id {}, however there is no ability with id {}", key, ability_id, ability_id);
+            if let Some(ability_id) = self.inventory.get_abilities_on_hotkey(key.to_string()) {
+                let ability_object = punwrap!(self.inventory.get_ability(ability_id), Invalid, "Player ability hotkey hashmap maps key {} to ability with id {}, however there is no ability with id {}", key, ability_id, ability_id);
                 let ability_descriptor = punwrap!(self.player_ability_descriptors.get(ability_object.descriptor_id), Invalid, "Player ability with id: {} and descriptor:\n {:?}\n\n refers to ability descriptor with id {}, however there is no ability descriptor with id {}", ability_id, ability_object, ability_object.descriptor_id, ability_object.descriptor_id);
                 let ability_on_start = ability_descriptor.actions.on_start;
 
-                ability_to_start = Some(*ability_id);
+                ability_to_start = Some(ability_id);
                 ability_to_start_fn = Some(ability_on_start);
 
             }
@@ -1124,7 +1130,7 @@ impl World{
                 if let Ok(cur_ability_actions) = cur_ability_actions {
                     let mut correct_key = false;
                     for key in keys.iter() {
-                        if *key.1 && self.player_ability_hotkeys.get(key.0) == self.cur_ability_charging.as_ref() {
+                        if *key.1 && self.inventory.get_abilities_on_hotkey(key.0.to_string()) == self.cur_ability_charging {
                             correct_key = true;
                         }
                     }
@@ -1140,7 +1146,7 @@ impl World{
         
     }
     pub fn get_cur_ability_actions(&self) -> Result<&PlayerAbilityActionDescriptor, PError> {
-        let cur_ability = punwrap!(self.player_abilities.get(punwrap!(self.cur_ability_charging, None, "there is no ability charging currently")), Invalid, "current ability charging refers to a player ability with id {}, but there is no ability with id {}", self.cur_ability_charging.unwrap(), self.cur_ability_charging.unwrap());
+        let cur_ability = punwrap!(self.inventory.get_ability(punwrap!(self.cur_ability_charging, None, "there is no ability charging currently")), Invalid, "current ability charging refers to a player ability with id {}, but there is no ability with id {}", self.cur_ability_charging.unwrap(), self.cur_ability_charging.unwrap());
         Ok(&punwrap!(self.player_ability_descriptors.get(cur_ability.descriptor_id), "current player ability charging refers to ability with id {}, which refers to ability descriptor with id {}, however there is no ability descriptor with id {}", self.cur_ability_charging.unwrap(), cur_ability.descriptor_id, cur_ability.descriptor_id).actions)
     }
     pub fn create_item_with_archetype(&self, archetype: String) -> Result<Item, PError> {
@@ -1230,7 +1236,7 @@ impl World{
     }
     pub fn update_player_abilities(&mut self) -> Result<(), PError> {
         if let Some(cur_ability_charging) = self.cur_ability_charging {
-            let cur_ability = punwrap!(self.player_abilities.get_mut(cur_ability_charging), Invalid, "cur ability charging refers to player ability with id {} but there is no player ability with id {}", cur_ability_charging, cur_ability_charging);
+            let cur_ability = punwrap!(self.inventory.get_ability_mut(cur_ability_charging), Invalid, "cur ability charging refers to player ability with id {} but there is no player ability with id {}", cur_ability_charging, cur_ability_charging);
             cur_ability.time_to_charge_left -= 1.0;
             if cur_ability.time_to_charge_left <= 0.0{
                 let cur_ability_actions = ptry!(self.get_cur_ability_actions(), "while updating player abilities");
@@ -1238,7 +1244,7 @@ impl World{
                 ptry!(end_action(self, cur_ability_charging, &AbilityStateInformation{
                     ability_key_held: false
                 }));
-                let cur_ability = punwrap!(self.player_abilities.get_mut(cur_ability_charging), Invalid, "cur ability charging refers to player ability with id {} but there is no player ability with id {}", cur_ability_charging, cur_ability_charging);
+                let cur_ability = punwrap!(self.inventory.get_ability_mut(cur_ability_charging), Invalid, "cur ability charging refers to player ability with id {} but there is no player ability with id {}", cur_ability_charging, cur_ability_charging);
                 cur_ability.time_to_charge_left = cur_ability.adjusted_time_to_charge;
             }
         }

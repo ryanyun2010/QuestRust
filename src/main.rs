@@ -33,7 +33,7 @@ fn startup() -> Result<(), PError> {
         if let Some(parent) = current_dir.parent() {
             current_dir = parent.to_path_buf();
         } else {
-            panic!("Cargo.toml not found. Is this a Rust project?");
+            return Err(perror!("Cargo.toml not found. Is this a Rust project?"));
         }
     }
 

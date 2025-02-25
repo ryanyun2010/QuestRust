@@ -48,30 +48,31 @@ pub const CYCLONE: PlayerAbilityActionDescriptor = PlayerAbilityActionDescriptor
     },
     while_charging: |world, ability, state| {
         if !(state.ability_key_held) {
-            let mut_ability_ref = punwrap!(world.player_abilities.get_mut(ability), Invalid, "while_charging was called with ability id {}, however there is no current ability with ability id {}", ability, ability);
+            let mut_ability_ref = punwrap!(world.inventory.get_ability_mut(ability), Invalid, "while_charging was called with ability id {}, however there is no current ability with ability id {}", ability, ability);
             mut_ability_ref.time_to_charge_left = 0.0; 
         }
-        let ability_ref = punwrap!(world.player_abilities.get(ability), Invalid, "while_charging was called with ability id {}, however there is no current ability with ability id {}", ability, ability);
+        let ability_ref = punwrap!(world.inventory.get_ability(ability), Invalid, "while_charging was called with ability id {}, however there is no current ability with ability id {}", ability, ability);
         let stats = ptry!(world.inventory.get_combined_stats());
         let pitem = world.inventory.get_cur_held_item();
         let player = world.player.borrow();
             if let Some(item) = pitem {
                 if ability_ref.time_to_charge_left % 1.0 == 0.0 {
-                    for i in 0..10 {
-                        let angle = PI/5.0 * i as f32 + (ability_ref.adjusted_time_to_charge - ability_ref.time_to_charge_left) * 0.2 % (PI * 2.0);
+                    for i in 0..4 {
+                        let angle = PI/5.0 * i as f32 + (ability_ref.adjusted_time_to_charge - ability_ref.time_to_charge_left) * 0.9 % (PI * 2.0);
                         ptry!(world.add_player_attack_custom(
 
                                 &crate::create_stat_list!(
-                                    lifetime => 1.0,
-                                    speed => 20.0,
+                                    lifetime => 3.0,
+                                    speed => 0.0,
                                     damage => 6.0,
-                                    size => 40.0,
+                                    width => 40.0,
+                                    reach => 40.0
                                 ),
                                 String::from("melee_attack"),
                                 1.0,
-                                crate::game_engine::player_attacks::PlayerAttackType::RangedAbility,
-                                player.x + 16.0 + angle.cos() * 25.0,
-                                player.y + 22.0 + angle.sin() * 25.0,
+                                crate::game_engine::player_attacks::PlayerAttackType::MeleeAbility,
+                                player.x + 16.0 + angle.cos() * 37.0,
+                                player.y + 22.0 + angle.sin() * 37.0,
                                 angle * 180.0/PI));
                     }
                 }

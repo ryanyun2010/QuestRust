@@ -1,4 +1,5 @@
 use crate::stat::StatList;
+use crate::game_engine::player_abilities::PlayerAbility;
 use rustc_hash::FxHashMap;
 
 use crate::{error::PError, error_prolif_allow, game_engine::item::Item, perror, ptry, punwrap, rendering_engine::abstractions::{TextSprite, UIEFull}};
@@ -23,7 +24,9 @@ pub struct Inventory {
     pub items_waiting_to_be_dropped: Vec<usize>,
     chest_slot: Option<usize>,
     helm_slot: Option<usize>,
-    boot_slot: Option<usize>
+    boot_slot: Option<usize>,
+    pub player_abilities: Vec<PlayerAbility>, // id in vec = ability id
+    pub player_ability_hotkeys: FxHashMap<String, usize>, // Maps key to press for ability, to ability id
 }
 #[derive(Debug, Clone)]
 pub struct Slot {
@@ -118,7 +121,9 @@ impl Default for Inventory{
             show_inventory: false,
             item_on_mouse: None,
             mouse_position: MousePosition::default(),
-            items_waiting_to_be_dropped: Vec::new()
+            items_waiting_to_be_dropped: Vec::new(),
+            player_abilities: Vec::new(),
+            player_ability_hotkeys: FxHashMap::default()
         }
     }
 }
@@ -295,6 +300,16 @@ impl Inventory {
         ptry!(s.set_item(item_id, &self.items));
         Ok(())
     }
+
+    pub fn get_ability(&self, id: usize) -> Option<&PlayerAbility> {
+        self.player_abilities.get(id)
+    }
+    pub fn get_ability_mut(&mut self, id: usize) -> Option<&mut PlayerAbility> {
+        self.player_abilities.get_mut(id)
+    }
+    pub fn get_abilities_on_hotkey(&self, key: String) -> Option<usize> {
+        self.player_ability_hotkeys.get(&key).copied()
+    }
     pub fn render_ui(&mut self) -> Result<UIEFull, PError> {
         let mut ui = Vec::new();
         let mut text = Vec::new(); 
@@ -406,7 +421,27 @@ impl Inventory {
                     height: 48.0,
                     sprite: String::from("slot_highlight")
                 }
-            )
+            );
+            for (i, (hotkey, ability_id)) in self.player_ability_hotkeys.iter().enumerate() {
+                ui.push(UIESprite {
+                    x: 350.0 + 58.0 * i as f32,
+                    y: 590.0,
+                    z: 5.2,
+                    width: 48.0,
+                    height: 48.0,
+                    sprite: String::from("hslot")
+                });
+                text.push(TextSprite {
+                    text: hotkey.clone(),
+                    font_size: 30.0,
+                    x: 350.0 + 58.0 * i as f32 + 33.0,
+                    y: 590.0 + 25.0,
+                    w: 15.0,
+                    h: 15.0,
+                    color: [1.0,1.0,1.0,1.0],
+                    align: wgpu_text::glyph_brush::HorizontalAlign::Center,
+                });
+            }
         }
         Ok(UIEFull {
             sprites: ui,
