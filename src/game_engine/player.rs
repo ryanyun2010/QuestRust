@@ -18,7 +18,8 @@ pub enum PlayerState {
     Walking,
     AttackingRanged,
     AttackingMelee,
-    ChargingAbility
+    ChargingAbility,
+    EndingAbility
 }
 
 

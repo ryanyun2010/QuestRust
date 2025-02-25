@@ -12,6 +12,7 @@ pub struct PlayerAttack{
     pub y: f32,
     pub angle: f32,
     pub dealt_damage: bool,
+    pub last_damage: Option<f32>,
 
 }
 impl PlayerAttack{
@@ -25,7 +26,8 @@ impl PlayerAttack{
             x,
             y,
             angle,
-            dealt_damage: false
+            dealt_damage: false,
+            last_damage: None
         }
     }
 }
