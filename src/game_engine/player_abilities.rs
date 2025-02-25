@@ -141,6 +141,7 @@ pub const RANDOM_BIG_SHOT: PlayerAbilityActionDescriptor = PlayerAbilityActionDe
                         damage => 200.8,
                         speed => 5.0,
                         size => 80.0,
+                        pierce => 5.0,
                     ),
                     String::from("spear"),
                     0.6,

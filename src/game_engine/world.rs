@@ -126,7 +126,7 @@ impl World{
                 name: String::from("big spear"),
                 description: String::from("Big Spear"),
                 cooldown: 50.0,
-                time_to_charge: 100.0,
+                time_to_charge: 40.0,
                 actions: super::player_abilities::RANDOM_BIG_SHOT
             }
         ];
@@ -140,9 +140,9 @@ impl World{
                 end_without_end_action: false,
             },
             PlayerAbility {
-                adjusted_time_to_charge: 50.0,
+                adjusted_time_to_charge: 10.0,
                 adjusted_cooldown: 0.0,
-                time_to_charge_left: 200.0,
+                time_to_charge_left: 10.0,
                 cooldown_time_left: 0.0,
                 descriptor_id: 1,
                 end_without_end_action: false
@@ -811,19 +811,19 @@ impl World{
                         i += 1;
                         continue;
                     }
-                    if attack.dealt_damage{
-                        continue;
-                    }
                     let length = attack.stats.size.unwrap_or(0.0).floor() as usize;
                     let width = (attack.width_to_length_ratio * length as f32) as usize;
                     let collisions = self.get_attacked_rotated_rect(true, None, (attack.x - length as f32/2.0) as usize, (attack.y - width as f32 /2.0) as usize, length, width,attack.angle, true);
                     let mut hit = false;
                     for collision in collisions.iter(){
                         if self.entity_health_components.contains_key(collision){
+                            attack.stats.pierce.map(|x| x-1.0);
                             hit = true;
-                            attacks_to_be_deleted.push(i);
                             attack.dealt_damage = true;
-                            break;
+                            if attack.stats.pierce.unwrap_or(0.0) <= 0.0 {
+                                attacks_to_be_deleted.push(i);
+                                break;
+                            }
                         }
                     }
                     if hit {
@@ -943,6 +943,7 @@ impl World{
         let state = self.player.borrow().player_state.clone();
         let mut ability_to_start = None;
         let mut ability_to_start_fn = None;
+        let mut ability_descriptor_start = None;
         if state == PlayerState::Idle || state == PlayerState::Walking{
             if let Some(ability_id) = self.inventory.get_abilities_on_hotkey(key.to_string()) {
                 let ability_object = punwrap!(self.inventory.get_ability(ability_id), Invalid, "Player ability hotkey hashmap maps key {} to ability with id {}, however there is no ability with id {}", key, ability_id, ability_id);
@@ -951,16 +952,22 @@ impl World{
 
                 ability_to_start = Some(ability_id);
                 ability_to_start_fn = Some(ability_on_start);
+                ability_descriptor_start = Some(ability_descriptor);
 
             }
         }
         if let Some(ability_id) = ability_to_start {
             if let Some(on_start_function) = ability_to_start_fn {
-                ptry!(on_start_function(self, ability_id, &AbilityStateInformation {
-                    ability_key_held: true,
-                    mouse_position: input_state.mouse_position
-
-                }), "while starting up ability with id {} that was invoked by the hotkey {}", ability_id, key);
+                if let Some(ability_descriptor) = ability_descriptor_start{
+                    let stats = ptry!(self.inventory.get_combined_stats());
+                    let player_ability = punwrap!(self.inventory.get_ability_mut(ability_id), Invalid, "attempting to start non-existent player ability with id {}", ability_id);
+                    player_ability.adjusted_cooldown = ability_descriptor.cooldown / (stats.cooldown_regen.unwrap_or(0.0) + 1.0);
+                    player_ability.adjusted_time_to_charge = ability_descriptor.time_to_charge / (stats.charge_time_reduction.unwrap_or(0.0) + 1.0);
+                    ptry!(on_start_function(self, ability_id, &AbilityStateInformation {
+                        ability_key_held: true,
+                        mouse_position: input_state.mouse_position
+                    }), "while starting up ability with id {} that was invoked by the hotkey {}", ability_id, key);
+                }
             }
         }
         Ok(())

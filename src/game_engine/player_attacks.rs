@@ -11,7 +11,8 @@ pub struct PlayerAttack{
     pub x: f32,
     pub y: f32,
     pub angle: f32,
-    pub dealt_damage: bool
+    pub dealt_damage: bool,
+
 }
 impl PlayerAttack{
     pub fn new(stats: StatList, attack_type: PlayerAttackType,  sprite: String, width_to_length_ratio: f32, x: f32, y: f32, angle: f32) -> Self{
