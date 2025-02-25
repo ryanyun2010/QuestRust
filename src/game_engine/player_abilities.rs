@@ -1,3 +1,4 @@
+use crate::game_engine::game::MousePosition;
 use crate::world::World;
 use std::f32::consts::PI;
 use crate::PError;
@@ -30,13 +31,18 @@ pub struct PlayerAbility {
     pub adjusted_cooldown: f32, // TODO: ACCOUNT FOR STATS WHEN CREATING THESE
     pub cooldown_time_left: f32,
     pub time_to_charge_left: f32,
-    pub descriptor_id: usize
+    pub descriptor_id: usize,
+    pub end_without_end_action: bool
 }
 
 
 pub struct AbilityStateInformation {
     pub ability_key_held: bool,
+    pub mouse_position: MousePosition
 }
+
+
+
 
 
 pub const CYCLONE: PlayerAbilityActionDescriptor = PlayerAbilityActionDescriptor {
@@ -60,11 +66,10 @@ pub const CYCLONE: PlayerAbilityActionDescriptor = PlayerAbilityActionDescriptor
                     for i in 0..4 {
                         let angle = PI/5.0 * i as f32 + (ability_ref.adjusted_time_to_charge - ability_ref.time_to_charge_left) * 0.9 % (PI * 2.0);
                         ptry!(world.add_player_attack_custom(
-
+                            // TODO: FLAT DAMAGE EFFECTIVENESS STAT OR SMTH
                                 &crate::create_stat_list!(
                                     lifetime => 3.0,
-                                    speed => 0.0,
-                                    damage => 6.0,
+                                    damage => 2.8,
                                     width => 40.0,
                                     reach => 40.0
                                 ),
@@ -73,25 +78,6 @@ pub const CYCLONE: PlayerAbilityActionDescriptor = PlayerAbilityActionDescriptor
                                 crate::game_engine::player_attacks::PlayerAttackType::MeleeAbility,
                                 player.x + 16.0 + angle.cos() * 37.0,
                                 player.y + 22.0 + angle.sin() * 37.0,
-                                angle * 180.0/PI));
-                    }
-                }
-                if ability_ref.time_to_charge_left % 20.0 == 19.0 {
-                    for i in 0..4 {
-                        let angle = PI/2.0 * i as f32 + (ability_ref.adjusted_time_to_charge - ability_ref.time_to_charge_left) * 5.0 % (PI * 2.0);
-                        ptry!(world.add_player_attack_custom(
-
-                                &crate::create_stat_list!(
-                                    lifetime => 30.0,
-                                    speed => 8.0,
-                                    damage => 30.0,
-                                    size => 40.0,
-                                ),
-                                String::from("melee_attack"),
-                                1.0,
-                                crate::game_engine::player_attacks::PlayerAttackType::RangedAbility,
-                                player.x + 16.0 + angle.cos() * 25.0,
-                                player.y + 22.0 + angle.sin() * 25.0,
                                 angle * 180.0/PI));
                     }
                 }
@@ -109,6 +95,61 @@ pub const CYCLONE: PlayerAbilityActionDescriptor = PlayerAbilityActionDescriptor
         }
         world.cur_ability_charging = None;
         player_ref.player_state = PlayerState::Idle;
+        Ok(())
+    }
+};
+
+
+
+pub const RANDOM_BIG_SHOT: PlayerAbilityActionDescriptor = PlayerAbilityActionDescriptor {
+    on_start: |world, ability, state| {
+        world.player.borrow_mut().player_state = PlayerState::ChargingAbility;
+        world.cur_ability_charging = Some(ability);
+        println!("BIG_SHOT CHARGING BEGAN");
+        Ok(())
+    },
+    while_charging: |world, ability, state| {
+        if !(state.ability_key_held) {
+            let mut_ability_ref = punwrap!(world.inventory.get_ability_mut(ability), Invalid, "while_charging was called with ability id {}, however there is no current ability with ability id {}", ability, ability);
+            mut_ability_ref.time_to_charge_left = 0.0; 
+            mut_ability_ref.end_without_end_action = true;
+        }
+        Ok(())
+    },
+    on_end: |world, ability, state| {
+        let mut player = world.player.borrow_mut();
+        let ability_ref = punwrap!(world.inventory.get_ability(ability), Invalid, "while_charging was called with ability id {}, however there is no current ability with ability id {}", ability, ability);
+        println!("END");
+        if !(player.player_state == PlayerState::ChargingAbility) {
+            return Err(perror!(Invalid, "Player State is {:?} at the end of ability charging, however it should be PlayerState::ChargingAbility", player.player_state));
+        }
+        world.cur_ability_charging = None;
+
+        let mouse_direction_unnormalized = [(state.mouse_position.x_world - player.x - 16.0), (state.mouse_position.y_world - player.y - 22.0)];
+        let magnitude = f32::sqrt(mouse_direction_unnormalized[0].powf(2.0) + mouse_direction_unnormalized[1].powf(2.0));
+        let mouse_direction_normalized = [
+            mouse_direction_unnormalized[0] / magnitude,
+            mouse_direction_unnormalized[1] / magnitude
+        ];
+        let main_angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]);
+        for i in -2..=2 {
+            let angle = PI/30.0 * i as f32 + main_angle;
+            ptry!(world.add_player_attack_custom(
+                    // TODO: FLAT DAMAGE EFFECTIVENESS STAT OR SMTH
+                    &crate::create_stat_list!(
+                        lifetime => 70.0,
+                        damage => 200.8,
+                        speed => 5.0,
+                        size => 80.0,
+                    ),
+                    String::from("spear"),
+                    0.6,
+                    crate::game_engine::player_attacks::PlayerAttackType::RangedAbility,
+                    player.x + 16.0 + angle.cos() * 37.0,
+                    player.y + 22.0 + angle.sin() * 37.0,
+                    angle * 180.0/PI));
+        }
+        player.player_state = PlayerState::Idle;
         Ok(())
     }
 };

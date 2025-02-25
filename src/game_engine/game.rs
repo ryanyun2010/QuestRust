@@ -108,7 +108,7 @@ impl<'a> Game<'a> {
     pub fn process_input(&mut self) -> Result<(), PError> {
         if self.state == GameState::play {
             ptry!(self.world.process_mouse_input(self.input.mouse_position, self.input.mouse_left, self.input.mouse_right));
-            ptry!(self.world.process_input(&self.input.keys_down, &mut self.camera));
+            ptry!(self.world.process_input(&self.input.keys_down, &mut self.camera, &self.input));
         }else if self.state == GameState::inventory {
             self.world.inventory.process_mouse_input(self.input.mouse_position, self.input.mouse_left, self.input.mouse_right);
             self.world.inventory.process_input(&self.input.keys_down);
@@ -142,7 +142,7 @@ impl<'a> Game<'a> {
             ptry!(self.process_input());
             ptry!(self.world.update_entities());
             ptry!(self.world.update_entity_attacks());
-            ptry!(self.world.update_player_abilities());
+            ptry!(self.world.update_player_abilities(&self.input));
             self.world.update_player_attacks(&mut self.camera);
             ptry!(self.world.update_damage_text(&mut self.camera));
             ptry!(self.world.update_items_on_ground());
@@ -225,7 +225,7 @@ impl<'a> Game<'a> {
             return Ok(());
         }
         if self.state == GameState::play {
-            ptry!(self.world.on_key_down(key));
+            ptry!(self.world.on_key_down(key, &self.input));
         } else if self.state == GameState::inventory {
             self.world.inventory.on_key_down(key);
         }

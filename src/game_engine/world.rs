@@ -1,4 +1,5 @@
-use core::f32;
+use crate::perror;
+use crate::game_engine::game::InputState;
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::cell::{RefCell, RefMut};
 use std::f32::consts::PI;
@@ -120,6 +121,13 @@ impl World{
                 cooldown: 1000.0,
                 time_to_charge: 1000.0,
                 actions: super::player_abilities::CYCLONE
+            },
+            PlayerAbilityDescriptor {
+                name: String::from("big spear"),
+                description: String::from("Big Spear"),
+                cooldown: 50.0,
+                time_to_charge: 100.0,
+                actions: super::player_abilities::RANDOM_BIG_SHOT
             }
         ];
         let test_abilities = vec![
@@ -129,18 +137,20 @@ impl World{
                 cooldown_time_left: 0.0,
                 time_to_charge_left: 1000.0,
                 descriptor_id: 0,
+                end_without_end_action: false,
             },
             PlayerAbility {
                 adjusted_time_to_charge: 50.0,
                 adjusted_cooldown: 0.0,
-                time_to_charge_left: 50.0,
+                time_to_charge_left: 200.0,
                 cooldown_time_left: 0.0,
-                descriptor_id: 0,
+                descriptor_id: 1,
+                end_without_end_action: false
             }
         ];
         let mut test_player_ability_hotkeys = FxHashMap::default();
         test_player_ability_hotkeys.insert(String::from("1"), 0);
-        test_player_ability_hotkeys.insert(String::from("z"), 1);
+        test_player_ability_hotkeys.insert(String::from("q"), 1);
         inventory_test.player_ability_hotkeys = test_player_ability_hotkeys;
         inventory_test.player_abilities = test_abilities;
 
@@ -923,7 +933,7 @@ impl World{
     pub fn get_attack_descriptor_by_name(&self, archetype_name: &String) -> Option<&EntityAttackDescriptor>{
         self.entity_attack_descriptor_lookup.get(archetype_name)
     }
-    pub fn on_key_down(&mut self, key: &str) -> Result<(), PError>{
+    pub fn on_key_down(&mut self, key: &str, input_state: &InputState) -> Result<(), PError>{
         if key.chars().all(char::is_numeric) {
             let num = key.parse::<usize>().unwrap();
             if num < 6 && num > 0 {
@@ -947,7 +957,9 @@ impl World{
         if let Some(ability_id) = ability_to_start {
             if let Some(on_start_function) = ability_to_start_fn {
                 ptry!(on_start_function(self, ability_id, &AbilityStateInformation {
-                    ability_key_held: true
+                    ability_key_held: true,
+                    mouse_position: input_state.mouse_position
+
                 }), "while starting up ability with id {} that was invoked by the hotkey {}", ability_id, key);
             }
         }
@@ -1080,10 +1092,9 @@ impl World{
         }
         Ok(())
     }
-    pub fn process_input(&mut self, keys: &FxHashMap<String,bool>, camera: &mut Camera) -> Result<(), PError>{
+    pub fn process_input(&mut self, keys: &FxHashMap<String,bool>, camera: &mut Camera, input_state: &InputState) -> Result<(), PError>{
         let player = self.player.borrow();
         let move_speed = player.movement_speed;
-        println!("player state: {:?}", player.player_state);
         match player.player_state {
             PlayerState::Idle | PlayerState::Walking => {
                 drop(player);
@@ -1135,7 +1146,7 @@ impl World{
                         }
                     }
                     let while_charging_func = cur_ability_actions.while_charging;
-                    ptry!(while_charging_func(self, *punwrap!(self.cur_ability_charging.as_ref()), &AbilityStateInformation {ability_key_held: correct_key}), "while calling charging func on current_ability with id {}", *punwrap!(self.cur_ability_charging.as_ref())); // unwrap should never fail as for cur_ability_actions to succeed, cur_ability_charging should be Some
+                    ptry!(while_charging_func(self, *punwrap!(self.cur_ability_charging.as_ref()), &AbilityStateInformation {ability_key_held: correct_key, mouse_position: input_state.mouse_position}), "while calling charging func on current_ability with id {}", *punwrap!(self.cur_ability_charging.as_ref())); // unwrap should never fail as for cur_ability_actions to succeed, cur_ability_charging should be Some
                 }
 
 
@@ -1234,18 +1245,32 @@ impl World{
         ptry!(self.inventory.update_items_cd());
         Ok(())
     }
-    pub fn update_player_abilities(&mut self) -> Result<(), PError> {
+    pub fn update_player_abilities(&mut self, input_state: &InputState) -> Result<(), PError> {
         if let Some(cur_ability_charging) = self.cur_ability_charging {
             let cur_ability = punwrap!(self.inventory.get_ability_mut(cur_ability_charging), Invalid, "cur ability charging refers to player ability with id {} but there is no player ability with id {}", cur_ability_charging, cur_ability_charging);
             cur_ability.time_to_charge_left -= 1.0;
-            if cur_ability.time_to_charge_left <= 0.0{
-                let cur_ability_actions = ptry!(self.get_cur_ability_actions(), "while updating player abilities");
-                let end_action = cur_ability_actions.on_end;
-                ptry!(end_action(self, cur_ability_charging, &AbilityStateInformation{
-                    ability_key_held: false
-                }));
-                let cur_ability = punwrap!(self.inventory.get_ability_mut(cur_ability_charging), Invalid, "cur ability charging refers to player ability with id {} but there is no player ability with id {}", cur_ability_charging, cur_ability_charging);
-                cur_ability.time_to_charge_left = cur_ability.adjusted_time_to_charge;
+            if cur_ability.time_to_charge_left <= 0.0 {
+                if cur_ability.end_without_end_action {
+                    println!("TEST");
+                    let cur_ability = punwrap!(self.inventory.get_ability_mut(cur_ability_charging), Invalid, "cur ability charging refers to player ability with id {} but there is no player ability with id {}", cur_ability_charging, cur_ability_charging);
+                    let mut player_ref = self.player.borrow_mut();
+                    if !(player_ref.player_state == PlayerState::ChargingAbility) {
+                        return Err(perror!(Invalid, "Player State is {:?} at the end of ability charging, however it should be PlayerState::ChargingAbility", player_ref.player_state));
+                    }
+                    cur_ability.time_to_charge_left = cur_ability.adjusted_time_to_charge;
+                    cur_ability.end_without_end_action = false;
+                    self.cur_ability_charging = None;
+                    player_ref.player_state = PlayerState::Idle;
+                }else{
+                    let cur_ability_actions = ptry!(self.get_cur_ability_actions(), "while updating player abilities");
+                    let end_action = cur_ability_actions.on_end;
+                    ptry!(end_action(self, cur_ability_charging, &AbilityStateInformation{
+                        ability_key_held: false,
+                        mouse_position: input_state.mouse_position
+                    }));
+                    let cur_ability = punwrap!(self.inventory.get_ability_mut(cur_ability_charging), Invalid, "cur ability charging refers to player ability with id {} but there is no player ability with id {}", cur_ability_charging, cur_ability_charging);
+                    cur_ability.time_to_charge_left = cur_ability.adjusted_time_to_charge;
+                }
             }
         }
         Ok(())

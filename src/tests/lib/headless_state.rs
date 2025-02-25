@@ -1,6 +1,7 @@
 use rustc_hash::FxHashMap;
 
 use crate::error::PError;
+use crate::game_engine::game::{InputState, MousePosition};
 use crate::game_engine::world::World;
 use crate::camera::Camera;
 use crate::ptry;
@@ -34,10 +35,23 @@ impl HeadlessState{
     }
     pub fn update(&self, world: &mut World, camera: &mut Camera) -> Result<(), PError>{
         ptry!(world.generate_collision_cache_and_damage_cache());
-        ptry!(world.process_input(&self.keys_down, camera));
+        ptry!(world.process_input(&self.keys_down, camera, &InputState {
+            keys_down: self.keys_down.clone(),
+            mouse_position: MousePosition::default(),
+            mouse_left: false,
+            mouse_right: false
+            
+        }));
         ptry!(world.update_entities());
         ptry!(world.update_entity_attacks());
-        ptry!(world.update_player_abilities());
+        ptry!(world.update_player_abilities(&InputState {
+            keys_down: self.keys_down.clone(),
+            mouse_position: MousePosition::default(),
+            mouse_left: false,
+            mouse_right: false
+            
+        }));
+        // TODO: MAKE THIS BETTER
         world.update_player_attacks(camera);
         ptry!(world.update_items_in_inventory_cd());
         ptry!(world.kill_entities_to_be_killed());
