@@ -13,6 +13,7 @@ pub struct PlayerAttack{
     pub angle: f32,
     pub dealt_damage: bool,
     pub last_damage: Option<f32>,
+    pub enemies_pierced: usize,
 
 }
 impl PlayerAttack{
@@ -27,7 +28,8 @@ impl PlayerAttack{
             y,
             angle,
             dealt_damage: false,
-            last_damage: None
+            last_damage: None,
+            enemies_pierced: 0,
         }
     }
 }

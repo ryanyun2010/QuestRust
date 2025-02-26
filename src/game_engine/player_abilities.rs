@@ -1,4 +1,5 @@
 use crate::game_engine::game::MousePosition;
+use crate::stat::StatC;
 use crate::world::World;
 use std::f32::consts::PI;
 use crate::PError;
@@ -6,6 +7,8 @@ use crate::perror;
 use crate::ptry;
 use crate::punwrap;
 use crate::game_engine::player::PlayerState;
+
+use super::player::PlayerDir;
 
 
 pub struct PlayerAbilityActionDescriptor {
@@ -45,7 +48,8 @@ pub struct PlayerAbility {
 pub struct AbilityStateInformation {
     pub ability_key_held: bool,
     pub mouse_position: MousePosition,
-    pub player_position: (f32, f32)
+    pub player_position: (f32, f32),
+    pub player_direction: PlayerDir,
 }
 
 
@@ -74,10 +78,10 @@ pub const CYCLONE: PlayerAbilityActionDescriptor = PlayerAbilityActionDescriptor
                         ptry!(world.add_player_attack_custom(
                             // TODO: FLAT DAMAGE EFFECTIVENESS STAT OR SMTH
                                 &crate::create_stat_list!(
-                                    lifetime => 3.0,
-                                    damage => 2.8,
-                                    width => 40.0,
-                                    reach => 40.0
+                                    lifetime => StatC { flat: 3.0, percent: 0.0},
+                                    damage => StatC { flat: 2.8, percent: 0.0},
+                                    width => StatC { flat: 40.0, percent: 0.0},
+                                    reach => StatC { flat: 40.0, percent: 0.0}
                                 ),
                                 String::from("melee_attack"),
                                 1.0,
@@ -121,8 +125,8 @@ pub const RANDOM_BIG_SHOT: PlayerAbilityActionDescriptor = PlayerAbilityActionDe
         Ok(())
     },
     while_charging: |world, ability, state| {
+        let mut_ability_ref = punwrap!(world.inventory.get_ability_mut(ability), Invalid, "while_charging was called with ability id {}, however there is no current ability with ability id {}", ability, ability);
         if !(state.ability_key_held) {
-            let mut_ability_ref = punwrap!(world.inventory.get_ability_mut(ability), Invalid, "while_charging was called with ability id {}, however there is no current ability with ability id {}", ability, ability);
             mut_ability_ref.time_to_charge_left = 0.0; 
             mut_ability_ref.end_without_end_action = true;
         }
@@ -155,11 +159,11 @@ pub const RANDOM_BIG_SHOT: PlayerAbilityActionDescriptor = PlayerAbilityActionDe
             ptry!(world.add_player_attack_custom(
                     // TODO: FLAT DAMAGE EFFECTIVENESS STAT OR SMTH
                     &crate::create_stat_list!(
-                        lifetime => 70.0,
-                        damage => 200.8,
-                        speed => 5.0,
-                        size => 80.0,
-                        pierce => 5.0,
+                        lifetime => StatC { flat: 70.0, percent: 0.0},
+                        damage => StatC { flat: 200.8, percent: 0.0},
+                        speed => StatC { flat: 5.0, percent: 0.0},
+                        size => StatC { flat: 80.0, percent: 0.0},
+                        pierce => StatC { flat:  5.0, percent: 0.0},
                     ),
                     String::from("spear"),
                     0.6,
@@ -172,6 +176,8 @@ pub const RANDOM_BIG_SHOT: PlayerAbilityActionDescriptor = PlayerAbilityActionDe
         Ok(())
     }
 };
+
+
 pub const DASH: PlayerAbilityActionDescriptor = PlayerAbilityActionDescriptor {
     on_start: |world, ability, state| {
         world.player.borrow_mut().player_state = PlayerState::ChargingAbility;
@@ -189,17 +195,13 @@ pub const DASH: PlayerAbilityActionDescriptor = PlayerAbilityActionDescriptor {
     while_ending: |world, ability, state | {
         let ability_ref = punwrap!(world.inventory.get_ability(ability), Invalid, "while_ending was called with ability id {}, however there is no current ability with ability id {}", ability, ability);
         let on_ending_start_state = punwrap!(&ability_ref.on_end_start_state, Invalid, "no on end start state while calling while_ending");
-        let direction = [
-            (on_ending_start_state.mouse_position.x_world - on_ending_start_state.player_position.0),
-            (on_ending_start_state.mouse_position.y_world - on_ending_start_state.player_position.1)
-        
-        ];
-        let magnitude = (direction[0] * direction[0] + direction[1] * direction[1]).sqrt();
-        let direction_normalized_10 = [
-            direction[0]/magnitude * 10.0,
-            direction[1]/magnitude * 10.0,
-        ];
+        let direction_normalized_10 = match on_ending_start_state.player_direction {
+            super::player::PlayerDir::Up => [0.0, -10.0],
+            super::player::PlayerDir::Down => [0.0, 10.0],
+            super::player::PlayerDir::Left => [-10.0, 0.0],
+            super::player::PlayerDir::Right => [10.0, 0.0]
 
+        };
         if ptry!(world.can_move_player(&mut world.player.borrow_mut(), direction_normalized_10)) {
             ptry!(world.attempt_move_player(&mut world.player.borrow_mut(), direction_normalized_10))
         };

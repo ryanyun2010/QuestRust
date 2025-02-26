@@ -22,7 +22,7 @@ use super::loot::LootTable;
 use super::player::{PlayerDir, PlayerState};
 use super::player_attacks::{PlayerAttack, PlayerAttackType};
 use super::player_abilities::{PlayerAbilityDescriptor, PlayerAbility, AbilityStateInformation, PlayerAbilityActionDescriptor};
-use super::stat::StatList;
+use super::stat::{StatC, StatList};
 use super::utils::{self, Rectangle};
 #[derive(Debug, Clone)]
 pub struct DamageTextDescriptor {
@@ -105,10 +105,10 @@ impl World{
                 lore: String::from("test"),
                 sprite: String::from("sword"),
                 stats: crate::create_stat_list!(
-                    damage => 150.0,
-                    width => 50.0,
-                    reach => 65.0,
-                    cooldown => 10.0,
+                    damage => StatC {flat: 150.0, percent: 0.0},
+                    width => StatC {flat: 150.0, percent: 0.0},
+                    reach => StatC {flat: 65.0, percent: 0.0},
+                    cooldown => StatC {flat: 10.0, percent: 0.0},
                 ),
                 time_til_usable: 10.0,
             }
@@ -119,7 +119,7 @@ impl World{
                 name: String::from("Cyclone"),
                 description: String::from("A cyclone of wind that knocks back enemies"),
                 cooldown: 1000.0,
-                time_to_charge: 1000.0,
+                time_to_charge: 100000.0,
                 end_time: 0.0,
                 actions: super::player_abilities::CYCLONE
             },
@@ -748,7 +748,7 @@ impl World{
         Ok(())
     }
     pub fn damage_player(&self, damage: f32) -> Result<(), PError> {
-        let defense = ptry!(self.inventory.get_combined_stats()).defense.unwrap_or(0.0);
+        let defense = ptry!(self.inventory.get_combined_stats()).defense.map(|x| x.get_value()).unwrap_or(0.0);
         self.player.borrow_mut().health -= damage * 100.0/(defense + 100.0);
         Ok(())
     }
@@ -791,8 +791,8 @@ impl World{
                         continue;
                     }
                     if attack.time_alive < 2.0 {   
-                        let height = attack.stats.reach.unwrap_or(0.0);
-                        let width = attack.stats.width.unwrap_or(0.0);
+                        let height = attack.stats.reach.map(|x| x.get_value()).unwrap_or(0.0);
+                        let width = attack.stats.width.map(|x| x.get_value()).unwrap_or(0.0);
                         let collisions = self.get_attacked_rotated_rect(true, None, attack.x as usize, attack.y as usize, height.floor() as usize, width.floor() as usize,attack.angle, true);
                         for collision in collisions.iter(){
                             if self.entity_health_components.contains_key(collision){
@@ -804,34 +804,34 @@ impl World{
                                     aggro = Some(aggro_potentially.unwrap().borrow_mut());
                                 }
                                 attack.dealt_damage = true;
-                                self.damage_entity( &entity_position, Some(health_component), aggro,  attack.stats.damage.unwrap_or(0.0), camera);
+                                self.damage_entity( &entity_position, Some(health_component), aggro,  attack.stats.damage.map(|x| x.get_value()).unwrap_or(0.0), camera);
                             }
                         }
                     }
                 }
                 PlayerAttackType::Ranged | PlayerAttackType::RangedAbility  => {
                     let angle = attack.angle * PI/180.0;
-                    attack.x += angle.cos() * attack.stats.speed.unwrap_or(0.0);
-                    attack.y += angle.sin() * attack.stats.speed.unwrap_or(0.0);
+                    attack.x += angle.cos() * attack.stats.speed.map(|x| x.get_value()).unwrap_or(0.0);
+                    attack.y += angle.sin() * attack.stats.speed.map(|x| x.get_value()).unwrap_or(0.0);
                     attack.time_alive += 1.0;
-                    if attack.time_alive > attack.stats.lifetime.unwrap_or(f32::MAX){
+                    if attack.time_alive > attack.stats.lifetime.map(|x| x.get_value()).unwrap_or(f32::MAX){
                         attacks_to_be_deleted.push(i);
                         i += 1;
                         continue;
                     }
                     attack.last_damage = attack.last_damage.map(|x| x+1.0);
-                    let length = attack.stats.size.unwrap_or(0.0).floor() as usize;
+                    let length = attack.stats.size.map(|x| x.get_value()).unwrap_or(0.0).floor() as usize;
                     let width = (attack.width_to_length_ratio * length as f32) as usize;
                     let collisions = self.get_attacked_rotated_rect(true, None, (attack.x - length as f32/2.0) as usize, (attack.y - width as f32 /2.0) as usize, length, width,attack.angle, true);
                     let mut hit = false;
                     if attack.last_damage.unwrap_or(11.0) > 10.0 {
                         for collision in collisions.iter(){
                             if self.entity_health_components.contains_key(collision){
-                                attack.stats.pierce = attack.stats.pierce.map(|x| x-1.0);
+                                attack.enemies_pierced += 1;
                                 hit = true;
                                 attack.dealt_damage = true;
                                 attack.last_damage = Some(0.0);
-                                if attack.stats.pierce.unwrap_or(0.0) <= 0.0 {
+                                if attack.enemies_pierced >= attack.stats.pierce.map(|x| x.get_value()).unwrap_or(0.0).floor() as usize {
                                     attacks_to_be_deleted.push(i);
                                     break;
                                 }
@@ -848,12 +848,12 @@ impl World{
                                 if aggro_potentially.is_some(){
                                     aggro = Some(aggro_potentially.unwrap().borrow_mut());
                                 }
-                                self.damage_entity(&entity_position, Some(health_component), aggro, attack.stats.damage.unwrap_or(0.0), camera);
+                                self.damage_entity(&entity_position, Some(health_component), aggro, attack.stats.damage.map(|x| x.get_value()).unwrap_or(0.0), camera);
                             }
                         }
                         
                     }else {
-                        let length = attack.stats.size.unwrap_or(0.0).floor();
+                        let length = attack.stats.size.map(|x| x.get_value()).unwrap_or(0.0).floor();
                         let width = attack.width_to_length_ratio * length;
                         let c = self.check_collision_non_damageable(true, None, (attack.x - length/2.0) as usize, (attack.y-width/2.0) as usize, length as usize, width as usize, true);
                         if c{
@@ -973,8 +973,8 @@ impl World{
                 if let Some(ability_descriptor) = ability_descriptor_start{
                     let stats = ptry!(self.inventory.get_combined_stats());
                     let player_ability = punwrap!(self.inventory.get_ability_mut(ability_id), Invalid, "attempting to start non-existent player ability with id {}", ability_id);
-                    player_ability.adjusted_cooldown = ability_descriptor.cooldown / (stats.cooldown_regen.unwrap_or(0.0) + 1.0);
-                    player_ability.adjusted_time_to_charge = ability_descriptor.time_to_charge / (stats.charge_time_reduction.unwrap_or(0.0) + 1.0);
+                    player_ability.adjusted_cooldown = ability_descriptor.cooldown / (stats.cooldown_regen.map(|x| x.get_value()).unwrap_or(0.0) + 1.0);
+                    player_ability.adjusted_time_to_charge = ability_descriptor.time_to_charge / (stats.charge_time_reduction.map(|x| x.get_value()).unwrap_or(0.0) + 1.0);
                     player_ability.end_time_left = ability_descriptor.end_time;
                     player_ability.time_to_charge_left = player_ability.adjusted_time_to_charge;
                     player_ability.on_start_state = None;
@@ -982,11 +982,13 @@ impl World{
                     let player = self.player.borrow();
                     let x = player.x;
                     let y = player.y;
+                    let dir = player.direction;
                     drop(player);
                     ptry!(on_start_function(self, ability_id, &AbilityStateInformation {
                         ability_key_held: true,
                         mouse_position: input_state.mouse_position,
-                        player_position: (x, y)
+                        player_position: (x, y),
+                        player_direction: dir,
                     }), "while starting up ability with id {} that was invoked by the hotkey {}", ability_id, key);
                 }
             }
@@ -1008,10 +1010,10 @@ impl World{
                             mouse_direction_unnormalized[0] / magnitude,
                             mouse_direction_unnormalized[1] / magnitude
                         ];
-                        let shots = stats.shots.unwrap_or(1.0).floor() as usize;
+                        let shots = stats.shots.map(|x| x.get_value()).unwrap_or(1.0).floor() as usize;
                         if shots > 1 && (item.item_type == ItemType::RangedWeapon || item.item_type == ItemType::MagicWeapon) {
                             let mut spread = f32::min(PI/8.0, PI/shots as f32);
-                            spread /= stats.focus.unwrap_or(1.0);
+                            spread /= stats.focus.map(|x| x.get_value()).unwrap_or(1.0);
                             let angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]) - (shots as f32 - 1.0) * spread/2.0;
                             for i in 0..shots {
                                 let ang_adjusted = angle + spread * i as f32;
@@ -1041,7 +1043,7 @@ impl World{
                     if item.item_type == ItemType::MeleeWeapon {
                         player.player_state = PlayerState::AttackingMelee;
                     }
-                    item.time_til_usable = stats.cooldown.unwrap_or(0.0);
+                    item.time_til_usable = stats.cooldown.map(|x| x.get_value()).unwrap_or(0.0);
                 }
             }
             else{
@@ -1071,10 +1073,10 @@ impl World{
                             mouse_direction_unnormalized[0] / magnitude,
                             mouse_direction_unnormalized[1] / magnitude
                         ];
-                        let shots = stats.shots.unwrap_or(1.0).floor() as usize;
+                        let shots = stats.shots.map(|x| x.get_value()).unwrap_or(1.0).floor() as usize;
                         if shots > 1 && (item.item_type == ItemType::RangedWeapon || item.item_type == ItemType::MagicWeapon) {
                             let mut spread = f32::min(PI/8.0, PI/shots as f32);
-                            spread /= stats.focus.unwrap_or(1.0);
+                            spread /= stats.focus.map(|x| x.get_value()).unwrap_or(1.0);
                             let angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]) - (shots as f32 - 1.0) * spread/2.0;
                             for i in 0..shots {
                                 let ang_adjusted = angle + spread * i as f32;
@@ -1100,7 +1102,7 @@ impl World{
                 }
                 if attacked {
                     let item = punwrap!(self.inventory.get_cur_held_item_mut(), Expected, "attacked with no item?");
-                    item.time_til_usable = stats.cooldown.unwrap_or(0.0);
+                    item.time_til_usable = stats.cooldown.map(|x| x.get_value()).unwrap_or(0.0);
                 }else if ranged{
                     let item = punwrap!(self.inventory.get_cur_held_item_mut(), Expected, "attacked with no item?");
                     item.time_til_usable -= 1.0;
@@ -1163,6 +1165,7 @@ impl World{
     }
     pub fn create_item_with_archetype(&self, archetype: String) -> Result<Item, PError> {
         let archetype_i = punwrap!(self.get_item_archetype(&archetype), NotFound, "could not find item archetype {}", archetype);        
+        let stat_variation = archetype_i.stats.get_variation();
         Ok(Item {
             name: archetype_i.name.clone(),
             attack_sprite: archetype_i.attack_sprite.clone(),
@@ -1170,8 +1173,8 @@ impl World{
             width_to_length_ratio: archetype_i.width_to_length_ratio,
             lore: archetype_i.lore.clone(),
             sprite: archetype_i.sprite.clone(),
-            stats: archetype_i.stats.get_variation(),
-            time_til_usable: archetype_i.stats.cooldown.map(|x| x.get_variation()).unwrap_or(0.0)
+            time_til_usable: stat_variation.cooldown.map(|x| x.get_value()).unwrap_or(0.0),
+            stats: stat_variation
         })
     }
     pub fn get_item_archetype(&self, archetype: &String) -> Option<&ItemArchetype>{
@@ -1251,6 +1254,7 @@ impl World{
         let state = player_ref.player_state.clone();
         let px = player_ref.x;
         let py = player_ref.y;
+        let pdir = player_ref.direction;
         drop(player_ref);
         if let Some(cur_ability_charging) = self.cur_ability_charging {
             let mut correct_key = false;
@@ -1264,7 +1268,7 @@ impl World{
                 PlayerState::ChargingAbility => {
                     let cur_ability_actions = ptry!(self.get_cur_ability_actions());
                     let while_charging_func = cur_ability_actions.while_charging;
-                    ptry!(while_charging_func(self, *punwrap!(self.cur_ability_charging.as_ref()), &AbilityStateInformation {ability_key_held: correct_key, mouse_position: input_state.mouse_position, player_position: (px, py)}), "while calling charging func on current_ability with id {}", *punwrap!(self.cur_ability_charging.as_ref())); // unwrap should never fail as for cur_ability_actions to succeed, cur_ability_charging should be Some
+                    ptry!(while_charging_func(self, *punwrap!(self.cur_ability_charging.as_ref()), &AbilityStateInformation {ability_key_held: correct_key, mouse_position: input_state.mouse_position, player_position: (px, py), player_direction: pdir}), "while calling charging func on current_ability with id {}", *punwrap!(self.cur_ability_charging.as_ref())); // unwrap should never fail as for cur_ability_actions to succeed, cur_ability_charging should be Some
                     let cur_ability = punwrap!(self.inventory.get_ability_mut(cur_ability_charging), Invalid, "cur ability charging refers to player ability with id {} but there is no player ability with id {}", cur_ability_charging, cur_ability_charging);
                     cur_ability.time_to_charge_left -= 1.0;
                     if cur_ability.time_to_charge_left <= 0.0 {
@@ -1284,7 +1288,8 @@ impl World{
                             ptry!(end_start_action(self, cur_ability_charging, &AbilityStateInformation {
                                 ability_key_held: correct_key,
                                 mouse_position: input_state.mouse_position,
-                                player_position: (px, py)
+                                player_position: (px, py),
+                                player_direction: pdir
                             }));
                             let mut player_ref = self.player.borrow_mut();
                             player_ref.player_state = PlayerState::EndingAbility;
@@ -1294,7 +1299,7 @@ impl World{
                 PlayerState::EndingAbility => {
                     let cur_ability_actions = ptry!(self.get_cur_ability_actions());
                     let ending_func = cur_ability_actions.while_ending;
-                    ptry!(ending_func(self, *punwrap!(self.cur_ability_charging.as_ref()), &AbilityStateInformation {ability_key_held: correct_key, mouse_position: input_state.mouse_position, player_position: (px, py)}), "while calling charging func on current_ability with id {}", *punwrap!(self.cur_ability_charging.as_ref())); // unwrap should never fail as for cur_ability_actions to succeed, cur_ability_charging should be Some
+                    ptry!(ending_func(self, *punwrap!(self.cur_ability_charging.as_ref()), &AbilityStateInformation {ability_key_held: correct_key, mouse_position: input_state.mouse_position, player_position: (px, py), player_direction: pdir}), "while calling charging func on current_ability with id {}", *punwrap!(self.cur_ability_charging.as_ref())); // unwrap should never fail as for cur_ability_actions to succeed, cur_ability_charging should be Some
                     let cur_ability = punwrap!(self.inventory.get_ability_mut(cur_ability_charging), Invalid, "cur ability charging refers to player ability with id {} but there is no player ability with id {}", cur_ability_charging, cur_ability_charging);
                     cur_ability.end_time_left -= 1.0;
                     if cur_ability.end_time_left <= 0.0 {
@@ -1303,7 +1308,8 @@ impl World{
                         ptry!(on_end_func(self, cur_ability_charging, &AbilityStateInformation {
                             ability_key_held: correct_key, 
                             mouse_position: input_state.mouse_position,
-                            player_position: (px, py)
+                            player_position: (px, py),
+                            player_direction: pdir
                         }));
                     }
                 }

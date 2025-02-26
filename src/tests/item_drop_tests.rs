@@ -1,7 +1,7 @@
 
 #![cfg(test)]
 
-use crate::{create_stat_list, game_engine::{entity_components::CollisionBox, game::MousePosition, item::{Item, ItemArchetype, ItemType}, loot::{LootTable, LootTableEntry}, stat::GearStatList}, ok_or_panic, tests::{lib::headless::HeadlessGame, test_framework::{basic_camera, basic_world}}};
+use crate::{create_stat_list, game_engine::{entity_components::CollisionBox, game::MousePosition, item::{Item, ItemArchetype, ItemType}, loot::{LootTable, LootTableEntry}, stat::{GearStatList, StatC}}, ok_or_panic, tests::{lib::headless::HeadlessGame, test_framework::{basic_camera, basic_world}}};
 #[tokio::test]
 pub async fn test_enemy_item_drops() {
     let mut world = basic_world().await;
@@ -42,9 +42,9 @@ pub async fn test_enemy_item_drops() {
             lore: String::from("test"),
             sprite: String::from("sword"),
             stats: create_stat_list!(
-                damage => 150.0,
-                width => 50.0,
-                reach => 65.0
+                damage => StatC { flat: 150.0, percent: 0.0},
+                width => StatC { flat: 50.0, percent: 0.0},
+                reach => StatC { flat: 65., percent: 0.0},
             ),
             time_til_usable: 0.0
         }

@@ -311,8 +311,8 @@ impl Camera{
                 return Err(perror!("Player attack {:?} has no width or no height?", effect));
             }
             let sprite = sprite.unwrap();
-            let width = width.unwrap();
-            let height = height.unwrap();
+            let width = width.unwrap().get_value();
+            let height = height.unwrap().get_value();
             if melee {
                 let draw_data = sprite.draw_data_rotated(effect.angle, effect.x, effect.y, width.floor() as usize, height.floor() as usize, self.viewpoint_width, self.viewpoint_height, player_effect_draw_data.vertex.len() as u32, -self.camera_x as i32, -self.camera_y as i32);
                 player_effect_draw_data.vertex.extend(draw_data.vertex);

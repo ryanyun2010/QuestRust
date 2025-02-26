@@ -3,11 +3,57 @@ use rand::Rng;
 use serde::Deserialize;
 use serde::Serialize;
 
+#[derive(Debug, Clone, Default, Copy)]
+pub struct StatC {
+    pub flat: f32,
+    pub percent: f32,
+}
+
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)] 
+pub struct GearStatC {
+    pub flat: Option<GearStat>,
+    pub percent: Option<GearStat> 
+}
+
+impl std::ops::Add for StatC {
+    type Output = Self;
+    fn add(self, other: StatC) -> Self {
+        StatC {
+            flat: self.flat + other.flat,
+            percent: self.percent + other.percent,
+        }
+    }
+}
+impl std::ops::Sub for StatC {
+    type Output = Self;
+    fn sub(self, other: StatC) -> Self {
+        StatC {
+            flat: self.flat - other.flat,
+            percent: self.percent - other.percent
+        }
+    }
+}
+impl StatC {
+    pub fn get_value(&self) -> f32 {
+        self.flat * (self.percent/100.0 +1.0)
+    }
+}
+
+
+impl GearStatC {
+    pub fn get_variation(&self) -> StatC {
+        StatC {
+            flat: self.flat.map(|x| x.get_variation()).unwrap_or(0.0),
+            percent: self.percent.map(|x| x.get_variation()).unwrap_or(0.0)
+        }
+    }
+}
 macro_rules! create_stat_lists {
     ($($stat_name:ident => $def:expr),*) => {
         #[derive(Debug, Clone, Default)]
         pub struct StatList {
-            $(pub $stat_name: Option<f32>,)*
+            $(pub $stat_name: Option<StatC>,)*
         }
         impl StatList {
             pub fn to_sum_with(&mut self, list: &StatList) {
@@ -22,14 +68,15 @@ macro_rules! create_stat_lists {
             pub fn base() -> Self {
                 StatList {
                     $(
-                        $stat_name: Some($def),
+                        $stat_name: Some(
+                            StatC {flat: $def, percent: 0.0}),
                     )*
                 }
             }
         }
         #[derive(Debug, Clone, Serialize, Deserialize, Default)]
         pub struct GearStatList {
-            $(pub $stat_name: Option<GearStat>,)*
+            $(pub $stat_name: Option<GearStatC>,)*
         }
         impl GearStatList {
             pub fn get_variation(&self) -> StatList {
@@ -41,7 +88,7 @@ macro_rules! create_stat_lists {
         }
 
         impl IntoIterator for StatList {
-            type Item = (&'static str, Option<f32>);
+            type Item = (&'static str, Option<StatC>);
             type IntoIter = std::vec::IntoIter<Self::Item>;
 
             fn into_iter(self) -> Self::IntoIter {
@@ -51,7 +98,7 @@ macro_rules! create_stat_lists {
             }
         }
         impl<'a> IntoIterator for &'a StatList {
-            type Item = (&'static str, &'a Option<f32>);
+            type Item = (&'static str, &'a Option<StatC>);
             type IntoIter = std::vec::IntoIter<Self::Item>;
 
             fn into_iter(self) -> Self::IntoIter {
@@ -104,6 +151,8 @@ macro_rules! create_stat_list {
         stats
     }};
 }
+
+
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GearStat {

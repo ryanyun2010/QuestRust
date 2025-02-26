@@ -1,5 +1,5 @@
 #![cfg(test)]
-use crate::{create_stat_list, game_engine::{entity_components::CollisionBox, game::MousePosition, item::{Item, ItemType}}, ok_or_panic, tests::lib::headless::HeadlessGame};
+use crate::{create_stat_list, game_engine::{entity_components::CollisionBox, game::MousePosition, item::{Item, ItemType}, stat::StatC}, ok_or_panic, tests::lib::headless::HeadlessGame};
 
 use super::test_framework::{basic_world, basic_camera};
 #[tokio::test]
@@ -26,9 +26,9 @@ pub async fn test_melee_player_attack() {
             lore: String::from("test"),
             sprite: String::from("sword"),
             stats: create_stat_list!(
-                damage => 150.0,
-                width => 50.0,
-                reach => 65.0
+                damage => StatC { flat: 150.0, percent: 0.0},
+                width => StatC { flat: 50.0, percent: 0.0},
+                reach => StatC { flat: 65.0, percent: 0.0},
             ),
             time_til_usable: 0.0
         }
@@ -77,10 +77,10 @@ pub async fn test_ranged_player_attack() {
             lore: String::from("test"),
             sprite: String::from("spear"),
             stats: create_stat_list!(
-                damage => 150.0,
-                lifetime => 400.0,
-                speed => 10.0,
-                size => 30.0,
+                damage => StatC { flat: 150.0, percent: 0.0},
+                lifetime => StatC { flat: 400.0, percent: 0.0},
+                speed => StatC { flat: 10.0, percent: 0.0},
+                size => StatC { flat: 30.0, percent: 0.0},
             ),
             time_til_usable: 0.0,
         }

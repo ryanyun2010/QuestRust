@@ -7,10 +7,10 @@
         "lore": "Well... It appears that you've obtained this.\nI guess there's not much else that we can do, now that you've hacked the game.\n\nP.S. This sword isn't even good, why are you using it?", 
         "attack_sprite": "melee_attack",
         "stats": {
-            "damage": {"average": 15.0, "variation": 2.5},
-            "width": {"average": 50.0, "variation": 10.0},
-            "reach": {"average": 65.0, "variation": 10.0},
-            "cooldown": {"average": 5.0, "variation": 3.0}
+            "damage": {"flat": {"average": 15.0, "variation": 2.5}},
+            "width": {"flat": {"average": 50.0, "variation": 10.0}},
+            "reach": {"flat": {"average": 65.0, "variation": 10.0}},
+            "cooldown": {"flat": {"average": 5.0, "variation": 3.0}}
         }
     },
     {
@@ -21,14 +21,14 @@
         "attack_sprite": "spear",
         "lore": "test", 
         "stats": {
-            "damage": {"average": 6.0, "variation": 2.5},
-            "speed": {"average": 10.0, "variation": 2.5},
-            "lifetime": {"average": 90.0, "variation": 10.0},
-            "size": {"average": 20.0, "variation": 2.5},
-            "shots": {"average": 1.0, "variation": 0.0},
-            "focus": {"average": 9.0, "variation": 0.0},
-            "cooldown": {"average": 3.0, "variation": 1.0},
-			"pierce": {"average": 50.0, "variation": 5.0}
+            "damage": {"flat": {"average": 6.0, "variation": 2.5}},
+            "speed": {"flat": {"average": 10.0, "variation": 2.5}},
+            "lifetime": {"flat": {"average": 90.0, "variation": 10.0}},
+            "size": {"flat": {"average": 20.0, "variation": 2.5}},
+            "shots": {"flat": {"average": 1.0, "variation": 0.0}},
+            "focus": {"flat": {"average": 9.0, "variation": 0.0}},
+            "cooldown": {"flat": {"average": 3.0, "variation": 1.0}},
+			"pierce": {"flat": {"average": 50.0, "variation": 5.0}}
         }
     },
     {
@@ -38,9 +38,9 @@
         "lore": "good sword",
         "attack_sprite": "melee_attack",
         "stats": {
-            "damage": {"average": 100.0, "variation": 999999.0},
-            "width": {"average": 0.0, "variation": 500.0},
-            "reach": {"average": 0.0, "variation": 900.0}
+            "damage": {"flat": {"average": 100.0, "variation": 999999.0}},
+            "width": {"flat": {"average": 0.0, "variation": 500.0}},
+            "reach": {"flat": {"average": 0.0, "variation": 900.0}}
         }
     },
     {
@@ -51,13 +51,13 @@
         "attack_sprite": "spear",
         "width_to_length_ratio": 0.6,
         "stats": {
-            "damage": {"average": 4.0, "variation": 3.0},
-            "speed": {"average": 5.4, "variation": 0.0},
-            "lifetime": {"average": 999.0, "variation": 0.0},
-            "size": {"average": 9.0, "variation": 0.0},
-            "shots": {"average": 3.0, "variation": 0.0},
-            "focus": {"average": 1.5, "variation": 0.0},
-            "cooldown": {"average": 20.0, "variation": 1.9}
+            "damage": {"flat": {"average": 4.0, "variation": 3.0}},
+            "speed": {"flat": {"average": 5.4, "variation": 0.0}},
+            "lifetime": {"flat": {"average": 999.0, "variation": 0.0}},
+            "size": {"flat": {"average": 9.0, "variation": 0.0}},
+            "shots": {"flat": {"average": 3.0, "variation": 0.0}},
+            "focus": {"flat": {"average": 1.5, "variation": 0.0}},
+            "cooldown": {"flat": {"average": 20.0, "variation": 1.9}}
         }
     },
 	{
@@ -67,9 +67,9 @@
 		"lore": "test",
 		"attack_sprite": "N/A",
 		"stats": {
-			"damage": {"average": -5.0, "variation": 5.0},
-			"shots": {"average": 5.0, "variation": 5.0},
-			"defense": {"average": 500.0, "variation": 200.0}
+			"damage": {"flat": {"average": -5.0, "variation": 5.0}},
+			"shots": {"flat": {"average": 5.0, "variation": 5.0}},
+			"defense": {"flat": {"average": 500.0, "variation": 200.0}}
 		}
 	}
 		

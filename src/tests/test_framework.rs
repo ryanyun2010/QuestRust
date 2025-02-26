@@ -2,6 +2,7 @@ use crate::create_stat_list;
 use crate::game_engine::camera::Camera;
 use crate::game_engine::item::Item;
 use crate::game_engine::player;
+use crate::game_engine::stat::StatC;
 use crate::game_engine::world;
 use crate::game_engine::world::World;
 
@@ -38,9 +39,9 @@ pub async fn basic_world() -> world::World {
         lore: String::from("test"),
         sprite: String::from("sword"),
         stats: create_stat_list!(
-            damage => 150.0,
-            width => 50.0,
-            reach => 65.0
+            damage => StatC {flat: 150.0, percent: 0.0},
+            width => StatC {flat: 50.0, percent: 0.0},
+            reach => StatC {flat: 65.0, percent: 0.0}
         ),
         time_til_usable: 0.0
     });
@@ -52,9 +53,9 @@ pub async fn basic_world() -> world::World {
         lore: String::from("test"),
         sprite: String::from("spear"),
         stats: create_stat_list!(
-            damage => 150.0,
-            width => 50.0,
-            reach => 65.0
+            damage => StatC {flat: 150.0, percent: 0.0},
+            width => StatC {flat: 50.0, percent: 0.0},
+            reach => StatC {flat: 65.0, percent: 0.0}
         ), 
         time_til_usable: 0.0
     });

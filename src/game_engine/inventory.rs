@@ -231,22 +231,37 @@ impl Inventory {
         let mut t = String::new();
         for stat in list.into_iter() {
             if stat.0 == "cooldown" {
-                let num = (stat.1.unwrap_or(0.0)/60.0 * 100.0).round() /100.0;
+                let num = (stat.1.map(|x| x.flat).unwrap_or(0.0)/60.0 * 100.0).round() /100.0;
                 t.push_str(
                     format!("{}: {}s \n", stat.0, num).as_str()
                 );
+                if let Some(num2) = stat.1.map(|x| (x.percent * 100.0).round() /100.0){
+                    if num2.abs() > 0.0 {
+                        t.push_str(
+                            format!("{}: {}% \n", stat.0, num2).as_str()
+                        );
+                    }
+                }
                 continue;
             }
-            if stat.1.is_some(){
-                let num = (stat.1.unwrap() * 10.0).round() /10.0;
-
-                if num > 0.0 {
+            if let Some(s) = stat.1{
+                let num = (stat.1.map(|x| x.flat).unwrap_or(0.0) * 100.0).round() /100.0;
+                if s.flat > 0.0 {
                     t.push_str(
-                        format!("{}: +{} \n", stat.0, num).as_str()
+                        format!("{}: +{} \n", stat.0, (s.flat * 100.0).round()/100.0).as_str()
                     );
-                }else {
+                }else if s.flat < 0.1 {
                     t.push_str(
-                        format!("{}: {} \n", stat.0, num).as_str()
+                        format!("{}: {} \n", stat.0, (s.flat * 100.0).round()/100.0).as_str()
+                    );
+                }
+                if s.percent > 0.0 {
+                    t.push_str(
+                        format!("{}: +{}% \n", stat.0, (s.percent * 100.0).round()/100.0).as_str()
+                    );
+                }else if s.percent < 0.0 {
+                    t.push_str(
+                        format!("{}: {}% \n", stat.0, (s.percent * 100.0).round()/100.0).as_str()
                     );
                 }
             }
@@ -258,7 +273,7 @@ impl Inventory {
         let mut t = String::new();
         for stat in list.into_iter() {
             if stat.0 == "cooldown" {
-                let num = (stat.1.unwrap_or(0.0)/60.0 * 100.0).round() /100.0;
+                let num = (stat.1.map(|x| x.get_value()).unwrap_or(0.0)/60.0 * 100.0).round() /100.0;
                 t.push_str(
                     format!("{}: {}s \n", stat.0, num).as_str()
                 );
@@ -266,7 +281,7 @@ impl Inventory {
             }
             if stat.1.is_some(){
                 t.push_str(
-                    format!("{}: {} \n", stat.0, (stat.1.unwrap() * 10.0).round() /10.0).as_str()
+                    format!("{}: {} \n", stat.0, (stat.1.unwrap().get_value() * 10.0).round() /10.0).as_str()
                 );
             }
         }

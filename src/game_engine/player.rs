@@ -4,7 +4,7 @@ use crate::punwrap;
 
 use super::entity_components::CollisionBox;
 use super::world::World;
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Copy)]
 pub enum PlayerDir {
     Up,
     Down,
@@ -35,12 +35,6 @@ pub struct Player {
     pub collision_box: CollisionBox,
     pub direction: PlayerDir,
     pub player_state: PlayerState,
-}
-#[macro_export]
-macro_rules! repeat_token {
-    () => {
-        
-    };
 }
 impl Player {
     pub fn new(x: f32, y: f32, health: f32, max_health: i32, movement_speed: f32, sprite_id: usize) -> Self {
@@ -77,6 +71,7 @@ impl Player {
             }
         }
     }
+
 
     pub fn draw_data(&self, world: &World, window_size_width: usize, window_size_height: usize, index_offset:u32, vertex_offset_x: i32, vertex_offset_y: i32) -> Result<RenderData, PError>{
         let held_item_pos = self.get_held_item_position();
