@@ -7,7 +7,11 @@ use super::world::World;
 #[derive(Clone, Debug, PartialEq, Copy)]
 pub enum PlayerDir {
     Up,
+    UpLeft,
+    UpRight,
     Down,
+    DownRight,
+    DownLeft,
     Left,
     Right
 }
@@ -63,10 +67,10 @@ impl Player {
             PlayerDir::Down => {
                 (self.x.floor() + 16.0, self.y.floor() + 28.0)
             },
-            PlayerDir::Right => {
+            PlayerDir::Right | PlayerDir::DownRight | PlayerDir::UpRight => {
                 (self.x.floor() + 28.0, self.y.floor() + 21.0)
             },
-            PlayerDir::Left => {
+            PlayerDir::Left | PlayerDir::DownLeft | PlayerDir::UpLeft => {
                 (self.x.floor() - 13.0, self.y.floor() + 21.0)
             }
         }

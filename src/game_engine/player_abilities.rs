@@ -201,7 +201,11 @@ pub const DASH: PlayerAbilityActionDescriptor = PlayerAbilityActionDescriptor {
             super::player::PlayerDir::Up => [0.0, -10.0],
             super::player::PlayerDir::Down => [0.0, 10.0],
             super::player::PlayerDir::Left => [-10.0, 0.0],
-            super::player::PlayerDir::Right => [10.0, 0.0]
+            super::player::PlayerDir::Right => [10.0, 0.0],
+            super::player::PlayerDir::DownLeft => [-7.07106, 7.07106],
+            super::player::PlayerDir::UpLeft => [-7.07107, -7.07107],
+            super::player::PlayerDir::DownRight => [7.07107, 7.07107],
+            super::player::PlayerDir::UpRight => [7.07107, -7.07107],
 
         };
         if ptry!(world.can_move_player(&mut world.player.borrow_mut(), direction_normalized_10)) {

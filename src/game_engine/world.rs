@@ -688,15 +688,39 @@ impl World{
             if player.player_state == PlayerState::Idle {
                 player.player_state = PlayerState::Walking;
             }
-        } else if direction[0] > 0.0 {
+        } else if direction[0] > 0.0 && direction[1] == 0.0 {
             player.sprite_id = self.sprites.get_sprite_id("player_right").expect("Could not find sprite id for player_right");
             player.direction = PlayerDir::Right;
             if player.player_state == PlayerState::Idle {
                 player.player_state = PlayerState::Walking;
             }
-        } else if direction[0] < 0.0{
+        } else if direction[0] > 0.0 && direction[1] < 0.0 {
+            player.sprite_id = self.sprites.get_sprite_id("player_right").expect("Could not find sprite id for player_right");
+            player.direction = PlayerDir::UpRight;
+            if player.player_state == PlayerState::Idle {
+                player.player_state = PlayerState::Walking;
+            }
+        } else if direction[0] > 0.0 && direction[1] > 0.0 {
+            player.sprite_id = self.sprites.get_sprite_id("player_right").expect("Could not find sprite id for player_right");
+            player.direction = PlayerDir::DownRight;
+            if player.player_state == PlayerState::Idle {
+                player.player_state = PlayerState::Walking;
+            }
+        } else if direction[0] < 0.0 && direction[1] == 0.0{
             player.sprite_id = self.sprites.get_sprite_id("player_left").expect("Could not find sprite id for player_left");
             player.direction = PlayerDir::Left;
+            if player.player_state == PlayerState::Idle {
+                player.player_state = PlayerState::Walking;
+            }
+        } else if direction[0] < 0.0 && direction[1] > 0.0 {
+            player.sprite_id = self.sprites.get_sprite_id("player_left").expect("Could not find sprite id for player_left");
+            player.direction = PlayerDir::DownLeft;
+            if player.player_state == PlayerState::Idle {
+                player.player_state = PlayerState::Walking;
+            }
+        } else if direction[0] < 0.0 && direction[1] < 0.0 {
+            player.sprite_id = self.sprites.get_sprite_id("player_left").expect("Could not find sprite id for player_left");
+            player.direction = PlayerDir::UpLeft;
             if player.player_state == PlayerState::Idle {
                 player.player_state = PlayerState::Walking;
             }
