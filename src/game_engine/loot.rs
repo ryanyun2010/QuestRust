@@ -1,3 +1,4 @@
+use compact_str::CompactString;
 use rand::Rng;
 #[derive(Clone, Debug)]
 pub struct LootTable {
@@ -7,7 +8,7 @@ impl LootTable{
     pub fn new(entries: Vec<LootTableEntry>) -> Self{
         Self{entries}
     }
-    pub fn roll(&self) -> Vec<String> { // returns item archetypes
+    pub fn roll(&self) -> Vec<CompactString> { // returns item archetypes
         let mut total_weight = 0;
         for entry in &self.entries {
             total_weight += entry.weight;
@@ -31,6 +32,6 @@ impl LootTable{
 
 #[derive(Clone, Debug)]
 pub struct LootTableEntry {
-    pub item: Option<String>,
+    pub item: Option<CompactString>,
     pub weight: usize,
 }

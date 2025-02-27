@@ -1,3 +1,4 @@
+use compact_str::{CompactString, ToCompactString};
 use rustc_hash::FxHashMap;
 
 use winit::{event, keyboard::{Key, NamedKey}};
@@ -24,7 +25,7 @@ impl Default for MousePosition{
     }
 }
 pub struct InputState {
-    pub keys_down: FxHashMap<String, bool>,
+    pub keys_down: FxHashMap<CompactString, bool>,
     pub mouse_position: MousePosition,
     pub mouse_left: bool,
     pub mouse_right: bool,
@@ -188,7 +189,7 @@ impl<'a> Game<'a> {
         if key.is_none(){
             return Ok(());
         }
-        let string_key = key.unwrap().to_string().to_lowercase();
+        let string_key = key.unwrap().to_compact_string().to_lowercase();
         let press = match event.state {
             event::ElementState::Pressed => true,
             event::ElementState::Released => false,
@@ -202,7 +203,7 @@ impl<'a> Game<'a> {
         Ok(())
     }
 
-    pub fn on_key_down(&mut self, key: &String) -> Result<(), PError>{
+    pub fn on_key_down(&mut self, key: &CompactString) -> Result<(), PError>{
         if key == "e" {
             self.state = match self.state {
                 GameState::play => {

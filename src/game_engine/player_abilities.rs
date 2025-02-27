@@ -1,3 +1,5 @@
+use compact_str::CompactString;
+
 use crate::game_engine::game::MousePosition;
 use crate::stat::StatC;
 use crate::world::World;
@@ -22,7 +24,7 @@ pub struct PlayerAbilityActionDescriptor {
 
 
 pub struct PlayerAbilityDescriptor {
-    pub name: String,
+    pub name: CompactString,
     pub description: String,
     pub cooldown: f32,
     pub time_to_charge: f32, 
@@ -83,7 +85,7 @@ pub const CYCLONE: PlayerAbilityActionDescriptor = PlayerAbilityActionDescriptor
                                     width => StatC { flat: 40.0, percent: 0.0},
                                     reach => StatC { flat: 40.0, percent: 0.0}
                                 ),
-                                String::from("melee_attack"),
+                                CompactString::from("melee_attack"),
                                 1.0,
                                 crate::game_engine::player_attacks::PlayerAttackType::MeleeAbility,
                                 player.x + 16.0 + angle.cos() * 37.0,
@@ -165,7 +167,7 @@ pub const RANDOM_BIG_SHOT: PlayerAbilityActionDescriptor = PlayerAbilityActionDe
                         size => StatC { flat: 80.0, percent: 0.0},
                         pierce => StatC { flat:  5.0, percent: 0.0},
                     ),
-                    String::from("spear"),
+                    CompactString::from("spear"),
                     0.6,
                     crate::game_engine::player_attacks::PlayerAttackType::RangedAbility,
                     player.x + 16.0 + angle.cos() * 37.0,

@@ -1,6 +1,8 @@
+use compact_str::CompactString;
+
 #[derive(Clone, Debug)]
 pub struct UIElement{
-    pub name: String,
+    pub name: CompactString,
     pub sprite: UIESprite,
     pub visible: bool,
 }
@@ -13,7 +15,7 @@ pub struct UIESprite {
     pub z: f32,
     pub width: f32,
     pub height: f32,
-    pub sprite: String,
+    pub sprite: CompactString,
 }
 
 pub struct UIElementDescriptor{
@@ -22,12 +24,12 @@ pub struct UIElementDescriptor{
     pub z: f32,
     pub width: f32,
     pub height: f32,
-    pub sprite: String,
+    pub sprite: CompactString,
     pub visible: bool,
 }
 
 impl UIElement{
-    pub fn new(name: String, descriptor: UIElementDescriptor) -> Self{
+    pub fn new(name: CompactString, descriptor: UIElementDescriptor) -> Self{
         Self{
             name,
             sprite: UIESprite{

@@ -1,5 +1,7 @@
 use core::panic;
 
+use compact_str::CompactString;
+
 use crate::game_engine::terrain::TerrainTags;
 use crate::game_engine::world::World;
 use crate::json_parsing::ParsedData;
@@ -77,7 +79,7 @@ pub fn generate_world_from_json_parsed_data(data: &ParsedData) -> World {
 }
 
 
-pub fn match_terrain_tags (tags: &Vec<String>) -> Vec<TerrainTags> {
+pub fn match_terrain_tags (tags: &Vec<CompactString>) -> Vec<TerrainTags> {
     let mut tags_ = Vec::new();
     for tag in tags{
         match tag.as_str(){

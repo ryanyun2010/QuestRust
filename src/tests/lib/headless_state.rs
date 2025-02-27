@@ -1,3 +1,4 @@
+use compact_str::CompactString;
 use rustc_hash::FxHashMap;
 
 use crate::error::PError;
@@ -14,7 +15,7 @@ pub enum GameState {
     death,
 }
 pub struct HeadlessState{
-    pub keys_down: FxHashMap<String, bool>,
+    pub keys_down: FxHashMap<CompactString, bool>,
     pub left_mouse_button_down: bool,
     pub right_mouse_button_down: bool,
 }

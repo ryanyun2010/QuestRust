@@ -14,7 +14,9 @@ pub mod rendering_engine;
 use rendering_engine::{renderer, texture, vertex, window};
 pub mod game_engine;
 use game_engine::{camera, entities, json_parsing::{self, PATH_BUNDLE}, starting_level_generator, stat, ui::UIElementDescriptor, world};
+use compact_str::CompactString;
 pub mod tests;
+
 pub mod error;
 
 
@@ -48,35 +50,35 @@ fn startup() -> Result<(), PError> {
     let mut camera = camera::Camera::new(1152,720);
     let mut world = starting_level_generator::generate_world_from_json_parsed_data(&parsed_data);
     let sword = world.inventory.add_item(
-        ptry!(world.create_item_with_archetype("test_sword".to_string()))
+        ptry!(world.create_item_with_archetype(CompactString::from("test_sword")))
     );
     let spear = world.inventory.add_item(
-        ptry!(world.create_item_with_archetype("test_spear".to_string()))
+        ptry!(world.create_item_with_archetype(CompactString::from("test_spear")))
     );
     let h = world.inventory.add_item(
-        ptry!(world.create_item_with_archetype("test helm".to_string()))
+        ptry!(world.create_item_with_archetype(CompactString::from("test helm")))
     );
     world.inventory.init_ui();
     ptry!(world.inventory.set_hotbar_slot_item(3, spear));
     ptry!(world.inventory.set_slot_item(7, h));
     ptry!(world.inventory.set_hotbar_slot_item(0, sword));
 
-    camera.add_ui_element(String::from("health_bar_background"), UIElementDescriptor {
+    camera.add_ui_element(CompactString::from("health_bar_background"), UIElementDescriptor {
         x: 32.0,
         y: 32.0,
         z: 5.0,
         width: 256.0,
         height: 32.0,
-        sprite: String::from("health_bar_back"),
+        sprite: CompactString::from("health_bar_back"),
         visible: true
     });
-    camera.add_ui_element(String::from("health_bar_inside"), UIElementDescriptor {
+    camera.add_ui_element(CompactString::from("health_bar_inside"), UIElementDescriptor {
         x: 35.0,
         y: 35.0,
         z: 6.0,
         width: 250.0,
         height: 26.0,
-        sprite: String::from("health"),
+        sprite: CompactString::from("health"),
         visible: true
     });
     println!("Time to load: {:?} ms", load_time.elapsed().as_millis());

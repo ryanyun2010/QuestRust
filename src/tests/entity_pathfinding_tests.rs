@@ -1,4 +1,6 @@
 #![cfg(test)]
+use compact_str::{CompactString, ToCompactString};
+
 use crate::game_engine::entities::{EntityAttackPattern, EntityTags};
 use crate::game_engine::entity_attacks::EntityAttackDescriptor;
 use crate::game_engine::terrain::TerrainTags;
@@ -24,7 +26,7 @@ async fn test_terrain_should_block_entities(){
     let entity = world.add_entity(900.0, 405.0);
     world.set_sprite(entity, 0);
     world.entity_attack_descriptor_lookup.insert(
-        "test_attack".to_string(),
+        "test_attack".to_compact_string(),
         EntityAttackDescriptor{
             damage: 100.0,
             reach: 50,
@@ -32,12 +34,12 @@ async fn test_terrain_should_block_entities(){
             max_start_dist_from_entity: None,
             width: 50,
             time_to_charge: 5,
-            sprite: "attack_highlight".to_string()
+            sprite: "attack_highlight".to_compact_string()
         }
     );
-    let attack_pattern = EntityAttackPattern::new(vec!["test_attack".to_string()], vec![0.1]);
+    let attack_pattern = EntityAttackPattern::new(vec!["test_attack".to_compact_string()], vec![0.1]);
     world.add_entity_archetype(
-        String::from("Test"),
+        CompactString::from("Test"),
         vec![
             EntityTags::MovementSpeed(2.0),
             EntityTags::Range(47),
@@ -56,7 +58,7 @@ async fn test_terrain_should_block_entities(){
             EntityTags::Attacks(attack_pattern),
         ]
     );
-    world.set_entity_archetype(entity, String::from("Test"));
+    world.set_entity_archetype(entity, CompactString::from("Test"));
     world.add_attack_component(entity, entity_components::EntityAttackComponent::default());
     world.add_health_component(entity, entity_components::HealthComponent{health: 100.0, max_health: 100});
     world.add_pathfinding_component(entity, entity_components::PathfindingComponent::default());
@@ -98,7 +100,7 @@ async fn test_entities_should_pathfind_around_terrain(){
     world.set_sprite(entity, 0);
 
     world.entity_attack_descriptor_lookup.insert(
-        "test_attack".to_string(),
+        "test_attack".to_compact_string(),
         EntityAttackDescriptor{
             damage: 100.0,
             reach: 50,
@@ -106,12 +108,12 @@ async fn test_entities_should_pathfind_around_terrain(){
             max_start_dist_from_entity: None,
             width: 50,
             time_to_charge: 5,
-            sprite: "attack_highlight".to_string()
+            sprite: "attack_highlight".to_compact_string()
         }
     );
-    let attack_pattern = EntityAttackPattern::new(vec!["test_attack".to_string()], vec![0.1]);
+    let attack_pattern = EntityAttackPattern::new(vec!["test_attack".to_compact_string()], vec![0.1]);
     world.add_entity_archetype(
-        String::from("Test"),
+        CompactString::from("Test"),
         vec![
             EntityTags::MovementSpeed(2.0),
             EntityTags::Range(47),
@@ -130,7 +132,7 @@ async fn test_entities_should_pathfind_around_terrain(){
             EntityTags::Attacks(attack_pattern),
         ]
     );
-    world.set_entity_archetype(entity, String::from("Test"));
+    world.set_entity_archetype(entity, CompactString::from("Test"));
     world.add_attack_component(entity, entity_components::EntityAttackComponent::default());
     world.add_health_component(entity, entity_components::HealthComponent{health: 100.0, max_health: 100});
     world.add_pathfinding_component(entity, entity_components::PathfindingComponent::default());

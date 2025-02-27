@@ -1,5 +1,6 @@
 use crate::stat::StatList;
 use crate::game_engine::player_abilities::PlayerAbility;
+use compact_str::CompactString;
 use rustc_hash::FxHashMap;
 
 use crate::{error::PError, error_prolif_allow, game_engine::item::Item, perror, ptry, punwrap, rendering_engine::abstractions::{TextSprite, UIEFull}};
@@ -26,7 +27,7 @@ pub struct Inventory {
     helm_slot: Option<usize>,
     boot_slot: Option<usize>,
     pub player_abilities: Vec<PlayerAbility>, // id in vec = ability id
-    pub player_ability_hotkeys: FxHashMap<String, usize>, // Maps key to press for ability, to ability id
+    pub player_ability_hotkeys: FxHashMap<CompactString, usize>, // Maps key to press for ability, to ability id
 }
 #[derive(Debug, Clone)]
 pub struct Slot {
@@ -52,7 +53,7 @@ impl Slot {
                 z: 5.0,
                 width: 48.0,
                 height: 48.0,
-                sprite: "hslot".to_string()
+                sprite: CompactString::from("hslot"),            
             }),
             item_image: None,
             x,
@@ -322,7 +323,7 @@ impl Inventory {
     pub fn get_ability_mut(&mut self, id: usize) -> Option<&mut PlayerAbility> {
         self.player_abilities.get_mut(id)
     }
-    pub fn get_abilities_on_hotkey(&self, key: String) -> Option<usize> {
+    pub fn get_abilities_on_hotkey(&self, key: CompactString) -> Option<usize> {
         self.player_ability_hotkeys.get(&key).copied()
     }
     pub fn render_ui(&mut self) -> Result<UIEFull, PError> {
@@ -335,7 +336,7 @@ impl Inventory {
                 y: 186.5,
                 width: 500.0,
                 height: 347.0,
-                sprite: String::from("inventory")
+                sprite: CompactString::from("inventory")
             });
             ui.push(UIESprite {
                 z: -1.0,
@@ -343,7 +344,7 @@ impl Inventory {
                 y: 0.0,
                 width: 1152.0,
                 height: 720.0,
-                sprite: String::from("inventory_background")
+                sprite: CompactString::from("inventory_background")
             });
             for slot in self.slots.iter() {
                 ui.extend(slot.get_ui());
@@ -363,7 +364,7 @@ impl Inventory {
                                 z: 5.6,
                                 width: 220.0,
                                 height: 320.0,
-                                sprite: String::from("level_editor_menu_background")
+                                sprite: CompactString::from("level_editor_menu_background")
                             }
                         );
                         text.push(
@@ -389,7 +390,7 @@ impl Inventory {
                     z: 5.1,
                     width: 48.0,
                     height: 48.0,
-                    sprite: "slot_highlight".to_string()
+                    sprite: CompactString::from("slot_highlight")
                 }
             );
             
@@ -434,7 +435,7 @@ impl Inventory {
                     z: 5.1,
                     width: 48.0,
                     height: 48.0,
-                    sprite: String::from("slot_highlight")
+                    sprite: CompactString::from("slot_highlight")
                 }
             );
             for (i, (hotkey, ability_id)) in self.player_ability_hotkeys.iter().enumerate() {
@@ -444,10 +445,10 @@ impl Inventory {
                     z: 5.2,
                     width: 48.0,
                     height: 48.0,
-                    sprite: String::from("hslot")
+                    sprite: CompactString::from("hslot")
                 });
                 text.push(TextSprite {
-                    text: hotkey.clone(),
+                    text: hotkey.clone().to_string(),
                     font_size: 30.0,
                     x: 350.0 + 58.0 * i as f32 + 33.0,
                     y: 590.0 + 25.0,
@@ -533,7 +534,7 @@ impl Inventory {
         }
         Ok(())
     }
-    pub fn process_input(&mut self, keys: &FxHashMap<String, bool>){
+    pub fn process_input(&mut self, keys: &FxHashMap<CompactString, bool>){
         if *keys.get("q").unwrap_or(&false) {
             let mut items_dropped = Vec::new();
             for slot in self.slots.iter_mut() {

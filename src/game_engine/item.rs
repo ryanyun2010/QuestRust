@@ -206,6 +206,7 @@
 //     }
 // }
 
+use compact_str::CompactString;
 use serde::{Deserialize, Serialize};
 
 use super::stat::{GearStatList, StatList};
@@ -215,23 +216,23 @@ use super::stat::{GearStatList, StatList};
 pub struct Item {
     pub stats: StatList,
     pub lore: String,
-    pub name: String,
+    pub name: CompactString,
     pub item_type: ItemType,
     pub width_to_length_ratio: Option<f32>,
-    pub sprite: String,
-    pub attack_sprite: Option<String>,
+    pub sprite: CompactString,
+    pub attack_sprite: Option<CompactString>,
     pub time_til_usable: f32,
 }
 
 #[derive(Debug, Clone)]
 pub struct ItemArchetype {
-    pub name: String,
+    pub name: CompactString,
     pub stats: GearStatList,
     pub lore: String,
     pub item_type: ItemType,
     pub width_to_length_ratio: Option<f32>,
-    pub sprite: String,
-    pub attack_sprite: Option<String>
+    pub sprite: CompactString,
+    pub attack_sprite: Option<CompactString>
 }
 
 

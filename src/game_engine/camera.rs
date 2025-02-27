@@ -7,6 +7,7 @@ use crate::world::World;
 use crate::rendering_engine::abstractions::{RenderData, RenderDataFull, TextSprite, UIEFull};
 use crate::game_engine::ui::UIElement;
 use crate::game_engine::player_attacks::PlayerAttackType;
+use compact_str::CompactString;
 use wgpu_text::glyph_brush::{HorizontalAlign, Section as TextSection};
 use rustc_hash::FxHashMap;
 
@@ -23,7 +24,7 @@ pub struct Camera{
     pub viewpoint_height: usize,
     pub camera_x: f32, // top left corner of the camera in world/element coordinates
     pub camera_y: f32,
-    ui_element_names: FxHashMap<String, usize>,
+    ui_element_names: FxHashMap<CompactString, usize>,
     pub ui_elements: FxHashMap<usize, UIElement>,
     ui_element_id: usize,
     pub level_editor: bool,
@@ -62,40 +63,45 @@ impl Camera{
     }
     pub fn update_ui(&mut self, world: &mut World) -> Result<(), PError>{
         let player = world.player.borrow().clone();
-        let health_bar = punwrap!(self.get_ui_element_mut_by_name(String::from("health_bar_inside")), "Could not find health bar inside ui element");
+        let health_bar = punwrap!(self.get_ui_element_mut_by_name(CompactString::from("health_bar_inside")), "Could not find health bar inside ui element");
         let health_bar_width = f32::max(0.0, (player.health / player.max_health as f32) * 250.0);
         health_bar.sprite.width = health_bar_width;
         Ok(())
     }
-    pub fn get_ui_element_mut_by_name(&mut self, name: String) -> Option<&mut UIElement> {
+    pub fn get_ui_element_mut_by_name(&mut self, name: CompactString) -> Option<&mut UIElement> {
         self.get_ui_element_id_from_name(name).and_then(
             |x| self.get_ui_element_mut(x)
         )
     }
     pub fn remove_ui_element(&mut self, element: usize) -> Result<(), PError>{
-        let mut name_to_remove = String::new();
+        let mut name_to_remove: Option<CompactString> = None;
         for (name, id) in self.ui_element_names.iter(){
             if *id == element{
-                name_to_remove = name.clone();
+                name_to_remove = Some(name.clone());
                 break;
             }
         }
-        if self.ui_element_names.remove(&name_to_remove).is_none() {
-            return Err(perror!("Element name {} associated with id {} was not found", name_to_remove, element));
-        };
-        if self.ui_elements.remove(&element).is_none(){
-            return Err(perror!(NotFound, "There was no element to remove with id {}", element));
-        };
+        if let Some(name_to_remove) = name_to_remove {
+            if self.ui_element_names.remove(&name_to_remove).is_none() {
+                return Err(perror!("Element name {} associated with id {} was not found", name_to_remove, element));
+            };
+            if self.ui_elements.remove(&element).is_none(){
+                return Err(perror!(NotFound, "There was no element to remove with id {}", element));
+            };
+        } else { 
+            return Err(perror!(NotFound, "no element with id {}", element));
+        }
+
         Ok(())
     }
-    pub fn add_ui_element(&mut self, name: String,  element_descriptor: crate::game_engine::ui::UIElementDescriptor) -> usize{
+    pub fn add_ui_element(&mut self, name: CompactString,  element_descriptor: crate::game_engine::ui::UIElementDescriptor) -> usize{
         let element = UIElement::new(name.clone(), element_descriptor);
         self.ui_element_names.insert(name, self.ui_element_id);
         self.ui_elements.insert(self.ui_element_id, element);
         self.ui_element_id += 1;
         self.ui_element_id - 1
     }
-    pub fn get_ui_elements_at(&self, x: usize, y: usize) -> Vec<String>{
+    pub fn get_ui_elements_at(&self, x: usize, y: usize) -> Vec<CompactString>{
         let mut elements = Vec::new();
         for (.., element) in self.ui_elements.iter(){
             if x >= element.sprite.x as usize && x <= (element.sprite.x + element.sprite.width) as usize && y >= element.sprite.y as usize && y <= (element.sprite.y + element.sprite.height) as usize{
@@ -104,7 +110,7 @@ impl Camera{
         }
         elements
     }
-    pub fn get_ui_element_id_from_name(&self, element: String) -> Option<usize>{
+    pub fn get_ui_element_id_from_name(&self, element: CompactString) -> Option<usize>{
         self.ui_element_names.get(&element).copied()
     }
     pub fn get_ui_element(&self, element: usize) -> Option<&UIElement>{

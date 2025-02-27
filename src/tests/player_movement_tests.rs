@@ -1,4 +1,6 @@
 #![cfg(test)]
+use compact_str::CompactString;
+
 use crate::{ok_or_panic, tests::{lib::headless::HeadlessGame, test_framework::{basic_camera, basic_world}}};
 
 #[tokio::test]
@@ -8,7 +10,7 @@ async fn test_player_movement_right() {
     
     let mut headless = HeadlessGame::new(world, camera);
 
-    headless.state.keys_down.insert(String::from("d"), true);
+    headless.state.keys_down.insert(CompactString::from("d"), true);
     let player_starting_x = headless.world.player.borrow().x;
     ok_or_panic!(headless.run(20).await);
 
@@ -24,7 +26,7 @@ async fn test_player_movement_left() {
     let camera = basic_camera(&mut world).await;
     let mut headless = HeadlessGame::new(world, camera);
 
-    headless.state.keys_down.insert(String::from("a"), true);
+    headless.state.keys_down.insert(CompactString::from("a"), true);
     let player_starting_x = headless.world.player.borrow().x;
     ok_or_panic!(headless.run(20).await);
 
@@ -40,7 +42,7 @@ async fn test_player_movement_down() {
     let camera = basic_camera(&mut world).await;
     let mut headless = HeadlessGame::new(world, camera);
 
-    headless.state.keys_down.insert(String::from("s"), true);
+    headless.state.keys_down.insert(CompactString::from("s"), true);
     let player_starting_y = headless.world.player.borrow().y;
     ok_or_panic!(headless.run(20).await);
 
@@ -56,7 +58,7 @@ async fn test_player_movement_up() {
     let camera = basic_camera(&mut world).await;
     let mut headless = HeadlessGame::new(world, camera);
 
-    headless.state.keys_down.insert(String::from("w"), true);
+    headless.state.keys_down.insert(CompactString::from("w"), true);
     let player_starting_y = headless.world.player.borrow().y;
     ok_or_panic!(headless.run(20).await);
 
@@ -72,8 +74,8 @@ async fn test_movement_both_d_and_a() {
     let camera = basic_camera(&mut world).await;
     let mut headless = HeadlessGame::new(world, camera);
 
-    headless.state.keys_down.insert(String::from("d"), true);
-    headless.state.keys_down.insert(String::from("a"), true);
+    headless.state.keys_down.insert(CompactString::from("d"), true);
+    headless.state.keys_down.insert(CompactString::from("a"), true);
     let player_starting_x = headless.world.player.borrow().x;
     let player_starting_y = headless.world.player.borrow().y;
     ok_or_panic!(headless.run(20).await);
@@ -90,8 +92,8 @@ async fn test_movement_both_w_and_s() {
     let camera = basic_camera(&mut world).await;
     let mut headless = HeadlessGame::new(world, camera);
 
-    headless.state.keys_down.insert(String::from("w"), true);
-    headless.state.keys_down.insert(String::from("s"), true);
+    headless.state.keys_down.insert(CompactString::from("w"), true);
+    headless.state.keys_down.insert(CompactString::from("s"), true);
     let player_starting_x = headless.world.player.borrow().x;
     let player_starting_y = headless.world.player.borrow().y;
     ok_or_panic!(headless.run(20).await);
@@ -108,8 +110,8 @@ async fn test_movement_w_and_d() {
     let camera = basic_camera(&mut world).await;
     let mut headless = HeadlessGame::new(world, camera);
 
-    headless.state.keys_down.insert(String::from("w"), true);
-    headless.state.keys_down.insert(String::from("d"), true);
+    headless.state.keys_down.insert(CompactString::from("w"), true);
+    headless.state.keys_down.insert(CompactString::from("d"), true);
     let player_starting_x = headless.world.player.borrow().x;
     let player_starting_y = headless.world.player.borrow().y;
     ok_or_panic!(headless.run(20).await);
@@ -130,8 +132,8 @@ async fn test_movement_w_and_a() {
     let camera = basic_camera(&mut world).await;
     let mut headless = HeadlessGame::new(world, camera);
 
-    headless.state.keys_down.insert(String::from("w"), true);
-    headless.state.keys_down.insert(String::from("a"), true);
+    headless.state.keys_down.insert(CompactString::from("w"), true);
+    headless.state.keys_down.insert(CompactString::from("a"), true);
     let player_starting_x = headless.world.player.borrow().x;
     let player_starting_y = headless.world.player.borrow().y;
     ok_or_panic!(headless.run(20).await);
@@ -152,8 +154,8 @@ async fn test_movement_s_and_d() {
     let camera = basic_camera(&mut world).await;
     let mut headless = HeadlessGame::new(world, camera);
 
-    headless.state.keys_down.insert(String::from("s"), true);
-    headless.state.keys_down.insert(String::from("d"), true);
+    headless.state.keys_down.insert(CompactString::from("s"), true);
+    headless.state.keys_down.insert(CompactString::from("d"), true);
     let player_starting_x = headless.world.player.borrow().x;
     let player_starting_y = headless.world.player.borrow().y;
     ok_or_panic!(headless.run(20).await);
@@ -174,8 +176,8 @@ async fn test_movement_s_and_a() {
     let camera = basic_camera(&mut world).await;
     let mut headless = HeadlessGame::new(world, camera);
 
-    headless.state.keys_down.insert(String::from("s"), true);
-    headless.state.keys_down.insert(String::from("a"), true);
+    headless.state.keys_down.insert(CompactString::from("s"), true);
+    headless.state.keys_down.insert(CompactString::from("a"), true);
     let player_starting_x = headless.world.player.borrow().x;
     let player_starting_y = headless.world.player.borrow().y;
     ok_or_panic!(headless.run(20).await);

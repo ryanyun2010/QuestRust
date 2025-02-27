@@ -1,3 +1,5 @@
+use compact_str::CompactString;
+
 use crate::error::PError;
 use crate::{ptry, punwrap};
 use std::cell::{RefCell, RefMut};
@@ -357,7 +359,7 @@ impl World {
     pub fn add_health_component(&mut self, entity_id: usize, new_entity_health: entity_components::HealthComponent){
         self.entity_health_components.insert(entity_id, RefCell::new(new_entity_health));
     }   
-    pub fn create_entity_with_archetype(&mut self, x: f32, y: f32, archetype: String) -> usize{
+    pub fn create_entity_with_archetype(&mut self, x: f32, y: f32, archetype: CompactString) -> usize{
         let entity = self.add_entity(x, y);
         self.set_entity_archetype(entity, archetype.clone());
         let archetype = self.entity_archetype_tags_lookup.get(&archetype).expect("Archetype not found");
@@ -398,20 +400,20 @@ impl World {
         }
         entity
     }
-    pub fn add_entity_archetype(&mut self, name: String, archetype: Vec<EntityTags>){
+    pub fn add_entity_archetype(&mut self, name: CompactString, archetype: Vec<EntityTags>){
         self.entity_archetype_tags_lookup.insert(name, archetype);
     }
     pub fn add_aggro_component(&mut self, entity_id: usize, new_entity_aggro: entity_components::AggroComponent){
         self.entity_aggro_components.insert(entity_id, RefCell::new(new_entity_aggro));
     }
-    pub fn get_entity_archetype(&self, element_id: &usize) -> Option<&String>{
+    pub fn get_entity_archetype(&self, element_id: &usize) -> Option<&CompactString>{
         self.entity_archetype_lookup.get(element_id)
     }
     pub fn get_entity_tags(&self, element_id: usize) -> Option<&Vec<EntityTags>>{
         let entity_archetype_id = self.get_entity_archetype(&element_id)?;
         self.entity_archetype_tags_lookup.get(entity_archetype_id)
     }
-    pub fn set_entity_archetype(&mut self, element_id: usize, archetype_id: String){
+    pub fn set_entity_archetype(&mut self, element_id: usize, archetype_id: CompactString){
         self.entity_archetype_lookup.insert(element_id, archetype_id);
     }
 
@@ -455,11 +457,11 @@ pub enum EntityTags {
 
 #[derive(Clone, Debug)]
 pub struct EntityAttackPattern {
-    pub attacks: Vec<String>,
+    pub attacks: Vec<CompactString>,
     pub attack_cooldowns: Vec<f32>,  
 }
 impl EntityAttackPattern{
-    pub fn new(attacks: Vec<String>, attack_cooldowns: Vec<f32>) -> Self{
+    pub fn new(attacks: Vec<CompactString>, attack_cooldowns: Vec<f32>) -> Self{
         Self{
             attacks,
             attack_cooldowns,

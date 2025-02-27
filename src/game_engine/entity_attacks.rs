@@ -1,8 +1,10 @@
+use compact_str::CompactString;
+
 use super::entities::AttackType;
 
 #[derive(Clone, Debug)]
 pub struct EntityAttackBox {
-    pub archetype: String,
+    pub archetype: CompactString,
     pub x: f32,
     pub y: f32,
     pub rotation: f32,
@@ -17,5 +19,5 @@ pub struct EntityAttackDescriptor{
     pub width: usize,
     pub time_to_charge: usize,
     pub max_start_dist_from_entity: Option<usize>,
-    pub sprite: String
+    pub sprite: CompactString
 }

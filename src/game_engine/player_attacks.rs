@@ -1,3 +1,5 @@
+use compact_str::CompactString;
+
 use super::stat::StatList;
 
 
@@ -5,7 +7,7 @@ use super::stat::StatList;
 pub struct PlayerAttack{
     pub stats: StatList,
     pub attack_type: PlayerAttackType,
-    pub sprite: String,
+    pub sprite: CompactString,
     pub width_to_length_ratio: f32,
     pub time_alive: f32,
     pub x: f32,
@@ -17,7 +19,7 @@ pub struct PlayerAttack{
 
 }
 impl PlayerAttack{
-    pub fn new(stats: StatList, attack_type: PlayerAttackType,  sprite: String, width_to_length_ratio: f32, x: f32, y: f32, angle: f32) -> Self{
+    pub fn new(stats: StatList, attack_type: PlayerAttackType,  sprite: CompactString, width_to_length_ratio: f32, x: f32, y: f32, angle: f32) -> Self{
         Self{
             stats,
             sprite,

@@ -1,4 +1,6 @@
 #![cfg(test)]
+use compact_str::CompactString;
+
 use crate::{create_stat_list, game_engine::{entity_components::CollisionBox, game::MousePosition, item::{Item, ItemType}, stat::StatC}, ok_or_panic, tests::lib::headless::HeadlessGame};
 
 use super::test_framework::{basic_world, basic_camera};
@@ -6,7 +8,7 @@ use super::test_framework::{basic_world, basic_camera};
 pub async fn test_melee_player_attack() {
     let mut world = basic_world().await;
     let camera = basic_camera(&mut world).await;
-    world.add_entity_archetype(String::from("test_attackable_entity"), vec![
+    world.add_entity_archetype(CompactString::from("test_attackable_entity"), vec![
         crate::game_engine::entities::EntityTags::BaseHealth(100),
         crate::game_engine::entities::EntityTags::Damageable(
             CollisionBox {
@@ -19,12 +21,12 @@ pub async fn test_melee_player_attack() {
     ]);
     let item = world.inventory.add_item(
         Item {
-            name: String::from("test_sword"),
-            attack_sprite: Some(String::from("melee_attack")),
+            name: CompactString::from("test_sword"),
+            attack_sprite: Some(CompactString::from("melee_attack")),
             item_type: ItemType::MeleeWeapon,
             width_to_length_ratio: None,
             lore: String::from("test"),
-            sprite: String::from("sword"),
+            sprite: CompactString::from("sword"),
             stats: create_stat_list!(
                 damage => StatC { flat: 150.0, percent: 0.0},
                 width => StatC { flat: 50.0, percent: 0.0},
@@ -34,7 +36,7 @@ pub async fn test_melee_player_attack() {
         }
     );
     ok_or_panic!(world.inventory.set_hotbar_slot_item(0, item));
-    world.create_entity_with_archetype(639.0, 400.0, String::from("test_attackable_entity"));
+    world.create_entity_with_archetype(639.0, 400.0, CompactString::from("test_attackable_entity"));
     let mut headless = HeadlessGame::new(world, camera);
     ok_or_panic!(headless.world.on_mouse_click(MousePosition {
             x_screen: 639.0,
@@ -57,7 +59,7 @@ pub async fn test_melee_player_attack() {
 pub async fn test_ranged_player_attack() {
     let mut world = basic_world().await;
     let camera = basic_camera(&mut world).await;
-    world.add_entity_archetype(String::from("test_attackable_entity"), vec![
+    world.add_entity_archetype(CompactString::from("test_attackable_entity"), vec![
         crate::game_engine::entities::EntityTags::BaseHealth(100),
         crate::game_engine::entities::EntityTags::Damageable(
             CollisionBox {
@@ -70,12 +72,12 @@ pub async fn test_ranged_player_attack() {
     ]);
     let item = world.inventory.add_item(
         Item {
-            name: String::from("test_spear"),
-            attack_sprite: Some(String::from("spear")),
+            name: CompactString::from("test_spear"),
+            attack_sprite: Some(CompactString::from("spear")),
             item_type: ItemType::RangedWeapon,
             width_to_length_ratio: None,
             lore: String::from("test"),
-            sprite: String::from("spear"),
+            sprite: CompactString::from("spear"),
             stats: create_stat_list!(
                 damage => StatC { flat: 150.0, percent: 0.0},
                 lifetime => StatC { flat: 400.0, percent: 0.0},
@@ -86,7 +88,7 @@ pub async fn test_ranged_player_attack() {
         }
     );
     ok_or_panic!(world.inventory.set_hotbar_slot_item(0, item));
-    world.create_entity_with_archetype(689.0, 400.0, String::from("test_attackable_entity"));
+    world.create_entity_with_archetype(689.0, 400.0, CompactString::from("test_attackable_entity"));
     let mut headless = HeadlessGame::new(world, camera);
     ok_or_panic!(headless.world.process_mouse_input(MousePosition {
             x_screen: 689.0,

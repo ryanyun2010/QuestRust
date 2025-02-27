@@ -1,4 +1,5 @@
 use std::{collections::HashMap, path::Path};
+use compact_str::CompactString;
 use image::io::Reader;
 use wgpu_text::glyph_brush::{HorizontalAlign, Layout, Section as TextSection, Text};
 use crate::game_engine::{camera::Camera, json_parsing::{sprite_sheet_json, sprite_sheet_sprite_json, sprites_json_descriptor}, ui::UIESprite, utils::{get_rotated_corners, Rectangle}};
@@ -173,7 +174,7 @@ impl RenderDataFull<'_>{
 #[derive(Debug, Clone)]
 pub struct SpriteContainer{
     pub sprites: Vec<Sprite>,
-    pub sprite_id_lookup: HashMap<String, usize>
+    pub sprite_id_lookup: HashMap<CompactString, usize>
 }
 
 impl Default for SpriteContainer {
@@ -226,7 +227,7 @@ impl SpriteContainer{
             let spritesd = sss.sheets[i].create_sprites(sprite_positions);
             for i in 0..spritesd.len(){
                 sprites.push(spritesd[i]);
-                sprite_id_lookup.insert(names[i].to_string(), sprites.len() - 1);
+                sprite_id_lookup.insert(names[i].clone(), sprites.len() - 1);
             }
         }
         (sprites_to_load, SpriteContainer{

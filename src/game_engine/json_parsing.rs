@@ -1,3 +1,4 @@
+use compact_str::CompactString;
 use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -38,36 +39,36 @@ pub const PATH_BUNDLE: PathBundle = PathBundle{
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct entity_attack_descriptor_json {
-    pub name: String,
-    pub r#type: String,
+    pub name: CompactString,
+    pub r#type: CompactString,
     pub damage: f32,
     pub reach: usize,
     pub max_start_dist_from_entity: Option<usize>,
     pub width: usize,
     pub time_to_charge: usize,
-    pub sprite: String
+    pub sprite: CompactString
 }
 
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct entity_archetype_json {
-    pub name: String,
-    pub basic_tags: Vec<String>,
+    pub name: CompactString,
+    pub basic_tags: Vec<CompactString>,
     pub collision_box: Option<CollisionBox>,
     pub damage_box: Option<CollisionBox>,
     pub health: usize,
-    pub monster_type: String,
+    pub monster_type: CompactString,
     pub movement_speed: f32,
     pub range: usize,
     pub aggro_range: usize,
-    pub attack_type: String,
-    pub attack_pattern: String,
-    pub loot_table: Vec<String>
+    pub attack_type: CompactString,
+    pub attack_pattern: CompactString,
+    pub loot_table: Vec<CompactString>
 }
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct entity_attack_pattern_json {
-    name: String,
-    attacks: Vec<String>,
+    name: CompactString,
+    attacks: Vec<CompactString>,
     cooldowns: Vec<f32>
 }
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -77,7 +78,7 @@ pub struct sprites_json_descriptor {
 }
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct sprite_sheet_json{
-    pub name: String,
+    pub name: CompactString,
     pub path: String,
     pub width: usize,
     pub height: usize,
@@ -88,20 +89,20 @@ pub struct sprite_sheet_json{
 }
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct sprite_sheet_sprite_json {
-    pub name: String,
+    pub name: CompactString,
     pub x: usize,
     pub y: usize
 }
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct sprite_json {
-    pub name: String,
+    pub name: CompactString,
     pub path: String,
 }
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct player_json{
     pub x: f32,
     pub y: f32,
-    pub sprite: String,
+    pub sprite: CompactString,
     pub health: f32,
     pub max_health: i32,
     pub movement_speed: f32
@@ -110,8 +111,8 @@ pub struct player_json{
 pub struct entity_json{
     pub x: f32,
     pub y: f32,
-    pub archetype: String,
-    pub sprite: String,
+    pub archetype: CompactString,
+    pub sprite: CompactString,
 }
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct terrain_json{
@@ -119,15 +120,15 @@ pub struct terrain_json{
     pub y: usize,
     pub width: usize,
     pub height: usize,
-    pub terrain_archetype: String
+    pub terrain_archetype: CompactString
 }
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct terrain_archetype_json{
-    pub name: String,
-    pub r#type: String,
+    pub name: CompactString,
+    pub r#type: CompactString,
     pub random_chances: Option<Vec<f32>>,
-    pub sprites: Vec<String>,
-    pub basic_tags: Vec<String>
+    pub sprites: Vec<CompactString>,
+    pub basic_tags: Vec<CompactString>
 }
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct starting_level_json{
@@ -142,23 +143,23 @@ pub struct item_json {
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct player_projectile_descriptor_json{
-    pub name: String,
+    pub name: CompactString,
     pub damage: f32,
     pub speed: f32,
     pub lifetime: f32,
     pub AOE: f32,
     pub size: f32,
-    pub sprite: String
+    pub sprite: CompactString
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct melee_attack_descriptor_json{
-    pub name: String,
+    pub name: CompactString,
     pub damage: f32,
     pub width: f32,
     pub reach: f32,
     pub lifetime: f32,
-    pub sprite: String
+    pub sprite: CompactString
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -177,9 +178,9 @@ impl Default for player_attacks_descriptor_json {
 
 #[derive(Deserialize, Serialize, Clone)]
 pub struct item_archetype_json {
-    pub name: String,
-    pub sprite: String,
-    pub attack_sprite: Option<String>,
+    pub name: CompactString,
+    pub sprite: CompactString,
+    pub attack_sprite: Option<CompactString>,
     pub width_to_length_ratio: Option<f32>,
     pub item_type: ItemType,
     pub lore: String,
@@ -189,21 +190,21 @@ pub struct item_archetype_json {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct item_loot_table_json {
-    pub name: String,
+    pub name: CompactString,
     pub loot: Vec<loot_table_entry_json> 
 }
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct loot_table_entry_json {
-    pub item: Option<String>,
+    pub item: Option<CompactString>,
     pub weight: usize
 }
 
 #[derive(Clone)]
 pub struct JSON_parser {
-    pub entity_archetypes_json: FxHashMap<String, entity_archetype_json>,
-    pub entity_attack_patterns_json: FxHashMap<String, entity_attack_pattern_json>,
-    pub entity_attacks_json: FxHashMap<String, entity_attack_descriptor_json>,
-    pub terrain_archetypes_json: FxHashMap<String, terrain_archetype_json>,
+    pub entity_archetypes_json: FxHashMap<CompactString, entity_archetype_json>,
+    pub entity_attack_patterns_json: FxHashMap<CompactString, entity_attack_pattern_json>,
+    pub entity_attacks_json: FxHashMap<CompactString, entity_attack_descriptor_json>,
+    pub terrain_archetypes_json: FxHashMap<CompactString, terrain_archetype_json>,
     pub sprites_json: sprites_json_descriptor,
     pub starting_level_json: starting_level_json,
     pub item_archetype_json: Vec<item_archetype_json>,
@@ -260,7 +261,7 @@ impl JSON_parser {
                 player: player_json {
                     x: 0.0,
                     y: 0.0,
-                    sprite: String::from(""),
+                    sprite: CompactString::from(""),
                     health: 0.0,
                     max_health: 0,
                     movement_speed: 0.0
@@ -359,7 +360,7 @@ impl JSON_parser {
         }
 
 
-        let mut ltid_lookup: HashMap<String, usize>  = HashMap::new();
+        let mut ltid_lookup: HashMap<CompactString, usize>  = HashMap::new();
         let mut tables= Vec::new();
         for loot_table in self.loot_table_json.iter() {
             let mut entries = Vec::new();
@@ -402,7 +403,7 @@ impl JSON_parser {
 
         data
     }
-    pub fn convert_archetype(&self, entity_archetype: &entity_archetype_json, data: &ParsedData, ltid: &HashMap<String,usize>) -> Vec<EntityTags> {
+    pub fn convert_archetype(&self, entity_archetype: &entity_archetype_json, data: &ParsedData, ltid: &HashMap<CompactString,usize>) -> Vec<EntityTags> {
         let mut tags = Vec::new();
 
         let mut tables = Vec::new();
@@ -499,14 +500,14 @@ impl JSON_parser {
 
 #[derive(Debug, Clone)]
 pub struct ParsedData{
-    pub entity_archetypes: FxHashMap<String, Vec<EntityTags>>,
-    pub entity_attack_patterns: FxHashMap<String, EntityAttackPattern>,
-    pub entity_attacks: FxHashMap<String, EntityAttackDescriptor>,
-    pub terrain_archetypes: FxHashMap<String, terrain_archetype_json>,
+    pub entity_archetypes: FxHashMap<CompactString, Vec<EntityTags>>,
+    pub entity_attack_patterns: FxHashMap<CompactString, EntityAttackPattern>,
+    pub entity_attacks: FxHashMap<CompactString, EntityAttackDescriptor>,
+    pub terrain_archetypes: FxHashMap<CompactString, terrain_archetype_json>,
     pub sprites_to_load_json: Vec<String>,
     pub sprites: SpriteContainer,
     pub starting_level_descriptor: starting_level_json,
-    pub item_archetypes: FxHashMap<String, ItemArchetype>,
+    pub item_archetypes: FxHashMap<CompactString, ItemArchetype>,
     pub loot_table_lookup: Vec<LootTable>,
 }
 
@@ -530,7 +531,7 @@ impl ParsedData{
                 player: player_json {
                     x: 0.0,
                     y: 0.0,
-                    sprite: String::from(""),
+                    sprite: CompactString::from(""),
                     health: 0.0,
                     max_health: 0,
                     movement_speed: 0.0

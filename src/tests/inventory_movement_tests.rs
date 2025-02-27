@@ -2,9 +2,10 @@
 #![cfg(test)]
 
 use core::panic;
+use compact_str::{CompactString, ToCompactString};
 use rustc_hash::FxHashMap;
 
-use crate::{create_stat_list, game_engine::{entity_components::CollisionBox, game::MousePosition, item::{Item, ItemType}}, ok_or_panic, tests::{lib::headless::HeadlessGame, test_framework::{basic_camera, basic_world}}};
+use crate::{create_stat_list, game_engine::{entity_components::CollisionBox, game::MousePosition, item::{Item, ItemType}, stat::StatC}, ok_or_panic, tests::{lib::headless::HeadlessGame, test_framework::{basic_camera, basic_world}}};
 
 #[tokio::test]
 async fn test_inventory_clicking_blank_slot_in_blank_inventory(){
@@ -476,7 +477,7 @@ async fn test_close_inventory_with_item_held_after_swap(){
 pub async fn test_melee_player_attack_after_inventory_movement() {
     let mut world = basic_world().await;
     let camera = basic_camera(&mut world).await;
-    world.add_entity_archetype(String::from("test_attackable_entity"), vec![
+    world.add_entity_archetype(CompactString::from("test_attackable_entity"), vec![
         crate::game_engine::entities::EntityTags::BaseHealth(100),
         crate::game_engine::entities::EntityTags::Damageable(
             CollisionBox {
@@ -489,21 +490,21 @@ pub async fn test_melee_player_attack_after_inventory_movement() {
     ]);
     let item = world.inventory.add_item(
         Item {
-            name: String::from("test_sword"),
-            attack_sprite: Some(String::from("melee_attack")),
+            name: CompactString::from("test_sword"),
+            attack_sprite: Some(CompactString::from("melee_attack")),
             item_type: ItemType::MeleeWeapon,
             width_to_length_ratio: None,
             lore: String::from("test"),
-            sprite: String::from("sword"),
+            sprite: CompactString::from("sword"),
             stats: create_stat_list!(
-                damage => 150.0,
-                width => 50.0,
-                reach => 65.0
+                damage => StatC {flat: 150.0, percent: 0.0},
+                width => StatC {flat: 50.0, percent: 0.0},
+                reach => StatC {flat: 65.0, percent: 0.0}
             ),
             time_til_usable: 0.0
         }
     );
-    world.create_entity_with_archetype(639.0, 400.0, String::from("test_attackable_entity"));
+    world.create_entity_with_archetype(639.0, 400.0, CompactString::from("test_attackable_entity"));
     let res = world.inventory.set_slot_item(6, item);
     if res.is_err() {
         panic!("set slot 6 to item {} failed with error: {}", item, res.err().unwrap())
@@ -592,7 +593,7 @@ async fn test_item_drop_from_inventory(){
     }, false, false);
     ok_or_panic!(headless.run(5).await);
     let mut hash = FxHashMap::default();
-    hash.insert("q".to_string(), true);
+    hash.insert("q".to_compact_string(), true);
     headless.world.inventory.process_input(
         &hash
     );

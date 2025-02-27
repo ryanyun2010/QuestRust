@@ -1,27 +1,29 @@
 
 #![cfg(test)]
 
+use compact_str::{CompactString, ToCompactString};
+
 use crate::{create_stat_list, game_engine::{entity_components::CollisionBox, game::MousePosition, item::{Item, ItemArchetype, ItemType}, loot::{LootTable, LootTableEntry}, stat::{GearStatList, StatC}}, ok_or_panic, tests::{lib::headless::HeadlessGame, test_framework::{basic_camera, basic_world}}};
 #[tokio::test]
 pub async fn test_enemy_item_drops() {
     let mut world = basic_world().await;
     let camera = basic_camera(&mut world).await;
-    world.item_archetype_lookup.insert("test_item".to_string(), ItemArchetype {
-        name: "test_item".to_string(),
+    world.item_archetype_lookup.insert("test_item".to_compact_string(), ItemArchetype {
+        name: "test_item".to_compact_string(),
         stats: GearStatList::default(),
         lore: "d".to_string(),
         item_type: ItemType::MeleeWeapon,
         width_to_length_ratio: None,
-        sprite: "spear".to_string(),
-        attack_sprite: Some("attack_highlight".to_string())
+        sprite: "spear".to_compact_string(),
+        attack_sprite: Some("attack_highlight".to_compact_string())
     });
     world.loot_table_lookup = vec![
         LootTable::new(vec![LootTableEntry {
-            item: Some("test_item".to_string()),
+            item: Some("test_item".to_compact_string()),
             weight: 10
         }])
     ];
-    world.add_entity_archetype(String::from("test_attackable_entity"), vec![
+    world.add_entity_archetype(CompactString::from("test_attackable_entity"), vec![
         crate::game_engine::entities::EntityTags::BaseHealth(100),
         crate::game_engine::entities::EntityTags::Damageable(
             CollisionBox {
@@ -35,12 +37,12 @@ pub async fn test_enemy_item_drops() {
     ]);
     let item = world.inventory.add_item(
         Item {
-            name: String::from("test_sword"),
-            attack_sprite: Some(String::from("melee_attack")),
+            name: CompactString::from("test_sword"),
+            attack_sprite: Some(CompactString::from("melee_attack")),
             item_type: ItemType::MeleeWeapon,
             width_to_length_ratio: None,
             lore: String::from("test"),
-            sprite: String::from("sword"),
+            sprite: CompactString::from("sword"),
             stats: create_stat_list!(
                 damage => StatC { flat: 150.0, percent: 0.0},
                 width => StatC { flat: 50.0, percent: 0.0},
@@ -50,7 +52,7 @@ pub async fn test_enemy_item_drops() {
         }
     );
     ok_or_panic!(world.inventory.set_hotbar_slot_item(0, item)); 
-    world.create_entity_with_archetype(639.0, 400.0, String::from("test_attackable_entity"));
+    world.create_entity_with_archetype(639.0, 400.0, CompactString::from("test_attackable_entity"));
     let mut headless = HeadlessGame::new(world, camera);
     ok_or_panic!(headless.world.on_mouse_click(MousePosition {
             x_screen: 639.0,

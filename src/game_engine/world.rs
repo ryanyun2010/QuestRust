@@ -1,5 +1,6 @@
 use crate::perror;
 use crate::game_engine::game::InputState;
+use compact_str::{CompactString, ToCompactString};
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::cell::{RefCell, RefMut};
 use std::f32::consts::PI;
@@ -47,7 +48,7 @@ pub struct World{
     pub chunk_lookup: RefCell<FxHashMap<[usize; 2],usize>>, // corresponds chunk x,y to id
 
     pub inventory: Inventory,
-    pub item_archetype_lookup: FxHashMap<String, ItemArchetype>,
+    pub item_archetype_lookup: FxHashMap<CompactString, ItemArchetype>,
 
     pub collision_cache: RefCell<FxHashMap<[usize; 2], Vec<usize>>>,
     pub damage_cache: RefCell<FxHashMap<[usize; 2], Vec<usize>>>, 
@@ -64,8 +65,8 @@ pub struct World{
     pub terrain_archetype_tags_lookup: Vec<Vec<TerrainTags>>,
     pub terrain_archetype_lookup: FxHashMap<usize, usize>,
 
-    pub entity_archetype_tags_lookup: FxHashMap<String,Vec<EntityTags>>, // corresponds entity_archetype name to the entity's tags
-    pub entity_archetype_lookup: FxHashMap<usize,String>, // corresponds element_ids to entity_archetype
+    pub entity_archetype_tags_lookup: FxHashMap<CompactString,Vec<EntityTags>>, // corresponds entity_archetype name to the entity's tags
+    pub entity_archetype_lookup: FxHashMap<usize,CompactString>, // corresponds element_ids to entity_archetype
 
     pub entity_position_components: FxHashMap<usize, RefCell<entity_components::PositionComponent>>,
     pub entity_attack_components: FxHashMap<usize, RefCell<entity_components::EntityAttackComponent>>,
@@ -80,7 +81,7 @@ pub struct World{
     pub entities_to_be_killed_at_end_of_frame: RefCell<Vec<usize>>,
 
     pub entity_attacks: RefCell<Vec<EntityAttackBox>>,
-    pub entity_attack_descriptor_lookup: FxHashMap<String, EntityAttackDescriptor>,
+    pub entity_attack_descriptor_lookup: FxHashMap<CompactString, EntityAttackDescriptor>,
 
     pub damage_text: RefCell<Vec<DamageTextDescriptor>>,
 
@@ -98,12 +99,12 @@ impl World{
             x: 700.0,
             y: 500.0,
             item: Item {
-                name: String::from("test1"),
-                attack_sprite: Some(String::from("melee_attack")),
+                name: CompactString::from("test1"),
+                attack_sprite: Some(CompactString::from("melee_attack")),
                 item_type: ItemType::MeleeWeapon,
                 width_to_length_ratio: None,
                 lore: String::from("test"),
-                sprite: String::from("sword"),
+                sprite: CompactString::from("sword"),
                 stats: crate::create_stat_list!(
                     damage => StatC {flat: 150.0, percent: 0.0},
                     width => StatC {flat: 150.0, percent: 0.0},
@@ -116,7 +117,7 @@ impl World{
         let mut inventory_test = Inventory::default();
         let test_ability_descriptors = vec![
             PlayerAbilityDescriptor {
-                name: String::from("Cyclone"),
+                name: CompactString::from("Cyclone"),
                 description: String::from("A cyclone of wind that knocks back enemies"),
                 cooldown: 1000.0,
                 time_to_charge: 100000.0,
@@ -124,7 +125,7 @@ impl World{
                 actions: super::player_abilities::CYCLONE
             },
             PlayerAbilityDescriptor {
-                name: String::from("DASH"),
+                name: CompactString::from("DASH"),
                 description: String::from("Big Spear"),
                 cooldown: 50.0,
                 time_to_charge: 2.0,
@@ -157,8 +158,8 @@ impl World{
             }
         ];
         let mut test_player_ability_hotkeys = FxHashMap::default();
-        test_player_ability_hotkeys.insert(String::from("z"), 0);
-        test_player_ability_hotkeys.insert(String::from("x"), 1);
+        test_player_ability_hotkeys.insert(CompactString::from("z"), 0);
+        test_player_ability_hotkeys.insert(CompactString::from("x"), 1);
         inventory_test.player_ability_hotkeys = test_player_ability_hotkeys;
         inventory_test.player_abilities = test_abilities;
 
@@ -659,7 +660,7 @@ impl World{
     pub fn get_sprite(&self, element_id: usize) -> Option<usize>{
         self.sprite_lookup.get(&element_id).copied()
     }
-    pub fn process_player_input(&mut self, keys: &FxHashMap<String,bool>, movement_speed: f32) -> Result<(), PError>{
+    pub fn process_player_input(&mut self, keys: &FxHashMap<CompactString,bool>, movement_speed: f32) -> Result<(), PError>{
         let mut direction: [f32; 2] = [0.0,0.0];
         let mut player: std::cell::RefMut<'_, Player> = self.player.borrow_mut();
         if *keys.get("w").unwrap_or(&false) || *keys.get("arrowup").unwrap_or(&false){
@@ -741,7 +742,7 @@ impl World{
         }
         Ok(())
     }
-    pub fn add_player_attack_custom(&self, stats: &StatList, attack_sprite: String, width_to_length_ratio: f32, attack_type: PlayerAttackType, x: f32, y: f32, angle: f32) -> Result<(), PError>{    
+    pub fn add_player_attack_custom(&self, stats: &StatList, attack_sprite: CompactString, width_to_length_ratio: f32, attack_type: PlayerAttackType, x: f32, y: f32, angle: f32) -> Result<(), PError>{    
         self.player_attacks.borrow_mut().push(
             PlayerAttack::new(stats.clone(), attack_type, attack_sprite,width_to_length_ratio, x, y, angle)
         );
@@ -942,7 +943,7 @@ impl World{
     pub fn get_attack_descriptor(&self, attack: &EntityAttackBox) -> Option<&EntityAttackDescriptor>{
         self.entity_attack_descriptor_lookup.get(&attack.archetype)
     }
-    pub fn get_attack_descriptor_by_name(&self, archetype_name: &String) -> Option<&EntityAttackDescriptor>{
+    pub fn get_attack_descriptor_by_name(&self, archetype_name: &CompactString) -> Option<&EntityAttackDescriptor>{
         self.entity_attack_descriptor_lookup.get(archetype_name)
     }
     pub fn on_key_down(&mut self, key: &str, input_state: &InputState) -> Result<(), PError>{
@@ -957,7 +958,7 @@ impl World{
         let mut ability_to_start_fn = None;
         let mut ability_descriptor_start = None;
         if state == PlayerState::Idle || state == PlayerState::Walking{
-            if let Some(ability_id) = self.inventory.get_abilities_on_hotkey(key.to_string()) {
+            if let Some(ability_id) = self.inventory.get_abilities_on_hotkey(key.to_compact_string()) {
                 let ability_object = punwrap!(self.inventory.get_ability(ability_id), Invalid, "Player ability hotkey hashmap maps key {} to ability with id {}, however there is no ability with id {}", key, ability_id, ability_id);
                 let ability_descriptor = punwrap!(self.player_ability_descriptors.get(ability_object.descriptor_id), Invalid, "Player ability with id: {} and descriptor:\n {:?}\n\n refers to ability descriptor with id {}, however there is no ability descriptor with id {}", ability_id, ability_object, ability_object.descriptor_id, ability_object.descriptor_id);
                 let ability_on_start = ability_descriptor.actions.on_start;
@@ -1122,7 +1123,7 @@ impl World{
         }
         Ok(())
     }
-    pub fn process_input(&mut self, keys: &FxHashMap<String,bool>, camera: &mut Camera, input_state: &InputState) -> Result<(), PError>{
+    pub fn process_input(&mut self, keys: &FxHashMap<CompactString,bool>, camera: &mut Camera, input_state: &InputState) -> Result<(), PError>{
         let player = self.player.borrow();
         let move_speed = player.movement_speed;
         match player.player_state {
@@ -1163,7 +1164,7 @@ impl World{
         let cur_ability = punwrap!(self.inventory.get_ability(punwrap!(self.cur_ability_charging, None, "there is no ability charging currently")), Invalid, "current ability charging refers to a player ability with id {}, but there is no ability with id {}", self.cur_ability_charging.unwrap(), self.cur_ability_charging.unwrap());
         Ok(&punwrap!(self.player_ability_descriptors.get(cur_ability.descriptor_id), "current player ability charging refers to ability with id {}, which refers to ability descriptor with id {}, however there is no ability descriptor with id {}", self.cur_ability_charging.unwrap(), cur_ability.descriptor_id, cur_ability.descriptor_id).actions)
     }
-    pub fn create_item_with_archetype(&self, archetype: String) -> Result<Item, PError> {
+    pub fn create_item_with_archetype(&self, archetype: CompactString) -> Result<Item, PError> {
         let archetype_i = punwrap!(self.get_item_archetype(&archetype), NotFound, "could not find item archetype {}", archetype);        
         let stat_variation = archetype_i.stats.get_variation();
         Ok(Item {
@@ -1177,7 +1178,7 @@ impl World{
             stats: stat_variation
         })
     }
-    pub fn get_item_archetype(&self, archetype: &String) -> Option<&ItemArchetype>{
+    pub fn get_item_archetype(&self, archetype: &CompactString) -> Option<&ItemArchetype>{
         self.item_archetype_lookup.get(archetype)
     }
     pub fn update_damage_text(&self, camera: &mut Camera) -> Result<(), PError> {
@@ -1259,7 +1260,7 @@ impl World{
         if let Some(cur_ability_charging) = self.cur_ability_charging {
             let mut correct_key = false;
             for key in input_state.keys_down.iter() {
-                if *key.1 && self.inventory.get_abilities_on_hotkey(key.0.to_string()) == self.cur_ability_charging {
+                if *key.1 && self.inventory.get_abilities_on_hotkey(key.0.to_compact_string()) == self.cur_ability_charging {
                     correct_key = true;
                 }
             }
