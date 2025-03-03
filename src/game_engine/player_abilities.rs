@@ -1,5 +1,6 @@
 use compact_str::CompactString;
 
+use crate::create_stat_list;
 use crate::game_engine::game::MousePosition;
 use crate::stat::StatC;
 use crate::world::World;
@@ -11,6 +12,7 @@ use crate::punwrap;
 use crate::game_engine::player::PlayerState;
 
 use super::player::PlayerDir;
+use super::stat::StatList;
 
 
 pub struct PlayerAbilityActionDescriptor {
@@ -26,6 +28,8 @@ pub struct PlayerAbilityActionDescriptor {
 pub struct PlayerAbilityDescriptor {
     pub name: CompactString,
     pub description: String,
+    pub base_stats: StatList, // NOTE: COOLDOWN STAT IN BASE_STATS SHOULD BE IGNORED 
+    pub flat_added_damage_effectiveness: f32, // 1.0 for flat is 100% effective
     pub cooldown: f32,
     pub time_to_charge: f32, 
     pub end_time: f32,
@@ -33,10 +37,58 @@ pub struct PlayerAbilityDescriptor {
 
 }
 
+
+
+impl PlayerAbilityDescriptor {
+    pub fn create_player_ability(&self, descriptor_id_of_this_descriptor: usize) -> PlayerAbility {
+        PlayerAbility {
+            stats: create_stat_list!(
+                damage => StatC {
+                    flat: 0.0,
+                    percent: 0.0
+                }
+            ),
+            adjusted_time_to_charge: self.time_to_charge,
+            adjusted_cooldown: self.cooldown,
+            end_time_left: self.end_time,
+            cooldown_time_left: self.cooldown,
+            time_to_charge_left: self.time_to_charge,
+            descriptor_id: descriptor_id_of_this_descriptor,
+            end_without_end_action: false,
+            on_start_state: None,
+            on_end_start_state: None
+        }
+    }
+    pub fn setup_player_ability(&self, ability: &mut PlayerAbility, stats: &StatList) {
+        let mut s = self.base_stats.clone();
+        
+        s.to_sum_with(stats);
+        
+        let base_damage = self.base_stats.damage.map(|x| x.flat).unwrap_or(0.0);
+        let added_damage = stats.damage.map(|x| x.flat).unwrap_or(0.0);
+        let percent_damage = s.damage.map(|x| x.percent).unwrap_or(0.0);
+        s.damage = Some(
+            StatC
+            {
+                flat: base_damage + added_damage * self.flat_added_damage_effectiveness,
+                percent: percent_damage, 
+            }
+        );
+
+        ability.adjusted_cooldown = self.cooldown / (s.cooldown_regen.map(|x| x.get_value()).unwrap_or(0.0) + 1.0);
+        ability.adjusted_time_to_charge = self.time_to_charge / (s.charge_time_reduction.map(|x| x.get_value()).unwrap_or(0.0) + 1.0);
+        ability.end_time_left = self.end_time;
+        ability.time_to_charge_left = ability.adjusted_time_to_charge;
+        ability.stats = s;
+        ability.on_start_state = None;
+        ability.on_end_start_state = None;
+    } 
+}
 #[derive(Debug)]
 pub struct PlayerAbility {
-    pub adjusted_time_to_charge: f32, // TODO: ACCOUNT FOR STATS WHEN CREATING THESE
-    pub adjusted_cooldown: f32, // TODO: ACCOUNT FOR STATS WHEN CREATING THESE
+    pub stats: StatList, // NOTE: COOLDOWN STAT IN HERE SHOULD BE IGNORED
+    pub adjusted_time_to_charge: f32, 
+    pub adjusted_cooldown: f32, 
     pub end_time_left: f32,
     pub cooldown_time_left: f32,
     pub time_to_charge_left: f32,
@@ -77,14 +129,23 @@ pub const CYCLONE: PlayerAbilityActionDescriptor = PlayerAbilityActionDescriptor
                 if ability_ref.time_to_charge_left % 1.0 == 0.0 {
                     for i in 0..4 {
                         let angle = PI/5.0 * i as f32 + (ability_ref.adjusted_time_to_charge - ability_ref.time_to_charge_left) * 0.9 % (PI * 2.0);
+                        let mut stats = ability_ref.stats.clone();
+                        stats.lifetime = Some(StatC {flat: 3.0, percent: 0.0});
+                        stats.width = stats.width.map(|x| 
+                                StatC {
+                                    flat: 40.0,
+                                    percent: x.percent
+                                }
+                            );
+                        stats.reach = stats.reach.map(|x| 
+                                StatC {
+                                    flat: 40.0,
+                                    percent: x.percent
+                                }
+                            );
                         ptry!(world.add_player_attack_custom(
                             // TODO: FLAT DAMAGE EFFECTIVENESS STAT OR SMTH
-                                &crate::create_stat_list!(
-                                    lifetime => StatC { flat: 3.0, percent: 0.0},
-                                    damage => StatC { flat: 2.8, percent: 0.0},
-                                    width => StatC { flat: 40.0, percent: 0.0},
-                                    reach => StatC { flat: 40.0, percent: 0.0}
-                                ),
+                                &stats,
                                 CompactString::from("melee_attack"),
                                 1.0,
                                 crate::game_engine::player_attacks::PlayerAttackType::MeleeAbility,
@@ -160,13 +221,7 @@ pub const RANDOM_BIG_SHOT: PlayerAbilityActionDescriptor = PlayerAbilityActionDe
             let angle = PI/30.0 * i as f32 + main_angle;
             ptry!(world.add_player_attack_custom(
                     // TODO: FLAT DAMAGE EFFECTIVENESS STAT OR SMTH
-                    &crate::create_stat_list!(
-                        lifetime => StatC { flat: 70.0, percent: 0.0},
-                        damage => StatC { flat: 200.8, percent: 0.0},
-                        speed => StatC { flat: 5.0, percent: 0.0},
-                        size => StatC { flat: 80.0, percent: 0.0},
-                        pierce => StatC { flat:  5.0, percent: 0.0},
-                    ),
+                    &ability_ref.stats.clone(),
                     CompactString::from("spear"),
                     0.6,
                     crate::game_engine::player_attacks::PlayerAttackType::RangedAbility,

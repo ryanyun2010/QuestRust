@@ -1,4 +1,4 @@
-use crate::perror;
+use crate::{create_stat_list, perror};
 use crate::game_engine::game::InputState;
 use compact_str::{CompactString, ToCompactString};
 use rustc_hash::{FxHashMap, FxHashSet};
@@ -117,6 +117,16 @@ impl World{
         let mut inventory_test = Inventory::default();
         let test_ability_descriptors = vec![
             PlayerAbilityDescriptor {
+                base_stats: create_stat_list!(
+                    damage => StatC {
+                        flat: 2.0,
+                        percent: 30.0,
+                    },  
+                    damage => StatC { flat: 2.8, percent: 0.0},
+                    width => StatC { flat: 40.0, percent: 0.0},
+                    reach => StatC { flat: 40.0, percent: 0.0}
+                ),
+                flat_added_damage_effectiveness: 0.09,
                 name: CompactString::from("Cyclone"),
                 description: String::from("A cyclone of wind that knocks back enemies"),
                 cooldown: 1000.0,
@@ -125,6 +135,13 @@ impl World{
                 actions: super::player_abilities::CYCLONE
             },
             PlayerAbilityDescriptor {
+                base_stats: create_stat_list!(
+                    damage => StatC {
+                        flat: 0.0,
+                        percent: 0.0,
+                    }
+                ),
+                flat_added_damage_effectiveness: 0.0,
                 name: CompactString::from("DASH"),
                 description: String::from("Big Spear"),
                 cooldown: 50.0,
@@ -134,28 +151,8 @@ impl World{
             }
         ];
         let test_abilities = vec![
-            PlayerAbility {
-                adjusted_time_to_charge: 1000.0,
-                adjusted_cooldown: 1000.0,
-                cooldown_time_left: 0.0,
-                time_to_charge_left: 1000.0,
-                end_time_left: 0.0,
-                descriptor_id: 0,
-                end_without_end_action: false,
-                on_start_state: None,
-                on_end_start_state: None,
-            },
-            PlayerAbility {
-                adjusted_time_to_charge: 10.0,
-                adjusted_cooldown: 0.0,
-                time_to_charge_left: 10.0,
-                cooldown_time_left: 0.0,
-                descriptor_id: 1,
-                end_time_left: 0.0,
-                end_without_end_action: false,
-                on_start_state: None,
-                on_end_start_state: None
-            }
+            test_ability_descriptors[0].create_player_ability(0),
+            test_ability_descriptors[1].create_player_ability(1),
         ];
         let mut test_player_ability_hotkeys = FxHashMap::default();
         test_player_ability_hotkeys.insert(CompactString::from("z"), 0);
@@ -998,12 +995,7 @@ impl World{
                 if let Some(ability_descriptor) = ability_descriptor_start{
                     let stats = ptry!(self.inventory.get_combined_stats());
                     let player_ability = punwrap!(self.inventory.get_ability_mut(ability_id), Invalid, "attempting to start non-existent player ability with id {}", ability_id);
-                    player_ability.adjusted_cooldown = ability_descriptor.cooldown / (stats.cooldown_regen.map(|x| x.get_value()).unwrap_or(0.0) + 1.0);
-                    player_ability.adjusted_time_to_charge = ability_descriptor.time_to_charge / (stats.charge_time_reduction.map(|x| x.get_value()).unwrap_or(0.0) + 1.0);
-                    player_ability.end_time_left = ability_descriptor.end_time;
-                    player_ability.time_to_charge_left = player_ability.adjusted_time_to_charge;
-                    player_ability.on_start_state = None;
-                    player_ability.on_end_start_state = None;
+                    ability_descriptor.setup_player_ability(player_ability, &stats);
                     let player = self.player.borrow();
                     let x = player.x;
                     let y = player.y;

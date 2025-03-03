@@ -38,7 +38,6 @@ fn startup() -> Result<(), PError> {
             return Err(perror!("Cargo.toml not found. Is this a Rust project?"));
         }
     }
-
     match env::set_current_dir(&current_dir) {
         Ok(_) => (),
         Err(e) => return Err(perror!(NotFound, "failed to change working directory to project root because: {}", e))
