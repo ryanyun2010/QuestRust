@@ -22,7 +22,7 @@ use super::items_on_floor::ItemOnFloor;
 use super::loot::LootTable;
 use super::player::{PlayerDir, PlayerState};
 use super::player_attacks::{PlayerAttack, PlayerAttackType};
-use super::player_abilities::{PlayerAbilityDescriptor, PlayerAbility, AbilityStateInformation, PlayerAbilityActionDescriptor};
+use super::player_abilities::{AbilityStateInformation, PlayerAbility, PlayerAbilityActionDescriptor, PlayerAbilityDescriptor, UsableWith};
 use super::stat::{StatC, StatList};
 use super::utils::{self, Rectangle};
 #[derive(Debug, Clone)]
@@ -132,7 +132,13 @@ impl World{
                 cooldown: 1000.0,
                 time_to_charge: 100000.0,
                 end_time: 0.0,
-                actions: super::player_abilities::CYCLONE
+                actions: super::player_abilities::CYCLONE,
+                usable_with: UsableWith {
+                    item_types: vec![
+                        ItemType::MeleeWeapon
+                    ],
+                    usable_with_nothing: false,
+                }
             },
             PlayerAbilityDescriptor {
                 base_stats: create_stat_list!(
@@ -147,7 +153,15 @@ impl World{
                 cooldown: 50.0,
                 time_to_charge: 2.0,
                 end_time: 9.0,
-                actions: super::player_abilities::DASH
+                actions: super::player_abilities::DASH,
+                usable_with: UsableWith {
+                    item_types: vec![
+                        ItemType::MeleeWeapon,
+                        ItemType::RangedWeapon,
+                        ItemType::MagicWeapon
+                    ],
+                    usable_with_nothing: true,
+                }
             }
         ];
         let test_abilities = vec![
@@ -982,11 +996,26 @@ impl World{
             if let Some(ability_id) = self.inventory.get_abilities_on_hotkey(key.to_compact_string()) {
                 let ability_object = punwrap!(self.inventory.get_ability(ability_id), Invalid, "Player ability hotkey hashmap maps key {} to ability with id {}, however there is no ability with id {}", key, ability_id, ability_id);
                 let ability_descriptor = punwrap!(self.player_ability_descriptors.get(ability_object.descriptor_id), Invalid, "Player ability with id: {} and descriptor:\n {:?}\n\n refers to ability descriptor with id {}, however there is no ability descriptor with id {}", ability_id, ability_object, ability_object.descriptor_id, ability_object.descriptor_id);
-                let ability_on_start = ability_descriptor.actions.on_start;
 
-                ability_to_start = Some(ability_id);
-                ability_to_start_fn = Some(ability_on_start);
-                ability_descriptor_start = Some(ability_descriptor);
+                let cur_item = self.inventory.get_cur_held_item();
+                let mut usable = true;
+                if let Some(ci) = cur_item {
+                    let ty = &ci.item_type;
+                    if !ability_descriptor.usable_with.item_types.contains(ty) {
+                        usable = false;
+                    }
+                    
+                } else if !ability_descriptor.usable_with.usable_with_nothing {
+                    usable = false;
+                }
+                    
+                if usable {
+                    let ability_on_start = ability_descriptor.actions.on_start;
+
+                    ability_to_start = Some(ability_id);
+                    ability_to_start_fn = Some(ability_on_start);
+                    ability_descriptor_start = Some(ability_descriptor);
+                }
 
             }
         }

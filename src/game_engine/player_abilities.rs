@@ -11,6 +11,7 @@ use crate::ptry;
 use crate::punwrap;
 use crate::game_engine::player::PlayerState;
 
+use super::item::ItemType;
 use super::player::PlayerDir;
 use super::stat::StatList;
 
@@ -34,7 +35,13 @@ pub struct PlayerAbilityDescriptor {
     pub time_to_charge: f32, 
     pub end_time: f32,
     pub actions: PlayerAbilityActionDescriptor,
+    pub usable_with: UsableWith 
+}
 
+
+pub struct UsableWith {
+    pub item_types: Vec<ItemType>,
+    pub usable_with_nothing: bool
 }
 
 
@@ -221,7 +228,7 @@ pub const RANDOM_BIG_SHOT: PlayerAbilityActionDescriptor = PlayerAbilityActionDe
             let angle = PI/30.0 * i as f32 + main_angle;
             ptry!(world.add_player_attack_custom(
                     // TODO: FLAT DAMAGE EFFECTIVENESS STAT OR SMTH
-                    &ability_ref.stats.clone(),
+                    &ability_ref.stats,
                     CompactString::from("spear"),
                     0.6,
                     crate::game_engine::player_attacks::PlayerAttackType::RangedAbility,
