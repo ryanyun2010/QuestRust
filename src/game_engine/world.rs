@@ -1,4 +1,4 @@
-use crate::{create_stat_list, perror};
+use crate::perror;
 use crate::game_engine::game::InputState;
 use compact_str::{CompactString, ToCompactString};
 use rustc_hash::{FxHashMap, FxHashSet};
@@ -16,13 +16,13 @@ use super::camera::Camera;
 use super::entity_attacks::{EntityAttackBox, EntityAttackDescriptor};
 use super::entity_components::{self, AggroComponent, CollisionBox, HealthComponent, PositionComponent};
 use super::game::MousePosition;
-use super::inventory::Inventory;
+use super::inventory::{AbilitySlot, Inventory};
 use super::item::{Item, ItemArchetype, ItemType};
 use super::items_on_floor::ItemOnFloor;
 use super::loot::LootTable;
 use super::player::{PlayerDir, PlayerState};
 use super::player_attacks::{PlayerAttack, PlayerAttackType};
-use super::player_abilities::{AbilityStateInformation, PlayerAbility, PlayerAbilityActionDescriptor, PlayerAbilityDescriptor, UsableWith};
+use super::player_abilities::{AbilityStateInformation, PlayerAbilityDescriptorName, PlayerAbilityActionDescriptor, PlayerAbilityDescriptor};
 use super::stat::{StatC, StatList};
 use super::utils::{self, Rectangle};
 #[derive(Debug, Clone)]
@@ -94,7 +94,7 @@ pub struct World{
 }
 
 impl World{ 
-    pub fn new(player: Player, sprite_container: SpriteContainer) -> Self{
+    pub fn new(player: Player, sprite_container: SpriteContainer) -> Result<Self, PError>{
         let iof = vec![ItemOnFloor {
             x: 700.0,
             y: 500.0,
@@ -116,65 +116,20 @@ impl World{
         }];
         let mut inventory_test = Inventory::default();
         let test_ability_descriptors = vec![
-            PlayerAbilityDescriptor {
-                base_stats: create_stat_list!(
-                    damage => StatC {
-                        flat: 2.0,
-                        percent: 30.0,
-                    },  
-                    damage => StatC { flat: 2.8, percent: 0.0},
-                    width => StatC { flat: 40.0, percent: 0.0},
-                    reach => StatC { flat: 40.0, percent: 0.0}
-                ),
-                flat_added_damage_effectiveness: 0.09,
-                name: CompactString::from("Cyclone"),
-                description: String::from("A cyclone of wind that knocks back enemies"),
-                cooldown: 1000.0,
-                time_to_charge: 100000.0,
-                end_time: 0.0,
-                actions: super::player_abilities::CYCLONE,
-                usable_with: UsableWith {
-                    item_types: vec![
-                        ItemType::MeleeWeapon
-                    ],
-                    usable_with_nothing: false,
-                }
-            },
-            PlayerAbilityDescriptor {
-                base_stats: create_stat_list!(
-                    damage => StatC {
-                        flat: 0.0,
-                        percent: 0.0,
-                    }
-                ),
-                flat_added_damage_effectiveness: 0.0,
-                name: CompactString::from("DASH"),
-                description: String::from("Big Spear"),
-                cooldown: 50.0,
-                time_to_charge: 2.0,
-                end_time: 9.0,
-                actions: super::player_abilities::DASH,
-                usable_with: UsableWith {
-                    item_types: vec![
-                        ItemType::MeleeWeapon,
-                        ItemType::RangedWeapon,
-                        ItemType::MagicWeapon
-                    ],
-                    usable_with_nothing: true,
-                }
-            }
+            super::player_abilities::get_ability_descriptor(PlayerAbilityDescriptorName::Cyclone),
+            super::player_abilities::get_ability_descriptor(PlayerAbilityDescriptorName::Dash),
         ];
         let test_abilities = vec![
             test_ability_descriptors[0].create_player_ability(0),
             test_ability_descriptors[1].create_player_ability(1),
         ];
-        let mut test_player_ability_hotkeys = FxHashMap::default();
-        test_player_ability_hotkeys.insert(CompactString::from("z"), 0);
-        test_player_ability_hotkeys.insert(CompactString::from("x"), 1);
-        inventory_test.player_ability_hotkeys = test_player_ability_hotkeys;
+        ptry!(inventory_test.add_ability_slot_for_key("z".into()));
+        ptry!(inventory_test.add_ability_slot_for_key("x".into()));
+        ptry!(inventory_test.set_ability_on_key("z".into(), Some(0)));
+        ptry!(inventory_test.set_ability_on_key("x".into(), Some(1)));
         inventory_test.player_abilities = test_abilities;
 
-        Self{
+        Ok(Self{
             chunks: RefCell::new(Vec::new()),
             player: RefCell::new(player),
             element_id: 0, 
@@ -209,7 +164,7 @@ impl World{
             loot_table_lookup: Vec::new(),
             player_ability_descriptors: test_ability_descriptors,
             cur_ability_charging: None,
-        }
+        })
     }
     pub fn new_chunk(&self, chunk_x: usize, chunk_y: usize, chunkref: Option<&mut std::cell::RefMut<'_, Vec<Chunk>>>) -> usize{
         if chunkref.is_none(){

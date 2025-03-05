@@ -113,10 +113,71 @@ pub struct AbilityStateInformation {
     pub player_direction: PlayerDir,
 }
 
+pub enum PlayerAbilityDescriptorName {
+    Cyclone,
+    Dash
+}
 
 
+pub fn get_ability_descriptor(name: PlayerAbilityDescriptorName) -> PlayerAbilityDescriptor {
+    match name {
+        PlayerAbilityDescriptorName::Cyclone => {
+            PlayerAbilityDescriptor {
+                base_stats: create_stat_list!(
+                    damage => StatC {
+                        flat: 2.0,
+                        percent: 30.0,
+                    },  
+                    damage => StatC { flat: 2.8, percent: 0.0},
+                    width => StatC { flat: 40.0, percent: 0.0},
+                    reach => StatC { flat: 40.0, percent: 0.0}
+                ),
+                flat_added_damage_effectiveness: 0.09,
+                name: CompactString::from("Cyclone"),
+                description: String::from("A cyclone of wind that knocks back enemies"),
+                cooldown: 1000.0,
+                time_to_charge: 100000.0,
+                end_time: 0.0,
+                actions: CYCLONE_ACTIONS,
+                usable_with: UsableWith {
+                    item_types: vec![
+                        ItemType::MeleeWeapon
+                    ],
+                    usable_with_nothing: false,
+                }
+            }
+        },
+        PlayerAbilityDescriptorName::Dash => {
+            PlayerAbilityDescriptor {
+                base_stats: create_stat_list!(
+                                damage => StatC {
+                                    flat: 0.0,
+                                    percent: 0.0,
+                                }
+                            ),
+                flat_added_damage_effectiveness: 0.0,
+                name: CompactString::from("DASH"),
+                description: String::from("Big Spear"),
+                cooldown: 50.0,
+                time_to_charge: 2.0,
+                end_time: 9.0,
+                actions: super::player_abilities::DASH,
+                usable_with: UsableWith {
+                    item_types: vec![
+                        ItemType::MeleeWeapon,
+                        ItemType::RangedWeapon,
+                        ItemType::MagicWeapon
+                    ],
+                    usable_with_nothing: true,
+                }
+            }
+        }
+    }
 
-pub const CYCLONE: PlayerAbilityActionDescriptor = PlayerAbilityActionDescriptor {
+}
+
+
+pub const CYCLONE_ACTIONS: PlayerAbilityActionDescriptor = PlayerAbilityActionDescriptor {
     on_start: |world, ability, state| {
         world.player.borrow_mut().player_state = PlayerState::ChargingAbility;
         world.cur_ability_charging = Some(ability);

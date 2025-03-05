@@ -47,7 +47,7 @@ fn startup() -> Result<(), PError> {
     let load_time = Instant::now();
     let parsed_data = parser.parse_and_convert_game_data(PATH_BUNDLE);
     let mut camera = camera::Camera::new(1152,720);
-    let mut world = starting_level_generator::generate_world_from_json_parsed_data(&parsed_data);
+    let mut world = ptry!(starting_level_generator::generate_world_from_json_parsed_data(&parsed_data));
     let sword = world.inventory.add_item(
         ptry!(world.create_item_with_archetype(CompactString::from("test_sword")))
     );

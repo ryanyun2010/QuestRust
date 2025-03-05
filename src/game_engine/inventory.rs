@@ -27,8 +27,18 @@ pub struct Inventory {
     helm_slot: Option<usize>,
     boot_slot: Option<usize>,
     pub player_abilities: Vec<PlayerAbility>, // id in vec = ability id
-    pub player_ability_hotkeys: FxHashMap<CompactString, usize>, // Maps key to press for ability, to ability id
+    pub ability_slots: Vec<AbilitySlot>,
+    pub hotkey_to_slot: FxHashMap<CompactString, usize>
 }
+
+
+#[derive(Debug, Clone)] 
+pub struct AbilitySlot {
+    pub id: usize,
+    pub key: CompactString,
+    pub cur_ability: Option<usize>,
+}
+
 #[derive(Debug, Clone)]
 pub struct Slot {
     pub item: Option<usize>,
@@ -43,7 +53,6 @@ pub struct Slot {
 
 impl Slot {
     pub fn new(x: usize, y: usize, accepted_types: Vec<ItemType>) -> Self {
-
         Self {
             item: None,
             accepted_types,
@@ -115,7 +124,6 @@ impl Default for Inventory{
             helm_slot: None,
             chest_slot: None,
             boot_slot: None,
-
             items: FxHashMap::default(),
             item_id: 0,
             slots: Vec::new(),
@@ -124,7 +132,9 @@ impl Default for Inventory{
             mouse_position: MousePosition::default(),
             items_waiting_to_be_dropped: Vec::new(),
             player_abilities: Vec::new(),
-            player_ability_hotkeys: FxHashMap::default()
+            ability_slots: Vec::new(),
+            hotkey_to_slot: FxHashMap::default()
+            
         }
     }
 }
@@ -139,6 +149,29 @@ impl Inventory {
     }
     pub fn set_hotbar_slot(&mut self, slot: usize) {
         self.cur_hotbar_slot = slot;
+    }
+    pub fn set_ability_on_key(&mut self, key: CompactString, ability: Option<usize>) -> Result<(), PError>{
+        if let Some(ability_slot) = self.hotkey_to_slot.get(&key) {
+            let slot = 
+                punwrap!(self.ability_slots.get_mut(*ability_slot), Invalid,  "attempted to set key {} to ability with id {:?} but there is no ability with id {:?}", key, ability, ability);
+            slot.cur_ability = ability;
+        } else {
+            return Err(perror!(Invalid, "attempted to set ability slot with key {} to an ability, however there is no ability slot with key {} held in the hotkey_to_slot map, perhaps you need to add an ability slot with key {} first", key, key, key));
+        }
+        Ok(())
+    }
+    pub fn add_ability_slot_for_key(&mut self, key: CompactString) -> Result<(), PError>{
+        if self.hotkey_to_slot.contains_key(&key) {
+            return Err(perror!(Invalid, "attempted to add ability slot for key {} but one already exists", key));
+        } else{
+            self.hotkey_to_slot.insert(key.clone(), self.ability_slots.len());
+            self.ability_slots.push(AbilitySlot {
+                id: self.ability_slots.len(),
+                key,
+                cur_ability: None
+            });
+        }
+        Ok(())
     }
     pub fn init_ui(&mut self) {
         self.add_hotbar_slot(Slot::new(20, 652, ItemType::all()));
@@ -324,7 +357,9 @@ impl Inventory {
         self.player_abilities.get_mut(id)
     }
     pub fn get_abilities_on_hotkey(&self, key: CompactString) -> Option<usize> {
-        self.player_ability_hotkeys.get(&key).copied()
+        self.hotkey_to_slot.get(&key)
+            .and_then(|x| self.ability_slots.get(*x))
+            .and_then(|x| x.cur_ability)
     }
     pub fn render_ui(&mut self) -> Result<UIEFull, PError> {
         let mut ui = Vec::new();
@@ -438,9 +473,9 @@ impl Inventory {
                     sprite: CompactString::from("slot_highlight")
                 }
             );
-            for (i, (hotkey, ability_id)) in self.player_ability_hotkeys.iter().enumerate() {
+            for slot in self.ability_slots.iter() {
                 ui.push(UIESprite {
-                    x: 350.0 + 58.0 * i as f32,
+                    x: 350.0 + 58.0 * slot.id as f32,
                     y: 590.0,
                     z: 5.2,
                     width: 48.0,
@@ -448,9 +483,9 @@ impl Inventory {
                     sprite: CompactString::from("hslot")
                 });
                 text.push(TextSprite {
-                    text: hotkey.clone().to_string(),
+                    text: slot.key.clone().to_string(),
                     font_size: 30.0,
-                    x: 350.0 + 58.0 * i as f32 + 33.0,
+                    x: 350.0 + 58.0 * slot.id as f32 + 33.0,
                     y: 590.0 + 25.0,
                     w: 15.0,
                     h: 15.0,

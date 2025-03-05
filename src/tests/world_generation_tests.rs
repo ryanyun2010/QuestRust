@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use crate::game_engine::{entities::AttackType, json_parsing::{self, PathBundle}, pathfinding::EntityDirectionOptions};
+use crate::{game_engine::{entities::AttackType, json_parsing::{self, PathBundle}, pathfinding::EntityDirectionOptions}, ok_or_panic};
 pub const TEST_PATH_BUNDLE: PathBundle = PathBundle{
     entity_archetypes_path: "src/tests/test_game_data/entity_archetypes.json",
     entity_attack_patterns_path: "src/tests/test_game_data/entity_attack_patterns.json",
@@ -118,7 +118,7 @@ async fn json_parsing_test(){
 async fn world_generation_test(){
     let mut parser = json_parsing::JSON_parser::new();
     let parsed_data = parser.parse_and_convert_game_data(TEST_PATH_BUNDLE);
-    let world = crate::game_engine::starting_level_generator::generate_world_from_json_parsed_data(&parsed_data);
+    let world = ok_or_panic!(crate::game_engine::starting_level_generator::generate_world_from_json_parsed_data(&parsed_data));
     assert!(world.player.borrow().x == 596.0, "Player x should be 596.0");
     assert!(world.player.borrow().y == 400.0, "Player y should be 400.0");
     assert!(world.player.borrow().health == 100.0, "Player health should be 100.0");

@@ -1,6 +1,6 @@
 use compact_str::CompactString;
 
-use crate::create_stat_list;
+use crate::{create_stat_list, ok_or_panic};
 use crate::game_engine::camera::Camera;
 use crate::game_engine::item::Item;
 use crate::game_engine::player;
@@ -32,7 +32,7 @@ pub async fn basic_world() -> world::World {
     sprites.sprite_id_lookup.insert(CompactString::from("health_bar_back"), 0);
     sprites.sprite_id_lookup.insert(CompactString::from("health"), 0);
     sprites.sprite_id_lookup.insert(CompactString::from("level_editor_menu_background"), 0);
-    let mut world = world::World::new(player::Player::new(596.0, 400.0, 10.0, 10, 1.0, 0),sprites);
+    let mut world = ok_or_panic!(world::World::new(player::Player::new(596.0, 400.0, 10.0, 10, 1.0, 0),sprites));
     world.inventory.add_item(Item {
         name: CompactString::from("test1"),
         attack_sprite: Some(CompactString::from("melee_attack")),
