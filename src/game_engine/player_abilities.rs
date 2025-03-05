@@ -331,10 +331,7 @@ pub const DASH: PlayerAbilityActionDescriptor = PlayerAbilityActionDescriptor {
             super::player::PlayerDir::UpRight => [7.07107, -7.07107],
 
         };
-        if ptry!(world.can_move_player(&mut world.player.borrow_mut(), direction_normalized_10)) {
-            ptry!(world.attempt_move_player(&mut world.player.borrow_mut(), direction_normalized_10))
-        };
-
+        ptry!(world.attempt_move_player_ignore_damageable(&mut world.player.borrow_mut(), direction_normalized_10));
         Ok(())
     },
     on_end: |world, ability, state| {
@@ -344,6 +341,8 @@ pub const DASH: PlayerAbilityActionDescriptor = PlayerAbilityActionDescriptor {
         if !(player.player_state == PlayerState::EndingAbility) {
             return Err(perror!(Invalid, "Player State is {:?} at the end of ability charging, however it should be PlayerState::ChargingAbility", player.player_state));
         }
+
+        
         world.cur_ability_charging = None;
         player.player_state = PlayerState::Idle;
         Ok(())

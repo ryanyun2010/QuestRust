@@ -606,19 +606,47 @@ impl World{
         )
     }
     pub fn attempt_move_player(&self, player: &mut Player, movement: [f32; 2]) -> Result<(), PError>{
-        
-        if ptry!(self.check_collision(true, None,player.x.floor() + movement[0] + player.collision_box.x_offset, player.y.floor() + movement[1] + player.collision_box.y_offset, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true)){
+        let current_in_wall = !self.check_collision_non_damageable(true, None, (player.x.floor() + player.collision_box.x_offset) as usize, (player.y.floor() + player.collision_box.y_offset) as usize, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true);
+        let current_collision = ptry!(self.check_collision(true, None, player.x.floor() + player.collision_box.x_offset, player.y.floor() + player.collision_box.y_offset, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true));
+        let moving_into_something = ptry!(self.check_collision(true, None,player.x.floor() + movement[0] + player.collision_box.x_offset, player.y.floor() + movement[1] + player.collision_box.y_offset, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true));
+        let moving_into_wall = self.check_collision_non_damageable(true, None,(player.x.floor() + movement[0] + player.collision_box.x_offset) as usize, (player.y.floor() + movement[1] + player.collision_box.y_offset) as usize, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true);
+        let moving_into_entity = !moving_into_wall && moving_into_something;
+        #[allow(clippy::nonminimal_bool)]
+        let ok_to_move = !((!current_in_wall && moving_into_wall) || (!current_collision && moving_into_something));
+
+        if !ok_to_move {
             return Ok(());
         }
         player.x += movement[0];
         player.y += movement[1];
         Ok(())
     }
-    pub fn can_move_player(&self, player: &mut Player, movement: [f32; 2]) -> Result<bool, PError>{
-        if ptry!(self.check_collision(true, None,player.x.floor() + movement[0] + player.collision_box.x_offset, player.y.floor() + movement[1] + player.collision_box.y_offset, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true)){
+
+
+    pub fn can_move_player(&self, player: &mut Player, movement: [f32; 2]) -> Result<bool, PError> {
+        let current_in_wall = !self.check_collision_non_damageable(true, None, (player.x.floor() + player.collision_box.x_offset) as usize, (player.y.floor() + player.collision_box.y_offset) as usize, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true);
+        let current_collision = ptry!(self.check_collision(true, None, player.x.floor() + player.collision_box.x_offset, player.y.floor() + player.collision_box.y_offset, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true));
+        let moving_into_something = ptry!(self.check_collision(true, None,player.x.floor() + movement[0] + player.collision_box.x_offset, player.y.floor() + movement[1] + player.collision_box.y_offset, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true));
+        let moving_into_wall = self.check_collision_non_damageable(true, None,(player.x.floor() + movement[0] + player.collision_box.x_offset) as usize, (player.y.floor() + movement[1] + player.collision_box.y_offset) as usize, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true);
+        let moving_into_entity = !moving_into_wall && moving_into_something;
+        #[allow(clippy::nonminimal_bool)]
+        let ok_to_move = !((!current_in_wall && moving_into_wall) || (!current_collision && moving_into_something));
+        Ok(ok_to_move)
+    }
+
+    pub fn can_move_player_ignore_damageable(&self, player: &mut Player, movement: [f32; 2]) -> Result<bool, PError>{
+        if self.check_collision_non_damageable(true, None,(player.x.floor() + movement[0] + player.collision_box.x_offset) as usize, (player.y.floor() + movement[1] + player.collision_box.y_offset) as usize, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true){
             return Ok(false);
         }
         Ok(true)
+    }
+    pub fn attempt_move_player_ignore_damageable(&self, player: &mut Player, movement: [f32; 2]) -> Result<(), PError> {
+        if self.check_collision_non_damageable(true, None,(player.x.floor() + movement[0] + player.collision_box.x_offset) as usize, (player.y.floor() + movement[1] + player.collision_box.y_offset) as usize, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true){
+            return Ok(());
+        }
+        player.x += movement[0];
+        player.y += movement[1];
+        Ok(())
     }
     pub fn set_sprite(&mut self, element_id: usize, sprite_id: usize){
         self.sprite_lookup.insert(element_id, sprite_id);
@@ -738,13 +766,8 @@ impl World{
         );
         Ok(())
     }
-    pub fn damage_player(&self, damage: f32) -> Result<(), PError> {
-        let defense = ptry!(self.inventory.get_combined_stats()).defense.map(|x| x.get_value()).unwrap_or(0.0);
-        self.player.borrow_mut().health -= damage * 100.0/(defense + 100.0);
-        Ok(())
-    }
 
-    pub fn update_entity_attacks(&self) -> Result<(), PError>{
+    pub fn update_entity_attacks(&self, camera: &mut Camera) -> Result<(), PError>{
         let mut attacks = self.entity_attacks.borrow_mut();
        let mut attacks_to_be_deleted = Vec::new();
         for (i, attack) in attacks.iter_mut().enumerate(){
@@ -752,7 +775,7 @@ impl World{
             let descriptor = punwrap!(self.get_attack_descriptor(attack), Expected, "Couldn't find attack descriptor for entity attack: {:?}", attack);
             if attack.time_charged.floor() as usize >= descriptor.time_to_charge {
                 if self.check_collision_with_player(attack.x, attack.y, descriptor.reach as f32, descriptor.width as f32, attack.rotation * 180.0/PI){
-                    ptry!(self.damage_player(descriptor.damage));
+                    ptry!(self.damage_player(descriptor.damage, camera));
                 }
                 attacks_to_be_deleted.push(i);
             }
@@ -882,6 +905,18 @@ impl World{
         }
         self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_1, lifespan: 0.0});
         self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_2, lifespan: 0.0});
+    }
+
+    pub fn damage_player(&self, damage: f32, camera: &mut Camera) -> Result<(), PError> {
+        let defense = ptry!(self.inventory.get_combined_stats()).defense.map(|x| x.get_value()).unwrap_or(0.0);
+        let dmg = damage * 100.0/(defense + 100.0);
+        self.player.borrow_mut().health -= dmg;
+        let player = self.player.borrow();
+        let text_1 = camera.add_world_text(((dmg * 10.0).round() / 10.0).to_string(), super::camera::Font::B, player.x + 32.0, player.y + 7.0, 150.0, 50.0, 50.0, [0.0, 0.0, 0.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
+        let text_2 = camera.add_world_text(((dmg * 10.0).round() / 10.0).to_string(), super::camera::Font::B, player.x + 30.0, player.y + 5.0, 150.0, 50.0, 50.0, [1.0, 0.0, 0.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
+        self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_1, lifespan: 0.0});
+        self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_2, lifespan: 0.0});
+        Ok(())
     }
     
     pub fn remove_entity(&mut self, entity_id: usize) -> Result<(), PError>{
