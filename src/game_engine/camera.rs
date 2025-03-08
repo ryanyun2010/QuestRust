@@ -124,7 +124,7 @@ impl Camera{
         self.camera_y = player_y - (self.viewpoint_height as f32/ 2.0);
     }
     pub fn render_entity(&self, world: &World, entity_id: usize, entity_index_offset: u32, extra_index_offset: u32) -> Result<(RenderData, RenderData), PError> {
-        let potentially_sprite_id = world.get_sprite(entity_id);
+        let potentially_sprite_id = world.get_entity_sprite(entity_id);
         if potentially_sprite_id.is_none(){
             return Err(perror!(NotFound, "There was no sprite to render for entity with id {}", entity_id));
         }
@@ -191,7 +191,10 @@ impl Camera{
 
                 chunks_loaded.push(chunk_id);
                 for terrain_id in chunk.terrain_ids.iter(){
-                    let sprite_id = punwrap!(world.get_sprite(*terrain_id), Expected, "Could not find sprite for terrain with id {}", terrain_id);
+                    let sprite_id = match world.get_terrain_sprite(*terrain_id) {
+                        Some(id) => id,
+                        None => continue
+                    };
                     let sprite = punwrap!(world.sprites.get_sprite(sprite_id), Expected, "Sprite in sprite_lookup for terrain with id {} is a non-existent sprite", terrain_id);
 
                     let vertex_offset_x = -self.camera_x as i32;

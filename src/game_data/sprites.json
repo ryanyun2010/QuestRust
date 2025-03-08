@@ -1,249 +1,323 @@
 {
-    "basic_sprites": [
-        {
-            "name": "sword",
-            "path": "src/rendering_engine/img/sword.png"
-        },
-        {
-            "name": "start_screen",
-            "path": "src/rendering_engine/img/start_screen.png"
-        },
-        {
-            "name": "melee_attack",
-            "path": "src/rendering_engine/img/attack.png"
-        },
-        {
-            "name": "attack_highlight",
-            "path": "src/rendering_engine/img/attack_highlight.png"
-        },
-        {
-            "name": "hslot",
-            "path": "src/rendering_engine/img/hslot.png"
-        },
-        {
-            "name": "slot_highlight",
-            "path": "src/rendering_engine/img/slothighlight.png"
-        },
-        {
-            "name": "inventory",
-            "path": "src/rendering_engine/img/inven.png"
-        },
-        {
-            "name": "inventory_background",
-            "path": "src/rendering_engine/img/back.png"
-        }
+	"basic_sprites": [
+		{
+			"name": "sword",
+			"path": "src/rendering_engine/img/sword.png"
+		},
+		{
+			"name": "start_screen",
+			"path": "src/rendering_engine/img/start_screen.png"
+		},
+		{
+			"name": "melee_attack",
+			"path": "src/rendering_engine/img/attack.png"
+		},
+		{
+			"name": "attack_highlight",
+			"path": "src/rendering_engine/img/attack_highlight.png"
+		},
+		{
+			"name": "hslot",
+			"path": "src/rendering_engine/img/hslot.png"
+		},
+		{
+			"name": "slot_highlight",
+			"path": "src/rendering_engine/img/slothighlight.png"
+		},
+		{
+			"name": "inventory",
+			"path": "src/rendering_engine/img/inven.png"
+		},
+		{
+			"name": "inventory_background",
+			"path": "src/rendering_engine/img/back.png"
+		}
 
-    ],
-    "spritesheets": [
-        {
-            "name": "main_sheet",
-            "path": "src/rendering_engine/img/main_sheet.png",
-            "width": 128,
-            "height": 16,
-            "sprite_width": 16,
-            "sprite_height": 16,
-            "sprite_padding": 0,
-            "sprites": [
-                {
-                    "name": "grass",
-                    "x": 3,
-                    "y": 0
-                }
+	],
+	"spritesheets": [
+		{
+			"name": "main_sheet",
+			"path": "src/rendering_engine/img/main_sheet.png",
+			"width": 128,
+			"height": 16,
+			"sprite_width": 16,
+			"sprite_height": 16,
+			"sprite_padding": 0,
+			"sprites": [
+				{
+					"name": "grass",
+					"x": 3,
+					"y": 0
+				}
 
-            ]
-        },
-        {
-            "name": "player_sheet",
-            "path": "src/rendering_engine/img/player_sheet.png",
-            "width": 152,
-            "height": 52,
-            "sprite_width": 38,
-            "sprite_height": 52,
-            "sprite_padding": 0,
-            "sprites": [
-                {
-                    "name": "player_front",
-                    "x": 0,
-                    "y": 0
-                },
-                {
-                    "name": "player_left",
-                    "x": 1,
-                    "y": 0
-                },
-                {
-                    "name": "player_right",
-                    "x": 2,
-                    "y": 0
-                },
-                {
-                    "name": "player_back",
-                    "x": 3,
-                    "y": 0
-                }
-            ]
-        },
-        {
-            "name": "bars_sheet",
-            "path": "src/rendering_engine/img/bars_sheet.png",
-            "width": 512,
-            "height": 32,
-            "sprite_width": 256,
-            "sprite_height": 32,
-            "sprite_padding": 0,
-            "sprites": [
-                    
-                    {
-                        "name": "health_bar_back",
-                        "x": 0,
-                        "y": 0
-                    },
-                    {
-                        "name": "health",
-                        "x": 1,
-                        "y": 0
-                    }
-            ]
-        },
-        {
-            "name": "level_editor_sheet",
-            "path": "src/rendering_engine/img/level_editor_sheet.png",
-            "width": 128,
-            "height": 32,
-            "sprite_width": 32,
-            "sprite_height": 32,
-            "sprite_padding": 0,
-            "sprites": [
-                {
-                    "name": "level_editor_menu_background",
-                    "x": 0,
-                    "y": 0
-                },
-                {
-                    "name": "level_editor_button_background",
-                    "x": 1,
-                    "y": 0
-                },
-                {
-                    "name": "highlight",
-                    "x": 2,
-                    "y": 0
-                },
-                {
-                    "name": "grid",
-                    "x": 3,
-                    "y": 0
-                }
-            ]
-        },
-        {
-            "name": "kenny_sheet",
-            "path": "src/rendering_engine/img/kenny_sheet.png",
-            "width": 192,
-            "height": 176,
-            "sprite_width": 16,
-            "sprite_height": 16,
-            "sprite_padding": 0,
-            "sprites": [
-                {
-                    "name": "walltl",
-                    "x": 1,
-                    "y": 0
-                },
-                {
-                    "name": "wallt",
-                    "x": 2,
-                    "y": 0
-                },
-                {
-                    "name": "walltr",
-                    "x": 3,
-                    "y": 0
-                },
-                {
-                    "name": "walll",
-                    "x": 1,
-                    "y": 1
-                },
-                {
-                    "name": "wallr",
-                    "x": 3,
-                    "y": 1
-                },
-                {
-                    "name": "wallbl",
-                    "x": 1,
-                    "y": 2
-                },
-                {
-                    "name": "wallb",
-                    "x": 2,
-                    "y": 2
-                },
-                {
-                    "name": "wallbr",
-                    "x": 3,
-                    "y": 2
-                },
-                {
-                    "name": "ghost",
-                    "x": 0,
-                    "y": 9
-                },
-                {
-                    "name": "wizard",
-                    "x": 3,
-                    "y": 9
-                },
-                {
-                    "name": "spear",
-                    "x": 10,
-                    "y": 10
-                },
+			]
+		},
+		{
+			"name": "player_sheet",
+			"path": "src/rendering_engine/img/player_sheet.png",
+			"width": 152,
+			"height": 52,
+			"sprite_width": 38,
+			"sprite_height": 52,
+			"sprite_padding": 0,
+			"sprites": [
+				{
+					"name": "player_front",
+					"x": 0,
+					"y": 0
+				},
+				{
+					"name": "player_left",
+					"x": 1,
+					"y": 0
+				},
+				{
+					"name": "player_right",
+					"x": 2,
+					"y": 0
+				},
+				{
+					"name": "player_back",
+					"x": 3,
+					"y": 0
+				}
+			]
+		},
+		{
+			"name": "bars_sheet",
+			"path": "src/rendering_engine/img/bars_sheet.png",
+			"width": 512,
+			"height": 32,
+			"sprite_width": 256,
+			"sprite_height": 32,
+			"sprite_padding": 0,
+			"sprites": [
+
+				{
+					"name": "health_bar_back",
+					"x": 0,
+					"y": 0
+				},
+				{
+					"name": "health",
+					"x": 1,
+					"y": 0
+				}
+			]
+		},
+		{
+			"name": "level_editor_sheet",
+			"path": "src/rendering_engine/img/level_editor_sheet.png",
+			"width": 128,
+			"height": 32,
+			"sprite_width": 32,
+			"sprite_height": 32,
+			"sprite_padding": 0,
+			"sprites": [
+				{
+					"name": "level_editor_menu_background",
+					"x": 0,
+					"y": 0
+				},
+				{
+					"name": "level_editor_button_background",
+					"x": 1,
+					"y": 0
+				},
+				{
+					"name": "highlight",
+					"x": 2,
+					"y": 0
+				},
+				{
+					"name": "grid",
+					"x": 3,
+					"y": 0
+				}
+			]
+		},
+		{
+			"name": "kenny_sheet",
+			"path": "src/rendering_engine/img/kenny_sheet.png",
+			"width": 192,
+			"height": 176,
+			"sprite_width": 16,
+			"sprite_height": 16,
+			"sprite_padding": 0,
+			"sprites": [
+				{
+					"name": "walltl",
+					"x": 1,
+					"y": 0
+				},
+				{
+					"name": "wallt",
+					"x": 2,
+					"y": 0
+				},
+				{
+					"name": "walltr",
+					"x": 3,
+					"y": 0
+				},
+				{
+					"name": "walll",
+					"x": 1,
+					"y": 1
+				},
+				{
+					"name": "wallr",
+					"x": 3,
+					"y": 1
+				},
+				{
+					"name": "wallbl",
+					"x": 1,
+					"y": 2
+				},
+				{
+					"name": "wallb",
+					"x": 2,
+					"y": 2
+				},
+				{
+					"name": "wallbr",
+					"x": 3,
+					"y": 2
+				},
+				{
+					"name": "ghost",
+					"x": 0,
+					"y": 9
+				},
+				{
+					"name": "wizard",
+					"x": 3,
+					"y": 9
+				},
+				{
+					"name": "spear",
+					"x": 10,
+					"y": 10
+				},
 				{
 					"name": "helm",
 					"x": 4,
 					"y": 10
 				},
-                {
-                    "name": "outside",
-                    "x": 0,
-                    "y": 0
-                },
-                {
-                    "name": "dirt",
-                    "x": 0,
-                    "y": 4
-                },
-                {
-                    "name": "dirt2",
-                    "x": 1,
-                    "y": 4
-                },
-                {
-                    "name": "walltl2",
-                    "x": 4,
-                    "y": 0
-                },
-                {
-                    "name": "wallbl2",
-                    "x": 4,
-                    "y": 1
-                },
-                {
-                    "name": "walltr2",
-                    "x": 5,
-                    "y": 0
-                },
-                {
-                    "name": "wallbr2",
-                    "x": 5,
-                    "y": 1
-                }
-
-            ]
-        }
-    ]
+				{
+					"name": "outside",
+					"x": 0,
+					"y": 0
+				},
+				{
+					"name": "dirt",
+					"x": 0,
+					"y": 4
+				},
+				{
+					"name": "dirt2",
+					"x": 1,
+					"y": 4
+				},
+				{
+					"name": "walltl2",
+					"x": 4,
+					"y": 0
+				},
+				{
+					"name": "wallbl2",
+					"x": 4,
+					"y": 1
+				},
+				{
+					"name": "walltr2",
+					"x": 5,
+					"y": 0
+				},
+				{
+					"name": "wallbr2",
+					"x": 5,
+					"y": 1
+				},
+				{
+					"name": "pillar_top",
+					"x": 6, 
+					"y": 0
+				},
+				{
+					"name": "pillar_mid",
+					"x": 6, 
+					"y": 1
+				},
+				{
+					"name": "pillar_bot",
+					"x": 6, 
+					"y": 2
+				},
+				{
+					"name": "small_emblem",
+					"x": 7,
+					"y": 0
+				},
+				{
+					"name": "small_emblem_lava",
+					"x": 8,
+					"y": 0
+				},
+				{
+					"name": "large_emblem",
+					"x": 7,
+					"y": 1
+				},
+				{
+					"name": "large_emblem_lava",
+					"x": 8,
+					"y": 1
+				},
+				{
+					"name": "emblem_base",
+					"x": 7,
+					"y": 2
+				},
+				{
+					"name": "emblem_base_lava",
+					"x": 8,
+					"y": 2
+				},
+				{
+					"name": "small_emblem_base",
+					"x": 7,
+					"y": 3
+				},
+				{
+					"name": "small_emblem_base_lava",
+					"x": 8,
+					"y": 3
+				},
+				{
+					"name": "castlewalla",
+					"x": 2,
+					"y": 1
+				},
+				{
+					"name": "castlewallb",
+					"x": 4,
+					"y": 2
+				},
+				{
+					"name": "castlewallc",
+					"x": 5,
+					"y": 2
+				},
+				{
+					"name": "castlewalld",
+					"x": 4,
+					"y": 3
+				}
+			]
+		}
+	]
 
 }
 

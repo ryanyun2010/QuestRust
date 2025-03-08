@@ -19,6 +19,7 @@ use super::game::MousePosition;
 use super::inventory::Inventory;
 use super::item::{Item, ItemArchetype, ItemType};
 use super::items_on_floor::ItemOnFloor;
+use super::json_parsing::{terrain_archetype_json, terrain_json};
 use super::loot::LootTable;
 use super::player::{PlayerDir, PlayerState};
 use super::player_attacks::{PlayerAttack, PlayerAttackType};
@@ -62,8 +63,9 @@ pub struct World{
     pub loaded_chunks: Vec<usize>, // DANGEROUS: chunk ids that are currently loaded, this is created as a SIDE EFFECT of the camera, and should not be edited in the world
     
     pub terrain: FxHashMap<usize, Terrain>, // corresponds element id to Terrain element
-    pub terrain_archetype_tags_lookup: Vec<Vec<TerrainTags>>,
-    pub terrain_archetype_lookup: FxHashMap<usize, usize>,
+    pub terrain_archetype_tags_lookup: FxHashMap<CompactString, Vec<TerrainTags>>,
+    pub terrain_archetype_lookup: FxHashMap<usize, CompactString>,
+    pub terrain_sprite_lookup: FxHashMap<usize, usize>,
 
     pub entity_archetype_tags_lookup: FxHashMap<CompactString,Vec<EntityTags>>, // corresponds entity_archetype name to the entity's tags
     pub entity_archetype_lookup: FxHashMap<usize,CompactString>, // corresponds element_ids to entity_archetype
@@ -75,7 +77,6 @@ pub struct World{
     pub entity_aggro_components: FxHashMap<usize, RefCell<entity_components::AggroComponent>>,
 
     pub sprites: SpriteContainer,
-    pub sprite_lookup: FxHashMap<usize, usize>, // corresponds element id to sprite id
 
     pub player_attacks: RefCell<Vec<PlayerAttack>>,
     pub entities_to_be_killed_at_end_of_frame: RefCell<Vec<usize>>,
@@ -91,6 +92,8 @@ pub struct World{
 
     pub cur_ability_charging: Option<usize>, // cur ability id charging
     pub player_ability_descriptors: Vec<PlayerAbilityDescriptor>, // corresponds player ability descriptor id to object
+    
+    pub terrain_archetype_jsons: FxHashMap<CompactString, terrain_archetype_json>
 }
 
 impl World{ 
@@ -134,12 +137,12 @@ impl World{
             player: RefCell::new(player),
             element_id: 0, 
             sprites: sprite_container,
-            sprite_lookup: FxHashMap::default(),
             chunk_lookup: RefCell::new(FxHashMap::default()),
             entity_archetype_lookup: FxHashMap::default(),
             entity_archetype_tags_lookup: FxHashMap::default(),
-            terrain_archetype_tags_lookup: Vec::new(),
+            terrain_archetype_tags_lookup: FxHashMap::default(),
             terrain_archetype_lookup: FxHashMap::default(),
+            terrain_sprite_lookup: FxHashMap::default(),
             terrain: FxHashMap::default(),
             inventory: inventory_test,
             item_archetype_lookup: FxHashMap::default(),
@@ -164,6 +167,7 @@ impl World{
             loot_table_lookup: Vec::new(),
             player_ability_descriptors: test_ability_descriptors,
             cur_ability_charging: None,
+            terrain_archetype_jsons: FxHashMap::default()
         })
     }
     pub fn new_chunk(&self, chunk_x: usize, chunk_y: usize, chunkref: Option<&mut std::cell::RefMut<'_, Vec<Chunk>>>) -> usize{
@@ -221,6 +225,57 @@ impl World{
     pub fn get_chunk_from_chunk_xy(&self, x: usize, y: usize) -> Option<usize>{
         self.chunk_lookup.borrow().get(&[x, y]).copied()
     }
+    pub fn generate_terrain_from_descriptor(&mut self, descriptor: &terrain_json, x_offset: i32, y_offset: i32) -> Result<(), PError> {
+        let start_x = (descriptor.x as i32 + x_offset) as usize;
+        let start_y = (descriptor.y as i32 + y_offset) as usize;
+        let width = descriptor.width;
+        let height = descriptor.height;
+        let archetype_descriptor = punwrap!(self.terrain_archetype_jsons.get(&descriptor.terrain_archetype), Invalid, "could not find terrain archetype {} while generating terrain from json data", &descriptor.terrain_archetype).clone();
+
+        match archetype_descriptor.r#type.as_str() {
+            "basic" => {
+                for x in start_x..start_x + width{
+                    for y in start_y..start_y + height{
+                        let terrain = self.add_terrain(x * 32, y * 32);
+                        self.set_terrain_sprite(terrain, punwrap!(self.sprites.get_sprite_id(&archetype_descriptor.sprites[0]), Invalid, "Could not find sprite: {} while generating world from json data", archetype_descriptor.sprites[0]));
+                        self.set_terrain_archetype(terrain, descriptor.terrain_archetype.clone());
+                    }
+                }
+            },
+            "randomness" => {
+                let random_chances = punwrap!(archetype_descriptor.random_chances.clone(), Invalid, "Terrain with type 'randomness' must have a random_chances vec");
+                let mut random_chances_adjusted = Vec::new();
+                let mut sum_so_far = 0.0;
+                for chance in random_chances{
+                    random_chances_adjusted.push(chance + sum_so_far);
+                    sum_so_far += chance;
+                }
+                for x in start_x..start_x + width{
+                    for y in start_y..start_y + height{
+                        let terrain = self.add_terrain(x * 32, y * 32);
+                        let random_number = rand::random::<f32>();
+                        for (index, chance) in random_chances_adjusted.iter().enumerate(){
+                            if random_number < *chance{
+                                self.set_terrain_sprite(terrain, punwrap!(self.sprites.get_sprite_id(&archetype_descriptor.sprites[index]), Invalid, "Could not find sprite: {} while generating world from json data", archetype_descriptor.sprites[index]));
+                                self.set_terrain_archetype(terrain, descriptor.terrain_archetype.clone());
+                                break;
+                            }
+                        };
+                    }
+                }
+            },
+            _ => {
+                return Err(perror!(Invalid, "Found unknown terrain type: {} while generating terrain from json data", archetype_descriptor.r#type));
+            }
+        }
+
+
+
+        Ok(())
+
+    }
+
+
     pub fn add_terrain(&mut self, x: usize, y: usize) -> usize{
         
         let new_terrain: Terrain = Terrain{ element_id: self.element_id, x, y };
@@ -238,21 +293,20 @@ impl World{
         self.terrain.insert(self.element_id - 1, new_terrain);
         self.element_id - 1
     }
-    pub fn add_terrain_archetype(&mut self, tags: Vec<TerrainTags>) -> usize{
-        self.terrain_archetype_tags_lookup.push(tags);
-        self.terrain_archetype_tags_lookup.len() - 1
+    pub fn add_terrain_archetype(&mut self, name: CompactString, tags: Vec<TerrainTags>){
+        self.terrain_archetype_tags_lookup.insert(name, tags);
     }
-    pub fn set_terrain_archetype(&mut self, id: usize, archetype_id: usize){
-        self.terrain_archetype_lookup.insert(id, archetype_id);
+    pub fn set_terrain_archetype(&mut self, id: usize, archetype_name: CompactString){
+        self.terrain_archetype_lookup.insert(id, archetype_name);
     }
     pub fn get_terrain_tags(&self, id: usize) -> Option<&Vec<TerrainTags>>{
         let potential_archetype = self.terrain_archetype_lookup.get(&id)?;
-        self.terrain_archetype_tags_lookup.get(*potential_archetype)
+        self.terrain_archetype_tags_lookup.get(potential_archetype)
     }
-    pub fn get_terrain_archetype(&self, id: usize) -> Option<&usize> {
+    pub fn get_terrain_archetype(&self, id: usize) -> Option<&CompactString> {
         self.terrain_archetype_lookup.get(&id)
     }
-    pub fn get_archetype_tags(&self, archetype: usize) -> Option<&Vec<TerrainTags>>{
+    pub fn get_archetype_tags(&self, archetype: &CompactString) -> Option<&Vec<TerrainTags>>{
         self.terrain_archetype_tags_lookup.get(archetype)
     }
     pub fn get_terrain_tiles(x: usize, y: usize, w: usize, h: usize) -> Vec<[usize; 2]>{
@@ -648,11 +702,23 @@ impl World{
         player.y += movement[1];
         Ok(())
     }
-    pub fn set_sprite(&mut self, element_id: usize, sprite_id: usize){
-        self.sprite_lookup.insert(element_id, sprite_id);
+    pub fn get_entity_sprite(&self, entity_id: usize) -> Option<usize>{
+        let entity_tags = self.get_entity_tags(entity_id)?;
+        for tag in entity_tags.iter(){
+            match tag{
+                EntityTags::Sprite(sprite) => {
+                    return Some(*sprite);
+                }
+                _ => ()
+            }
+        }
+        None
     }
-    pub fn get_sprite(&self, element_id: usize) -> Option<usize>{
-        self.sprite_lookup.get(&element_id).copied()
+    pub fn get_terrain_sprite(&self, terrain_id: usize) -> Option<usize>{
+        self.terrain_sprite_lookup.get(&terrain_id).copied()
+    }
+    pub fn set_terrain_sprite(&mut self, terrain_id: usize, sprite_id: usize) {
+        self.terrain_sprite_lookup.insert(terrain_id, sprite_id);
     }
     pub fn process_player_input(&mut self, keys: &FxHashMap<CompactString,bool>, movement_speed: f32) -> Result<(), PError>{
         let mut direction: [f32; 2] = [0.0,0.0];
@@ -691,6 +757,7 @@ impl World{
         } else if direction[0] > 0.0 && direction[1] < 0.0 {
             player.sprite_id = self.sprites.get_sprite_id("player_right").expect("Could not find sprite id for player_right");
             player.direction = PlayerDir::UpRight;
+            
             if player.player_state == PlayerState::Idle {
                 player.player_state = PlayerState::Walking;
             }

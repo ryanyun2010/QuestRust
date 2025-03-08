@@ -452,7 +452,8 @@ pub enum EntityTags {
     MovementSpeed(f32),
     Drops(Vec<usize>), // loot table ids
     BaseHealth(usize),
-    Damageable(CollisionBox)
+    Damageable(CollisionBox),
+    Sprite(usize)
 }
 
 #[derive(Clone, Debug)]

@@ -11,13 +11,14 @@ async fn test_player_terrain_collision_moving_right(){
     let mut world = basic_world().await;
     let camera = basic_camera(&mut world).await;
     let terrain_blocker = world.add_terrain(638, 402);
-    world.set_sprite(terrain_blocker, 0);
-    let blocker_archetype = world.add_terrain_archetype(
+    world.add_terrain_archetype(
+        "test".into(),
         vec![
             TerrainTags::BlocksMovement,
+            TerrainTags::Sprite(0)
         ]
     );
-    world.set_terrain_archetype(terrain_blocker, blocker_archetype);
+    world.set_terrain_archetype(terrain_blocker, "test".into());
     let player_starting_x = world.player.borrow().x;
     let mut headless = HeadlessGame::new(world, camera);
     headless.state.keys_down.insert(CompactString::from("d"), true);
@@ -33,13 +34,14 @@ async fn test_player_terrain_collision_moving_left(){
     let mut world = basic_world().await;
     let camera = basic_camera(&mut world).await;
     let terrain_blocker = world.add_terrain(554, 402);
-    world.set_sprite(terrain_blocker, 0);
-    let blocker_archetype = world.add_terrain_archetype(
+    world.add_terrain_archetype(
+        "test".into(),
         vec![
             TerrainTags::BlocksMovement,
+            TerrainTags::Sprite(0)
         ]
     );
-    world.set_terrain_archetype(terrain_blocker, blocker_archetype);
+    world.set_terrain_archetype(terrain_blocker, "test".into());
     let player_starting_x = world.player.borrow().x;
     let mut headless = HeadlessGame::new(world, camera);
     headless.state.keys_down.insert(CompactString::from("a"), true);
@@ -55,13 +57,14 @@ async fn test_player_terrain_collision_moving_up(){
     let mut world = basic_world().await;
     let camera = basic_camera(&mut world).await;
     let terrain_blocker = world.add_terrain(576, 358);
-    world.set_sprite(terrain_blocker, 0);
-    let blocker_archetype = world.add_terrain_archetype(
+    world.add_terrain_archetype(
+        "test".into(),
         vec![
             TerrainTags::BlocksMovement,
+            TerrainTags::Sprite(0)
         ]
     );
-    world.set_terrain_archetype(terrain_blocker, blocker_archetype);
+    world.set_terrain_archetype(terrain_blocker, "test".into());
     let player_starting_y = world.player.borrow().y;
     let mut headless = HeadlessGame::new(world, camera);
     headless.state.keys_down.insert(CompactString::from("w"), true);
@@ -77,13 +80,14 @@ async fn test_player_terrain_collision_moving_down(){
     let mut world = basic_world().await;
     let camera = basic_camera(&mut world).await;
     let terrain_blocker = world.add_terrain(576, 442);
-    world.set_sprite(terrain_blocker, 0);
-    let blocker_archetype = world.add_terrain_archetype(
+    world.add_terrain_archetype(
+        "test".into(),
         vec![
             TerrainTags::BlocksMovement,
+            TerrainTags::Sprite(0)
         ]
     );
-    world.set_terrain_archetype(terrain_blocker, blocker_archetype);
+    world.set_terrain_archetype(terrain_blocker, "test".into());
     let player_starting_y = world.player.borrow().y;
     let mut headless = HeadlessGame::new(world, camera);
     headless.state.keys_down.insert(CompactString::from("s"), true);
@@ -99,7 +103,6 @@ async fn test_player_entity_collision_moving_down(){
     let mut world = basic_world().await;
     let camera = basic_camera(&mut world).await;
     let entity_blocker = world.add_entity(576.0, 442.0);
-    world.set_sprite(entity_blocker, 0);
     world.add_entity_archetype(
         CompactString::from("Test"),
         vec![
@@ -111,6 +114,7 @@ async fn test_player_entity_collision_moving_down(){
                     y_offset: 0.0
                 }
             ),
+            EntityTags::Sprite(0)
         ]
     );
     world.set_entity_archetype(entity_blocker, CompactString::from("Test"));
@@ -129,7 +133,6 @@ async fn test_player_entity_collision_moving_up(){
     let mut world = basic_world().await;
     let camera = basic_camera(&mut world).await;
     let entity_blocker = world.add_entity(576.0, 358.0);
-    world.set_sprite(entity_blocker, 0);
     world.add_entity_archetype(
         CompactString::from("Test"),
         vec![
@@ -141,6 +144,7 @@ async fn test_player_entity_collision_moving_up(){
                     y_offset: 0.0
                 }
             ),
+            EntityTags::Sprite(0)
         ]
     );
     world.set_entity_archetype(entity_blocker, CompactString::from("Test"));
@@ -159,7 +163,6 @@ async fn test_player_entity_collision_moving_left(){
     let mut world = basic_world().await;
     let camera = basic_camera(&mut world).await;
     let entity_blocker = world.add_entity(554.0, 402.0);
-    world.set_sprite(entity_blocker, 0);
     world.add_entity_archetype(
         CompactString::from("Test"),
         vec![
@@ -171,6 +174,7 @@ async fn test_player_entity_collision_moving_left(){
                     y_offset: 0.0
                 }
             ),
+            EntityTags::Sprite(0)
         ]
     );
     world.set_entity_archetype(entity_blocker, CompactString::from("Test"));
@@ -189,7 +193,6 @@ async fn test_player_entity_collision_moving_right(){
     let mut world = basic_world().await;
     let camera = basic_camera(&mut world).await;
     let entity_blocker = world.add_entity(648.0, 402.0);
-    world.set_sprite(entity_blocker, 0);
     world.add_entity_archetype(
         CompactString::from("Test"),
         vec![
@@ -201,6 +204,7 @@ async fn test_player_entity_collision_moving_right(){
                     y_offset: 0.0
                 }
             ),
+            EntityTags::Sprite(0)
         ]
     );
     world.set_entity_archetype(entity_blocker, CompactString::from("Test"));

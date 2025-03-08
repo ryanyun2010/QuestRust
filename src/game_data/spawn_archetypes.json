@@ -1,0 +1,17 @@
+[
+	{
+		"name": "test",
+		"basic": [
+			{
+				"archetype": "ghost",
+				"points": 1
+			}
+		],
+		"total_points_to_spawn": 4,
+		"special": [
+		]
+	}
+]
+
+
+

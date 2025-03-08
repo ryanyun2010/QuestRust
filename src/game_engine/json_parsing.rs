@@ -23,7 +23,9 @@ pub struct PathBundle{
     pub sprites_path: &'static str,
     pub starting_level_path: &'static str,
     pub item_archetypes_path: &'static str,
-    pub loot_table_path: &'static str
+    pub loot_table_path: &'static str,
+    pub rooms_path: &'static str,
+    pub spawn_archetypes_path: &'static str
 }
 
 pub const PATH_BUNDLE: PathBundle = PathBundle{
@@ -34,7 +36,9 @@ pub const PATH_BUNDLE: PathBundle = PathBundle{
     sprites_path: "src/game_data/sprites.json",
     starting_level_path: "src/game_data/starting_level.json",
     item_archetypes_path: "src/game_data/items.json",
-    loot_table_path: "src/game_data/loot_tables.json"
+    loot_table_path: "src/game_data/loot_tables.json",
+    rooms_path: "src/game_data/rooms.json",
+    spawn_archetypes_path: "src/game_data/spawn_archetypes.json"
 };
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -63,7 +67,8 @@ pub struct entity_archetype_json {
     pub aggro_range: usize,
     pub attack_type: CompactString,
     pub attack_pattern: CompactString,
-    pub loot_table: Vec<CompactString>
+    pub loot_table: Vec<CompactString>,
+    pub sprite: Option<CompactString>
 }
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct entity_attack_pattern_json {
@@ -111,8 +116,7 @@ pub struct player_json{
 pub struct entity_json{
     pub x: f32,
     pub y: f32,
-    pub archetype: CompactString,
-    pub sprite: CompactString,
+    pub archetype: CompactString
 }
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct terrain_json{
@@ -208,7 +212,42 @@ pub struct JSON_parser {
     pub sprites_json: sprites_json_descriptor,
     pub starting_level_json: starting_level_json,
     pub item_archetype_json: Vec<item_archetype_json>,
-    pub loot_table_json: Vec<item_loot_table_json>
+    pub loot_table_json: Vec<item_loot_table_json>,
+    pub rooms_json: FxHashMap<CompactString, room_descriptor_json>,
+    pub spawn_archetypes_json: FxHashMap<CompactString, spawn_archetype_json>
+}
+
+
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct room_descriptor_json {
+    pub name: CompactString,
+    pub terrain: Vec<terrain_json>,
+    pub width: usize,
+    pub height: usize,
+    pub spawnable: Vec<[usize; 2]>,
+    pub spawn_archetype: CompactString,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct spawn_archetype_json {
+    pub name: CompactString,
+    pub basic: Vec<entity_spawn_json>,
+    pub total_points_to_spawn: usize,
+    pub special: Vec<special_spawn_json>
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct entity_spawn_json {
+    pub archetype: CompactString,
+    pub points: usize,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct special_spawn_json {
+    pub x: usize,
+    pub y: usize,
+    pub archetype: CompactString,
 }
 
 #[macro_export]
@@ -252,6 +291,7 @@ impl JSON_parser {
             entity_attack_patterns_json: FxHashMap::default(),
             terrain_archetypes_json: FxHashMap::default(),
             entity_attacks_json: FxHashMap::default(),
+
             sprites_json: sprites_json_descriptor {
                 basic_sprites: Vec::new(),
                 spritesheets: Vec::new()
@@ -270,13 +310,15 @@ impl JSON_parser {
                 terrain: Vec::new()
             },
             loot_table_json: Vec::new(),
+            rooms_json: FxHashMap::default(),
+            spawn_archetypes_json: FxHashMap::default()
         }
     }
 
     pub fn parse_entity_archetypes(&mut self, path: &str) {
         let file = File::open(path).expect("\nCould not open entity archetypes file.");
         let reader = BufReader::new(file);
-        let data: Vec<entity_archetype_json> = serde_json::from_reader(reader).expect("JSON was not well-formatted");
+        let data: Vec<entity_archetype_json> = serde_json::from_reader(reader).expect("Entity Archetypes JSON was not well-formatted");
         for archetype in data {
             self.entity_archetypes_json.insert(archetype.name.clone(), archetype);
         }
@@ -284,7 +326,7 @@ impl JSON_parser {
     pub fn parse_terrain_archetypes(&mut self, path: &str) {
         let file = File::open(path).expect("\nCould not open terrain archetypes file."); 
         let reader = BufReader::new(file);
-        let data: Vec<terrain_archetype_json> = serde_json::from_reader(reader).expect("JSON was not well-formatted");
+        let data: Vec<terrain_archetype_json> = serde_json::from_reader(reader).expect("Terrain Archetypes JSON was not well-formatted");
         for archetype in data {
             self.terrain_archetypes_json.insert(archetype.name.clone(), archetype);
         }
@@ -292,7 +334,7 @@ impl JSON_parser {
     pub fn parse_entity_attack_patterns(&mut self, path: &str) {
         let file = File::open(path).expect("\nCould not open entity attack patterns file."); 
         let reader = BufReader::new(file);
-        let data: Vec<entity_attack_pattern_json> = serde_json::from_reader(reader).expect("JSON was not well-formatted");
+        let data: Vec<entity_attack_pattern_json> = serde_json::from_reader(reader).expect("Entity Attack Patterns JSON was not well-formatted");
         for pattern in data {
             self.entity_attack_patterns_json.insert(pattern.name.clone(), pattern);
         }
@@ -300,7 +342,7 @@ impl JSON_parser {
     pub fn parse_entity_attacks(&mut self, path: &str) {
         let file = File::open(path).expect("\nCould not open entity atttacks file."); 
         let reader = BufReader::new(file);
-        let data: Vec<entity_attack_descriptor_json> = serde_json::from_reader(reader).expect("JSON was not well-formatted");
+        let data: Vec<entity_attack_descriptor_json> = serde_json::from_reader(reader).expect("Entity Attacks JSON was not well-formatted");
         for attack in data {
             self.entity_attacks_json.insert(attack.name.clone(), attack);
         }
@@ -308,29 +350,48 @@ impl JSON_parser {
     pub fn parse_sprites(&mut self, path: &str) {
         let file = File::open(path).expect("\nCould not open sprites file."); 
         let reader = BufReader::new(file);
-        let data: sprites_json_descriptor = serde_json::from_reader(reader).expect("JSON was not well-formatted");
+        let data: sprites_json_descriptor = serde_json::from_reader(reader).expect("Sprites JSON was not well-formatted");
         self.sprites_json = data;
     }
     pub fn parse_starting_level(&mut self, path: &str) {
         let file = File::open(path).expect("\nCould not open starting level file."); 
         let reader = BufReader::new(file);
-        let data: starting_level_json = serde_json::from_reader(reader).expect("JSON was not well-formatted");
+        let data: starting_level_json = serde_json::from_reader(reader).expect("Starting Level JSON was not well-formatted");
         self.starting_level_json = data;
     }
 
     pub fn parse_item_archetypes(&mut self, path: &str) {
         let file = File::open(path).expect("\nCould not open item archetypes file."); 
         let reader = BufReader::new(file);
-        let data: Vec<item_archetype_json> = serde_json::from_reader(reader).expect("JSON was not well-formatted");
+        let data: Vec<item_archetype_json> = serde_json::from_reader(reader).expect("Item Archetypes JSON was not well-formatted");
         self.item_archetype_json = data;
     }
 
     pub fn parse_loot_tables(&mut self, path: &str) {
         let file = File::open(path).expect("\nCould not open the loot tables file."); 
         let reader = BufReader::new(file);
-        let data: Vec<item_loot_table_json> = serde_json::from_reader(reader).expect("JSON was not well-formatted");
+        let data: Vec<item_loot_table_json> = serde_json::from_reader(reader).expect("Loot Tables JSON was not well-formatted");
         self.loot_table_json = data;
     }
+
+    pub fn parse_rooms(&mut self, path: &str) {
+        let file = File::open(path).expect("\nCould not open the rooms file.");
+        let reader = BufReader::new(file);
+        let data: Vec<room_descriptor_json> = serde_json::from_reader(reader).expect("Rooms JSON was not well-formatted");
+        for room in data {
+            self.rooms_json.insert(room.name.clone(), room);
+        }
+    }
+    
+    pub fn parse_spawn_archetypes(&mut self, path: &str) {
+        let file = File::open(path).expect("\nCould not open the spawn archetypes file.");
+        let reader = BufReader::new(file);
+        let data: Vec<spawn_archetype_json> = serde_json::from_reader(reader).expect("Spawn Archetypes JSON was not well-formatted");
+        for archetype in data {
+            self.spawn_archetypes_json.insert(archetype.name.clone(), archetype);
+        }
+    }
+
     
     pub fn convert(&self) -> ParsedData {
         // Convert the JSON data into the game's data structures
@@ -377,14 +438,14 @@ impl JSON_parser {
 
         data.loot_table_lookup = tables;
 
-        for (.., entity_archetype) in &self.entity_archetypes_json {
-            let tags = self.convert_archetype(entity_archetype, &data, &ltid_lookup);
-            data.entity_archetypes.insert(entity_archetype.name.clone(), tags);
-            
-        }
         (data.sprites_to_load_json, data.sprites) = SpriteContainer::create_from_json(&self.sprites_json);
         data.starting_level_descriptor = self.starting_level_json.clone();
 
+        for (.., entity_archetype) in &self.entity_archetypes_json {
+            let tags = self.convert_archetype(entity_archetype, &data, &ltid_lookup, &data.sprites);
+            data.entity_archetypes.insert(entity_archetype.name.clone(), tags);
+            
+        }
         for (.., terrain_archetype) in &self.terrain_archetypes_json {
             data.terrain_archetypes.insert(terrain_archetype.name.clone(), terrain_archetype.clone());
         }
@@ -400,10 +461,12 @@ impl JSON_parser {
                 attack_sprite: item_archetype.attack_sprite.clone()
         });
         }
+        data.rooms = self.rooms_json.clone();
+        data.spawn_archetypes = self.spawn_archetypes_json.clone();
 
         data
     }
-    pub fn convert_archetype(&self, entity_archetype: &entity_archetype_json, data: &ParsedData, ltid: &HashMap<CompactString,usize>) -> Vec<EntityTags> {
+    pub fn convert_archetype(&self, entity_archetype: &entity_archetype_json, data: &ParsedData, ltid: &HashMap<CompactString,usize>, sprites: &SpriteContainer) -> Vec<EntityTags> {
         let mut tags = Vec::new();
 
         let mut tables = Vec::new();
@@ -417,6 +480,10 @@ impl JSON_parser {
         if entity_archetype.collision_box.is_some() {
             tags.push(EntityTags::HasCollision(entity_archetype.collision_box.unwrap()));
         }
+        if entity_archetype.sprite.is_some() {
+            tags.push(EntityTags::Sprite(sprites.get_sprite_id(entity_archetype.sprite.as_ref().unwrap()).unwrap_or_else(|| panic!("When parsing entity archetypes, sprite: {:?} in archetype: {:?} was not found", entity_archetype.sprite.clone(), entity_archetype.name))));
+        }
+
         if entity_archetype.damage_box.is_some() { 
             tags.push(EntityTags::Damageable(entity_archetype.damage_box.unwrap()));
         }
@@ -479,6 +546,8 @@ impl JSON_parser {
         self.parse_starting_level(paths.starting_level_path);
         self.parse_item_archetypes(paths.item_archetypes_path);
         self.parse_loot_tables(paths.loot_table_path);
+        self.parse_rooms(paths.rooms_path);
+        self.parse_spawn_archetypes(paths.spawn_archetypes_path);
         self.convert()
     }
 
@@ -504,6 +573,8 @@ pub struct ParsedData{
     pub entity_attack_patterns: FxHashMap<CompactString, EntityAttackPattern>,
     pub entity_attacks: FxHashMap<CompactString, EntityAttackDescriptor>,
     pub terrain_archetypes: FxHashMap<CompactString, terrain_archetype_json>,
+    pub rooms: FxHashMap<CompactString, room_descriptor_json>,
+    pub spawn_archetypes: FxHashMap<CompactString, spawn_archetype_json>,
     pub sprites_to_load_json: Vec<String>,
     pub sprites: SpriteContainer,
     pub starting_level_descriptor: starting_level_json,
@@ -539,7 +610,9 @@ impl ParsedData{
                 entities: Vec::new(),
                 terrain: Vec::new()
             },
-            loot_table_lookup: Vec::new()
+            loot_table_lookup: Vec::new(),
+            rooms: FxHashMap::default(),
+            spawn_archetypes: FxHashMap::default()
         }
     }
     pub fn get_entity_archetype(&self, name: &str) -> Option<&Vec<EntityTags>> {

@@ -141,7 +141,7 @@ let json1 = null;
 
 
 async function fetchData() {
-    let response1 = await fetch('../src/game_data/starting_level.json');
+    let response1 = await fetch('../level_editor/cur_level.json');
     json1 = await response1.json();
     let response2 = await fetch('../src/game_data/entity_archetypes.json');
     let json2 = await response2.json();

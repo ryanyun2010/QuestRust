@@ -13,7 +13,6 @@ use crate::game_engine::entities::EntityTags;
 async fn test_entity_can_kill_player(){
     let mut world = basic_world().await;
     let entity = world.add_entity(900.0, 405.0);
-    world.set_sprite(entity, 0);
     world.entity_attack_descriptor_lookup.insert("test_attack".to_compact_string(), EntityAttackDescriptor{
         damage: 100.0,
         reach: 50,
@@ -38,7 +37,8 @@ async fn test_entity_can_kill_player(){
                 x_offset: 0.0,
                 y_offset: 0.0
             }
-        )
+        ),
+        EntityTags::Sprite(0),
     ]);
     world.set_entity_archetype(entity, CompactString::from("Test"));
     world.add_attack_component(entity, entity_components::EntityAttackComponent::default());

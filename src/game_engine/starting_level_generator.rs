@@ -1,5 +1,6 @@
 use compact_str::CompactString;
 
+use rand::prelude::*;
 use crate::game_engine::terrain::TerrainTags;
 use crate::game_engine::world::World;
 use crate::json_parsing::ParsedData;
@@ -9,7 +10,7 @@ use crate::error::PError;
 
 pub fn generate_world_from_json_parsed_data(data: &ParsedData) -> Result<World, PError> {
 
-    
+
     let starting_level_descriptor = data.starting_level_descriptor.clone();
     let player_descriptor = starting_level_descriptor.player;
     let mut world = ptry!(World::new(Player::new(player_descriptor.x, player_descriptor.y, player_descriptor.health, player_descriptor.max_health, player_descriptor.movement_speed, data.sprites.get_sprite_id("player_front").expect("Couldn't find player_front sprite")), data.sprites.clone()), "while generating world from json data");
@@ -25,58 +26,24 @@ pub fn generate_world_from_json_parsed_data(data: &ParsedData) -> Result<World, 
             attack.1.clone()
         );
     }
-    
+
     for entity_descriptor in starting_level_descriptor.entities.iter(){
-        let entity = world.create_entity_with_archetype(entity_descriptor.x, entity_descriptor.y, entity_descriptor.archetype.clone());
-        world.set_sprite(entity, punwrap!(world.sprites.get_sprite_id(&entity_descriptor.sprite), Invalid, "could not find sprite {} while generating world from json data", &entity_descriptor.sprite));
+        world.create_entity_with_archetype(entity_descriptor.x, entity_descriptor.y, entity_descriptor.archetype.clone());
+    }
+    world.terrain_archetype_jsons = data.terrain_archetypes.clone();
+
+    for archetype in data.terrain_archetypes.iter(){
+        world.add_terrain_archetype(archetype.0.clone(), ptry!(match_terrain_tags(&archetype.1.basic_tags), "while generating world from json data"));
     }
     for terrain_json in starting_level_descriptor.terrain.iter(){
-        let start_x = terrain_json.x;
-        let start_y = terrain_json.y;
-        let width = terrain_json.width;
-        let height = terrain_json.height;
-        let descriptor = punwrap!(data.get_terrain_archetype(&terrain_json.terrain_archetype), Invalid, "could not find terrain archetype {} while generating world from json data", &terrain_json.terrain_archetype);
-        let tags = descriptor.basic_tags.clone();
-        let archetype = world.add_terrain_archetype(ptry!(match_terrain_tags(&descriptor.basic_tags)));
-        match descriptor.r#type.as_str() {
-            "basic" => {
-                for x in start_x..start_x + width{
-                    for y in start_y..start_y + height{
-                        let terrain = world.add_terrain(x * 32, y * 32);
-                        world.set_sprite(terrain, punwrap!(world.sprites.get_sprite_id(&descriptor.sprites[0]), Invalid, "Could not find sprite: {} while generating world from json data", descriptor.sprites[0]));
-                        world.set_terrain_archetype(terrain, archetype);
-                    }
-                }
-            },
-            "randomness" => {
-                let random_chances = punwrap!(descriptor.random_chances.clone(), Invalid, "Terrain with type 'randomness' must have a random_chances vec");
-                let mut random_chances_adjusted = Vec::new();
-                let mut sum_so_far = 0.0;
-                for chance in random_chances{
-                    random_chances_adjusted.push(chance + sum_so_far);
-                    sum_so_far += chance;
-                }
-                for x in start_x..start_x + width{
-                    for y in start_y..start_y + height{
-                        let terrain = world.add_terrain(x * 32, y * 32);
-                        let random_number = rand::random::<f32>();
-                        for (index, chance) in random_chances_adjusted.iter().enumerate(){
-                            if random_number < *chance{
-                                world.set_sprite(terrain, punwrap!(world.sprites.get_sprite_id(&descriptor.sprites[index]), Invalid, "Could not find sprite: {} while generating world from json data", descriptor.sprites[index]));
-                                world.set_terrain_archetype(terrain, archetype);
-                                break;
-                            }
-                        };
-                    }
-                }
-            },
-            _ => {
-                return Err(perror!(Invalid, "Found unknown terrain type: {} while generating world from json data", descriptor.r#type));
-            }
-        }
+        ptry!(world.generate_terrain_from_descriptor(terrain_json, 0, 0));
     }
+
+    ptry!(generate_room(&mut world, data, "test".into(), 75, 12));
     Ok(world)
 }
+
+
 
 
 pub fn match_terrain_tags (tags: &Vec<CompactString>) -> Result<Vec<TerrainTags>, PError> {
@@ -92,4 +59,44 @@ pub fn match_terrain_tags (tags: &Vec<CompactString>) -> Result<Vec<TerrainTags>
         }
     }
     Ok(tags_)
+}
+
+
+pub fn generate_room(world: &mut World, data: &ParsedData, room: CompactString, x: usize, y: usize) -> Result<(), PError> {
+    let room_descriptor = punwrap!(data.rooms.get(&room), NotFound, "Could not find room {}", room);
+    let spawn_archetype = punwrap!(data.spawn_archetypes.get(&room_descriptor.spawn_archetype), Invalid, "Room {} refers to spawn archetype {} but there is no spawn archetype with name {}", room, room_descriptor.spawn_archetype, room_descriptor.spawn_archetype);
+
+    for terrain in room_descriptor.terrain.iter(){
+        ptry!(world.generate_terrain_from_descriptor(terrain, x as i32, y as i32));
+    }
+
+    let mut cur_points = 0;
+    let mut rng = rand::thread_rng();
+
+    while cur_points < spawn_archetype.total_points_to_spawn && !room_descriptor.spawnable.is_empty() {
+        let mut options = Vec::new();
+        for option in spawn_archetype.basic.iter() {
+            if option.points + option.points <= spawn_archetype.total_points_to_spawn {
+                options.push(option);
+            }
+        }
+        if options.is_empty() {
+            break;
+        }
+        let choice = if options.len() == 1 {
+            options[0]
+        } else {
+            options[rng.gen_range(0..options.len() - 1)]
+        };
+        let position = if room_descriptor.spawnable.len() == 1 {
+            room_descriptor.spawnable[0]
+        } else {
+            room_descriptor.spawnable[rng.gen_range(0..room_descriptor.spawnable.len() - 1)]
+        };
+        let real_position = [position[0] as f32 * 32.0 + x as f32 * 32.0, position[1] as f32 * 32.0 + y as f32 * 32.0];
+        world.create_entity_with_archetype(real_position[0], real_position[1], choice.archetype.clone());
+        cur_points += choice.points;
+    }
+    
+    Ok(())
 }

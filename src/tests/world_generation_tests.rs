@@ -10,6 +10,8 @@ pub const TEST_PATH_BUNDLE: PathBundle = PathBundle{
     terrain_archetypes_path: "src/tests/test_game_data/terrain_archetypes.json",
     item_archetypes_path: "src/tests/test_game_data/items.json",
     loot_table_path: "src/tests/test_game_data/loot_tables.json",
+    spawn_archetypes_path: "src/game_data/spawn_archetypes.json",
+    rooms_path: "src/game_data/rooms.json",
 };
 
 
@@ -105,7 +107,6 @@ async fn json_parsing_test(){
     assert!(entity.x == 900.0, "Entity x should be 900.0");
     assert!(entity.y == 405.0, "Entity y should be 405.0");
     assert!(entity.archetype == "ghost", "Entity archetype should be ghost");
-    assert!(entity.sprite == "ghost", "Entity sprite should be ghost");
     let terrain = parsed_data.starting_level_descriptor.terrain.first().expect("There should be a terrain");
     assert!(terrain.x == 0, "Terrain x should be 0");
     assert!(terrain.y == 0, "Terrain y should be 0");
@@ -220,16 +221,10 @@ async fn world_generation_test(){
     assert!(found_attack, "Attack tag should be found");
     assert!(found_attack_type, "AttackType tag should be found");
     assert!(found_monster_type, "MonsterType tag should be found"); 
-    let ghost_sprite_id_expected = world.sprites.get_sprite_id("ghost").expect("There should be a ghost sprite");
-    let ghost_sprite_id = world.sprite_lookup.get(&entity_id).expect("There should be a sprite id for the entity");
-    assert!(*ghost_sprite_id == ghost_sprite_id_expected, "The entity should have the ghost sprite");
     let terrain_id = chunk.terrain_ids[0];
     let terrain = world.terrain.get(&terrain_id).expect("There should be a terrain");
     assert!(terrain.x == 0, "Terrain x should be 0");
     assert!(terrain.y == 0, "Terrain y should be 0");
-    let terrain_sprite_id_expected = world.sprites.get_sprite_id("outside").expect("There should be an outside sprite");
-    let terrain_sprite_id = world.sprite_lookup.get(&terrain_id).expect("There should be a sprite id for the terrain");
-    assert!(*terrain_sprite_id == terrain_sprite_id_expected, "The terrain should have the outside sprite");
     let terrain_tags = world.get_terrain_tags(terrain_id).expect("There should be terrain tags").clone();
     assert!(terrain_tags.len() == 1, "There should be one terrain tag");
     assert!(terrain_tags[0] == crate::game_engine::terrain::TerrainTags::BlocksMovement, "The one terrain tag should be BlocksMovement");

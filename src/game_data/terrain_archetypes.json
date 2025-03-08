@@ -83,6 +83,95 @@
         "random_chances": [0.5, 0.5],
         "sprites": ["dirt", "dirt2"],
         "basic_tags": []
-    }
-
+    },
+	{
+		"name": "pillar_top",
+		"type": "basic",
+		"sprites": ["pillar_top"],
+		"basic_tags": ["blocksMovement"]
+	},
+	{
+		"name": "pillar_mid",
+		"type": "basic",
+		"sprites": ["pillar_mid"],
+		"basic_tags": ["blocksMovement"]
+	},
+	{
+		"name": "pillar_bot",
+		"type": "basic",
+		"sprites": ["pillar_bot"],
+		"basic_tags": ["blocksMovement"]
+	},
+	{
+		"name": "small_emblem",
+		"type": "basic",
+		"sprites": ["small_emblem"],
+		"basic_tags": ["blocksMovement"]
+	},
+	{
+		"name": "small_emblem_lava",
+		"type": "basic",
+		"sprites": ["small_emblem_lava"],
+		"basic_tags": ["blocksMovement"]
+	},
+	{
+		"name": "large_emblem",
+		"type": "basic",
+		"sprites": ["large_emblem"],
+		"basic_tags": ["blocksMovement"]
+	},
+	{
+		"name": "large_emblem_lava",
+		"type": "basic",
+		"sprites": ["large_emblem_lava"],
+		"basic_tags": ["blocksMovement"]
+	},
+	{
+		"name": "emblem_base",
+		"type": "basic",
+		"sprites": ["emblem_base"],
+		"basic_tags": ["blocksMovement"]
+	},
+	{
+		"name": "emblem_base_lava",
+		"type": "basic",
+		"sprites": ["emblem_base_lava"],
+		"basic_tags": ["blocksMovement"]
+	},
+	{
+		"name": "small_emblem_base",
+		"type": "basic",
+		"sprites": ["small_emblem_base"],
+		"basic_tags": ["blocksMovement"]
+	},
+	{
+		"name": "small_emblem_base_lava",
+		"type": "basic",
+		"sprites": ["small_emblem_base_lava"],
+		"basic_tags": ["blocksMovement"]
+	},
+	{
+		"name": "castle_wall_a",
+		"type": "basic",
+		"sprites": ["castlewalla"],
+		"basic_tags": ["blocksMovement"]
+	},
+	{
+		"name": "castle_wall_b",
+		"type": "basic",
+		"sprites": ["castlewallb"],
+		"basic_tags": ["blocksMovement"]
+	},
+	{
+		"name": "castle_wall_c",
+		"type": "basic",
+		"sprites": ["castlewallc"],
+		"basic_tags": ["blocksMovement"]
+	},
+	{
+		"name": "castle_wall_d",
+		"type": "basic",
+		"sprites": ["castlewalld"],
+		"basic_tags": ["blocksMovement"]
+	}
 ]
