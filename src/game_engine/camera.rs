@@ -215,12 +215,12 @@ impl Camera{
         ).enumerate().filter_map(
         |(i, (x, y))| 
             if entity_to_render_index == entities_to_render.len() {None} 
-            else if entities_to_render[entity_to_render_index] == i && x.is_some() && y.is_some() {entity_to_render_index += 1; Some((i,(x.as_ref().unwrap(), y.as_ref().unwrap()))) }
+            else if entities_to_render[entity_to_render_index] == i && x.is_some() && y.is_some() {entity_to_render_index += 1; Some((i,(x.as_ref().unwrap().borrow(), y.as_ref().unwrap().borrow()))) }
             else { None }
         ) {
             let sprite = punwrap!(world.sprites.get_sprite(sprite_component.sprite), Expected, "Sprite in sprite_component for entity with id {} is a non-existent sprite", i);
 
-            let dd = self.render_entity(sprite, position_component,entity_data.vertex.len() as u32);
+            let dd = self.render_entity(sprite, &position_component,entity_data.vertex.len() as u32);
             entity_data.vertex.extend(dd.vertex);
             entity_data.index.extend(dd.index);
 
@@ -234,11 +234,11 @@ impl Camera{
         ).enumerate().filter_map(
             |(i, (x, y))| 
             if entity_to_render_index == entities_to_render.len() {None} 
-            else if entities_to_render[entity_to_render_index] == i && x.is_some() && y.is_some() {entity_to_render_index += 1; Some((i,(x.as_ref().unwrap(), y.as_ref().unwrap()))) }
+            else if entities_to_render[entity_to_render_index] == i && x.is_some() && y.is_some() {entity_to_render_index += 1; Some((i,(x.as_ref().unwrap().borrow(), y.as_ref().unwrap().borrow()))) }
             else { None }
         ) {
             
-            let dd = ptry!(self.render_health_bar(position_component, health_component, extra_data.vertex.len() as u32, &world.sprites), "while rendering health bar for entity with id {}", i);
+            let dd = ptry!(self.render_health_bar(&position_component, &health_component, extra_data.vertex.len() as u32, &world.sprites), "while rendering health bar for entity with id {}", i);
             extra_data.vertex.extend(dd.vertex);
             extra_data.index.extend(dd.index);
         }

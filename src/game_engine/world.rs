@@ -14,13 +14,14 @@ use crate::game_engine::terrain::{Terrain, TerrainTags};
 
 use super::camera::Camera;
 use super::components::ComponentContainer;
+use super::entities::EntityAttackPattern;
 use super::entity_attacks::{EntityAttackBox, EntityAttackDescriptor};
 use super::entity_components::{self, AggroComponent, CollisionBox, HealthComponent, PositionComponent};
 use super::game::MousePosition;
 use super::inventory::Inventory;
 use super::item::{Item, ItemArchetype, ItemType};
 use super::items_on_floor::ItemOnFloor;
-use super::json_parsing::{terrain_archetype_json, terrain_json};
+use super::json_parsing::{entity_archetype_json, terrain_archetype_json, terrain_json};
 use super::loot::LootTable;
 use super::player::{PlayerDir, PlayerState};
 use super::player_attacks::{PlayerAttack, PlayerAttackType};
@@ -68,9 +69,7 @@ pub struct World{
     pub terrain_archetype_lookup: FxHashMap<usize, CompactString>,
     pub terrain_sprite_lookup: FxHashMap<usize, usize>,
 
-    pub entity_archetype_tags_lookup: FxHashMap<CompactString,Vec<EntityTags>>, // corresponds entity_archetype name to the entity's tags
-    pub entity_archetype_lookup: FxHashMap<usize,CompactString>, // corresponds element_ids to entity_archetype
-
+    pub entity_archetype_descriptor_lookup: FxHashMap<CompactString, entity_archetype_json>, // corresponds entity_archetype name to the entity's tags
 
     pub components: ComponentContainer,
 
@@ -81,6 +80,7 @@ pub struct World{
 
     pub entity_attacks: RefCell<Vec<EntityAttackBox>>,
     pub entity_attack_descriptor_lookup: FxHashMap<CompactString, EntityAttackDescriptor>,
+    pub entity_attack_pattern_lookup: FxHashMap<CompactString, EntityAttackPattern>,
 
     pub damage_text: RefCell<Vec<DamageTextDescriptor>>,
 
@@ -136,8 +136,8 @@ impl World{
             element_id: 0, 
             sprites: sprite_container,
             chunk_lookup: RefCell::new(FxHashMap::default()),
-            entity_archetype_lookup: FxHashMap::default(),
-            entity_archetype_tags_lookup: FxHashMap::default(),
+            entity_archetype_descriptor_lookup: FxHashMap::default(),
+            entity_attack_pattern_lookup: FxHashMap::default(),
             terrain_archetype_tags_lookup: FxHashMap::default(),
             terrain_archetype_lookup: FxHashMap::default(),
             terrain_sprite_lookup: FxHashMap::default(),

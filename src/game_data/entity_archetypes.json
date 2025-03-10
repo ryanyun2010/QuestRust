@@ -1,7 +1,7 @@
 [
     {
         "name": "ghost",
-        "basic_tags": ["aggressive", "followsPlayer", "respectsCollision"],
+        "basic_tags": ["aggressive", "respectsCollision", "hasCollision", "damageable", "attacker"],
         "collision_box": {
             "w": 25.0,
             "h": 21.0,
@@ -26,7 +26,7 @@
     },
     {
         "name": "wizard",
-        "basic_tags": ["aggressive", "followsPlayer", "respectsCollision"],
+        "basic_tags": ["aggressive", "damageable", "respectsCollision", "hasCollision", "attacker"],
         "collision_box": {
             "w": 25.0,
             "h": 25.0,

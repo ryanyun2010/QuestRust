@@ -6,12 +6,13 @@ use crate::{ptry, punwrap};
 use std::cell::{RefCell, RefMut};
 use super::entity_attacks::EntityAttackBox;
 use super::entity_components::{self, CollisionBox, EntityAttackComponent, PathfindingComponent, PositionComponent};
+use super::json_parsing::entity_archetype_json;
 use super::world::{Chunk, World};
 use super::player::Player;
 use super::pathfinding::{self, EntityDirectionOptions};
 
 impl World {
-    pub fn move_entity(&self, mut position_component: &mut PositionComponent, entity_id: &usize, movement: [f32; 2], chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>, respects_collision: bool, has_collision: bool) -> Result<(), PError>{ 
+    pub fn move_entity(&self, position_component: &mut PositionComponent, entity_id: &usize, movement: [f32; 2], chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>, respects_collision: bool, has_collision: bool) -> Result<(), PError>{ 
         if respects_collision && ptry!(self.check_collision(false, Some(*entity_id), (position_component.x + movement[0]).floor(), (position_component.y + movement[1]).floor(), 32,32, true)){
             return Ok(());
         }
@@ -67,7 +68,7 @@ impl World {
             self.components.health_components.iter().enumerate().filter_map(
                 |(i, health_component) | 
                 if i == entities_to_update.len() {None} 
-                else if i == entities_to_update[entities_to_update_index] && health_component.is_some() {entities_to_update_index += 1; Some((i, health_component.as_ref().unwrap()))} 
+                else if i == entities_to_update[entities_to_update_index] && health_component.is_some() {entities_to_update_index += 1; Some((i, health_component.as_ref().unwrap().borrow()))} 
                 else {None}
             ){
             if health_component.health <= 0.0 {
@@ -78,7 +79,7 @@ impl World {
 
         // pathfind towards player updates
         entities_to_update_index = 0;
-        for (i, pathfinding_component, position_component, aggro_component, collision_component) in izip!(
+        for (i, mut pathfinding_component, mut position_component, aggro_component, collision_component) in izip!(
             self.components.pathfinding_components.iter(),
             self.components.position_components.iter(),
             self.components.aggro_components.iter(),
@@ -86,25 +87,26 @@ impl World {
         ).enumerate().filter_map(
             |(i, (pathfinding_component, position_component, aggro_component, collision_component))|
             if i == entities_to_update.len() {None}
-            else if i == entities_to_update[entities_to_update_index] && pathfinding_component.is_some() && position_component.is_some() && aggro_component.is_some() {entities_to_update_index += 1; Some((i, pathfinding_component.as_mut().unwrap(), position_component.as_mut().unwrap(), aggro_component.as_mut().unwrap(), collision_component.as_ref()))}
+            else if i == entities_to_update[entities_to_update_index] && pathfinding_component.is_some() && position_component.is_some() && aggro_component.is_some() {entities_to_update_index += 1; Some((i, pathfinding_component.as_ref().unwrap().borrow_mut(), position_component.as_ref().unwrap().borrow_mut(), aggro_component.as_ref().unwrap().borrow(), collision_component.as_ref().map(|x| x.borrow())))}
             else {None}
         ){
             let player_ref = self.player.borrow();
             let player_x = player_ref.x + player_ref.collision_box.x_offset;
             let player_y = player_ref.y + player_ref.collision_box.y_offset;
             if aggro_component.aggroed {
-                ptry!(self.move_entity_towards_player(&i, &collision_component.map(|x| x.collision_box).unwrap_or(CollisionBox::default()),position_component, pathfinding_component, chunkref,  player_x, player_y, collision_component.map(|x| x.respects_collision).unwrap_or(false), collision_component.is_some()));
+                ptry!(self.move_entity_towards_player(&i, &collision_component.as_ref().map(|x| x.collision_box).unwrap_or(CollisionBox::default()), &mut position_component, &mut pathfinding_component, chunkref,  player_x, player_y, collision_component.as_ref().map(|x| x.respects_collision).unwrap_or(false), collision_component.is_some()));
             }
         }
 
         // aggro component updates
-        for (i, aggro_component, position_component) in izip!(
+        entities_to_update_index = 0;
+        for (i, mut aggro_component, position_component) in izip!(
             self.components.aggro_components.iter(),
             self.components.position_components.iter()
         ).enumerate().filter_map(
             |(i, (aggro_component, position_component))|
             if i == entities_to_update.len() {None}
-            else if i == entities_to_update[entities_to_update_index] && aggro_component.is_some() && position_component.is_some() {entities_to_update_index += 1; Some((i, aggro_component.as_mut().unwrap(), position_component.as_ref().unwrap()))}
+            else if i == entities_to_update[entities_to_update_index] && aggro_component.is_some() && position_component.is_some() {entities_to_update_index += 1; Some((i, aggro_component.as_ref().unwrap().borrow_mut(), position_component.as_ref().unwrap().borrow()))}
             else {None}
         ){
             let player_ref = self.player.borrow();
@@ -122,78 +124,99 @@ impl World {
             }
         }
 
+        // attack component updates
+        entities_to_update_index = 0;
 
-        if can_attack_player && aggressive {
-            let attack_pattern: &EntityAttackPattern = punwrap!(attacks, Expected, "all entities with the aggressive tag should have an attack pattern");
-            let mut attack_component = punwrap!(self.entity_attack_components.get(entity_id), Expected, "all aggressive entities should have an attack component").borrow_mut();
-
-            if attack_component.cur_attack_cooldown <= 0.0 {
-                // self.player.borrow_mut().health -= attack_pattern.attacks[attack_component.cur_attack].attack();
-                
-                let position = punwrap!(self.entity_position_components.get(entity_id), Expected, "all entities that can attack should have a position component").borrow();
-                let px = player_x + self.player.borrow().collision_box.x_offset;
-                let py = player_y + self.player.borrow().collision_box.y_offset;
-                let direction_to_player_unnormalized = [
-                    px - position.x,
-                    py - position.y
-                ];
-                let magnitude = f32::sqrt(direction_to_player_unnormalized[0].powf(2.0) + direction_to_player_unnormalized[1].powf(2.0));
-                let direction_to_player = [
-                    direction_to_player_unnormalized[0] / magnitude as f32,
-                    direction_to_player_unnormalized[1] / magnitude as f32
-                ];
-                let angle = f32::atan2(direction_to_player[1], direction_to_player[0]);
-                let descriptor = punwrap!(self.get_attack_descriptor_by_name(&attack_pattern.attacks[attack_component.cur_attack]), Invalid, "attack descriptor refers to a non-existent attack {}", attack_pattern.attacks[attack_component.cur_attack]); 
-                if ptry!(self.is_line_of_sight(position.x, position.y, px, py)){
-                    match descriptor.r#type {
-                        AttackType::Magic => {
-                            let max_dist = descriptor.reach as f32/2.0 + descriptor.max_start_dist_from_entity.unwrap_or(0) as f32;
-                            let dist_to_player = f32::sqrt((px - position.x).powf(2.0) + (py - position.y).powf(2.0));
-                            if dist_to_player < max_dist {
-                                self.entity_attacks.borrow_mut().push(EntityAttackBox {
-                                    archetype: attack_pattern.attacks[attack_component.cur_attack].clone(),
-                                    x: px,
-                                    y: py,
-                                    time_charged: 0.0,
-                                    rotation: angle,
-                                });
-                            } else{
+        for (i, position_component, mut attack_component) in izip!(
+            self.components.position_components.iter(),
+            self.components.attack_components.iter()
+        ).enumerate().filter_map(
+            |(i, (position_component, attack_component))|
+            if i == entities_to_update.len() {None}
+            else if i == entities_to_update[entities_to_update_index] && position_component.is_some() && attack_component.is_some() {entities_to_update_index += 1; Some((i, position_component.as_ref().unwrap().borrow(), attack_component.as_ref().unwrap().borrow_mut()))}
+            else {None}
+        ){
+             
+            let player_ref = self.player.borrow();
+            let player_x = player_ref.x + player_ref.collision_box.x_offset;
+            let player_y = player_ref.y + player_ref.collision_box.y_offset;
+            let distance = f64::sqrt(
+                (position_component.y as f64 - (player_y) as f64).powf(2.0) + (position_component.x as f64 - (player_x) as f64).powf(2.0),
+            );
+            if distance < attack_component.attack_range as f64 {
+                let attack_pattern = punwrap!(self.entity_attack_pattern_lookup.get(&attack_component.entity_attack_pattern), Expected, "entity attack component on entity with id {} refers to non-existent entity attack pattern {}", i, attack_component.entity_attack_pattern);
+                if attack_component.cur_attack_cooldown <= 0.0 {
+                    let direction_to_player_unnormalized = [
+                        player_x - position_component.x,
+                        player_y - position_component.y
+                    ];
+                    let magnitude = f32::sqrt(direction_to_player_unnormalized[0].powf(2.0) + direction_to_player_unnormalized[1].powf(2.0));
+                    let direction_to_player = [
+                        direction_to_player_unnormalized[0] / magnitude as f32,
+                        direction_to_player_unnormalized[1] / magnitude as f32
+                    ];
+                    let angle = f32::atan2(direction_to_player[1], direction_to_player[0]);
+                    let descriptor = punwrap!(self.get_attack_descriptor_by_name(&attack_pattern.attacks[attack_component.cur_attack]), Invalid, "attack pattern {} refers to a non-existent attack {}", &attack_component.entity_attack_pattern, attack_pattern.attacks[attack_component.cur_attack]);
+                    if ptry!(self.is_line_of_sight(position_component.x, position_component.y, player_x, player_y), "while updating entity with id {}", i) {
+                        match descriptor.r#type {
+                            AttackType::Magic => {
+                                let max_dist = descriptor.reach as f32/2.0 + descriptor.max_start_dist_from_entity.unwrap_or(0) as f32;
+                                let dist_to_player = f32::sqrt((player_x - position_component.x).powf(2.0) + (player_y - position_component.y).powf(2.0));
+                                if dist_to_player < max_dist {
+                                    self.entity_attacks.borrow_mut().push(EntityAttackBox {
+                                        archetype: attack_pattern.attacks[attack_component.cur_attack].clone(),
+                                        x: player_x,
+                                        y: player_y,
+                                        time_charged: 0.0,
+                                        rotation: angle,
+                                    });
+                                } else{
+                                    self.entity_attacks.borrow_mut().push(
+                                        EntityAttackBox {
+                                            archetype: attack_pattern.attacks[attack_component.cur_attack].clone(),
+                                            x: position_component.x + direction_to_player[0] * (max_dist),
+                                            y: position_component.y + direction_to_player[1] * (max_dist),
+                                            time_charged: 0.0,
+                                            rotation: angle,
+                                        }
+                                    )
+                                }
+                            }
+                            AttackType::Melee => {
                                 self.entity_attacks.borrow_mut().push(
                                     EntityAttackBox {
                                         archetype: attack_pattern.attacks[attack_component.cur_attack].clone(),
-                                        x: position.x + direction_to_player[0] * (max_dist),
-                                        y: position.y + direction_to_player[1] * (max_dist),
+                                        x: position_component.x + angle.cos() * (descriptor.reach as f32/2.0),
+                                        y: position_component.y + angle.sin() * (descriptor.reach as f32/2.0),
                                         time_charged: 0.0,
                                         rotation: angle,
-                                    }
+                                }
                                 )
                             }
+                            _ => todo!()
                         }
-                        AttackType::Melee => {
-                            self.entity_attacks.borrow_mut().push(
-                                EntityAttackBox {
-                                    archetype: attack_pattern.attacks[attack_component.cur_attack].clone(),
-                                    x: position.x + angle.cos() * (descriptor.reach as f32/2.0),
-                                    y: position.y + angle.sin() * (descriptor.reach as f32/2.0),
-                                    time_charged: 0.0,
-                                    rotation: angle,
-                                }
-                            )
+                        attack_component.cur_attack += 1;
+                        if attack_component.cur_attack >= attack_pattern.attacks.len(){
+                            attack_component.cur_attack = 0;
                         }
-                        _ => todo!()
-                    }
-                    attack_component.cur_attack += 1;
-                    if attack_component.cur_attack >= attack_pattern.attacks.len(){
-                        attack_component.cur_attack = 0;
-                    }
 
-                    attack_component.cur_attack_cooldown = attack_pattern.attack_cooldowns[attack_component.cur_attack];                
+                        attack_component.cur_attack_cooldown = attack_pattern.attack_cooldowns[attack_component.cur_attack];                
+                    }
                 }
-            }else{
+            }
+        }
+
+        for mut attack_component in self.components.attack_components.iter().enumerate().filter_map(
+            |(i, attack_component)|
+            if i == entities_to_update.len() {None}
+            else if i == entities_to_update[entities_to_update_index] && attack_component.is_some() {entities_to_update_index += 1; Some(attack_component.as_ref().unwrap().borrow_mut())}
+            else {None}
+        ){
+            if attack_component.cur_attack_cooldown > 0.0 {
                 attack_component.cur_attack_cooldown -= 1.0/60.0;
             }
         }
-              Ok(())
+        Ok(())
     }
     pub fn is_line_of_sight(&self, x1: f32, y1: f32, x2: f32, y2: f32) -> Result<bool, PError>{
         let mut x = x1;
@@ -212,168 +235,7 @@ impl World {
         }
         Ok(true)
     }
-    pub fn update_entity(&self, entity_id: &usize, player_x: f32, player_y: f32, chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>) -> Result<(), PError>{
-        let entity_tags = punwrap!(self.get_entity_tags(*entity_id), NotFound, "Entity with id {} doesn't have any tags", entity_id);
-        let mut distance: f64 = f64::MAX;
-        let mut follows_player: bool = false;
-        let mut aggro_range = 0;
-        let mut attack_range = 0;
-        let mut movement_speed = 1.0;
-        let mut aggressive = false;
-        let mut attacks = None; 
-        let mut can_attack_player = false;
-        let mut respects_collision = false;
-        let mut collision = None;
-
-        for tag in entity_tags.iter() {
-            match tag {
-                EntityTags::AggroRange(range) => {
-                    aggro_range = *range;
-                },
-                EntityTags::Range(range) => {
-                    attack_range = *range;
-                },
-                EntityTags::Attacks(att) => {
-                    attacks = Some(att);
-                },
-                EntityTags::RespectsCollision => {
-                    respects_collision = true;
-                },
-                EntityTags::HasCollision(collision_box) => {
-                    collision = Some(collision_box);
-
-                },
-                _ => ()
-            }
-        }
-        
-        let health_component = self.entity_health_components.get(entity_id);
-        if let Some(health_component) = health_component {
-            if health_component.borrow().health <= 0.0 {
-                self.kill_entity(*entity_id);
-                return Ok(());
-            }
-        }
-        
-        if follows_player {
-            let position_component = punwrap!(self.entity_position_components.get(entity_id), Expected, "all entities with follow player tag should have entity position component").borrow();
-            let px = player_x + self.player.borrow().collision_box.x_offset;
-            let py = player_y + self.player.borrow().collision_box.y_offset;
-            distance = f64::sqrt(
-                (position_component.y as f64 - (py) as f64).powf(2.0) + (position_component.x as f64 - (px) as f64).powf(2.0),
-            );
-          
-        }
-        
-        if aggressive {
-            let mut aggro = punwrap!(self.entity_aggro_components.get(entity_id), Expected, "all entities with the aggressive tag should have an aggro component").borrow_mut();
-            let position_component = punwrap!(self.entity_position_components.get(entity_id), "all entities with the follow player tag should have a position component").borrow();
-            let px = player_x + self.player.borrow().collision_box.x_offset;
-            let py = player_y + self.player.borrow().collision_box.y_offset;
-            let distance = f64::sqrt(
-                (position_component.y as f64 - (py) as f64).powf(2.0) + (position_component.x as f64 - (px) as f64).powf(2.0),
-                );
-            if aggro.aggroed {
-                if distance <= (attack_range as f64) {
-                    can_attack_player = true;
-                }
-            } else if distance <= (aggro_range as f64) {
-                aggro.aggroed = true;
-                if distance <= (attack_range as f64) {
-                    can_attack_player = true;
-                } 
-            }
-        }
-        if can_attack_player && aggressive {
-            let attack_pattern: &EntityAttackPattern = punwrap!(attacks, Expected, "all entities with the aggressive tag should have an attack pattern");
-            let mut attack_component = punwrap!(self.entity_attack_components.get(entity_id), Expected, "all aggressive entities should have an attack component").borrow_mut();
-
-            if attack_component.cur_attack_cooldown <= 0.0 {
-                // self.player.borrow_mut().health -= attack_pattern.attacks[attack_component.cur_attack].attack();
-                
-                let position = punwrap!(self.entity_position_components.get(entity_id), Expected, "all entities that can attack should have a position component").borrow();
-                let px = player_x + self.player.borrow().collision_box.x_offset;
-                let py = player_y + self.player.borrow().collision_box.y_offset;
-                let direction_to_player_unnormalized = [
-                    px - position.x,
-                    py - position.y
-                ];
-                let magnitude = f32::sqrt(direction_to_player_unnormalized[0].powf(2.0) + direction_to_player_unnormalized[1].powf(2.0));
-                let direction_to_player = [
-                    direction_to_player_unnormalized[0] / magnitude as f32,
-                    direction_to_player_unnormalized[1] / magnitude as f32
-                ];
-                let angle = f32::atan2(direction_to_player[1], direction_to_player[0]);
-                let descriptor = punwrap!(self.get_attack_descriptor_by_name(&attack_pattern.attacks[attack_component.cur_attack]), Invalid, "attack descriptor refers to a non-existent attack {}", attack_pattern.attacks[attack_component.cur_attack]); 
-                if ptry!(self.is_line_of_sight(position.x, position.y, px, py)){
-                    match descriptor.r#type {
-                        AttackType::Magic => {
-                            let max_dist = descriptor.reach as f32/2.0 + descriptor.max_start_dist_from_entity.unwrap_or(0) as f32;
-                            let dist_to_player = f32::sqrt((px - position.x).powf(2.0) + (py - position.y).powf(2.0));
-                            if dist_to_player < max_dist {
-                                self.entity_attacks.borrow_mut().push(EntityAttackBox {
-                                    archetype: attack_pattern.attacks[attack_component.cur_attack].clone(),
-                                    x: px,
-                                    y: py,
-                                    time_charged: 0.0,
-                                    rotation: angle,
-                                });
-                            } else{
-                                self.entity_attacks.borrow_mut().push(
-                                    EntityAttackBox {
-                                        archetype: attack_pattern.attacks[attack_component.cur_attack].clone(),
-                                        x: position.x + direction_to_player[0] * (max_dist),
-                                        y: position.y + direction_to_player[1] * (max_dist),
-                                        time_charged: 0.0,
-                                        rotation: angle,
-                                    }
-                                )
-                            }
-                        }
-                        AttackType::Melee => {
-                            self.entity_attacks.borrow_mut().push(
-                                EntityAttackBox {
-                                    archetype: attack_pattern.attacks[attack_component.cur_attack].clone(),
-                                    x: position.x + angle.cos() * (descriptor.reach as f32/2.0),
-                                    y: position.y + angle.sin() * (descriptor.reach as f32/2.0),
-                                    time_charged: 0.0,
-                                    rotation: angle,
-                                }
-                            )
-                        }
-                        _ => todo!()
-                    }
-                    attack_component.cur_attack += 1;
-                    if attack_component.cur_attack >= attack_pattern.attacks.len(){
-                        attack_component.cur_attack = 0;
-                    }
-
-                    attack_component.cur_attack_cooldown = attack_pattern.attack_cooldowns[attack_component.cur_attack];                
-                }
-            }else{
-                attack_component.cur_attack_cooldown -= 1.0/60.0;
-            }
-        }
-        let mut aggroed_to_entity = false;
-        if aggressive {
-            let aggro_potentially = self.entity_aggro_components.get(entity_id);
-            if let Some(aggro) = aggro_potentially {
-                aggroed_to_entity = aggro.borrow().aggroed;
-            }
-        }
-        if aggroed_to_entity{
-            let pathfinding_component = punwrap!(self.entity_pathfinding_components.get(entity_id), Expected, "all entities that follow player should have a pathfinding component").borrow_mut();
-            let position_component = punwrap!(self.entity_position_components.get(entity_id), Expected, "all entities that follow player should have a position component").borrow_mut();
-            ptry!(self.move_entity_towards_player(entity_id, collision.unwrap_or(&CollisionBox {
-                    w: 0.0,
-                    h: 0.0,
-                    x_offset: 0.0,
-                    y_offset: 0.0
-            }),position_component, pathfinding_component, chunkref,  player_x, player_y, respects_collision, collision.is_some(), movement_speed));
-        }
-        Ok(())
-    }
-    pub fn move_entity_towards_player(&self, entity_id: &usize,collision_box: &CollisionBox, position_component: &mut PositionComponent, mut pathfinding_component: &mut PathfindingComponent, chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>, player_x: f32, player_y: f32, respects_collision: bool, has_collision: bool) -> Result<(), PError>{
+    pub fn move_entity_towards_player(&self, entity_id: &usize,collision_box: &CollisionBox, position_component: &mut PositionComponent, pathfinding_component: &mut PathfindingComponent, chunkref: &mut std::cell::RefMut<'_, Vec<Chunk>>, player_x: f32, player_y: f32, respects_collision: bool, has_collision: bool) -> Result<(), PError>{
         let direction: [f32; 2] = [player_x - position_component.x, player_y - position_component.y];
         let entity_pathfinding_frame = punwrap!(self.pathfinding_frames.get(entity_id), Expected, "all entities that follow player should have a pathfinding frame, entity with id {} doesn't, was the entity properly created?", entity_id);
         if direction[0] == 0.0 && direction[1] == 0.0 {
@@ -405,7 +267,7 @@ impl World {
         let magnitude: f32 = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
         if respects_collision {
             if magnitude > 128.0{
-                let direction: EntityDirectionOptions= ptry!(pathfinding::pathfind_by_block(*position_component, *collision_box, *entity_id, self));
+                let direction: EntityDirectionOptions= ptry!(pathfinding::pathfind_by_block(&position_component, *collision_box, *entity_id, self));
                 match direction {
                     EntityDirectionOptions::Down => {
                         ptry!(self.move_entity(position_component, entity_id, [0.0, movement_speed], chunkref, respects_collision, has_collision));
@@ -428,7 +290,7 @@ impl World {
                     },
                 };
             } else if magnitude > 60.0{
-                let direction: EntityDirectionOptions = ptry!(pathfinding::pathfind_high_granularity(*position_component, *collision_box,*entity_id, self));
+                let direction: EntityDirectionOptions = ptry!(pathfinding::pathfind_high_granularity(&position_component, *collision_box,*entity_id, self));
                 match direction {
                     EntityDirectionOptions::Down => {
                         pathfinding_component.cur_direction = EntityDirectionOptions::Down;
@@ -472,58 +334,72 @@ impl World {
         };
         self.element_id += 1;
         self.chunks.borrow_mut()[chunk_id].entities_ids.push(self.element_id - 1);
-        self.entity_position_components.insert(self.element_id - 1, RefCell::new(PositionComponent{x, y}));
+        assert_eq!(self.components.add_entity(), self.element_id - 1);
+        self.components.position_components.get_mut(self.element_id - 1).unwrap().replace(RefCell::new(PositionComponent{x, y}));
         self.pathfinding_frames.insert(self.element_id - 1, new_entity_pathfinding_frame);
         self.element_id - 1
     }
     pub fn add_pathfinding_component(&mut self, entity_id: usize, new_entity_pathfinding: PathfindingComponent){
-        self.entity_pathfinding_components.insert(entity_id, RefCell::new(new_entity_pathfinding));
+        self.components.pathfinding_components.insert(entity_id, Some(RefCell::new(new_entity_pathfinding)));
     }
     pub fn add_attack_component(&mut self, entity_id: usize, new_entity_attack: EntityAttackComponent){
-        self.entity_attack_components.insert(entity_id, RefCell::new(new_entity_attack));
+        self.components.attack_components.insert(entity_id, Some(RefCell::new(new_entity_attack)));
     }
     pub fn add_health_component(&mut self, entity_id: usize, new_entity_health: entity_components::HealthComponent){
-        self.entity_health_components.insert(entity_id, RefCell::new(new_entity_health));
+        self.components.health_components.insert(entity_id, Some(RefCell::new(new_entity_health)));
     }   
     pub fn create_entity_with_archetype(&mut self, x: f32, y: f32, archetype: CompactString) -> usize{
         let entity = self.add_entity(x, y);
         self.set_entity_archetype(entity, archetype.clone());
-        let archetype = self.entity_archetype_tags_lookup.get(&archetype).expect("Archetype not found");
-        let mut needs_attack_component = false;
-        let mut needs_pathfinding_component = false;
-        let mut needs_health_component = false;
-        let mut needs_aggro_component = false;
-        let mut health = 0;
-        for tag in archetype.iter(){
-            match tag.clone(){
-                EntityTags::Attacks(_) => {
-                    needs_attack_component = true;
+        let archetype = self.entity_archetype_descriptor_lookup.get(&archetype).expect("Archetype not found");
+
+        let mut has_collision = false;
+        let mut respects_collision = false;
+        let mut aggressive = false;
+        let mut damageable = false;
+        let mut attacker = false;
+        
+        for tag in archetype.basic_tags.iter() {
+            let tag = tag.as_str();
+            match tag {
+                "respects_collision" => {
+                    respects_collision = true;
                 },
-                EntityTags::FollowsPlayer => {
-                    needs_pathfinding_component = true;
+                "has_collision" => {
+                    has_collision = true;
                 },
-                EntityTags::BaseHealth(h) => {
-                    needs_health_component = true;
-                    health = h;
+                "aggressive" => {
+                    aggressive = true;
                 },
-                EntityTags::Aggressive => {
-                    needs_aggro_component = true;
-                }
+                "damageable" => {
+                    damageable = true;
+                },
+                "attacker" => {
+                    attacker = true;
+                },
                 _ => {}
             }
         }
-        if needs_attack_component{
-            self.add_attack_component(entity, entity_components::EntityAttackComponent::default());
+
+        if has_collision {
+            if let Some(collision_box) = archetype.collision_box {
+                self.components.collision_components.insert(entity, Some(RefCell::new(super::components::CollisionComponent{
+                    collision_box,
+                    respects_collision,
+                })));
+            } else {
+                self.components.collision_components.insert(entity, Some(RefCell::new(super::components::CollisionComponent{
+                    collision_box: CollisionBox {
+                        x_offset: 0.0,
+                        y_offset: 0.0,
+                        w: 32.0,
+                        h: 32.0,
+                    },
+                    respects_collision,
+                })));
+            }
         }
-        if needs_pathfinding_component{
-            self.add_pathfinding_component(entity, entity_components::PathfindingComponent::default());
-        }
-        if needs_health_component{
-            self.add_health_component(entity, entity_components::HealthComponent{health: health as f32, max_health: health});
-        }
-        if needs_aggro_component{
-            self.add_aggro_component(entity, entity_components::AggroComponent::default());
-        }
+
         entity
     }
     pub fn add_entity_archetype(&mut self, name: CompactString, archetype: Vec<EntityTags>){
@@ -575,10 +451,18 @@ pub enum EntityTags {
     Damageable(CollisionBox),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct EntityAttackPattern {
     pub attacks: Vec<CompactString>,
     pub attack_cooldowns: Vec<f32>,  
+}
+impl Default for EntityAttackPattern{
+    fn default() -> Self{
+        Self{
+            attacks: Vec::new(),
+            attack_cooldowns: Vec::new(),
+        }
+    }
 }
 impl EntityAttackPattern{
     pub fn new(attacks: Vec<CompactString>, attack_cooldowns: Vec<f32>) -> Self{

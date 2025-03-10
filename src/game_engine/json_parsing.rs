@@ -4,7 +4,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::io::{BufReader, BufWriter, Write};
 use std::fs::File;
+use crate::error::PError;
 use crate::game_engine::entities::{EntityTags, EntityAttackPattern};
+use crate::perror;
 use crate::rendering_engine::abstractions::SpriteContainer;
 
 use super::entities::AttackType;
@@ -60,13 +62,13 @@ pub struct entity_archetype_json {
     pub basic_tags: Vec<CompactString>,
     pub collision_box: Option<CollisionBox>,
     pub damage_box: Option<CollisionBox>,
-    pub health: usize,
+    pub health: Option<usize>,
     pub monster_type: CompactString,
-    pub movement_speed: f32,
-    pub range: usize,
-    pub aggro_range: usize,
+    pub movement_speed: Option<f32>,
+    pub range: Option<usize>,
+    pub aggro_range: Option<usize>,
     pub attack_type: CompactString,
-    pub attack_pattern: CompactString,
+    pub attack_pattern: Option<CompactString>,
     pub loot_table: Vec<CompactString>,
     pub sprite: Option<CompactString>
 }
@@ -250,33 +252,6 @@ pub struct special_spawn_json {
     pub archetype: CompactString,
 }
 
-#[macro_export]
-macro_rules! from_JSON_entity_tag_parsing_basic {
-    ($output:ident, $tag_list:expr) => {
-        from_JSON_entity_tag_parsing_under! [$output, $tag_list;
-            "aggressive", Aggressive,
-            "respectsCollision", RespectsCollision,
-            "followsPlayer", FollowsPlayer
-        ]
-    }
-}
-#[macro_export]
-macro_rules! from_JSON_entity_tag_parsing_under {
-    ($output:ident, $tag_list:expr; $($string_list:expr, $id_list:ident),*) => {
-        for current_tag in $tag_list {
-            match current_tag.as_str() {
-                $(
-                    $string_list => {
-                        $output.push(EntityTags::$id_list);
-                    }
-                )*
-                _ => {
-                    panic!("When parsing entity archetypes, tag: {} was not recognized", current_tag);
-                }
-            }
-        }
-    };
-}
 
 impl Default for JSON_parser {
     fn default() -> Self {
@@ -392,6 +367,7 @@ impl JSON_parser {
         }
     }
 
+
     
     pub fn convert(&self) -> ParsedData {
         // Convert the JSON data into the game's data structures
@@ -442,9 +418,8 @@ impl JSON_parser {
         data.starting_level_descriptor = self.starting_level_json.clone();
 
         for (.., entity_archetype) in &self.entity_archetypes_json {
-            let tags = self.convert_archetype(entity_archetype, &data, &ltid_lookup, &data.sprites);
-            data.entity_archetypes.insert(entity_archetype.name.clone(), tags);
-            
+            crate::ok_or_panic!(JSON_parser::validate_entity_archetype(entity_archetype));
+            data.entity_archetypes.insert(entity_archetype.name.clone(), entity_archetype.clone());
         }
         for (.., terrain_archetype) in &self.terrain_archetypes_json {
             data.terrain_archetypes.insert(terrain_archetype.name.clone(), terrain_archetype.clone());
@@ -466,76 +441,62 @@ impl JSON_parser {
 
         data
     }
-    pub fn convert_archetype(&self, entity_archetype: &entity_archetype_json, data: &ParsedData, ltid: &HashMap<CompactString,usize>, sprites: &SpriteContainer) -> Vec<EntityTags> {
-        let mut tags = Vec::new();
 
-        let mut tables = Vec::new();
-        for table in entity_archetype.loot_table.iter() {
-            tables.push(*ltid.get(table).unwrap_or_else(|| panic!("When parsing entity archetypes, loot table: {} in archetype: {} was not found", table, entity_archetype.name)));
-        }
-        if !tables.is_empty() {
-            tags.push(EntityTags::Drops(tables));
-        }
-        from_JSON_entity_tag_parsing_basic!(tags, &entity_archetype.basic_tags);
-        if entity_archetype.collision_box.is_some() {
-            tags.push(EntityTags::HasCollision(entity_archetype.collision_box.unwrap()));
-        }
-        if entity_archetype.sprite.is_some() {
-            tags.push(EntityTags::Sprite(sprites.get_sprite_id(entity_archetype.sprite.as_ref().unwrap()).unwrap_or_else(|| panic!("When parsing entity archetypes, sprite: {:?} in archetype: {:?} was not found", entity_archetype.sprite.clone(), entity_archetype.name))));
-        }
+    pub fn validate_entity_archetype(archetype: &entity_archetype_json) -> Result<(), PError>{
+        let name = &archetype.name;
 
-        if entity_archetype.damage_box.is_some() { 
-            tags.push(EntityTags::Damageable(entity_archetype.damage_box.unwrap()));
-        }
-        tags.push(EntityTags::BaseHealth(entity_archetype.health));
-        match entity_archetype.monster_type.as_str() {
-            "Undead" => {
-                tags.push(EntityTags::MonsterType(crate::game_engine::entities::MonsterType::Undead));
-            },
-            "Uruk" => {
-                tags.push(EntityTags::MonsterType(crate::game_engine::entities::MonsterType::Uruk));
-            },
-            "Parasite" => {
-                tags.push(EntityTags::MonsterType(crate::game_engine::entities::MonsterType::Parasite));
-            },
-            "Beast" => {
-                tags.push(EntityTags::MonsterType(crate::game_engine::entities::MonsterType::Beast));
-            },
-            "Demon" => {
-                tags.push(EntityTags::MonsterType(crate::game_engine::entities::MonsterType::Demon));
-            },
-            "Dragon" => {
-                tags.push(EntityTags::MonsterType(crate::game_engine::entities::MonsterType::Dragon));
-            },
-            "Item" => {
-                tags.push(EntityTags::MonsterType(crate::game_engine::entities::MonsterType::Item));
-            },
-            "Ambient" => {
-                tags.push(EntityTags::MonsterType(crate::game_engine::entities::MonsterType::Ambient));
-            },
-            _ => {
-                panic!("When parsing entity archetypes, monster type: {} in archetype: {} was not recognized", entity_archetype.monster_type, entity_archetype.name);
+        for tag in &archetype.basic_tags {
+            match tag.as_str() {
+                "attacker" => {
+                    if archetype.attack_pattern.is_none() {
+                        return Err(perror!(JSONValidationError, "Entity archetype: {} has the attacker tag but no attack pattern", name));
+                    }
+                    if archetype.range.is_none() {
+                        return Err(perror!(JSONValidationError, "Entity archetype: {} has the attacker tag but no range", name));
+                    }
+                },
+                "damageable" => {
+                    if archetype.health.is_none() {
+                        return Err(perror!(JSONValidationError, "Entity archetype: {} has the damageable tag but no health", name));
+                    }
+                },
+                "aggressive" => {
+                    if archetype.aggro_range.is_none() {
+                        return Err(perror!(JSONValidationError, "Entity archetype: {} has the aggressive tag but no aggro range", name));
+                    }
+                    if archetype.movement_speed.is_none() {
+                        return Err(perror!(JSONValidationError, "Entity archetype: {} has the aggressive tag but no movement speed", name));
+                    }
+                },
+                _ => {
+                    return Err(perror!(JSONValidationError, "Entity archetype: {} has an unrecognized tag: {}", name, tag));
+                }
             }
         }
-        tags.push(EntityTags::MovementSpeed(entity_archetype.movement_speed));
-        tags.push(EntityTags::Range(entity_archetype.range));
-        tags.push(EntityTags::AggroRange(entity_archetype.aggro_range));
-        match entity_archetype.attack_type.as_str() {
-            "Melee" => {
-                tags.push(EntityTags::AttackType(crate::game_engine::entities::AttackType::Melee));
-            },
-            "Ranged" => {
-                tags.push(EntityTags::AttackType(crate::game_engine::entities::AttackType::Ranged));
-            },
-            "Magic" => {
-                tags.push(EntityTags::AttackType(crate::game_engine::entities::AttackType::Magic));
-            },
-            _ => {
-                panic!("When parsing entity archetypes, attack type: {} in archetype: {} was not recognized", entity_archetype.attack_type, entity_archetype.name);
-            }
+
+        if archetype.attack_pattern.is_some() {
+            archetype.basic_tags.iter().find(|tag| tag.as_str() == "attacker").ok_or_else(|| perror!(JSONValidationError, "Entity archetype: {} has an attack pattern but no attacker tag", name))?;
         }
-        tags.push(EntityTags::Attacks(data.entity_attack_patterns.get(&entity_archetype.attack_pattern).unwrap_or_else(|| panic!("When parsing entity archetypes, attack pattern: {} in archetype: {} was not found", entity_archetype.attack_pattern, entity_archetype.name)).clone()));
-        tags
+        if archetype.health.is_some() {
+            archetype.basic_tags.iter().find(|tag| tag.as_str() == "damageable").ok_or_else(|| perror!(JSONValidationError, "Entity archetype: {} has health but no damageable tag", name))?;
+        }
+        if archetype.aggro_range.is_some() {
+            archetype.basic_tags.iter().find(|tag| tag.as_str() == "aggressive").ok_or_else(|| perror!(JSONValidationError, "Entity archetype: {} has an aggro range but no aggressive tag", name))?;
+        }
+        if archetype.collision_box.is_some() {
+            archetype.basic_tags.iter().find(|tag| tag.as_str() == "hasCollision").ok_or_else(|| perror!(JSONValidationError, "Entity archetype: {} has a collision box but no hasCollision tag", name))?;
+        }
+        if archetype.damage_box.is_some() {
+            archetype.basic_tags.iter().find(|tag| tag.as_str() == "damageable").ok_or_else(|| perror!(JSONValidationError, "Entity archetype: {} has a damage box but no damageable tag", name))?;
+        }
+
+        if archetype.movement_speed.is_some() {
+            archetype.basic_tags.iter().find(|tag| tag.as_str() == "aggressive").ok_or_else(|| perror!(JSONValidationError, "Entity archetype: {} has a movement speed but no aggressive tag", name))?;
+        }
+        if archetype.range.is_some() {
+            archetype.basic_tags.iter().find(|tag| tag.as_str() == "attacker").ok_or_else(|| perror!(JSONValidationError, "Entity archetype: {} has a range but no attacker tag", name))?;
+        }
+        Ok(())
     }
     pub fn parse_and_convert_game_data(&mut self, paths: PathBundle) -> ParsedData{
         self.parse_entity_archetypes(paths.entity_archetypes_path);
@@ -569,7 +530,7 @@ impl JSON_parser {
 
 #[derive(Debug, Clone)]
 pub struct ParsedData{
-    pub entity_archetypes: FxHashMap<CompactString, Vec<EntityTags>>,
+    pub entity_archetypes: FxHashMap<CompactString, entity_archetype_json>,
     pub entity_attack_patterns: FxHashMap<CompactString, EntityAttackPattern>,
     pub entity_attacks: FxHashMap<CompactString, EntityAttackDescriptor>,
     pub terrain_archetypes: FxHashMap<CompactString, terrain_archetype_json>,

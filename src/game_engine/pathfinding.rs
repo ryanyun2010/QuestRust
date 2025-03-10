@@ -46,7 +46,7 @@ impl Ord for PathfindingNode {
     }
 }
 
-pub fn pathfind_by_block(position_component: PositionComponent, collision_component: CollisionBox, entity_id: usize, world: &World) -> Result<EntityDirectionOptions, PError> {
+pub fn pathfind_by_block(position_component: &PositionComponent, collision_component: CollisionBox, entity_id: usize, world: &World) -> Result<EntityDirectionOptions, PError> {
     let player = world.player.borrow();
     let ex = position_component.x + collision_component.x_offset;
     let ey = position_component.y + collision_component.y_offset;
@@ -137,7 +137,7 @@ pub fn pathfind_by_block(position_component: PositionComponent, collision_compon
 
     Ok(EntityDirectionOptions::None)
 }
-pub fn pathfind_high_granularity(position_component: PositionComponent, collision_component: CollisionBox, entity_id: usize, world: &World) -> Result<EntityDirectionOptions, PError> {
+pub fn pathfind_high_granularity(position_component: &PositionComponent, collision_component: CollisionBox, entity_id: usize, world: &World) -> Result<EntityDirectionOptions, PError> {
     let player = world.player.borrow();
 
     let ex = position_component.x + collision_component.x_offset;

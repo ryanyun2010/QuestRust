@@ -16,6 +16,7 @@ pub enum PE {
     WrongItemType(ErrorDescriptor),
     None(ErrorDescriptor),
     EntityDoesNotExist(ErrorDescriptor),
+    JSONValidationError(ErrorDescriptor),
 }
 
 
@@ -34,6 +35,7 @@ impl PE {
             PE::WrongItemType(e) => format!("Wrong Item Type Error at {}: {}", e.as_location(), e.as_string()),
             PE::None(e) => format!("None Error at {}: {}", e.as_location(), e.as_string()),
             PE::EntityDoesNotExist(e) => format!("Entity Does Not Exist Error at {}: {}", e.as_location(), e.as_string()),
+            PE::JSONValidationError(e) => format!("JSON Validation Error at {}: {}", e.as_location(), e.as_string()),
         }
     }
 }
