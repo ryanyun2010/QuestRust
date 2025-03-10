@@ -443,8 +443,8 @@ impl World{
             
             if terrain_potentially.is_none(){
                 if entity{
-                    let entity_collision_box = punwrap!(self.get_entity_collision_box(id), Invalid, "all entities in the collision cache should have a collision box, but entity with id {} does not have one", id);
-                    let entity_position = punwrap!(self.entity_position_components.get(&id), Expected, "all entities should have a position component").borrow();
+                    let entity_collision_box = punwrap!(&self.components.collision_components[id], Invalid, "all entities in the collision cache should have a collision box, but entity with id {} does not have one", id).borrow().collision_box;
+                    let entity_position = punwrap!(&self.components.position_components[id], Expected, "all entities in the collision cache should have a position component").borrow();
                     let ex = entity_position.x + entity_collision_box.x_offset;
                     let ey = entity_position.y + entity_collision_box.y_offset;
                     let ew = entity_collision_box.w;
