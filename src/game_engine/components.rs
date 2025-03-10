@@ -24,6 +24,11 @@ macro_rules! setup_components{
                 self.cur_id += 1;
                 self.cur_id - 1
             }
+            pub fn remove(&mut self, index: usize) {
+                $(
+                    self.$vec_name[index] = None;
+                )*
+            }
         }
     }
 }
@@ -46,6 +51,10 @@ impl Default for CollisionComponent {
     }
 }
 
+pub struct LootComponent {
+    pub loot_tables: Vec<usize>
+}
+
 setup_components!{
     aggro_components => AggroComponent,
     damageable_components => DamageableComponent,
@@ -53,6 +62,7 @@ setup_components!{
     pathfinding_components => PathfindingComponent,
     position_components => PositionComponent,
     sprite_components => SpriteComponent,
-    collision_components => CollisionComponent
+    collision_components => CollisionComponent,
+    loot_components => LootComponent
 }
 

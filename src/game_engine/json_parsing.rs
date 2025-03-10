@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::io::{BufReader, BufWriter, Write};
 use std::fs::File;
 use crate::error::PError;
-use crate::game_engine::entities::{EntityTags, EntityAttackPattern};
+use crate::game_engine::entities::EntityAttackPattern;
 use crate::perror;
 use crate::rendering_engine::abstractions::SpriteContainer;
 
@@ -468,6 +468,7 @@ impl JSON_parser {
                         return Err(perror!(JSONValidationError, "Entity archetype: {} has the aggressive tag but no movement speed", name));
                     }
                 },
+                "respectsCollision" | "hasCollision" => {},
                 _ => {
                     return Err(perror!(JSONValidationError, "Entity archetype: {} has an unrecognized tag: {}", name, tag));
                 }

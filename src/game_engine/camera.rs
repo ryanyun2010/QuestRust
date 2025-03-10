@@ -161,7 +161,6 @@ impl Camera{
         let mut entity_data: RenderData = RenderData::new();
         let mut extra_data: RenderData = RenderData::new();
         let mut terrain_index_offset: u32 = 0;
-        let mut entity_index_offset: u32 = 0;
 
         let camera_left_chunk_x = World::coord_to_chunk_coord(self.camera_x.floor() as usize);
         let camera_right_chunk_x = World::coord_to_chunk_coord((self.camera_x + self.viewpoint_width as f32).floor() as usize);
@@ -207,64 +206,66 @@ impl Camera{
 
 
         entities_to_render.sort();
-        // main rendering
-        let mut entity_to_render_index = 0;
-        for (i, (sprite_component, position_component)) in izip!( 
-            world.components.sprite_components.iter(),
-            world.components.position_components.iter()
-        ).enumerate().filter_map(
-        |(i, (x, y))| 
-            if entity_to_render_index == entities_to_render.len() {None} 
-            else if entities_to_render[entity_to_render_index] == i && x.is_some() && y.is_some() {entity_to_render_index += 1; Some((i,(x.as_ref().unwrap().borrow(), y.as_ref().unwrap().borrow()))) }
-            else { None }
-        ) {
-            let sprite = punwrap!(world.sprites.get_sprite(sprite_component.sprite), Expected, "Sprite in sprite_component for entity with id {} is a non-existent sprite", i);
-
-            let dd = self.render_entity(sprite, &position_component,entity_data.vertex.len() as u32);
-            entity_data.vertex.extend(dd.vertex);
-            entity_data.index.extend(dd.index);
-
-        }
-        // health bars
-        entity_to_render_index = 0;
-
-        for (i, (position_component, damageable_component)) in izip!(
-            world.components.position_components.iter(),
-            world.components.damageable_components.iter()
-        ).enumerate().filter_map(
+        if !entities_to_render.is_empty() {
+            // main rendering
+            let mut entity_to_render_index = 0;
+            for (i, (sprite_component, position_component)) in izip!( 
+                world.components.sprite_components.iter(),
+                world.components.position_components.iter()
+            ).enumerate().filter_map(
             |(i, (x, y))| 
-            if entity_to_render_index == entities_to_render.len() {None} 
-            else if entities_to_render[entity_to_render_index] == i && x.is_some() && y.is_some() {entity_to_render_index += 1; Some((i,(x.as_ref().unwrap().borrow(), y.as_ref().unwrap().borrow()))) }
-            else { None }
-        ) {
-            
-            let dd = ptry!(self.render_health_bar(&position_component, &damageable_component, extra_data.vertex.len() as u32, &world.sprites), "while rendering health bar for entity with id {}", i);
-            extra_data.vertex.extend(dd.vertex);
-            extra_data.index.extend(dd.index);
-        }
+                if entity_to_render_index == entities_to_render.len() {None} 
+                else if entities_to_render[entity_to_render_index] == i && x.is_some() && y.is_some() {entity_to_render_index += 1; Some((i,(x.as_ref().unwrap().borrow(), y.as_ref().unwrap().borrow()))) }
+                else { None }
+            ) {
+                let sprite = punwrap!(world.sprites.get_sprite(sprite_component.sprite), Expected, "Sprite in sprite_component for entity with id {} is a non-existent sprite", i);
 
-        render_data.vertex.extend(terrain_data.vertex);
-        render_data.index.extend(terrain_data.index);
+                let dd = self.render_entity(sprite, &position_component,entity_data.vertex.len() as u32);
+                entity_data.vertex.extend(dd.vertex);
+                entity_data.index.extend(dd.index);
 
-
-        self.test += 1.0;
-        let mut entity_attack_draw_data = RenderData::new();
-        for attack in world.entity_attacks.borrow().iter() {
-            let descriptor = punwrap!(world.get_attack_descriptor(attack), Expected, "Could not find attack descriptor for attack: {:?}", attack);
-            let sprite = punwrap!(world.sprites.get_sprite_by_name(&descriptor.sprite), Expected, "Attack descriptor for attack: {:?}, refers to a non-existent sprite: {}", attack, descriptor.sprite);
-            let percent = attack.time_charged/descriptor.time_to_charge as f32;
-            for _ in 0..(percent * 100.0).floor() as usize {
-                let dd = sprite.draw_data_rotated(attack.rotation * 180.0/PI, attack.x, attack.y, descriptor.reach, descriptor.width, self.viewpoint_width, self.viewpoint_height, entity_attack_draw_data.vertex.len() as u32, -self.camera_x.floor() as i32, -self.camera_y.floor() as i32);
-                entity_attack_draw_data.vertex.extend(dd.vertex);
-                entity_attack_draw_data.index.extend(dd.index);
             }
+            // health bars
+            entity_to_render_index = 0;
+
+            for (i, (position_component, damageable_component)) in izip!(
+                world.components.position_components.iter(),
+                world.components.damageable_components.iter()
+            ).enumerate().filter_map(
+                |(i, (x, y))| 
+                if entity_to_render_index == entities_to_render.len() {None} 
+                else if entities_to_render[entity_to_render_index] == i && x.is_some() && y.is_some() {entity_to_render_index += 1; Some((i,(x.as_ref().unwrap().borrow(), y.as_ref().unwrap().borrow()))) }
+                else { None }
+            ) {
+                
+                let dd = ptry!(self.render_health_bar(&position_component, &damageable_component, extra_data.vertex.len() as u32, &world.sprites), "while rendering health bar for entity with id {}", i);
+                extra_data.vertex.extend(dd.vertex);
+                extra_data.index.extend(dd.index);
+            }
+
+            render_data.vertex.extend(terrain_data.vertex);
+            render_data.index.extend(terrain_data.index);
+
+
+            self.test += 1.0;
+            let mut entity_attack_draw_data = RenderData::new();
+            for attack in world.entity_attacks.borrow().iter() {
+                let descriptor = punwrap!(world.get_attack_descriptor(attack), Expected, "Could not find attack descriptor for attack: {:?}", attack);
+                let sprite = punwrap!(world.sprites.get_sprite_by_name(&descriptor.sprite), Expected, "Attack descriptor for attack: {:?}, refers to a non-existent sprite: {}", attack, descriptor.sprite);
+                let percent = attack.time_charged/descriptor.time_to_charge as f32;
+                for _ in 0..(percent * 100.0).floor() as usize {
+                    let dd = sprite.draw_data_rotated(attack.rotation * 180.0/PI, attack.x, attack.y, descriptor.reach, descriptor.width, self.viewpoint_width, self.viewpoint_height, entity_attack_draw_data.vertex.len() as u32, -self.camera_x.floor() as i32, -self.camera_y.floor() as i32);
+                    entity_attack_draw_data.vertex.extend(dd.vertex);
+                    entity_attack_draw_data.index.extend(dd.index);
+                }
+            }
+            entity_attack_draw_data.offset(render_data.vertex.len() as u32);
+            render_data.vertex.extend(entity_attack_draw_data.vertex);
+            render_data.index.extend(entity_attack_draw_data.index);
+            entity_data.offset(render_data.vertex.len() as u32);
+            render_data.vertex.extend(entity_data.vertex);
+            render_data.index.extend(entity_data.index);
         }
-        entity_attack_draw_data.offset(render_data.vertex.len() as u32);
-        render_data.vertex.extend(entity_attack_draw_data.vertex);
-        render_data.index.extend(entity_attack_draw_data.index);
-        entity_data.offset(render_data.vertex.len() as u32);
-        render_data.vertex.extend(entity_data.vertex);
-        render_data.index.extend(entity_data.index);
 
 
 

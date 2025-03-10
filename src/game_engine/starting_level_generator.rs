@@ -27,8 +27,9 @@ pub fn generate_world_from_json_parsed_data(data: &ParsedData) -> Result<World, 
         );
     }
 
+    world.entity_attack_pattern_lookup = data.entity_attack_patterns.clone();
     for entity_descriptor in starting_level_descriptor.entities.iter(){
-        world.create_entity_with_archetype(entity_descriptor.x, entity_descriptor.y, entity_descriptor.archetype.clone());
+        ptry!(world.create_entity_with_archetype(entity_descriptor.x, entity_descriptor.y, entity_descriptor.archetype.clone()));
     }
     world.terrain_archetype_jsons = data.terrain_archetypes.clone();
 

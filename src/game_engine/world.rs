@@ -3,13 +3,12 @@ use crate::game_engine::game::InputState;
 use compact_str::{CompactString, ToCompactString};
 use itertools::izip;
 use rustc_hash::{FxHashMap, FxHashSet};
-use std::cell::{RefCell, RefMut};
+use std::cell::RefCell;
 use std::f32::consts::PI;
 
 use crate::error::PError;
 use crate::{error_prolif_allow, ptry, punwrap};
 use crate::rendering_engine::abstractions::SpriteContainer;
-use crate::entities::EntityTags;
 use crate::game_engine::player::Player;
 use crate::game_engine::terrain::{Terrain, TerrainTags};
 
@@ -17,7 +16,7 @@ use super::camera::Camera;
 use super::components::ComponentContainer;
 use super::entities::EntityAttackPattern;
 use super::entity_attacks::{EntityAttackBox, EntityAttackDescriptor};
-use super::entity_components::{AggroComponent, CollisionBox, PositionComponent};
+use super::entity_components::{AggroComponent, DamageableComponent, PositionComponent};
 use super::game::MousePosition;
 use super::inventory::Inventory;
 use super::item::{Item, ItemArchetype, ItemType};
@@ -286,6 +285,7 @@ impl World{
         self.element_id += 1;
         self.chunks.borrow_mut()[chunk_id].terrain_ids.push(self.element_id - 1);
         self.terrain.insert(self.element_id - 1, new_terrain);
+        self.components.add_entity();
         self.element_id - 1
     }
     pub fn add_terrain_archetype(&mut self, name: CompactString, tags: Vec<TerrainTags>){
@@ -516,7 +516,7 @@ impl World{
         Ok(false)
     }
     
-    pub fn get_attacked_rotated_rect(&self, player: bool, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, rotation: f32, entity: bool) -> Vec<usize>{
+    pub fn get_attacked_rotated_rect(&self, player: bool, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, rotation: f32, entity: bool) -> Result<Vec<usize>, PError>{
         if !player {
             unimplemented!("non-player get attacks not implemented");
         }
@@ -539,8 +539,8 @@ impl World{
             
             if terrain_potentially.is_none(){
                 if entity{
-                    let entity_damage_box = self.get_entity_damage_box(id).expect("All entities in damage cache should have damage boxes");
-                    let entity_position = self.entity_position_components.get(&id).expect("All entities in damage cache should have position components").borrow();
+                    let entity_damage_box = punwrap!(&self.components.damageable_components[id], Invalid, "All entities in damage cache should have damage boxes").borrow().damage_box;
+                    let entity_position = punwrap!(&self.components.position_components[id], Invalid, "All entities in damage cache should have position components").borrow();
                     let ex = entity_position.x + entity_damage_box.x_offset;
                     let ey = entity_position.y + entity_damage_box.y_offset;
                     let ew = entity_damage_box.w;
@@ -567,9 +567,9 @@ impl World{
                 }
             }
         }
-        colliding
+        Ok(colliding)
     }
-    pub fn get_attacked(&self, player: bool, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, entity: bool) -> Vec<usize>{
+    pub fn get_attacked(&self, player: bool, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, entity: bool) -> Result<Vec<usize>, PError>{
         if !player {
             unimplemented!("non-player get_attack not implemented");
         }
@@ -592,8 +592,8 @@ impl World{
             
             if terrain_potentially.is_none(){
                 if entity{
-                    let entity_damage_box = self.get_entity_damage_box(id).expect("All entities in damage cache should have damage boxes");
-                    let entity_position = self.entity_position_components.get(&id).expect("All entities in damage cache should have position components").borrow();
+                    let entity_damage_box = punwrap!(&self.components.damageable_components[id], Invalid, "All entities in damage cache should have damage boxes").borrow().damage_box;
+                    let entity_position = punwrap!(&self.components.position_components[id], Invalid, "All entities in damage cache should have position components").borrow();
                     let ex = entity_position.x + entity_damage_box.x_offset;
                     let ey = entity_position.y + entity_damage_box.y_offset;
                     let ew = entity_damage_box.w;
@@ -610,7 +610,7 @@ impl World{
                 }
             }
         }
-        colliding
+        Ok(colliding)
     }
     pub fn check_collision_with_player(&self, x: f32, y: f32, w: f32, h: f32, rotation: f32) -> bool{
         let player = self.player.borrow();
@@ -626,10 +626,10 @@ impl World{
         )
     }
     pub fn attempt_move_player(&self, player: &mut Player, movement: [f32; 2]) -> Result<(), PError>{
-        let current_in_wall = !self.check_collision_non_damageable(true, None, (player.x.floor() + player.collision_box.x_offset) as usize, (player.y.floor() + player.collision_box.y_offset) as usize, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true);
+        let current_in_wall = !ptry!(self.check_collision_non_damageable(true, None, (player.x.floor() + player.collision_box.x_offset) as usize, (player.y.floor() + player.collision_box.y_offset) as usize, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true));
         let current_collision = ptry!(self.check_collision(true, None, player.x.floor() + player.collision_box.x_offset, player.y.floor() + player.collision_box.y_offset, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true));
         let moving_into_something = ptry!(self.check_collision(true, None,player.x.floor() + movement[0] + player.collision_box.x_offset, player.y.floor() + movement[1] + player.collision_box.y_offset, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true));
-        let moving_into_wall = self.check_collision_non_damageable(true, None,(player.x.floor() + movement[0] + player.collision_box.x_offset) as usize, (player.y.floor() + movement[1] + player.collision_box.y_offset) as usize, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true);
+        let moving_into_wall = ptry!(self.check_collision_non_damageable(true, None,(player.x.floor() + movement[0] + player.collision_box.x_offset) as usize, (player.y.floor() + movement[1] + player.collision_box.y_offset) as usize, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true));
         let moving_into_entity = !moving_into_wall && moving_into_something;
         #[allow(clippy::nonminimal_bool)]
         let ok_to_move = !((!current_in_wall && moving_into_wall) || (!current_collision && moving_into_something));
@@ -644,10 +644,10 @@ impl World{
 
 
     pub fn can_move_player(&self, player: &mut Player, movement: [f32; 2]) -> Result<bool, PError> {
-        let current_in_wall = !self.check_collision_non_damageable(true, None, (player.x.floor() + player.collision_box.x_offset) as usize, (player.y.floor() + player.collision_box.y_offset) as usize, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true);
+        let current_in_wall = !ptry!(self.check_collision_non_damageable(true, None, (player.x.floor() + player.collision_box.x_offset) as usize, (player.y.floor() + player.collision_box.y_offset) as usize, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true));
         let current_collision = ptry!(self.check_collision(true, None, player.x.floor() + player.collision_box.x_offset, player.y.floor() + player.collision_box.y_offset, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true));
         let moving_into_something = ptry!(self.check_collision(true, None,player.x.floor() + movement[0] + player.collision_box.x_offset, player.y.floor() + movement[1] + player.collision_box.y_offset, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true));
-        let moving_into_wall = self.check_collision_non_damageable(true, None,(player.x.floor() + movement[0] + player.collision_box.x_offset) as usize, (player.y.floor() + movement[1] + player.collision_box.y_offset) as usize, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true);
+        let moving_into_wall = ptry!(self.check_collision_non_damageable(true, None,(player.x.floor() + movement[0] + player.collision_box.x_offset) as usize, (player.y.floor() + movement[1] + player.collision_box.y_offset) as usize, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true));
         let moving_into_entity = !moving_into_wall && moving_into_something;
         #[allow(clippy::nonminimal_bool)]
         let ok_to_move = !((!current_in_wall && moving_into_wall) || (!current_collision && moving_into_something));
@@ -655,30 +655,18 @@ impl World{
     }
 
     pub fn can_move_player_ignore_damageable(&self, player: &mut Player, movement: [f32; 2]) -> Result<bool, PError>{
-        if self.check_collision_non_damageable(true, None,(player.x.floor() + movement[0] + player.collision_box.x_offset) as usize, (player.y.floor() + movement[1] + player.collision_box.y_offset) as usize, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true){
+        if ptry!(self.check_collision_non_damageable(true, None,(player.x.floor() + movement[0] + player.collision_box.x_offset) as usize, (player.y.floor() + movement[1] + player.collision_box.y_offset) as usize, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true)){
             return Ok(false);
         }
         Ok(true)
     }
     pub fn attempt_move_player_ignore_damageable(&self, player: &mut Player, movement: [f32; 2]) -> Result<(), PError> {
-        if self.check_collision_non_damageable(true, None,(player.x.floor() + movement[0] + player.collision_box.x_offset) as usize, (player.y.floor() + movement[1] + player.collision_box.y_offset) as usize, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true){
+        if ptry!(self.check_collision_non_damageable(true, None,(player.x.floor() + movement[0] + player.collision_box.x_offset) as usize, (player.y.floor() + movement[1] + player.collision_box.y_offset) as usize, player.collision_box.w.floor() as usize, player.collision_box.h.floor() as usize, true)){
             return Ok(());
         }
         player.x += movement[0];
         player.y += movement[1];
         Ok(())
-    }
-    pub fn get_entity_sprite(&self, entity_id: usize) -> Option<usize>{
-        let entity_tags = self.get_entity_tags(entity_id)?;
-        for tag in entity_tags.iter(){
-            match tag{
-                EntityTags::Sprite(sprite) => {
-                    return Some(*sprite);
-                }
-                _ => ()
-            }
-        }
-        None
     }
     pub fn get_terrain_sprite(&self, terrain_id: usize) -> Option<usize>{
         self.terrain_sprite_lookup.get(&terrain_id).copied()
@@ -818,7 +806,7 @@ impl World{
         }
         Ok(())
     }
-    pub fn update_player_attacks(&self, camera: &mut Camera){
+    pub fn update_player_attacks(&self, camera: &mut Camera) -> Result<(), PError>{
         let mut attacks = self.player_attacks.borrow_mut();
         let mut attacks_to_be_deleted = Vec::new();
         let mut i = 0;
@@ -840,18 +828,18 @@ impl World{
                     if attack.time_alive < 2.0 {   
                         let height = attack.stats.reach.map(|x| x.get_value()).unwrap_or(0.0);
                         let width = attack.stats.width.map(|x| x.get_value()).unwrap_or(0.0);
-                        let collisions = self.get_attacked_rotated_rect(true, None, attack.x as usize, attack.y as usize, height.floor() as usize, width.floor() as usize,attack.angle, true);
+                        let collisions = ptry!(self.get_attacked_rotated_rect(true, None, attack.x as usize, attack.y as usize, height.floor() as usize, width.floor() as usize,attack.angle, true));
                         for collision in collisions.iter(){
-                            if self.entity_health_components.contains_key(collision){
-                                let health_component = self.entity_health_components.get(collision).unwrap().borrow_mut();
-                                let entity_position = self.entity_position_components.get(collision).unwrap().borrow();
-                                let aggro_potentially = self.entity_aggro_components.get(collision);
-                                let mut aggro = None;
+                            if self.components.damageable_components[*collision].is_some(){
+                                let mut health_component = self.components.damageable_components[*collision].as_ref().unwrap().borrow_mut();
+                                let entity_position = self.components.position_components[*collision].as_ref().unwrap().borrow();
+                                let aggro_potentially = self.components.aggro_components[*collision].as_ref();
                                 if aggro_potentially.is_some(){
-                                    aggro = Some(aggro_potentially.unwrap().borrow_mut());
+                                    self.damage_entity( &entity_position, Some(&mut health_component), Some(&mut aggro_potentially.unwrap().borrow_mut()),  attack.stats.damage.map(|x| x.get_value()).unwrap_or(0.0), camera);
+                                }else {
+                                    self.damage_entity( &entity_position, Some(&mut health_component), None,  attack.stats.damage.map(|x| x.get_value()).unwrap_or(0.0), camera);
                                 }
                                 attack.dealt_damage = true;
-                                self.damage_entity( &entity_position, Some(health_component), aggro,  attack.stats.damage.map(|x| x.get_value()).unwrap_or(0.0), camera);
                             }
                         }
                     }
@@ -869,11 +857,11 @@ impl World{
                     attack.last_damage = attack.last_damage.map(|x| x+1.0);
                     let length = attack.stats.size.map(|x| x.get_value()).unwrap_or(0.0).floor() as usize;
                     let width = (attack.width_to_length_ratio * length as f32) as usize;
-                    let collisions = self.get_attacked_rotated_rect(true, None, (attack.x - length as f32/2.0) as usize, (attack.y - width as f32 /2.0) as usize, length, width,attack.angle, true);
+                    let collisions = ptry!(self.get_attacked_rotated_rect(true, None, (attack.x - length as f32/2.0) as usize, (attack.y - width as f32 /2.0) as usize, length, width,attack.angle, true));
                     let mut hit = false;
                     if attack.last_damage.unwrap_or(11.0) > 10.0 {
                         for collision in collisions.iter(){
-                            if self.entity_health_components.contains_key(collision){
+                            if self.components.damageable_components[*collision].is_some(){
                                 attack.enemies_pierced += 1;
                                 hit = true;
                                 attack.dealt_damage = true;
@@ -887,22 +875,22 @@ impl World{
                     }
                     if hit {
                         for collision in collisions.iter(){
-                            if self.entity_health_components.contains_key(collision){
-                                let health_component = self.entity_health_components.get(collision).unwrap().borrow_mut();
-                                let entity_position = self.entity_position_components.get(collision).unwrap().borrow();
-                                let aggro_potentially = self.entity_aggro_components.get(collision);
-                                let mut aggro = None;
+                            if self.components.damageable_components[*collision].is_some(){
+                                let mut health_component = self.components.damageable_components[*collision].as_ref().unwrap().borrow_mut();
+                                let entity_position = self.components.position_components[*collision].as_ref().unwrap().borrow();
+                                let aggro_potentially = self.components.aggro_components[*collision].as_ref();
                                 if aggro_potentially.is_some(){
-                                    aggro = Some(aggro_potentially.unwrap().borrow_mut());
+                                    self.damage_entity( &entity_position, Some(&mut health_component), Some(&mut aggro_potentially.unwrap().borrow_mut()),  attack.stats.damage.map(|x| x.get_value()).unwrap_or(0.0), camera);
+                                }else {
+                                    self.damage_entity( &entity_position, Some(&mut health_component), None,  attack.stats.damage.map(|x| x.get_value()).unwrap_or(0.0), camera);
                                 }
-                                self.damage_entity(&entity_position, Some(health_component), aggro, attack.stats.damage.map(|x| x.get_value()).unwrap_or(0.0), camera);
                             }
                         }
                         
                     }else {
                         let length = attack.stats.size.map(|x| x.get_value()).unwrap_or(0.0).floor();
                         let width = attack.width_to_length_ratio * length;
-                        let c = self.check_collision_non_damageable(true, None, (attack.x - length/2.0) as usize, (attack.y-width/2.0) as usize, length as usize, width as usize, true);
+                        let c = ptry!(self.check_collision_non_damageable(true, None, (attack.x - length/2.0) as usize, (attack.y-width/2.0) as usize, length as usize, width as usize, true));
                         if c{
                             attacks_to_be_deleted.push(i);
                         }
@@ -918,11 +906,12 @@ impl World{
         for (offset, index) in attacks_to_be_deleted.iter().enumerate(){
             attacks.remove(*index - offset);
         }
+        Ok(())
     }
 
-    pub fn damage_entity(&self, entity_position_component: &PositionComponent, entity_health_component: Option<RefMut<HealthComponent>>, entity_aggro_component: Option<RefMut<AggroComponent>>, damage: f32, camera: &mut Camera){
-        if entity_health_component.is_some() {
-            let mut ehc = entity_health_component.unwrap();
+    pub fn damage_entity(&self, entity_position_component: &PositionComponent, entity_damageable_component: Option<&mut DamageableComponent>, entity_aggro_component: Option<&mut AggroComponent>, damage: f32, camera: &mut Camera){
+        if entity_damageable_component.is_some() {
+            let ehc = entity_damageable_component.unwrap();
             ehc.health -= damage;
             if ehc.health >= ehc.max_health as f32 {
                 ehc.health = ehc.max_health as f32;
@@ -931,7 +920,7 @@ impl World{
         let text_1 = camera.add_world_text(((damage * 10.0).round() / 10.0).to_string(), super::camera::Font::B, entity_position_component.x + 11.0, entity_position_component.y + 7.0, 150.0, 50.0, 50.0, [0.0, 0.0, 0.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
         let text_2 = camera.add_world_text(((damage * 10.0).round() / 10.0).to_string(), super::camera::Font::B, entity_position_component.x + 9.0, entity_position_component.y + 5.0, 150.0, 50.0, 50.0, [1.0, 1.0, 1.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
         if entity_aggro_component.is_some() {
-            let mut aggro = entity_aggro_component.unwrap();
+            let aggro = entity_aggro_component.unwrap();
             if !aggro.aggroed{
                 aggro.aggroed = true;
             }
@@ -953,17 +942,13 @@ impl World{
     }
     
     pub fn remove_entity(&mut self, entity_id: usize) -> Result<(), PError>{
-        let entity_position = *punwrap!(self.entity_position_components.get(&entity_id), Expected, "all entities that are being killed should have a position component").borrow();
+        let entity_position = punwrap!(self.components.position_components[entity_id].as_ref(), Expected, "all entities that are being killed should have a position component").borrow();
         let chunk_id = punwrap!(self.get_chunk_from_xy(entity_position.x as usize, entity_position.y as usize), Invalid, "there is no chunk at the position of the entity?");
         let chunk = &mut self.chunks.borrow_mut()[chunk_id];
         let index = chunk.entities_ids.iter().position(|&x| x == entity_id).unwrap();
         chunk.entities_ids.remove(index);
-        self.entity_attack_components.remove(&entity_id);
-        self.entity_position_components.remove(&entity_id);
-        self.entity_pathfinding_components.remove(&entity_id);
-        self.entity_health_components.remove(&entity_id);
-        self.entity_archetype_lookup.remove(&entity_id);
-        self.entity_aggro_components.remove(&entity_id);
+        drop(entity_position);
+        self.components.remove(entity_id);
         Ok(())
     }
     pub fn kill_entity(&self, entity_id: usize){
@@ -972,23 +957,21 @@ impl World{
     pub fn kill_entities_to_be_killed(&mut self) -> Result<(), PError>{
         let entities = self.entities_to_be_killed_at_end_of_frame.borrow().clone();
         for entity in entities{
-            if let Some(tags) = self.get_entity_tags(entity) {
-                if let Some(entity_position) = self.entity_position_components.get(&entity) {
-                    let entity_position = entity_position.borrow();
-                    for tag in tags.iter(){
-                        if let EntityTags::Drops(ref tables) = tag {
-                            for table in tables.iter() {
-                                let table = punwrap!(self.loot_table_lookup.get(*table), "entity with id {} has a loot table with id {} which doesn't exist", entity, table);
-                                let items = table.roll();
-                                for item in items.iter() {
-                                    let it = ptry!(self.create_item_with_archetype(item.clone()), "while attempting to drop item {} from entity with id {}", item, entity);
-                                    self.items_on_floor.borrow_mut().push(ItemOnFloor{
-                                        item: it,
-                                        x: entity_position.x,
-                                        y: entity_position.y,
-                                    });
-                                }
-                            }
+            if let Some(entity_position) = self.components.position_components[entity].as_ref() {
+                let entity_position = entity_position.borrow();
+                let lc = self.components.loot_components[entity].as_ref();
+                if let Some(lc) = lc {
+                    let tables = &lc.borrow().loot_tables;
+                    for table in tables.iter() {
+                        let table = punwrap!(self.loot_table_lookup.get(*table), "entity with id {} has a loot table with id {} which doesn't exist", entity, table);
+                        let items = table.roll();
+                        for item in items.iter() {
+                            let it = ptry!(self.create_item_with_archetype(item.clone()), "while attempting to drop item {} from entity with id {}", item, entity);
+                            self.items_on_floor.borrow_mut().push(ItemOnFloor{
+                                item: it,
+                                x: entity_position.x,
+                                y: entity_position.y,
+                            });
                         }
                     }
                 }

@@ -62,13 +62,14 @@ impl World {
         }
         
         entities_to_update.sort();
+        if entities_to_update.is_empty() {return Ok(());}
 
         // death checks
         let mut entities_to_update_index = 0;
         for (i, damageable_component) in 
             self.components.damageable_components.iter().enumerate().filter_map(
                 |(i, damageable_component) | 
-                if i == entities_to_update.len() {None} 
+                if entities_to_update_index == entities_to_update.len() {None} 
                 else if i == entities_to_update[entities_to_update_index] && damageable_component.is_some() {entities_to_update_index += 1; Some((i, damageable_component.as_ref().unwrap().borrow()))} 
                 else {None}
             ){
@@ -87,7 +88,7 @@ impl World {
             self.components.collision_components.iter()
         ).enumerate().filter_map(
             |(i, (pathfinding_component, position_component, aggro_component, collision_component))|
-            if i == entities_to_update.len() {None}
+            if entities_to_update_index == entities_to_update.len() {None}
             else if i == entities_to_update[entities_to_update_index] && pathfinding_component.is_some() && position_component.is_some() && aggro_component.is_some() {entities_to_update_index += 1; Some((i, pathfinding_component.as_ref().unwrap().borrow_mut(), position_component.as_ref().unwrap().borrow_mut(), aggro_component.as_ref().unwrap().borrow(), collision_component.as_ref().map(|x| x.borrow())))}
             else {None}
         ){
@@ -106,7 +107,7 @@ impl World {
             self.components.position_components.iter()
         ).enumerate().filter_map(
             |(i, (aggro_component, position_component))|
-            if i == entities_to_update.len() {None}
+            if entities_to_update_index == entities_to_update.len() {None}
             else if i == entities_to_update[entities_to_update_index] && aggro_component.is_some() && position_component.is_some() {entities_to_update_index += 1; Some((i, aggro_component.as_ref().unwrap().borrow_mut(), position_component.as_ref().unwrap().borrow()))}
             else {None}
         ){
@@ -133,7 +134,7 @@ impl World {
             self.components.attack_components.iter()
         ).enumerate().filter_map(
             |(i, (position_component, attack_component))|
-            if i == entities_to_update.len() {None}
+            if entities_to_update_index == entities_to_update.len() {None}
             else if i == entities_to_update[entities_to_update_index] && position_component.is_some() && attack_component.is_some() {entities_to_update_index += 1; Some((i, position_component.as_ref().unwrap().borrow(), attack_component.as_ref().unwrap().borrow_mut()))}
             else {None}
         ){
@@ -207,9 +208,11 @@ impl World {
             }
         }
 
+        entities_to_update_index = 0;
+
         for mut attack_component in self.components.attack_components.iter().enumerate().filter_map(
             |(i, attack_component)|
-            if i == entities_to_update.len() {None}
+            if entities_to_update_index == entities_to_update.len() {None}
             else if i == entities_to_update[entities_to_update_index] && attack_component.is_some() {entities_to_update_index += 1; Some(attack_component.as_ref().unwrap().borrow_mut())}
             else {None}
         ){
@@ -243,7 +246,7 @@ impl World {
             return Ok(());
         }
         let movement_speed = pathfinding_component.movement_speed as f32;
-        if self.pathfinding_frame != *entity_pathfinding_frame {
+        if self.pathfinding_frame != *entity_pathfinding_frame && respects_collision{
             let magnitude: f32 = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
             if magnitude > 128.0{
                 match pathfinding_component.cur_direction {
@@ -268,7 +271,7 @@ impl World {
         let magnitude: f32 = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
         if respects_collision {
             if magnitude > 128.0{
-                let direction: EntityDirectionOptions= ptry!(pathfinding::pathfind_by_block(&position_component, *collision_box, *entity_id, self));
+                let direction: EntityDirectionOptions= ptry!(pathfinding::pathfind_by_block(position_component, *collision_box, *entity_id, self));
                 match direction {
                     EntityDirectionOptions::Down => {
                         ptry!(self.move_entity(position_component, entity_id, [0.0, movement_speed], chunkref, respects_collision, has_collision));
@@ -291,7 +294,7 @@ impl World {
                     },
                 };
             } else if magnitude > 60.0{
-                let direction: EntityDirectionOptions = ptry!(pathfinding::pathfind_high_granularity(&position_component, *collision_box,*entity_id, self));
+                let direction: EntityDirectionOptions = ptry!(pathfinding::pathfind_high_granularity(position_component, *collision_box,*entity_id, self));
                 match direction {
                     EntityDirectionOptions::Down => {
                         pathfinding_component.cur_direction = EntityDirectionOptions::Down;
@@ -362,10 +365,10 @@ impl World {
         for tag in archetype.basic_tags.iter() {
             let tag = tag.as_str();
             match tag {
-                "respects_collision" => {
+                "respectsCollision" => {
                     respects_collision = true;
                 },
-                "has_collision" => {
+                "hasCollision" => {
                     has_collision = true;
                 },
                 "aggressive" => {
@@ -407,11 +410,20 @@ impl World {
                 })));
             }
         }
+        if let Some(sprite) = &archetype.sprite {
+            self.components.sprite_components.insert(entity, Some(RefCell::new(super::components::SpriteComponent {
+                sprite: punwrap!(self.sprites.get_sprite_id(sprite), JSONValidationError, "entity archetype {} refers to sprite {} but that sprite doesn't exist", archetype.name, sprite)
+            })));
+        }
         if aggressive {
             self.components.aggro_components.insert(entity, Some(RefCell::new(entity_components::AggroComponent{
                 aggroed: false,
                 aggro_range: punwrap!(archetype.aggro_range, JSONValidationError, "entity archetype {} has aggressive tag but no aggro range", archetype.name),
             })));
+            self.components.pathfinding_components.insert(entity, Some(RefCell::new(entity_components::PathfindingComponent {
+                cur_direction: EntityDirectionOptions::None,
+                movement_speed: punwrap!(archetype.movement_speed, JSONValidationError, "entity archetype {} has aggressive tag but no movement speed, give it a movement speed of 0 if you don't want it to move", archetype.name)
+        })));
         }
         if damageable {
             self.components.damageable_components.insert(entity, Some(RefCell::new(entity_components::DamageableComponent{
@@ -455,16 +467,6 @@ pub enum MonsterType {
     Dragon,
     Item,
     Ambient,
-}
-#[derive(Clone, Debug)]
-pub enum EntityTags {
-    MonsterType(MonsterType),
-    RespectsCollision,
-    HasCollision(CollisionBox),
-    AttackType(AttackType),
-    Attacks(EntityAttackPattern),
-    Drops(Vec<usize>), // loot table ids
-    Damageable(CollisionBox),
 }
 
 #[derive(Clone, Debug, PartialEq)]

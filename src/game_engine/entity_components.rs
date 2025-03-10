@@ -20,8 +20,7 @@ pub struct EntityAttackComponent{
 #[derive(Clone, Debug, Copy, PartialEq)]
 pub struct PathfindingComponent{
     pub cur_direction: EntityDirectionOptions,
-    pub aggroed_to_player: bool,
-    pub movement_speed: usize,
+    pub movement_speed: f32,
 }
 #[derive(Clone, Debug, Copy, PartialEq)]
 pub struct DamageableComponent{
