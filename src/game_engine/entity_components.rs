@@ -26,12 +26,14 @@ impl Default for EntityAttackComponent{
 pub struct PathfindingComponent{
     pub cur_direction: EntityDirectionOptions,
     pub aggroed_to_player: bool,
+    pub movement_speed: usize,
 }
 impl Default for PathfindingComponent{
     fn default() -> Self{
         Self{
             cur_direction: EntityDirectionOptions::None,
             aggroed_to_player: false,
+            movement_speed: 1,
         }
     }
 }
@@ -51,11 +53,13 @@ impl HealthComponent{
 #[derive(Clone, Debug, Copy, PartialEq)]
 pub struct AggroComponent{
     pub aggroed: bool,
+    pub aggro_range: usize,
 }
 impl Default for AggroComponent{
     fn default() -> Self{
         Self{
-            aggroed: false
+            aggroed: false,
+            aggro_range: 0
         }
     }
 }
@@ -67,3 +71,14 @@ pub struct CollisionBox{
     pub w: f32,
     pub h: f32,
 }
+impl Default for CollisionBox{
+    fn default() -> Self{
+        Self{
+            x_offset: 0.0,
+            y_offset: 0.0,
+            w: 0.0,
+            h: 0.0,
+        }
+    }
+}
+

@@ -14,7 +14,8 @@ pub enum PE {
     SurfaceError(wgpu::SurfaceError),
     NoSpace(ErrorDescriptor),
     WrongItemType(ErrorDescriptor),
-    None(ErrorDescriptor)
+    None(ErrorDescriptor),
+    EntityDoesNotExist(ErrorDescriptor),
 }
 
 
@@ -31,7 +32,8 @@ impl PE {
             PE::SurfaceError(e) => format!("Surface Error: {}", e),
             PE::NoSpace(e) => format!("No Space in Inventory Error at {}: {}", e.as_location(), e.as_string()),
             PE::WrongItemType(e) => format!("Wrong Item Type Error at {}: {}", e.as_location(), e.as_string()),
-            PE::None(e) => format!("None Error at {}: {}", e.as_location(), e.as_string())
+            PE::None(e) => format!("None Error at {}: {}", e.as_location(), e.as_string()),
+            PE::EntityDoesNotExist(e) => format!("Entity Does Not Exist Error at {}: {}", e.as_location(), e.as_string()),
         }
     }
 }

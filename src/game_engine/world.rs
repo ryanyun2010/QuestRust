@@ -13,6 +13,7 @@ use crate::game_engine::player::Player;
 use crate::game_engine::terrain::{Terrain, TerrainTags};
 
 use super::camera::Camera;
+use super::components::ComponentContainer;
 use super::entity_attacks::{EntityAttackBox, EntityAttackDescriptor};
 use super::entity_components::{self, AggroComponent, CollisionBox, HealthComponent, PositionComponent};
 use super::game::MousePosition;
@@ -70,11 +71,8 @@ pub struct World{
     pub entity_archetype_tags_lookup: FxHashMap<CompactString,Vec<EntityTags>>, // corresponds entity_archetype name to the entity's tags
     pub entity_archetype_lookup: FxHashMap<usize,CompactString>, // corresponds element_ids to entity_archetype
 
-    pub entity_position_components: FxHashMap<usize, RefCell<entity_components::PositionComponent>>,
-    pub entity_attack_components: FxHashMap<usize, RefCell<entity_components::EntityAttackComponent>>,
-    pub entity_health_components: FxHashMap<usize, RefCell<entity_components::HealthComponent>>,
-    pub entity_pathfinding_components: FxHashMap<usize, RefCell<entity_components::PathfindingComponent>>,
-    pub entity_aggro_components: FxHashMap<usize, RefCell<entity_components::AggroComponent>>,
+
+    pub components: ComponentContainer,
 
     pub sprites: SpriteContainer,
 
@@ -153,11 +151,7 @@ impl World{
             next_pathfinding_frame_for_entity: 0,
             pathfinding_frame: 0,
             level_editor: false,
-            entity_attack_components: FxHashMap::default(),
-            entity_health_components: FxHashMap::default(),
-            entity_position_components: FxHashMap::default(),
-            entity_pathfinding_components: FxHashMap::default(),
-            entity_aggro_components: FxHashMap::default(),
+            components: ComponentContainer::new(),
             player_attacks: RefCell::new(Vec::new()),
             entities_to_be_killed_at_end_of_frame: RefCell::new(Vec::new()),
             entity_attacks: RefCell::new(Vec::new()),

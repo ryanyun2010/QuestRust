@@ -18,6 +18,7 @@ terminal_size = "0.4.1"
 rustc-hash = "2.1.0"
 anyhow = "1.0.95"
 compact_str = {version ="0.9.0", features = ["serde"] }
+itertools = "0.14.0"
 [dependencies.image]
 version = "0.25.5"
 default-features = false

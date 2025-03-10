@@ -4,13 +4,15 @@ use std::f32::consts::PI;
 use crate::error::PError;
 use crate::{error_prolif_allow, perror, ptry, punwrap};
 use crate::world::World;
-use crate::rendering_engine::abstractions::{RenderData, RenderDataFull, TextSprite, UIEFull};
+use crate::rendering_engine::abstractions::{RenderData, RenderDataFull, Sprite, SpriteContainer, TextSprite, UIEFull};
 use crate::game_engine::ui::UIElement;
 use crate::game_engine::player_attacks::PlayerAttackType;
 use compact_str::CompactString;
+use itertools::izip;
 use wgpu_text::glyph_brush::{HorizontalAlign, Section as TextSection};
 use rustc_hash::FxHashMap;
 
+use super::entity_components::{HealthComponent, PositionComponent};
 use super::ui::UIESprite;
 
 #[derive(Debug, Clone)]
@@ -123,44 +125,35 @@ impl Camera{
         self.camera_x = player_x - (self.viewpoint_width as f32/ 2.0);
         self.camera_y = player_y - (self.viewpoint_height as f32/ 2.0);
     }
-    pub fn render_entity(&self, world: &World, entity_id: usize, entity_index_offset: u32, extra_index_offset: u32) -> Result<(RenderData, RenderData), PError> {
-        let potentially_sprite_id = world.get_entity_sprite(entity_id);
-        if potentially_sprite_id.is_none(){
-            return Err(perror!(NotFound, "There was no sprite to render for entity with id {}", entity_id));
-        }
-        let sprite_id = potentially_sprite_id.unwrap();
-        let sprite = punwrap!(world.sprites.get_sprite(sprite_id), Invalid, "Sprite in sprite_lookup for entity with id {} is a non-existent sprite", entity_id);
-        
+    pub fn render_entity(&self, sprite: &Sprite, position_component: &PositionComponent, entity_index_offset: u32) -> RenderData {
         let vertex_offset_x = (-1.0 * self.camera_x).floor() as i32;
         let vertex_offset_y = (-1.0 * self.camera_y).floor() as i32;
-        
+        let draw_data_main = sprite.draw_data(position_component.x, position_component.y, 32, 32, self.viewpoint_width, self.viewpoint_height, entity_index_offset, vertex_offset_x, vertex_offset_y);
+        draw_data_main
+    }
 
-        let entity_position_component = punwrap!(world.entity_position_components.get(&entity_id), Expected, "all entities with sprites should have a position component").borrow();
+    pub fn render_health_bar(&self, entity_position_component: &PositionComponent, health_component: &HealthComponent, extra_index_offset: u32, sprites: &SpriteContainer) -> Result<RenderData, PError> {
+        let vertex_offset_x = (-1.0 * self.camera_x).floor() as i32;
+        let vertex_offset_y = (-1.0 * self.camera_y).floor() as i32;
 
-        let draw_data_main = sprite.draw_data(entity_position_component.x, entity_position_component.y, 32, 32, self.viewpoint_width, self.viewpoint_height, entity_index_offset, vertex_offset_x, vertex_offset_y);
         let mut draw_data_other = RenderData::new();
-
-        let potentially_health_component = world.entity_health_components.get(&entity_id);
-        if let Some(health_component) = potentially_health_component {
-            let health_component = health_component.borrow();
-            let potentially_health_bar_back_id = world.sprites.get_sprite_id("health_bar_back");
-            if potentially_health_bar_back_id.is_none() {
-                return Err(perror!(MissingExpectedGlobalSprite, "There was no health bar back sprite"));
-            }
-            let entity_health_bar_sprite = punwrap!(world.sprites.get_sprite(potentially_health_bar_back_id.unwrap()), Invalid, "health bar back sprite was found with id {} but there is no sprite with id {}?", potentially_health_bar_back_id.unwrap(), potentially_health_bar_back_id.unwrap());
-            let health_bar_draw_data = entity_health_bar_sprite.draw_data(entity_position_component.x - 4.0, entity_position_component.y - 15.0, 40, 12, self.viewpoint_width, self.viewpoint_height, extra_index_offset + draw_data_other.vertex.len() as u32, vertex_offset_x, vertex_offset_y);
-            draw_data_other.vertex.extend(health_bar_draw_data.vertex);
-            draw_data_other.index.extend(health_bar_draw_data.index);
-            let potentially_health_bar_id = world.sprites.get_sprite_id("health");
-            if potentially_health_bar_id.is_none() {
-                return Err(perror!(MissingExpectedGlobalSprite, "There was no health bar inside sprite"));
-            }
-            let entity_health_sprite = punwrap!(world.sprites.get_sprite(potentially_health_bar_id.unwrap()), Invalid, "health bar inside sprite was found with id {} but there is no sprite with id {}?", potentially_health_bar_back_id.unwrap(), potentially_health_bar_back_id.unwrap());
-            let health_bar_inner_draw_data = entity_health_sprite.draw_data(entity_position_component.x - 3.0, entity_position_component.y - 14.0, (38.0 * health_component.health/health_component.max_health as f32).floor() as usize, 10, self.viewpoint_width, self.viewpoint_height, extra_index_offset + draw_data_other.vertex.len() as u32, vertex_offset_x, vertex_offset_y);
-            draw_data_other.vertex.extend(health_bar_inner_draw_data.vertex);
-            draw_data_other.index.extend(health_bar_inner_draw_data.index);
+        let potentially_health_bar_back_id = sprites.get_sprite_id("health_bar_back");
+        if potentially_health_bar_back_id.is_none() {
+            return Err(perror!(MissingExpectedGlobalSprite, "There was no health bar back sprite"));
         }
-        Ok((draw_data_main, draw_data_other))
+        let entity_health_bar_sprite = punwrap!(sprites.get_sprite(potentially_health_bar_back_id.unwrap()), Invalid, "health bar back sprite was found with id {} but there is no sprite with id {}?", potentially_health_bar_back_id.unwrap(), potentially_health_bar_back_id.unwrap());
+        let health_bar_draw_data = entity_health_bar_sprite.draw_data(entity_position_component.x - 4.0, entity_position_component.y - 15.0, 40, 12, self.viewpoint_width, self.viewpoint_height, extra_index_offset + draw_data_other.vertex.len() as u32, vertex_offset_x, vertex_offset_y);
+        draw_data_other.vertex.extend(health_bar_draw_data.vertex);
+        draw_data_other.index.extend(health_bar_draw_data.index);
+        let potentially_health_bar_id = sprites.get_sprite_id("health");
+        if potentially_health_bar_id.is_none() {
+            return Err(perror!(MissingExpectedGlobalSprite, "There was no health bar inside sprite"));
+        }
+        let entity_health_sprite = punwrap!(sprites.get_sprite(potentially_health_bar_id.unwrap()), Invalid, "health bar inside sprite was found with id {} but there is no sprite with id {}?", potentially_health_bar_back_id.unwrap(), potentially_health_bar_back_id.unwrap());
+        let health_bar_inner_draw_data = entity_health_sprite.draw_data(entity_position_component.x - 3.0, entity_position_component.y - 14.0, (38.0 * health_component.health/health_component.max_health as f32).floor() as usize, 10, self.viewpoint_width, self.viewpoint_height, extra_index_offset + draw_data_other.vertex.len() as u32, vertex_offset_x, vertex_offset_y);
+        draw_data_other.vertex.extend(health_bar_inner_draw_data.vertex);
+        draw_data_other.index.extend(health_bar_inner_draw_data.index);
+        Ok(draw_data_other)
     }
     pub fn render(&mut self, world: &mut World, uie: UIEFull, screen_width: f32, screen_height: f32) -> Result<RenderDataFull, PError>{
         let mut render_data = RenderDataFull::new();
@@ -177,6 +170,7 @@ impl Camera{
         let camera_bot_chunk_y = World::coord_to_chunk_coord((self.camera_y + self.viewpoint_height as f32).floor() as usize); 
 
         let mut chunks_loaded = Vec::new();
+        let mut entities_to_render = Vec::new();
         for x in camera_left_chunk_x..=camera_right_chunk_x{
             for y in camera_top_chunk_y..=camera_bot_chunk_y{
                 
@@ -207,22 +201,48 @@ impl Camera{
                     terrain_data.index.extend(draw_data.index);
                 }
 
-                for entity_id in chunk.entities_ids.iter(){
-
-                    let dd = error_prolif_allow!(self.render_entity(world, *entity_id, entity_index_offset, extra_data.vertex.len() as u32), NotFound);
-                    if let Ok(dd) = dd {
-                        let (draw_data, other_draw_data) = dd;
-                        entity_data.vertex.extend(draw_data.vertex);
-                        entity_data.index.extend(draw_data.index);
-                        extra_data.vertex.extend(other_draw_data.vertex);
-                        extra_data.index.extend(other_draw_data.index);
-                        entity_index_offset += 4;
-                    }
-        
-
-                }
+                entities_to_render.extend(chunk.entities_ids.clone());
             }
         }
+
+
+        entities_to_render.sort();
+        // main rendering
+        let mut entity_to_render_index = 0;
+        for (i, (sprite_component, position_component)) in izip!( 
+            world.components.sprite_components.iter(),
+            world.components.position_components.iter()
+        ).enumerate().filter_map(
+        |(i, (x, y))| 
+            if entity_to_render_index == entities_to_render.len() {None} 
+            else if entities_to_render[entity_to_render_index] == i && x.is_some() && y.is_some() {entity_to_render_index += 1; Some((i,(x.as_ref().unwrap(), y.as_ref().unwrap()))) }
+            else { None }
+        ) {
+            let sprite = punwrap!(world.sprites.get_sprite(sprite_component.sprite), Expected, "Sprite in sprite_component for entity with id {} is a non-existent sprite", i);
+
+            let dd = self.render_entity(sprite, position_component,entity_data.vertex.len() as u32);
+            entity_data.vertex.extend(dd.vertex);
+            entity_data.index.extend(dd.index);
+
+        }
+        // health bars
+        entity_to_render_index = 0;
+
+        for (i, (position_component, health_component)) in izip!(
+            world.components.position_components.iter(),
+            world.components.health_components.iter()
+        ).enumerate().filter_map(
+            |(i, (x, y))| 
+            if entity_to_render_index == entities_to_render.len() {None} 
+            else if entities_to_render[entity_to_render_index] == i && x.is_some() && y.is_some() {entity_to_render_index += 1; Some((i,(x.as_ref().unwrap(), y.as_ref().unwrap()))) }
+            else { None }
+        ) {
+            
+            let dd = ptry!(self.render_health_bar(position_component, health_component, extra_data.vertex.len() as u32, &world.sprites), "while rendering health bar for entity with id {}", i);
+            extra_data.vertex.extend(dd.vertex);
+            extra_data.index.extend(dd.index);
+        }
+
         render_data.vertex.extend(terrain_data.vertex);
         render_data.index.extend(terrain_data.index);
 
