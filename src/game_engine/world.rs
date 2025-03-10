@@ -86,7 +86,7 @@ pub struct World{
 
     pub items_on_floor: RefCell<Vec<ItemOnFloor>>,
 
-    pub loot_table_lookup: Vec<LootTable>, // loot table id to loot table object,
+    pub loot_table_lookup: FxHashMap<CompactString, LootTable>, // loot table id to loot table object,
 
     pub cur_ability_charging: Option<usize>, // cur ability id charging
     pub player_ability_descriptors: Vec<PlayerAbilityDescriptor>, // corresponds player ability descriptor id to object
@@ -158,7 +158,7 @@ impl World{
             entity_attack_descriptor_lookup: FxHashMap::default(),
             damage_text: RefCell::new(Vec::new()),
             items_on_floor: RefCell::new(iof),
-            loot_table_lookup: Vec::new(),
+            loot_table_lookup: FxHashMap::default(),
             player_ability_descriptors: test_ability_descriptors,
             cur_ability_charging: None,
             terrain_archetype_jsons: FxHashMap::default()
@@ -963,7 +963,7 @@ impl World{
                 if let Some(lc) = lc {
                     let tables = &lc.borrow().loot_tables;
                     for table in tables.iter() {
-                        let table = punwrap!(self.loot_table_lookup.get(*table), "entity with id {} has a loot table with id {} which doesn't exist", entity, table);
+                        let table = punwrap!(self.loot_table_lookup.get(table), "entity with id {} has a loot table with id {} which doesn't exist", entity, table);
                         let items = table.roll();
                         for item in items.iter() {
                             let it = ptry!(self.create_item_with_archetype(item.clone()), "while attempting to drop item {} from entity with id {}", item, entity);

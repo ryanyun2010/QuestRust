@@ -3,7 +3,7 @@
 
 use compact_str::{CompactString, ToCompactString};
 
-use crate::{create_stat_list, game_engine::{entity_components::CollisionBox, game::MousePosition, item::{Item, ItemArchetype, ItemType}, loot::{LootTable, LootTableEntry}, stat::{GearStatList, StatC}}, ok_or_panic, tests::{lib::headless::HeadlessGame, test_framework::{basic_camera, basic_world}}};
+use crate::{create_stat_list, game_engine::{entity_components::CollisionBox, game::MousePosition, item::{Item, ItemArchetype, ItemType}, json_parsing::entity_archetype_json, loot::{LootTable, LootTableEntry}, stat::{GearStatList, StatC}}, ok_or_panic, tests::{lib::headless::HeadlessGame, test_framework::{basic_camera, basic_world}}};
 #[tokio::test]
 pub async fn test_enemy_item_drops() {
     let mut world = basic_world().await;
@@ -23,18 +23,26 @@ pub async fn test_enemy_item_drops() {
             weight: 10
         }])
     ];
-    world.add_entity_archetype(CompactString::from("test_attackable_entity"), vec![
-        crate::game_engine::entities::EntityTags::BaseHealth(100),
-        crate::game_engine::entities::EntityTags::Damageable(
-            CollisionBox {
-                x_offset: 0.0,
-                y_offset: 0.0,
-                w: 32.0,
-                h: 32.0
-            }
-        ),
-        crate::game_engine::entities::EntityTags::Drops(vec![0])
-    ]);
+    world.add_entity_archetype("test".into(), entity_archetype_json {
+        name: "test".into(),
+        basic_tags: vec!["damageable".into()],
+        collision_box: None,
+        damage_box: Some(CollisionBox {
+            x_offset: 0.0,
+            y_offset: 0.0,
+            w: 32.0,
+            h: 32.0
+        }),
+        health: Some(10.0),
+        monster_type: "Undead".into(),
+        movement_speed: None,
+        range: None,
+        aggro_range: None,
+        attack_type: "Melee".into(),
+        attack_pattern: None,
+        loot_table: vec![],
+
+    });
     let item = world.inventory.add_item(
         Item {
             name: CompactString::from("test_sword"),

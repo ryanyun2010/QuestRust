@@ -438,6 +438,11 @@ impl World {
             })));
         }
 
+        if !archetype.loot_table.is_empty(){
+            self.components.loot_components.insert(entity, Some(RefCell::new(super::components::LootComponent {
+                loot_tables: archetype.loot_table.clone()
+            }))); 
+        }
         Ok(entity)
     }
     pub fn add_entity_archetype(&mut self, name: CompactString, archetype: entity_archetype_json){

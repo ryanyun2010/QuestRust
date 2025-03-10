@@ -398,7 +398,7 @@ impl JSON_parser {
 
 
         let mut ltid_lookup: HashMap<CompactString, usize>  = HashMap::new();
-        let mut tables= Vec::new();
+        let mut tables= FxHashMap::default();
         for loot_table in self.loot_table_json.iter() {
             let mut entries = Vec::new();
             for entry in loot_table.loot.iter() {
@@ -409,7 +409,7 @@ impl JSON_parser {
                     });
             }
             ltid_lookup.insert(loot_table.name.clone(), tables.len());
-            tables.push(LootTable::new(entries));
+            tables.insert(loot_table.name.clone(), LootTable::new(entries));
         }
 
         data.loot_table_lookup = tables;
@@ -541,7 +541,7 @@ pub struct ParsedData{
     pub sprites: SpriteContainer,
     pub starting_level_descriptor: starting_level_json,
     pub item_archetypes: FxHashMap<CompactString, ItemArchetype>,
-    pub loot_table_lookup: Vec<LootTable>,
+    pub loot_table_lookup: FxHashMap<CompactString, LootTable>,
 }
 
 impl Default for ParsedData {
@@ -572,7 +572,7 @@ impl ParsedData{
                 entities: Vec::new(),
                 terrain: Vec::new()
             },
-            loot_table_lookup: Vec::new(),
+            loot_table_lookup: FxHashMap::default(),
             rooms: FxHashMap::default(),
             spawn_archetypes: FxHashMap::default()
         }

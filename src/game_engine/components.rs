@@ -1,3 +1,5 @@
+use compact_str::CompactString;
+
 use super::entity_components::{AggroComponent, CollisionBox, DamageableComponent, EntityAttackComponent, PathfindingComponent, PositionComponent};
 use std::cell::RefCell;
 #[macro_export]
@@ -52,7 +54,7 @@ impl Default for CollisionComponent {
 }
 
 pub struct LootComponent {
-    pub loot_tables: Vec<usize>
+    pub loot_tables: Vec<CompactString>
 }
 
 setup_components!{
@@ -65,4 +67,6 @@ setup_components!{
     collision_components => CollisionComponent,
     loot_components => LootComponent
 }
+
+
 

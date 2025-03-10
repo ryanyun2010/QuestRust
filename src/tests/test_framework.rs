@@ -1,9 +1,10 @@
 use compact_str::CompactString;
 
+use crate::game_engine::json_parsing::entity_archetype_json;
 use crate::{create_stat_list, ok_or_panic};
 use crate::game_engine::camera::Camera;
 use crate::game_engine::item::Item;
-use crate::game_engine::player;
+use crate::game_engine::{entity_components, player};
 use crate::game_engine::stat::StatC;
 use crate::game_engine::world;
 use crate::game_engine::world::World;
@@ -68,4 +69,32 @@ pub async fn basic_camera(world: &mut World) -> Camera {
     let camera = Camera::new(1152,720);
     world.inventory.init_ui();
     camera
+}
+
+pub async fn basic_entity() -> entity_archetype_json {
+    entity_archetype_json {
+        basic_tags: vec!["aggressive".into(), "hasCollision".into(), "attacker".into(), "damageable".into(), "respects_collision".into()],
+        name: "Test".into(),
+        collision_box: Some(entity_components::CollisionBox {
+            w: 32.0,
+            h: 32.0,
+            x_offset: 0.0,
+            y_offset: 0.0
+        }),
+        damage_box: Some(entity_components::CollisionBox {
+            w: 32.0,
+            h: 32.0,
+            x_offset: 0.0,
+            y_offset: 0.0
+        }),
+        health: Some(10),
+        monster_type: CompactString::new("Undead"),
+        movement_speed: Some(2.5),
+        range: Some(47),
+        aggro_range: Some(1000),
+        attack_type: CompactString::new("Melee"),
+        attack_pattern: Some("test".into()),
+        loot_table: vec![],
+        sprite: Some("test_sprite".into())
+    }
 }
