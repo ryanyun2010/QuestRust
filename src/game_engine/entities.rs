@@ -3,7 +3,7 @@ use itertools::izip;
 
 use crate::error::PError;
 use crate::{ptry, punwrap};
-use std::cell::{RefCell, RefMut};
+use std::cell::RefCell;
 use super::entity_attacks::EntityAttackBox;
 use super::entity_components::{self, CollisionBox, EntityAttackComponent, PathfindingComponent, PositionComponent};
 use super::json_parsing::entity_archetype_json;
@@ -154,8 +154,8 @@ impl World {
                     ];
                     let magnitude = f32::sqrt(direction_to_player_unnormalized[0].powf(2.0) + direction_to_player_unnormalized[1].powf(2.0));
                     let direction_to_player = [
-                        direction_to_player_unnormalized[0] / magnitude as f32,
-                        direction_to_player_unnormalized[1] / magnitude as f32
+                        direction_to_player_unnormalized[0] / magnitude,
+                        direction_to_player_unnormalized[1] / magnitude
                     ];
                     let angle = f32::atan2(direction_to_player[1], direction_to_player[0]);
                     let descriptor = punwrap!(self.get_attack_descriptor_by_name(&attack_pattern.attacks[attack_component.cur_attack]), Invalid, "attack pattern {} refers to a non-existent attack {}", &attack_component.entity_attack_pattern, attack_pattern.attacks[attack_component.cur_attack]);
@@ -245,7 +245,7 @@ impl World {
         if direction[0] == 0.0 && direction[1] == 0.0 {
             return Ok(());
         }
-        let movement_speed = pathfinding_component.movement_speed as f32;
+        let movement_speed = pathfinding_component.movement_speed;
         if self.pathfinding_frame != *entity_pathfinding_frame && respects_collision{
             let magnitude: f32 = f32::sqrt(direction[0].powf(2.0) + direction[1].powf(2.0));
             if magnitude > 128.0{

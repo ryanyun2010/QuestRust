@@ -13,7 +13,7 @@ use crate::error::PError;
 pub mod rendering_engine;
 use rendering_engine::{renderer, texture, vertex, window};
 pub mod game_engine;
-use game_engine::{camera, entities, json_parsing::{self, PATH_BUNDLE}, starting_level_generator, stat, ui::UIElementDescriptor, world};
+use game_engine::{camera, json_parsing::{self, PATH_BUNDLE}, starting_level_generator, stat, ui::UIElementDescriptor, world};
 use compact_str::CompactString;
 pub mod tests;
 

@@ -128,8 +128,8 @@ impl Camera{
     pub fn render_entity(&self, sprite: &Sprite, position_component: &PositionComponent, entity_index_offset: u32) -> RenderData {
         let vertex_offset_x = (-1.0 * self.camera_x).floor() as i32;
         let vertex_offset_y = (-1.0 * self.camera_y).floor() as i32;
-        let draw_data_main = sprite.draw_data(position_component.x, position_component.y, 32, 32, self.viewpoint_width, self.viewpoint_height, entity_index_offset, vertex_offset_x, vertex_offset_y);
-        draw_data_main
+        
+        sprite.draw_data(position_component.x, position_component.y, 32, 32, self.viewpoint_width, self.viewpoint_height, entity_index_offset, vertex_offset_x, vertex_offset_y)
     }
 
     pub fn render_health_bar(&self, entity_position_component: &PositionComponent, health_component: &DamageableComponent, extra_index_offset: u32, sprites: &SpriteContainer) -> Result<RenderData, PError> {
