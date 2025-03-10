@@ -1,6 +1,7 @@
 use crate::perror;
 use crate::game_engine::game::InputState;
 use compact_str::{CompactString, ToCompactString};
+use itertools::izip;
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::cell::{RefCell, RefMut};
 use std::f32::consts::PI;
@@ -369,43 +370,47 @@ impl World{
                     }
                 }
             }
+            let mut entity_ids_to_check = chunk.entities_ids.clone();
+            entity_ids_to_check.sort();
+            let mut cur_entity_index = 0;
 
-            for entity_id in chunk.entities_ids.iter(){
-                let position_component = punwrap!(self.entity_position_components.get(entity_id), Expected, "all entities should have a position component").borrow();
-                
-                let entity_tags_potentially = self.get_entity_tags(*entity_id);
-                if entity_tags_potentially.is_none(){
-                    continue;
-                }
-                let entity_tags = entity_tags_potentially.unwrap();
-                for tag in entity_tags.iter(){
-                    match tag{
-                        EntityTags::HasCollision(cbox) => {
-                            let tiles_blocked: Vec<[usize; 2]> = World::get_terrain_tiles((position_component.x + cbox.x_offset) as usize, (position_component.y + cbox.y_offset) as usize, cbox.w as usize, cbox.h as usize);
-                            for tile in tiles_blocked.iter(){
-                                let collision_cache_entry = collision_cache_ref.get_mut(&[tile[0],tile[1]]);
-                                if let Some(entry) = collision_cache_entry {
-                                    entry.push(*entity_id);
-                                }else{
-                                    collision_cache_ref.insert([tile[0],tile[1]], vec![*entity_id]);
-                                }
-                            }
-                        },
-                        EntityTags::Damageable(dbox) => {
-                            let tiles_blocked: Vec<[usize; 2]> = World::get_terrain_tiles((position_component.x + dbox.x_offset) as usize, (position_component.y + dbox.y_offset) as usize, dbox.w as usize, dbox.h as usize);
-                            for tile in tiles_blocked.iter(){
-                                let damage_cache_entry = damage_cache_ref.get_mut(&[tile[0],tile[1]]);
-                                if let Some(entry) = damage_cache_entry {
-                                    entry.push(*entity_id);
-                                }else{
-                                    damage_cache_ref.insert([tile[0],tile[1]], vec![*entity_id]);
-                                }
-                            }
+            for (i, position_component, collision_component, damageable_component) in izip!(
+                self.components.position_components.iter(),
+                self.components.collision_components.iter(),
+                self.components.damageable_components.iter(),
+            ).enumerate().filter_map(
+                |(i, (position_component, collision_component, damageable_component))|
+                if cur_entity_index == entity_ids_to_check.len(){None}
+                else if i == entity_ids_to_check[cur_entity_index] && position_component.is_some(){
+                    cur_entity_index += 1;
+                    Some((i, position_component.as_ref().unwrap().borrow(), collision_component.as_ref().map(|x| x.borrow()), damageable_component.as_ref().map(|x| x.borrow())))
+                }else{None}
+            ){
+                if let Some(collision_component) = collision_component{
+                    let tiles_blocked: Vec<[usize; 2]> = World::get_terrain_tiles(position_component.x as usize, position_component.y as usize, collision_component.collision_box.w as usize, collision_component.collision_box.h as usize);
+                    for tile in tiles_blocked.iter(){
+                        let collision_cache_entry = collision_cache_ref.get_mut(&[tile[0],tile[1]]);
+                        if let Some(entry) = collision_cache_entry {
+                            entry.push(i);
+                        }else{
+                            collision_cache_ref.insert([tile[0],tile[1]], vec![i]);
                         }
-                        _ => ()
                     }
                 }
+                if let Some(damageable_component) = damageable_component {
+                    let tiles_blocked: Vec<[usize; 2]> = World::get_terrain_tiles(position_component.x as usize, position_component.y as usize, damageable_component.damage_box.w as usize, damageable_component.damage_box.h as usize);
+                    for tile in tiles_blocked.iter(){
+                        let damage_cache_entry = damage_cache_ref.get_mut(&[tile[0],tile[1]]);
+                        if let Some(entry) = damage_cache_entry {
+                            entry.push(i);
+                        }else{
+                            damage_cache_ref.insert([tile[0],tile[1]], vec![i]);
+                        }
+                    }
+                }
+
             }
+
         }  
         Ok(())
     }

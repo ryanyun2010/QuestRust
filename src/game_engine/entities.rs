@@ -61,6 +61,7 @@ impl World {
             entities_to_update.extend(chunkref[*chunk].entities_ids.clone());
         }
         
+        entities_to_update.sort();
 
         // death checks
         let mut entities_to_update_index = 0;
