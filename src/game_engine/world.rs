@@ -462,7 +462,7 @@ impl World{
         }
         Ok(false)
     }
-    pub fn check_collision_non_damageable(&self, player: bool, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, entity: bool) -> bool{
+    pub fn check_collision_non_damageable(&self, player: bool, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, entity: bool) -> Result<bool, PError>{
         if !player {
             let player = self.player.borrow();
             let pw = player.collision_box.w;
@@ -470,7 +470,7 @@ impl World{
             let px = player.x + player.collision_box.x_offset;
             let py = player.y + player.collision_box.y_offset;
             if px.floor() - 1.0 < (x + w) as f32 && px.floor() + pw + 1.0 > x as f32 && py.floor() - 1.0 < (y + h) as f32 && py.floor() + ph + 1.0 > y as f32{
-                return true;
+                return Ok(true);
             }
         }
         let tiles_to_check = World::get_terrain_tiles(x, y, w, h);
@@ -491,18 +491,9 @@ impl World{
             
             if terrain_potentially.is_none(){
                 if entity{
-                    let entity_collision_box = self.get_entity_collision_box(id).unwrap();
-                    let entity_position = self.entity_position_components.get(&id).unwrap().borrow();
-                    let entity_tags = self.get_entity_tags(id).unwrap();
-                    let mut damageable = false;
-                    for tag in entity_tags.iter(){
-                        match tag{
-                            EntityTags::Damageable(_) => {
-                            damageable = true;
-                            }
-                            _ => ()
-                        }
-                    }
+                    let entity_collision_box = punwrap!(self.components.collision_components.get(id).unwrap(), Invalid, "all entities in the collision cache should have a collision box, but entity with id {} does not have one", id).borrow().collision_box;
+                    let entity_position = punwrap!(self.components.position_components.get(id).unwrap(), Invalid, "all entities in the collision cache should have a position component").borrow();
+                    let damageable = self.components.damageable_components.get(id).unwrap().is_some();
                     if damageable {
                         continue;
                     }
@@ -511,44 +502,20 @@ impl World{
                     let ew = entity_collision_box.w;
                     let eh = entity_collision_box.h;
                     if ex < (x + w) as f32 && ex + ew > x as f32 && ey < (y + h) as f32 && ey + eh > y as f32{
-                        return true;
+                        return Ok(true);
                     }
                 }
                 
             }else{
                 let terrain = terrain_potentially.unwrap();
                 if terrain.x < x + w && terrain.x + 32 > x && terrain.y < y + h && terrain.y + 32 > y{
-                    return true;
+                    return Ok(true);
                 }
             }
         }
-        false
+        Ok(false)
     }
     
-    pub fn get_entity_damage_box(&self, id: usize) -> Option<&CollisionBox> {
-        let entity_tags = self.get_entity_tags(id)?;
-        for tag in entity_tags.iter(){
-            match tag{
-                EntityTags::Damageable(dbox) => {
-                return Some(dbox);
-            }
-                _ => ()
-        }
-        }
-        None
-    }
-    pub fn get_entity_collision_box(&self, id: usize) -> Option<&CollisionBox>{
-        let entity_tags = self.get_entity_tags(id)?;
-        for tag in entity_tags.iter(){
-            match tag{
-                EntityTags::HasCollision(cbox) => {
-                return Some(cbox);
-                }
-                _ => ()
-            }
-        }
-        None
-    }
     pub fn get_attacked_rotated_rect(&self, player: bool, id_to_ignore: Option<usize>, x: usize, y: usize, w: usize, h: usize, rotation: f32, entity: bool) -> Vec<usize>{
         if !player {
             unimplemented!("non-player get attacks not implemented");
