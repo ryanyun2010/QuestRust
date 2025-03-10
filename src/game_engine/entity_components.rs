@@ -29,14 +29,6 @@ pub struct DamageableComponent{
     pub max_health: usize,
     pub damage_box: CollisionBox,
 }
-impl HealthComponent{
-    pub fn new(max_health: usize) -> Self{
-        Self{
-            health: max_health as f32,
-            max_health,
-        }
-    }
-}
 #[derive(Clone, Debug, Copy, PartialEq)]
 pub struct AggroComponent{
     pub aggroed: bool,

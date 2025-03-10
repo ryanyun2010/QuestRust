@@ -48,7 +48,7 @@ impl Default for CollisionComponent {
 
 setup_components!{
     aggro_components => AggroComponent,
-    damageagle_components => DamageableComponent,
+    damageable_components => DamageableComponent,
     attack_components => EntityAttackComponent,
     pathfinding_components => PathfindingComponent,
     position_components => PositionComponent,

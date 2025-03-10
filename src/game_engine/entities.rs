@@ -64,14 +64,14 @@ impl World {
 
         // death checks
         let mut entities_to_update_index = 0;
-        for (i, health_component) in 
-            self.components.health_components.iter().enumerate().filter_map(
-                |(i, health_component) | 
+        for (i, damageable_component) in 
+            self.components.damageable_components.iter().enumerate().filter_map(
+                |(i, damageable_component) | 
                 if i == entities_to_update.len() {None} 
-                else if i == entities_to_update[entities_to_update_index] && health_component.is_some() {entities_to_update_index += 1; Some((i, health_component.as_ref().unwrap().borrow()))} 
+                else if i == entities_to_update[entities_to_update_index] && damageable_component.is_some() {entities_to_update_index += 1; Some((i, damageable_component.as_ref().unwrap().borrow()))} 
                 else {None}
             ){
-            if health_component.health <= 0.0 {
+            if damageable_component.health <= 0.0 {
                 self.kill_entity(i);
             }
         }
@@ -345,12 +345,11 @@ impl World {
     pub fn add_attack_component(&mut self, entity_id: usize, new_entity_attack: EntityAttackComponent){
         self.components.attack_components.insert(entity_id, Some(RefCell::new(new_entity_attack)));
     }
-    pub fn add_health_component(&mut self, entity_id: usize, new_entity_health: entity_components::HealthComponent){
-        self.components.health_components.insert(entity_id, Some(RefCell::new(new_entity_health)));
+    pub fn add_damageable_component(&mut self, entity_id: usize, new_entity_damageable: entity_components::DamageableComponent){
+        self.components.damageable_components.insert(entity_id, Some(RefCell::new(new_entity_damageable)));
     }   
-    pub fn create_entity_with_archetype(&mut self, x: f32, y: f32, archetype: CompactString) -> usize{
+    pub fn create_entity_with_archetype(&mut self, x: f32, y: f32, archetype: CompactString) -> Result<usize, PError>{
         let entity = self.add_entity(x, y);
-        self.set_entity_archetype(entity, archetype.clone());
         let archetype = self.entity_archetype_descriptor_lookup.get(&archetype).expect("Archetype not found");
 
         let mut has_collision = false;
@@ -381,6 +380,14 @@ impl World {
             }
         }
 
+        if attacker {
+            self.components.attack_components.insert(entity, Some(RefCell::new(EntityAttackComponent{
+                cur_attack: 0,
+                cur_attack_cooldown: 0.0,
+                entity_attack_pattern: punwrap!(archetype.attack_pattern.clone(), JSONValidationError, "entity archetype {} has attacker tag but no attack pattern", archetype.name),
+                attack_range: punwrap!(archetype.range, JSONValidationError, "entity archetype {} has attacker tag but no range", archetype.name),
+            })));
+        }
         if has_collision {
             if let Some(collision_box) = archetype.collision_box {
                 self.components.collision_components.insert(entity, Some(RefCell::new(super::components::CollisionComponent{
@@ -399,24 +406,32 @@ impl World {
                 })));
             }
         }
+        if aggressive {
+            self.components.aggro_components.insert(entity, Some(RefCell::new(entity_components::AggroComponent{
+                aggroed: false,
+                aggro_range: punwrap!(archetype.aggro_range, JSONValidationError, "entity archetype {} has aggressive tag but no aggro range", archetype.name),
+            })));
+        }
+        if damageable {
+            self.components.damageable_components.insert(entity, Some(RefCell::new(entity_components::DamageableComponent{
+                health: punwrap!(archetype.health, JSONValidationError, "entity archetype {} has damageable tag but no max health", archetype.name) as f32,
+                max_health: punwrap!(archetype.health, JSONValidationError, "entity archetype {} has damageable tag but no max_health", archetype.name),
+                damage_box: archetype.damage_box.unwrap_or(CollisionBox {
+                    x_offset: 0.0,
+                    y_offset: 0.0,
+                    w: 32.0,
+                    h: 32.0,
+                }),
+            })));
+        }
 
-        entity
+        Ok(entity)
     }
-    pub fn add_entity_archetype(&mut self, name: CompactString, archetype: Vec<EntityTags>){
-        self.entity_archetype_tags_lookup.insert(name, archetype);
+    pub fn add_entity_archetype(&mut self, name: CompactString, archetype: entity_archetype_json){
+        self.entity_archetype_descriptor_lookup.insert(name, archetype);
     }
     pub fn add_aggro_component(&mut self, entity_id: usize, new_entity_aggro: entity_components::AggroComponent){
-        self.entity_aggro_components.insert(entity_id, RefCell::new(new_entity_aggro));
-    }
-    pub fn get_entity_archetype(&self, element_id: &usize) -> Option<&CompactString>{
-        self.entity_archetype_lookup.get(element_id)
-    }
-    pub fn get_entity_tags(&self, element_id: usize) -> Option<&Vec<EntityTags>>{
-        let entity_archetype_id = self.get_entity_archetype(&element_id)?;
-        self.entity_archetype_tags_lookup.get(entity_archetype_id)
-    }
-    pub fn set_entity_archetype(&mut self, element_id: usize, archetype_id: CompactString){
-        self.entity_archetype_lookup.insert(element_id, archetype_id);
+        self.components.aggro_components.insert(entity_id, Some(RefCell::new(new_entity_aggro)));
     }
 
 }

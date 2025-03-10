@@ -576,9 +576,6 @@ impl ParsedData{
             spawn_archetypes: FxHashMap::default()
         }
     }
-    pub fn get_entity_archetype(&self, name: &str) -> Option<&Vec<EntityTags>> {
-        self.entity_archetypes.get(name)
-    }
     pub fn get_terrain_archetype(&self, name: &str) -> Option<&terrain_archetype_json> {
         self.terrain_archetypes.get(name)
     }

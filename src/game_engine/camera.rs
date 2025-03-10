@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::f32::consts::PI;
 
 use crate::error::PError;
-use crate::{error_prolif_allow, perror, ptry, punwrap};
+use crate::{perror, ptry, punwrap};
 use crate::world::World;
 use crate::rendering_engine::abstractions::{RenderData, RenderDataFull, Sprite, SpriteContainer, TextSprite, UIEFull};
 use crate::game_engine::ui::UIElement;
@@ -12,7 +12,7 @@ use itertools::izip;
 use wgpu_text::glyph_brush::{HorizontalAlign, Section as TextSection};
 use rustc_hash::FxHashMap;
 
-use super::entity_components::{HealthComponent, PositionComponent};
+use super::entity_components::{DamageableComponent, PositionComponent};
 use super::ui::UIESprite;
 
 #[derive(Debug, Clone)]
@@ -132,7 +132,7 @@ impl Camera{
         draw_data_main
     }
 
-    pub fn render_health_bar(&self, entity_position_component: &PositionComponent, health_component: &HealthComponent, extra_index_offset: u32, sprites: &SpriteContainer) -> Result<RenderData, PError> {
+    pub fn render_health_bar(&self, entity_position_component: &PositionComponent, health_component: &DamageableComponent, extra_index_offset: u32, sprites: &SpriteContainer) -> Result<RenderData, PError> {
         let vertex_offset_x = (-1.0 * self.camera_x).floor() as i32;
         let vertex_offset_y = (-1.0 * self.camera_y).floor() as i32;
 
@@ -228,9 +228,9 @@ impl Camera{
         // health bars
         entity_to_render_index = 0;
 
-        for (i, (position_component, health_component)) in izip!(
+        for (i, (position_component, damageable_component)) in izip!(
             world.components.position_components.iter(),
-            world.components.health_components.iter()
+            world.components.damageable_components.iter()
         ).enumerate().filter_map(
             |(i, (x, y))| 
             if entity_to_render_index == entities_to_render.len() {None} 
@@ -238,7 +238,7 @@ impl Camera{
             else { None }
         ) {
             
-            let dd = ptry!(self.render_health_bar(&position_component, &health_component, extra_data.vertex.len() as u32, &world.sprites), "while rendering health bar for entity with id {}", i);
+            let dd = ptry!(self.render_health_bar(&position_component, &damageable_component, extra_data.vertex.len() as u32, &world.sprites), "while rendering health bar for entity with id {}", i);
             extra_data.vertex.extend(dd.vertex);
             extra_data.index.extend(dd.index);
         }

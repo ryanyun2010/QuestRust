@@ -16,7 +16,7 @@ use super::camera::Camera;
 use super::components::ComponentContainer;
 use super::entities::EntityAttackPattern;
 use super::entity_attacks::{EntityAttackBox, EntityAttackDescriptor};
-use super::entity_components::{self, AggroComponent, CollisionBox, HealthComponent, PositionComponent};
+use super::entity_components::{AggroComponent, CollisionBox, PositionComponent};
 use super::game::MousePosition;
 use super::inventory::Inventory;
 use super::item::{Item, ItemArchetype, ItemType};
