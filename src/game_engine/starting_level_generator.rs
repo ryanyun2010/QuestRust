@@ -39,8 +39,9 @@ pub fn generate_world_from_json_parsed_data(data: &ParsedData) -> Result<World, 
     for terrain_json in starting_level_descriptor.terrain.iter(){
         ptry!(world.generate_terrain_from_descriptor(terrain_json, 0, 0));
     }
+    world.room_descriptors = data.rooms.clone();
+    world.spawn_archetype_descriptors = data.spawn_archetypes.clone();
 
-    ptry!(generate_room(&mut world, data, "test".into(), 75, 12));
     Ok(world)
 }
 
@@ -63,9 +64,9 @@ pub fn match_terrain_tags (tags: &Vec<CompactString>) -> Result<Vec<TerrainTags>
 }
 
 
-pub fn generate_room(world: &mut World, data: &ParsedData, room: CompactString, x: usize, y: usize) -> Result<(), PError> {
-    let room_descriptor = punwrap!(data.rooms.get(&room), NotFound, "Could not find room {}", room);
-    let spawn_archetype = punwrap!(data.spawn_archetypes.get(&room_descriptor.spawn_archetype), Invalid, "Room {} refers to spawn archetype {} but there is no spawn archetype with name {}", room, room_descriptor.spawn_archetype, room_descriptor.spawn_archetype);
+pub fn generate_room(world: &mut World, room: CompactString, x: usize, y: usize) -> Result<(), PError> {
+    let room_descriptor = punwrap!(world.room_descriptors.get(&room), NotFound, "Could not find room {}", room).clone();
+    let spawn_archetype = punwrap!(world.spawn_archetype_descriptors.get(&room_descriptor.spawn_archetype), Invalid, "Room {} refers to spawn archetype {} but there is no spawn archetype with name {}", room, room_descriptor.spawn_archetype, room_descriptor.spawn_archetype).clone();
 
     for terrain in room_descriptor.terrain.iter(){
         ptry!(world.generate_terrain_from_descriptor(terrain, x as i32, y as i32));

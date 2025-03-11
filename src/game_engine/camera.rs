@@ -243,9 +243,9 @@ impl Camera{
                 extra_data.index.extend(dd.index);
             }
 
+
             render_data.vertex.extend(terrain_data.vertex);
             render_data.index.extend(terrain_data.index);
-
 
             self.test += 1.0;
             let mut entity_attack_draw_data = RenderData::new();
@@ -265,8 +265,22 @@ impl Camera{
             entity_data.offset(render_data.vertex.len() as u32);
             render_data.vertex.extend(entity_data.vertex);
             render_data.index.extend(entity_data.index);
+        }else {
+
+            render_data.vertex.extend(terrain_data.vertex);
+            render_data.index.extend(terrain_data.index);
         }
 
+
+        if let Some(e) = world.cur_exit {
+            let x = e[0] * 32 - 7;
+            let y = e[1] * 32 - 7;
+
+            let sprite = world.sprites.get_sprite_by_name("health").unwrap();
+            let dd = sprite.draw_data(x as f32, y as f32, 46, 46, self.viewpoint_width, self.viewpoint_height, render_data.vertex.len() as u32, -self.camera_x as i32, -self.camera_y as i32);
+            render_data.vertex.extend(dd.vertex);
+            render_data.index.extend(dd.index);
+        }
 
 
         let player_draw_data = ptry!(world.player.borrow().draw_data(world, self.viewpoint_width, self.viewpoint_height, render_data.vertex.len() as u32, -self.camera_x as i32, -self.camera_y as i32));

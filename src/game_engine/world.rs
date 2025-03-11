@@ -2,6 +2,7 @@ use crate::perror;
 use crate::game_engine::game::InputState;
 use compact_str::{CompactString, ToCompactString};
 use itertools::izip;
+use rand::Rng;
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::cell::RefCell;
 use std::f32::consts::PI;
@@ -21,7 +22,7 @@ use super::game::MousePosition;
 use super::inventory::Inventory;
 use super::item::{Item, ItemArchetype, ItemType};
 use super::items_on_floor::ItemOnFloor;
-use super::json_parsing::{entity_archetype_json, terrain_archetype_json, terrain_json};
+use super::json_parsing::{entity_archetype_json, room_descriptor_json, spawn_archetype_json, terrain_archetype_json, terrain_json};
 use super::loot::LootTable;
 use super::player::{PlayerDir, PlayerState};
 use super::player_attacks::{PlayerAttack, PlayerAttackType};
@@ -91,7 +92,12 @@ pub struct World{
     pub cur_ability_charging: Option<usize>, // cur ability id charging
     pub player_ability_descriptors: Vec<PlayerAbilityDescriptor>, // corresponds player ability descriptor id to object
     
-    pub terrain_archetype_jsons: FxHashMap<CompactString, terrain_archetype_json>
+    pub terrain_archetype_jsons: FxHashMap<CompactString, terrain_archetype_json>,
+    pub cur_exit: Option<[usize; 2]>,
+
+    pub room_descriptors: FxHashMap<CompactString, room_descriptor_json>,
+    pub spawn_archetype_descriptors: FxHashMap<CompactString, spawn_archetype_json>,
+
 }
 
 impl World{ 
@@ -161,7 +167,10 @@ impl World{
             loot_table_lookup: FxHashMap::default(),
             player_ability_descriptors: test_ability_descriptors,
             cur_ability_charging: None,
-            terrain_archetype_jsons: FxHashMap::default()
+            terrain_archetype_jsons: FxHashMap::default(),
+            cur_exit: Some([68,21]),
+            room_descriptors: FxHashMap::default(),
+            spawn_archetype_descriptors: FxHashMap::default(),
         })
     }
     pub fn new_chunk(&self, chunk_x: usize, chunk_y: usize, chunkref: Option<&mut std::cell::RefMut<'_, Vec<Chunk>>>) -> usize{
@@ -1367,6 +1376,54 @@ impl World{
                 }
                 _ => ()
             }
+        }
+        Ok(())
+    }
+
+    pub fn update_gen(&mut self) -> Result<(), PError>{
+        let player_ref = self.player.borrow();
+        if let Some(cur_exit) = self.cur_exit {
+            let ex = (cur_exit[0] * 32 - 7) as f32;
+            let ey = (cur_exit[1] * 32 - 7) as f32;
+
+            // 46 - 46
+            //
+            let px = player_ref.x;
+            let py = player_ref.y;
+            let pw = player_ref.collision_box.w;
+            let ph = player_ref.collision_box.h;
+
+            if px + pw > ex && px < ex + 46.0 && py + ph > ey && py < ey + 46.0 {
+                let mut rng = rand::thread_rng();
+                let index = rng.gen_range(0..self.room_descriptors.len()); 
+                let mut name = None;
+                let mut ent = None;
+                let mut exi = None;
+                for (i, (n, desc)) in self.room_descriptors.iter().enumerate() {
+                    if i == index {
+                        name = Some(n);
+                        ent = Some(desc.entrance);
+                        exi = Some(desc.exit);
+                        break;
+                    }
+                }
+                drop(player_ref);
+                if let Some(name) = name {
+                    let y = if cur_exit[1] > ent.unwrap()[1] {cur_exit[1] - ent.unwrap()[1]} else{0};
+                    
+                    ptry!(super::starting_level_generator::generate_room(self,name.clone(), cur_exit[0] + 7, y));
+                    let mut ent = ent.unwrap();
+                    ent[0] += cur_exit[0] + 7;
+                    ent[1] += y;
+                    let mut exi = exi.unwrap();
+                    exi[0] += cur_exit[0] + 7;
+                    exi[1] += y;
+                    self.cur_exit = Some(exi);
+                    let mut player_ref = self.player.borrow_mut();
+                    player_ref.x = ent[0] as f32 * 32.0;
+                    player_ref.y = ent[1] as f32 * 32.0;
+                }
+            } 
         }
         Ok(())
     }

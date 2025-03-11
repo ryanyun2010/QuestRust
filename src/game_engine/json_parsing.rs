@@ -229,6 +229,8 @@ pub struct room_descriptor_json {
     pub height: usize,
     pub spawnable: Vec<[usize; 2]>,
     pub spawn_archetype: CompactString,
+    pub entrance: [usize; 2],
+    pub exit: [usize; 2]
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

@@ -5,6 +5,8 @@
 		"width": 21,
 		"height": 21,
 		"spawnable": [[4,4]],
-		"spawn_archetype": "test"
+		"spawn_archetype": "test",
+		"entrance": [4,5],
+		"exit": [17, 5]
 	}
 ]
