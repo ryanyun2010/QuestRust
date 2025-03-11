@@ -68,6 +68,7 @@ pub fn generate_room(world: &mut World, room: CompactString, x: usize, y: usize)
     let room_descriptor = punwrap!(world.room_descriptors.get(&room), NotFound, "Could not find room {}", room).clone();
     let spawn_archetype = punwrap!(world.spawn_archetype_descriptors.get(&room_descriptor.spawn_archetype), Invalid, "Room {} refers to spawn archetype {} but there is no spawn archetype with name {}", room, room_descriptor.spawn_archetype, room_descriptor.spawn_archetype).clone();
 
+    let mut spawnable = room_descriptor.spawnable.clone();
     for terrain in room_descriptor.terrain.iter(){
         ptry!(world.generate_terrain_from_descriptor(terrain, x as i32, y as i32));
     }
@@ -75,7 +76,7 @@ pub fn generate_room(world: &mut World, room: CompactString, x: usize, y: usize)
     let mut cur_points = 0;
     let mut rng = rand::thread_rng();
 
-    while cur_points < spawn_archetype.total_points_to_spawn && !room_descriptor.spawnable.is_empty() {
+    while cur_points < spawn_archetype.total_points_to_spawn && !spawnable.is_empty() {
         let mut options = Vec::new();
         for option in spawn_archetype.basic.iter() {
             if option.points + option.points <= spawn_archetype.total_points_to_spawn {
@@ -90,13 +91,13 @@ pub fn generate_room(world: &mut World, room: CompactString, x: usize, y: usize)
         } else {
             options[rng.gen_range(0..options.len() - 1)]
         };
-        let position = if room_descriptor.spawnable.len() == 1 {
-            room_descriptor.spawnable[0]
+        let position = if spawnable.len() == 1 {
+            spawnable.pop().unwrap()
         } else {
-            room_descriptor.spawnable[rng.gen_range(0..room_descriptor.spawnable.len() - 1)]
+            spawnable.remove(rng.gen_range(0..spawnable.len() - 1))
         };
         let real_position = [position[0] as f32 * 32.0 + x as f32 * 32.0, position[1] as f32 * 32.0 + y as f32 * 32.0];
-        world.create_entity_with_archetype(real_position[0], real_position[1], choice.archetype.clone());
+        ptry!(world.create_entity_with_archetype(real_position[0], real_position[1], choice.archetype.clone()));
         cur_points += choice.points;
     }
     

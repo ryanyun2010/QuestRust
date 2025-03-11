@@ -118,10 +118,7 @@ impl World {
                 (position_component.y as f64 - (player_y) as f64).powf(2.0) + (position_component.x as f64 - (player_x) as f64).powf(2.0),
             );
             if aggro_component.aggroed {
-                if distance > aggro_component.aggro_range as f64 {
-                    aggro_component.aggroed = false;
-                }
-            } else if distance <= aggro_component.aggro_range as f64 {
+            } else if distance <= aggro_component.aggro_range as f64 && ptry!(self.is_line_of_sight(position_component.x, position_component.y, player_x, player_y)) {
                 aggro_component.aggroed = true;
             }
         }
