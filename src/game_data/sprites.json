@@ -35,6 +35,10 @@
 		{
 			"name": "pillar_bot2",
 			"path": "src/rendering_engine/img/pillare.png"
+		},
+		{
+			"name": "exp_bar_inner",
+			"path": "src/rendering_engine/img/exp_bar_inner.png"
 		}
 
 	],

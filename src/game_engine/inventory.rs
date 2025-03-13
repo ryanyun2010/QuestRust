@@ -363,7 +363,7 @@ impl Inventory {
             .and_then(|x| self.ability_slots.get(*x))
             .and_then(|x| x.cur_ability)
     }
-    pub fn render_ui(&mut self, ability_descriptors: &Vec<PlayerAbilityDescriptor>) -> Result<UIEFull, PError> {
+    pub fn render_ui(&mut self, ability_descriptors: &[PlayerAbilityDescriptor]) -> Result<UIEFull, PError> {
         let mut ui = Vec::new();
         let mut text = Vec::new(); 
         if self.show_inventory {

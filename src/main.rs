@@ -63,7 +63,17 @@ fn startup() -> Result<(), PError> {
     ptry!(world.inventory.set_hotbar_slot_item(3, spear));
     ptry!(world.inventory.set_slot_item(7, h));
     ptry!(world.inventory.set_hotbar_slot_item(0, sword));
-
+    camera.level_text_id = Some(camera.add_text(
+            "Lv. 0".into(),
+            camera::Font::A,
+            576.0,
+            676.0,
+            200.0,
+            20.0,
+            30.0,
+            [1.0, 1.0, 1.0, 1.0],
+            wgpu_text::glyph_brush::HorizontalAlign::Center
+            ));
     camera.add_ui_element(CompactString::from("health_bar_background"), UIElementDescriptor {
         x: 32.0,
         y: 32.0,
@@ -82,6 +92,27 @@ fn startup() -> Result<(), PError> {
         sprite: CompactString::from("health"),
         visible: true
     });
+
+
+    camera.add_ui_element(CompactString::from("exp_bar_background"), UIElementDescriptor {
+        x: 350.0,
+        y: 695.0,
+        z: 5.0,
+        width: 452.0,
+        height: 14.0,
+        sprite: CompactString::from("level_editor_menu_background"),
+        visible: true
+    });
+    camera.add_ui_element(CompactString::from("exp_bar_inside"), UIElementDescriptor {
+        x: 353.0,
+        y: 696.8,
+        z: 6.0,
+        width: 446.0,
+        height: 10.0,
+        sprite: CompactString::from("exp_bar_inner"),
+        visible: true
+    });
+
     println!("Time to load: {:?} ms", load_time.elapsed().as_millis());
     pollster::block_on(window::run(world, camera, &parsed_data.sprites_to_load_json));
     Ok(())

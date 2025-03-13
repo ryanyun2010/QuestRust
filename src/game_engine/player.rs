@@ -26,6 +26,12 @@ pub enum PlayerState {
     EndingAbility
 }
 
+pub const EXP_REQS: [f32; 3] = [
+    100.0, // exp required to level from 0 to 1
+    150.0, // exp required to level from 1 to 2
+    200.0, // ...
+];
+pub const MAX_LEVEL: usize = 2;
 
 #[derive(Clone, Debug)]
 pub struct Player {
@@ -39,6 +45,8 @@ pub struct Player {
     pub collision_box: CollisionBox,
     pub direction: PlayerDir,
     pub player_state: PlayerState,
+    pub exp: f32,
+    pub level: usize,
 }
 impl Player {
     pub fn new(x: f32, y: f32, health: f32, max_health: i32, movement_speed: f32, sprite_id: usize) -> Self {
@@ -57,6 +65,8 @@ impl Player {
             holding_texture_sprite: None,
             direction: PlayerDir::Down,
             player_state: PlayerState::Idle,
+            exp: 0.0,
+            level: 0
         }
     }
     pub fn get_held_item_position(&self) -> (f32, f32) {
@@ -73,6 +83,14 @@ impl Player {
             PlayerDir::Left | PlayerDir::DownLeft | PlayerDir::UpLeft => {
                 (self.x.floor() - 13.0, self.y.floor() + 21.0)
             }
+        }
+    }
+
+    pub fn add_exp(&mut self, exp: f32) {
+        self.exp += exp; 
+        while self.level < MAX_LEVEL && self.exp > EXP_REQS[self.level] {
+            self.exp -= EXP_REQS[self.level];
+            self.level += 1;
         }
     }
 

@@ -13,6 +13,7 @@ use wgpu_text::glyph_brush::{HorizontalAlign, Section as TextSection};
 use rustc_hash::FxHashMap;
 
 use super::entity_components::{DamageableComponent, PositionComponent};
+use super::player::EXP_REQS;
 use super::ui::UIESprite;
 
 #[derive(Debug, Clone)]
@@ -37,6 +38,7 @@ pub struct Camera{
     text_font_lookup: FxHashMap<usize, Font>,
     text_id: usize,
     test: f32,
+    pub level_text_id: Option<usize>,
     temp_uie: Vec<TextSprite>,
     temp_uie2: Vec<TextSprite>
 }
@@ -60,7 +62,7 @@ impl Camera{
             world_text_id: 0,
             test: 0.0,
             temp_uie: Vec::new(),
-            temp_uie2: Vec::new()
+            temp_uie2: Vec::new(),level_text_id: None
         }
     }
     pub fn update_ui(&mut self, world: &mut World) -> Result<(), PError>{
@@ -68,6 +70,15 @@ impl Camera{
         let health_bar = punwrap!(self.get_ui_element_mut_by_name(CompactString::from("health_bar_inside")), "Could not find health bar inside ui element");
         let health_bar_width = f32::max(0.0, (player.health / player.max_health as f32) * 250.0);
         health_bar.sprite.width = health_bar_width;
+        let exp_bar = punwrap!(self.get_ui_element_mut_by_name("exp_bar_inside".into()), "Could not find exp bar inside ui element");
+        let exp_bar_width = f32::max(0.0, f32::min(player.exp/EXP_REQS[player.level], 1.0) * 446.0);
+        exp_bar.sprite.width = exp_bar_width;
+        let level_text_mut = self.level_text_id.and_then(|x| self.get_text_mut(x));
+        if let Some(ltm) = level_text_mut {
+            ltm.text = format!("Lv. {}", player.level);
+        }
+        let mut player_mut = world.player.borrow_mut();
+        player_mut.add_exp(0.8);
         Ok(())
     }
     pub fn get_ui_element_mut_by_name(&mut self, name: CompactString) -> Option<&mut UIElement> {
