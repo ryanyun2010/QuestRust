@@ -118,7 +118,7 @@ impl World {
                 (position_component.y as f64 - (player_y) as f64).powf(2.0) + (position_component.x as f64 - (player_x) as f64).powf(2.0),
             );
             if aggro_component.aggroed {
-            } else if distance <= aggro_component.aggro_range as f64 && ptry!(self.is_line_of_sight(position_component.x, position_component.y, player_x, player_y)) {
+            } else if distance <= aggro_component.aggro_range as f64 && (aggro_component.aggro_through_walls || ptry!(self.is_line_of_sight(position_component.x, position_component.y, player_x, player_y))) {
                 aggro_component.aggroed = true;
             }
         }
@@ -415,6 +415,7 @@ impl World {
         if aggressive {
             self.components.aggro_components.insert(entity, Some(RefCell::new(entity_components::AggroComponent{
                 aggroed: false,
+                aggro_through_walls: respects_collision,
                 aggro_range: punwrap!(archetype.aggro_range, JSONValidationError, "entity archetype {} has aggressive tag but no aggro range", archetype.name),
             })));
             self.components.pathfinding_components.insert(entity, Some(RefCell::new(entity_components::PathfindingComponent {

@@ -1,10 +1,6 @@
 {
 	"basic_sprites": [
 		{
-			"name": "sword",
-			"path": "src/rendering_engine/img/sword.png"
-		},
-		{
 			"name": "start_screen",
 			"path": "src/rendering_engine/img/start_screen.png"
 		},
@@ -31,6 +27,14 @@
 		{
 			"name": "inventory_background",
 			"path": "src/rendering_engine/img/back.png"
+		},
+		{
+			"name": "pillar_top2",
+			"path": "src/rendering_engine/img/pillard.png"
+		},
+		{
+			"name": "pillar_bot2",
+			"path": "src/rendering_engine/img/pillare.png"
 		}
 
 	],
@@ -146,6 +150,11 @@
 			"sprite_padding": 0,
 			"sprites": [
 				{
+					"name": "sword",
+					"x": 11,
+					"y": 8
+				},
+				{
 					"name": "walltl",
 					"x": 1,
 					"y": 0
@@ -256,6 +265,11 @@
 					"y": 2
 				},
 				{
+					"name": "path",
+					"x": 6, 
+					"y": 3
+				},
+				{
 					"name": "small_emblem",
 					"x": 7,
 					"y": 0
@@ -294,6 +308,21 @@
 					"name": "small_emblem_base_lava",
 					"x": 8,
 					"y": 3
+				},
+				{
+					"name": "w1",
+					"x": 9,
+					"y": 4
+				},
+				{
+					"name": "w2",
+					"x": 10,
+					"y": 4
+				},
+				{
+					"name": "w3",
+					"x": 11,
+					"y": 4
 				},
 				{
 					"name": "castlewalla",

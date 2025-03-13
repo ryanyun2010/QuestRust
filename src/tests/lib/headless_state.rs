@@ -52,8 +52,7 @@ impl HeadlessState{
             mouse_right: false
             
         }));
-        // TODO: MAKE THIS BETTER
-        world.update_player_attacks(camera);
+        ptry!(world.update_player_attacks(camera));
         ptry!(world.update_items_in_inventory_cd());
         ptry!(world.kill_entities_to_be_killed());
         ptry!(world.update_items_on_ground());

@@ -128,7 +128,7 @@ impl<'a> Game<'a> {
             }
             return Ok(());
         }
-        let uie = ptry!(self.world.inventory.render_ui());
+        let uie = ptry!(self.world.inventory.render_ui(&self.world.player_ability_descriptors));
         match self.renderer.render(ptry!(self.camera.render(&mut self.world, uie, self.renderer.config.width as f32, self.renderer.config.height as f32))){
             Ok(_) => {Ok(())}
             Err(e) => {

@@ -5,7 +5,7 @@ use rustc_hash::FxHashMap;
 
 use crate::{error::PError, error_prolif_allow, game_engine::item::Item, perror, ptry, punwrap, rendering_engine::abstractions::{TextSprite, UIEFull}};
 
-use super::{game::MousePosition, item::ItemType, ui::UIESprite};
+use super::{game::MousePosition, item::ItemType, player_abilities::PlayerAbilityDescriptor, ui::UIESprite};
 
 #[derive(Debug, Clone)]
 pub struct ItemOnMouse{
@@ -28,7 +28,8 @@ pub struct Inventory {
     boot_slot: Option<usize>,
     pub player_abilities: Vec<PlayerAbility>, // id in vec = ability id
     pub ability_slots: Vec<AbilitySlot>,
-    pub hotkey_to_slot: FxHashMap<CompactString, usize>
+    pub hotkey_to_slot: FxHashMap<CompactString, usize>,
+    pub ability_slot_clicked: Option<usize>
 }
 
 
@@ -133,7 +134,8 @@ impl Default for Inventory{
             items_waiting_to_be_dropped: Vec::new(),
             player_abilities: Vec::new(),
             ability_slots: Vec::new(),
-            hotkey_to_slot: FxHashMap::default()
+            hotkey_to_slot: FxHashMap::default(),
+            ability_slot_clicked: None
             
         }
     }
@@ -361,7 +363,7 @@ impl Inventory {
             .and_then(|x| self.ability_slots.get(*x))
             .and_then(|x| x.cur_ability)
     }
-    pub fn render_ui(&mut self) -> Result<UIEFull, PError> {
+    pub fn render_ui(&mut self, ability_descriptors: &Vec<PlayerAbilityDescriptor>) -> Result<UIEFull, PError> {
         let mut ui = Vec::new();
         let mut text = Vec::new(); 
         if self.show_inventory {
@@ -456,6 +458,66 @@ impl Inventory {
                     })
                 }
             }
+            for slot in self.ability_slots.iter() {
+                ui.push(UIESprite {
+                    x: 350.0 + 58.0 * slot.id as f32,
+                    y: 590.0,
+                    z: 5.2,
+                    width: 48.0,
+                    height: 48.0,
+                    sprite: CompactString::from("hslot")
+                });
+                text.push(TextSprite {
+                    text: slot.key.clone().to_string(),
+                    font_size: 30.0,
+                    x: 350.0 + 58.0 * slot.id as f32 + 33.0,
+                    y: 590.0 + 25.0,
+                    w: 15.0,
+                    h: 15.0,
+                    color: [1.0,1.0,1.0,1.0],
+                    align: wgpu_text::glyph_brush::HorizontalAlign::Center,
+                });
+                let ability = slot.cur_ability.and_then(|x| self.player_abilities.get(x)).and_then(
+                        |x| ability_descriptors.get(x.descriptor_id)
+                    );
+                if let Some(ability) = ability {
+                text.push(TextSprite {
+                    text: ability.name.clone().to_string(),
+                    font_size: 20.0,
+                    x: 350.0 + 58.0 * slot.id as f32 + 24.0,
+                    y: 590.0 + 12.0,
+                    w: 30.0,
+                    h: 30.0,
+                    color: [1.0,1.0,1.0,1.0],
+                    align: wgpu_text::glyph_brush::HorizontalAlign::Center,
+                });
+                }
+
+            }
+            if let Some(aslot_h) = self.ability_slot_clicked {
+                let slot = &self.ability_slots[aslot_h];
+                ui.push(UIESprite {
+                    x: 330.0 + 58.0 * slot.id as f32,
+                    y: 450.0,
+                    z: 5.2,
+                    width: 70.0,
+                    height: 120.0,
+                    sprite: CompactString::from("level_editor_menu_background")
+                });
+                for (i, ability) in self.player_abilities.iter().enumerate() {
+                    let ability_descriptor = punwrap!(ability_descriptors.get(ability.descriptor_id), Invalid, "ability with id {} refers to non-existent ability descriptor with id {}", i, ability.descriptor_id);
+                    text.push( TextSprite {
+                        x: 335.0 + 58.0 * slot.id as f32,
+                        y: 460.0 + i as f32 * 15.0,
+                        text: format!("{}. {}", i, ability_descriptor.name.clone()),
+                        font_size: 15.0,
+                        w: 60.0,
+                        h: 15.0,
+                        color: [1.0, 1.0, 1.0, 1.0],
+                        align: wgpu_text::glyph_brush::HorizontalAlign::Left
+                    });
+                }
+            }
 
 
         }
@@ -492,6 +554,21 @@ impl Inventory {
                     color: [1.0,1.0,1.0,1.0],
                     align: wgpu_text::glyph_brush::HorizontalAlign::Center,
                 });
+                let ability = slot.cur_ability.and_then(|x| self.player_abilities.get(x)).and_then(
+                        |x| ability_descriptors.get(x.descriptor_id)
+                    );
+                if let Some(ability) = ability {
+                text.push(TextSprite {
+                    text: ability.name.clone().to_string(),
+                    font_size: 20.0,
+                    x: 350.0 + 58.0 * slot.id as f32 + 24.0,
+                    y: 590.0 + 12.0,
+                    w: 30.0,
+                    h: 30.0,
+                    color: [1.0,1.0,1.0,1.0],
+                    align: wgpu_text::glyph_brush::HorizontalAlign::Center,
+                });
+                }
             }
         }
         Ok(UIEFull {
@@ -566,6 +643,31 @@ impl Inventory {
                     }
                 }
             }
+
+            let mut ability_slot_clicked = None;
+            for slot in self.ability_slots.iter() {
+                if position.x_screen > 350.0 + 58.0 * slot.id as f32 && position.x_screen < 398.0 + 58.0 * slot.id as f32 && position.y_screen > 590.0 && position.y_screen < 638.0 {
+                    ability_slot_clicked = Some(slot.id);
+                }
+            }
+
+            if let Some(cur) = self.ability_slot_clicked {
+                if ability_slot_clicked.is_none() && !(position.x_screen > 350.0 && position.x_screen < 398.0 + 58.0 * cur as f32 && position.y_screen > 590.0 && position.y_screen < 638.0) {
+                    self.ability_slot_clicked = None;
+                }else if ability_slot_clicked.is_some() {
+                    self.ability_slot_clicked = ability_slot_clicked;
+                }
+
+                for i in 0..self.player_abilities.len() {
+                    if position.x_screen > 330.0 + 58.0 * cur as f32 && position.x_screen < 400.0 + 58.0 * cur as f32 && position.y_screen > 460.0 + i as f32 * 15.0 && position.y_screen < 460.0 + (i+1) as f32 * 15.0 {
+                        let slot = punwrap!(self.ability_slots.get_mut(cur), Invalid, "cur ability slot clicked refers to non existent ability slot");
+                        slot.cur_ability = Some(i);
+                    } 
+                }
+            }else {
+                self.ability_slot_clicked = ability_slot_clicked;
+            }
+            println!("{:?}", self.ability_slot_clicked);
         }
         Ok(())
     }

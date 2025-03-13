@@ -843,8 +843,8 @@ impl World{
                                 let mut health_component = self.components.damageable_components[*collision].as_ref().unwrap().borrow_mut();
                                 let entity_position = self.components.position_components[*collision].as_ref().unwrap().borrow();
                                 let aggro_potentially = self.components.aggro_components[*collision].as_ref();
-                                if aggro_potentially.is_some(){
-                                    self.damage_entity( &entity_position, Some(&mut health_component), Some(&mut aggro_potentially.unwrap().borrow_mut()),  attack.stats.damage.map(|x| x.get_value()).unwrap_or(0.0), camera);
+                                if let Some(aggro) = aggro_potentially{
+                                    self.damage_entity( &entity_position, Some(&mut health_component), Some(&mut aggro.borrow_mut()),  attack.stats.damage.map(|x| x.get_value()).unwrap_or(0.0), camera);
                                 }else {
                                     self.damage_entity( &entity_position, Some(&mut health_component), None,  attack.stats.damage.map(|x| x.get_value()).unwrap_or(0.0), camera);
                                 }
@@ -888,8 +888,8 @@ impl World{
                                 let mut health_component = self.components.damageable_components[*collision].as_ref().unwrap().borrow_mut();
                                 let entity_position = self.components.position_components[*collision].as_ref().unwrap().borrow();
                                 let aggro_potentially = self.components.aggro_components[*collision].as_ref();
-                                if aggro_potentially.is_some(){
-                                    self.damage_entity( &entity_position, Some(&mut health_component), Some(&mut aggro_potentially.unwrap().borrow_mut()),  attack.stats.damage.map(|x| x.get_value()).unwrap_or(0.0), camera);
+                                if let Some(aggro) = aggro_potentially{
+                                    self.damage_entity( &entity_position, Some(&mut health_component), Some(&mut aggro.borrow_mut()),  attack.stats.damage.map(|x| x.get_value()).unwrap_or(0.0), camera);
                                 }else {
                                     self.damage_entity( &entity_position, Some(&mut health_component), None,  attack.stats.damage.map(|x| x.get_value()).unwrap_or(0.0), camera);
                                 }

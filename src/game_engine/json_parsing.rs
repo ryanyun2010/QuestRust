@@ -446,6 +446,8 @@ impl JSON_parser {
 
     pub fn validate_entity_archetype(archetype: &entity_archetype_json) -> Result<(), PError>{
         let name = &archetype.name;
+        let mut has_collision = false;
+        let mut respects_collision = false;
 
         for tag in &archetype.basic_tags {
             match tag.as_str() {
@@ -470,12 +472,22 @@ impl JSON_parser {
                         return Err(perror!(JSONValidationError, "Entity archetype: {} has the aggressive tag but no movement speed", name));
                     }
                 },
-                "respectsCollision" | "hasCollision" => {},
+                "respectsCollision" => {
+                    respects_collision = true;
+                },
+                "hasCollision" => {
+                    has_collision = true;
+                },
                 _ => {
                     return Err(perror!(JSONValidationError, "Entity archetype: {} has an unrecognized tag: {}", name, tag));
                 }
             }
         }
+
+        if has_collision && !respects_collision {
+            return Err(perror!(JSONValidationError, "Entity archetype {} has collision but doesn't respect collision, this causes very uncertain behavior and is not recommended", name));
+        }
+
 
         if archetype.attack_pattern.is_some() {
             archetype.basic_tags.iter().find(|tag| tag.as_str() == "attacker").ok_or_else(|| perror!(JSONValidationError, "Entity archetype: {} has an attack pattern but no attacker tag", name))?;

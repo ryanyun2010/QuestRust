@@ -91,6 +91,12 @@
 		"basic_tags": ["blocksMovement"]
 	},
 	{
+		"name": "pillar_top2",
+		"type": "basic",
+		"sprites": ["pillar_top2"],
+		"basic_tags": ["blocksMovement"]
+	},
+	{
 		"name": "pillar_mid",
 		"type": "basic",
 		"sprites": ["pillar_mid"],
@@ -100,7 +106,20 @@
 		"name": "pillar_bot",
 		"type": "basic",
 		"sprites": ["pillar_bot"],
-		"basic_tags": ["blocksMovement"]
+		"basic_tags": []
+	},
+	{
+		"name": "path",
+		"type": "randomness",
+		"sprites": ["path", "dirt2"],
+		"random_chances": [0.75, 0.25],
+		"basic_tags": []
+	},
+	{
+		"name": "pillar_bot2",
+		"type": "basic",
+		"sprites": ["pillar_bot2"],
+		"basic_tags": []
 	},
 	{
 		"name": "small_emblem",
@@ -172,6 +191,24 @@
 		"name": "castle_wall_d",
 		"type": "basic",
 		"sprites": ["castlewalld"],
+		"basic_tags": ["blocksMovement"]
+	},
+	{
+		"name": "w1",
+		"type": "basic",
+		"sprites": ["w1"],
+		"basic_tags": ["blocksMovement"]
+	},
+	{
+		"name": "w2",
+		"type": "basic",
+		"sprites": ["w2"],
+		"basic_tags": ["blocksMovement"]
+	},
+	{
+		"name": "w3",
+		"type": "basic",
+		"sprites": ["w3"],
 		"basic_tags": ["blocksMovement"]
 	}
 ]

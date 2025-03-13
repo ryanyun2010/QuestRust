@@ -32,6 +32,7 @@ pub struct DamageableComponent{
 pub struct AggroComponent{
     pub aggroed: bool,
     pub aggro_range: usize,
+    pub aggro_through_walls: bool,
 }
 
 #[derive(Clone, Debug, Copy, PartialEq, Serialize, Deserialize)]
