@@ -2,16 +2,21 @@
     {
         "name": "ghost_attack",
         "type": "melee",
-        "damage": 5.0,
+        "damage": 1.0,
         "reach": 70,
         "width": 30,
         "time_to_charge": 40,
-        "sprite": "attack_highlight"
+        "sprite": "attack_highlight",
+		"poison": {
+			"damage": 1.0,
+			"time_between_ticks": 10.0,
+			"lifetime": 100.0
+		}
     },
     {
         "name": "ghost_attack_2",
         "type": "melee",
-        "damage": 15.0,
+        "damage": 1.0,
         "reach": 150,
         "width": 100,
         "time_to_charge": 55,
@@ -20,7 +25,7 @@
     {
         "name": "wizard_attack",
         "type": "magic",
-        "damage": 12.0,
+        "damage": 1.0,
         "reach": 30,
         "max_start_dist_from_entity": 130,
         "width": 30,
@@ -30,7 +35,7 @@
     {
         "name": "wizard_attack_2",
         "type": "magic",
-        "damage": 40.0,
+        "damage": 1.0,
         "reach": 90,
         "max_start_dist_from_entity": 180,
         "width": 90,

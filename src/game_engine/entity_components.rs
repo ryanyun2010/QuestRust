@@ -22,12 +22,32 @@ pub struct PathfindingComponent{
     pub cur_direction: EntityDirectionOptions,
     pub movement_speed: f32,
 }
-#[derive(Clone, Debug, Copy, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct DamageableComponent{
     pub health: f32,
     pub max_health: usize,
     pub damage_box: CollisionBox,
+    pub poisons: Vec<Poison>,
+    pub fire: Option<Fire>
 }
+
+
+#[derive(Clone, Debug, Copy, PartialEq)]
+pub struct Poison {
+    pub damage: f32,
+    pub lifetime: f32,
+    pub time_alive: f32,
+    pub time_per_tick: f32,
+}
+
+#[derive(Clone, Debug, Copy, PartialEq)]
+pub struct Fire {
+    pub damage: f32,
+    pub lifetime: f32,
+    pub time_alive: f32,
+    pub time_per_tick: f32,
+}
+
 #[derive(Clone, Debug, Copy, PartialEq)]
 pub struct AggroComponent{
     pub aggroed: bool,

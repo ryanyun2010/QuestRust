@@ -156,8 +156,8 @@ pub fn get_ability_descriptor(name: PlayerAbilityDescriptorName) -> PlayerAbilit
                                 }
                             ),
                 flat_added_damage_effectiveness: 0.0,
-                name: CompactString::from("DASH"),
-                description: String::from("Big Spear"),
+                name: CompactString::from("Dash"),
+                description: String::from("Dash in the direction you are moving"),
                 cooldown: 50.0,
                 time_to_charge: 2.0,
                 end_time: 9.0,

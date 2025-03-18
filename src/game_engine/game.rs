@@ -152,6 +152,8 @@ impl<'a> Game<'a> {
             self.input.mouse_position.y_world = self.camera.camera_y + self.input.mouse_position.y_screen;
             ptry!(self.world.update_items_in_inventory_cd());
             ptry!(self.world.update_gen());
+            ptry!(self.world.update_player_dots(&mut self.camera));
+            self.world.update_player_anim();
             if self.world.player.borrow().health <= 0.0 {
                 panic!("\n\nplayer died\n\n");
             }

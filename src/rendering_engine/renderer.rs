@@ -80,6 +80,7 @@ impl<'a> Renderer<'a> {
         for path in sprites_to_load_json.iter() {
             texture_paths.push(path.as_str());
         }
+        println!("{:?}", texture_paths);
         let (texture_bind_group_layout, diffuse_bind_group): (wgpu::BindGroupLayout, wgpu::BindGroup) =
             create_texture_bind_group!(&device, &queue, &texture_paths);
 

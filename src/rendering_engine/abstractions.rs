@@ -217,7 +217,6 @@ impl SpriteContainer{
         let sss = SpriteSheetSheet::create_from_json(&sprite_sheets, 0);
         sprites_to_load.push(sss.path.clone());
         for (i, sheet) in sprite_sheets.iter().enumerate(){
-            sprites_to_load.push(sheet.path.clone());
             let mut sprite_positions = Vec::new();
             let mut names = Vec::new();
             for sprite in sheet.sprites.iter(){

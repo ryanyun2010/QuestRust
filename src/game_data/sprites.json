@@ -39,6 +39,14 @@
 		{
 			"name": "exp_bar_inner",
 			"path": "src/rendering_engine/img/exp_bar_inner.png"
+		},
+		{
+			"name": "fire1",
+			"path": "src/rendering_engine/img/fire.png"
+		},
+		{
+			"name": "fire2",
+			"path": "src/rendering_engine/img/fire2.png"
 		}
 
 	],

@@ -17,7 +17,7 @@ use super::camera::Camera;
 use super::components::ComponentContainer;
 use super::entities::EntityAttackPattern;
 use super::entity_attacks::{EntityAttackBox, EntityAttackDescriptor};
-use super::entity_components::{AggroComponent, DamageableComponent, PositionComponent};
+use super::entity_components::{AggroComponent, DamageableComponent, Poison, PositionComponent};
 use super::game::MousePosition;
 use super::inventory::Inventory;
 use super::item::{Item, ItemArchetype, ItemType};
@@ -44,6 +44,10 @@ pub struct Chunk{
     pub entities_ids: Vec<usize>,
     
 }
+
+
+// TODO: FIRE
+// TODO: ALLOW ENEMIES TO POISON/SET ON FIRE WITH ATTACKS
 
 pub struct World{
     pub chunks: RefCell<Vec<Chunk>>,
@@ -805,7 +809,15 @@ impl World{
             let descriptor = punwrap!(self.get_attack_descriptor(attack), Expected, "Couldn't find attack descriptor for entity attack: {:?}", attack);
             if attack.time_charged.floor() as usize >= descriptor.time_to_charge {
                 if self.check_collision_with_player(attack.x, attack.y, descriptor.reach as f32, descriptor.width as f32, attack.rotation * 180.0/PI){
-                    ptry!(self.damage_player(descriptor.damage, camera));
+                    ptry!(self.damage_player(descriptor.damage, camera, [1.0, 0.0, 0.0, 1.0]));
+                    if let Some(poison) = &descriptor.poison {
+                        self.player.borrow_mut().poison.push(Poison {
+                            lifetime: poison.lifetime,
+                            time_per_tick: poison.lifetime,
+                            time_alive: 0.0,
+                            damage: poison.damage,
+                        });
+                    }
                 }
                 attacks_to_be_deleted.push(i);
             }
@@ -844,9 +856,9 @@ impl World{
                                 let entity_position = self.components.position_components[*collision].as_ref().unwrap().borrow();
                                 let aggro_potentially = self.components.aggro_components[*collision].as_ref();
                                 if let Some(aggro) = aggro_potentially{
-                                    self.damage_entity( &entity_position, Some(&mut health_component), Some(&mut aggro.borrow_mut()),  attack.stats.damage.map(|x| x.get_value()).unwrap_or(0.0), camera);
+                                    self.damage_entity( &entity_position, Some(&mut health_component), Some(&mut aggro.borrow_mut()),  attack.stats.damage.map(|x| x.get_value()).unwrap_or(0.0), camera, [0.0, 0.0, 0.0, 1.0]);
                                 }else {
-                                    self.damage_entity( &entity_position, Some(&mut health_component), None,  attack.stats.damage.map(|x| x.get_value()).unwrap_or(0.0), camera);
+                                    self.damage_entity( &entity_position, Some(&mut health_component), None,  attack.stats.damage.map(|x| x.get_value()).unwrap_or(0.0), camera, [0.0, 0.0, 0.0, 1.0]);
                                 }
                                 attack.dealt_damage = true;
                             }
@@ -889,9 +901,9 @@ impl World{
                                 let entity_position = self.components.position_components[*collision].as_ref().unwrap().borrow();
                                 let aggro_potentially = self.components.aggro_components[*collision].as_ref();
                                 if let Some(aggro) = aggro_potentially{
-                                    self.damage_entity( &entity_position, Some(&mut health_component), Some(&mut aggro.borrow_mut()),  attack.stats.damage.map(|x| x.get_value()).unwrap_or(0.0), camera);
+                                    self.damage_entity( &entity_position, Some(&mut health_component), Some(&mut aggro.borrow_mut()),  attack.stats.damage.map(|x| x.get_value()).unwrap_or(0.0), camera, [0.0, 0.0, 0.0, 1.0]);
                                 }else {
-                                    self.damage_entity( &entity_position, Some(&mut health_component), None,  attack.stats.damage.map(|x| x.get_value()).unwrap_or(0.0), camera);
+                                    self.damage_entity( &entity_position, Some(&mut health_component), None,  attack.stats.damage.map(|x| x.get_value()).unwrap_or(0.0), camera, [0.0, 0.0, 0.0, 1.0]);
                                 }
                             }
                         }
@@ -918,7 +930,8 @@ impl World{
         Ok(())
     }
 
-    pub fn damage_entity(&self, entity_position_component: &PositionComponent, entity_damageable_component: Option<&mut DamageableComponent>, entity_aggro_component: Option<&mut AggroComponent>, damage: f32, camera: &mut Camera){
+
+    pub fn damage_entity(&self, entity_position_component: &PositionComponent, entity_damageable_component: Option<&mut DamageableComponent>, entity_aggro_component: Option<&mut AggroComponent>, damage: f32, camera: &mut Camera, color: [f32; 4]){
         if entity_damageable_component.is_some() {
             let ehc = entity_damageable_component.unwrap();
             ehc.health -= damage;
@@ -926,7 +939,7 @@ impl World{
                 ehc.health = ehc.max_health as f32;
             }
         }
-        let text_1 = camera.add_world_text(((damage * 10.0).round() / 10.0).to_string(), super::camera::Font::B, entity_position_component.x + 11.0, entity_position_component.y + 7.0, 150.0, 50.0, 50.0, [0.0, 0.0, 0.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
+        let text_1 = camera.add_world_text(((damage * 10.0).round() / 10.0).to_string(), super::camera::Font::B, entity_position_component.x + 11.0, entity_position_component.y + 7.0, 150.0, 50.0, 50.0, color, wgpu_text::glyph_brush::HorizontalAlign::Center);
         let text_2 = camera.add_world_text(((damage * 10.0).round() / 10.0).to_string(), super::camera::Font::B, entity_position_component.x + 9.0, entity_position_component.y + 5.0, 150.0, 50.0, 50.0, [1.0, 1.0, 1.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
         if entity_aggro_component.is_some() {
             let aggro = entity_aggro_component.unwrap();
@@ -938,13 +951,13 @@ impl World{
         self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_2, lifespan: 0.0});
     }
 
-    pub fn damage_player(&self, damage: f32, camera: &mut Camera) -> Result<(), PError> {
+    pub fn damage_player(&self, damage: f32, camera: &mut Camera, color: [f32; 4]) -> Result<(), PError> {
         let defense = ptry!(self.inventory.get_combined_stats()).defense.map(|x| x.get_value()).unwrap_or(0.0);
         let dmg = damage * 100.0/(defense + 100.0);
         self.player.borrow_mut().health -= dmg;
         let player = self.player.borrow();
         let text_1 = camera.add_world_text(((dmg * 10.0).round() / 10.0).to_string(), super::camera::Font::B, player.x + 32.0, player.y + 7.0, 150.0, 50.0, 50.0, [0.0, 0.0, 0.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
-        let text_2 = camera.add_world_text(((dmg * 10.0).round() / 10.0).to_string(), super::camera::Font::B, player.x + 30.0, player.y + 5.0, 150.0, 50.0, 50.0, [1.0, 0.0, 0.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
+        let text_2 = camera.add_world_text(((dmg * 10.0).round() / 10.0).to_string(), super::camera::Font::B, player.x + 30.0, player.y + 5.0, 150.0, 50.0, 50.0, color, wgpu_text::glyph_brush::HorizontalAlign::Center);
         self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_1, lifespan: 0.0});
         self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_2, lifespan: 0.0});
         Ok(())
@@ -1426,5 +1439,52 @@ impl World{
             } 
         }
         Ok(())
+    }
+
+    pub fn update_player_dots(&self, camera: &mut Camera) -> Result<(), PError>{
+        let mut mut_player_ref = self.player.borrow_mut();
+        let mut poison_tick = 0.0_f32;
+        let mut to_be_removed = vec![];
+        for (i, poison) in mut_player_ref.poison.iter_mut().enumerate() {
+            if poison.time_alive % poison.time_per_tick < 1.0 {
+                poison_tick += poison.damage;
+            }
+            poison.time_alive += 1.0;
+            if poison.time_alive >= poison.lifetime {
+                to_be_removed.push(i);
+            }
+        }
+
+        for (i, tbr) in to_be_removed.iter().enumerate() {
+            mut_player_ref.poison.remove(tbr - i);    
+        }
+
+        let mut fire_tick = 0.0_f32;
+        let mut to_remove_fire = false;
+        if let Some(fire) = &mut mut_player_ref.fire {
+            if fire.time_alive % fire.time_per_tick < 1.0 {
+                fire_tick = fire.damage;
+            }
+            fire.time_alive += 1.0;
+            if fire.time_alive >= fire.lifetime {
+                to_remove_fire = true;
+            }
+        }
+        if to_remove_fire {
+            mut_player_ref.fire = None;
+        }
+        drop(mut_player_ref);
+        if poison_tick > 0.0 {
+            ptry!(self.damage_player(poison_tick, camera, [0.6, 0.0, 0.8, 1.0]));
+        }
+        if fire_tick > 0.0 {
+            ptry!(self.damage_player(fire_tick, camera, [1.0, 0.4, 0.0, 1.0]));
+        }
+
+        Ok(())
+    }
+    pub fn update_player_anim(&self) {
+        self.player.borrow_mut().anim_frame += 1;
+        self.player.borrow_mut().anim_frame %= 120;
     }
 }

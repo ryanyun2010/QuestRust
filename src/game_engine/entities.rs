@@ -433,6 +433,8 @@ impl World {
                     w: 32.0,
                     h: 32.0,
                 }),
+                poisons: vec![],
+                fire: None
             })));
         }
 

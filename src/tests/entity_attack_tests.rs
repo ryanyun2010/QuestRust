@@ -17,7 +17,9 @@ async fn test_entity_can_kill_player(){
         r#type: AttackType::Melee,
         max_start_dist_from_entity: None,
         time_to_charge: 5,
-        sprite: "attack_highlight".to_compact_string()
+        sprite: "attack_highlight".to_compact_string(),
+        fire: None,
+        poison: None
     });
     let attack_pattern = EntityAttackPattern::new(vec!["test_attack".to_compact_string()], vec![0.1]);
     world.entity_attack_pattern_lookup.insert("test".into(), attack_pattern);

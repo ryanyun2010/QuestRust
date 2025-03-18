@@ -52,7 +52,24 @@ pub struct entity_attack_descriptor_json {
     pub max_start_dist_from_entity: Option<usize>,
     pub width: usize,
     pub time_to_charge: usize,
-    pub sprite: CompactString
+    pub sprite: CompactString,
+    pub poison: Option<PoisonDescriptor>,
+    pub fire: Option<FireDescriptor>
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct PoisonDescriptor {
+    pub damage: f32,
+    pub lifetime: f32,
+    pub time_between_ticks: f32
+}
+
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct FireDescriptor {
+    pub damage: f32,
+    pub lifetime: f32,
+    pub time_between_ticks: f32
 }
 
 
@@ -391,7 +408,9 @@ impl JSON_parser {
                 max_start_dist_from_entity: entity_attack.max_start_dist_from_entity,
                 width: entity_attack.width,
                 time_to_charge: entity_attack.time_to_charge,
-                sprite: entity_attack.sprite.clone()
+                sprite: entity_attack.sprite.clone(),
+                fire: entity_attack.fire.clone(),
+                poison: entity_attack.poison.clone()
             });
         }
         for (name, entity_attack_pattern) in &self.entity_attack_patterns_json {
