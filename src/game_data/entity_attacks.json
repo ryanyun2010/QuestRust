@@ -7,7 +7,7 @@
         "width": 30,
         "time_to_charge": 40,
         "sprite": "attack_highlight",
-		"poison": {
+		"fire": {
 			"damage": 1.0,
 			"time_between_ticks": 10.0,
 			"lifetime": 100.0

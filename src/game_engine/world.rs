@@ -1,3 +1,4 @@
+use crate::game_engine::entity_components::Fire;
 use crate::perror;
 use crate::game_engine::game::InputState;
 use compact_str::{CompactString, ToCompactString};
@@ -817,6 +818,26 @@ impl World{
                             time_alive: 0.0,
                             damage: poison.damage,
                         });
+                    }
+
+                    if let Some(fire) = &descriptor.fire {
+                        let player_cur_fire = self.player.borrow().fire;
+                        let mut replace = false;
+                        if let Some(player_cur_fire) = player_cur_fire {
+                            if ((fire.lifetime / fire.time_between_ticks).floor() * fire.damage) > ((player_cur_fire.lifetime - player_cur_fire.time_alive)/player_cur_fire.time_per_tick) * player_cur_fire.damage {
+                                replace = true;
+                            }
+                        }else {
+                            replace = true;
+                        }
+                        if replace {
+                            self.player.borrow_mut().fire = Some(Fire {
+                                lifetime: fire.lifetime,
+                                time_per_tick: fire.lifetime,
+                                time_alive: 0.0,
+                                damage: fire.damage,
+                            });
+                        }
                     }
                 }
                 attacks_to_be_deleted.push(i);
