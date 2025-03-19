@@ -9,8 +9,8 @@
         "sprite": "attack_highlight",
 		"fire": {
 			"damage": 1.0,
-			"time_between_ticks": 10.0,
-			"lifetime": 100.0
+			"time_between_ticks": 1.0,
+			"lifetime": 12.0
 		}
     },
     {

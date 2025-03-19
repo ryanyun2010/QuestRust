@@ -821,23 +821,12 @@ impl World{
                     }
 
                     if let Some(fire) = &descriptor.fire {
-                        let player_cur_fire = self.player.borrow().fire;
-                        let mut replace = false;
-                        if let Some(player_cur_fire) = player_cur_fire {
-                            if ((fire.lifetime / fire.time_between_ticks).floor() * fire.damage) > ((player_cur_fire.lifetime - player_cur_fire.time_alive)/player_cur_fire.time_per_tick) * player_cur_fire.damage {
-                                replace = true;
-                            }
-                        }else {
-                            replace = true;
-                        }
-                        if replace {
-                            self.player.borrow_mut().fire = Some(Fire {
-                                lifetime: fire.lifetime,
-                                time_per_tick: fire.lifetime,
-                                time_alive: 0.0,
-                                damage: fire.damage,
-                            });
-                        }
+                        self.player.borrow_mut().fire.push(Fire {
+                            lifetime: fire.lifetime,
+                            time_per_tick: fire.lifetime,
+                            time_alive: 0.0,
+                            damage: fire.damage,
+                        });
                     }
                 }
                 attacks_to_be_deleted.push(i);
@@ -1480,20 +1469,27 @@ impl World{
             mut_player_ref.poison.remove(tbr - i);    
         }
 
+
         let mut fire_tick = 0.0_f32;
-        let mut to_remove_fire = false;
-        if let Some(fire) = &mut mut_player_ref.fire {
+        let mut to_be_removed_fire = vec![];
+        for (i, fire) in mut_player_ref.fire.iter_mut().enumerate() {
             if fire.time_alive % fire.time_per_tick < 1.0 {
-                fire_tick = fire.damage;
+                fire_tick += fire.damage;
             }
             fire.time_alive += 1.0;
             if fire.time_alive >= fire.lifetime {
-                to_remove_fire = true;
+                to_be_removed_fire.push(i);
             }
         }
-        if to_remove_fire {
-            mut_player_ref.fire = None;
+
+        for (i, tbr) in to_be_removed.iter().enumerate() {
+            mut_player_ref.poison.remove(tbr - i);    
         }
+        for (i, tbr) in to_be_removed_fire.iter().enumerate() {
+            mut_player_ref.fire.remove(tbr - i);    
+        }
+
+
         drop(mut_player_ref);
         if poison_tick > 0.0 {
             ptry!(self.damage_player(poison_tick, camera, [0.6, 0.0, 0.8, 1.0]));

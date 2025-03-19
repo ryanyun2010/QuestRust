@@ -47,7 +47,7 @@ pub struct Player {
     pub player_state: PlayerState,
     pub exp: f32,
     pub level: usize,
-    pub fire: Option<Fire>,
+    pub fire: Vec<Fire>,
     pub poison: Vec<Poison>,
     pub anim_frame: usize // 0-119
 }
@@ -70,22 +70,8 @@ impl Player {
             player_state: PlayerState::Idle,
             exp: 0.0,
             level: 0,
-            fire: Some(
-                    Fire {
-                        damage: 5.0,
-                        lifetime: 205.0,
-                        time_per_tick: 50.0,
-                        time_alive: 0.0
-                    }
-                ),
-            poison: vec![
-                Poison {
-                    damage: 1.0,
-                    time_alive: 0.0,
-                    time_per_tick: 1.0,
-                    lifetime: 5.0
-                }
-            ],
+            fire: vec![],
+            poison: vec![],
             anim_frame: 0
         }
     }
@@ -142,7 +128,7 @@ impl Player {
                 d.index.extend(s.index);
             }
         }
-        if self.fire.is_some() {
+        if !self.fire.is_empty() {
             let sprite = if self.anim_frame < 60 {
                punwrap!(world.sprites.get_sprite_by_name("fire1"), MissingExpectedGlobalSprite, "no fire1 sprite?") 
             }else {
