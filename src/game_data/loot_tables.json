@@ -3,8 +3,8 @@
         "name": "wizard_loot_table",
         "loot": [
             {
-                "weight": 1,
-                "item": "funny spear"
+                "weight": 10000,
+                "item": "fire spear"
             },
             {
                 "weight": 5,

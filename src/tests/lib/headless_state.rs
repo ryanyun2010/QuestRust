@@ -43,7 +43,7 @@ impl HeadlessState{
             mouse_right: false
             
         }));
-        ptry!(world.update_entities());
+        ptry!(world.update_entities(camera));
         ptry!(world.update_entity_attacks(camera));
         ptry!(world.update_player_abilities(&InputState {
             keys_down: self.keys_down.clone(),

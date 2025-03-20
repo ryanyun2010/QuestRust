@@ -497,6 +497,7 @@ impl JSON_parser {
                 "hasCollision" => {
                     has_collision = true;
                 },
+                "animated" => {},
                 _ => {
                     return Err(perror!(JSONValidationError, "Entity archetype: {} has an unrecognized tag: {}", name, tag));
                 }

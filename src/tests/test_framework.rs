@@ -1,3 +1,4 @@
+#![cfg(test)]
 use compact_str::CompactString;
 
 use crate::game_engine::json_parsing::entity_archetype_json;

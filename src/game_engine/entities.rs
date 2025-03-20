@@ -4,6 +4,7 @@ use itertools::izip;
 use crate::error::PError;
 use crate::{ptry, punwrap};
 use std::cell::RefCell;
+use super::camera::Camera;
 use super::entity_attacks::EntityAttackBox;
 use super::entity_components::{self, CollisionBox, EntityAttackComponent, PathfindingComponent, PositionComponent};
 use super::json_parsing::entity_archetype_json;
@@ -50,7 +51,7 @@ impl World {
         } 
         Ok(())
     }
-    pub fn update_entities(&mut self) -> Result<(), PError> {
+    pub fn update_entities(&mut self, camera: &mut Camera) -> Result<(), PError> {
         // self.entity_attacks.borrow_mut().clear();
         self.pathfinding_frame += 1;
         self.pathfinding_frame %= 5;
@@ -204,7 +205,60 @@ impl World {
                 }
             }
         }
-
+        // dot updates
+        entities_to_update_index = 0;
+        for (i, position_component, mut damageable_component) in izip!(
+            self.components.position_components.iter(),
+            self.components.damageable_components.iter()
+        ).enumerate().filter_map(
+            |(i, (position_component, damageable_component))|
+            if entities_to_update_index == entities_to_update.len() {None}
+            else if i == entities_to_update[entities_to_update_index] && position_component.is_some() && damageable_component.is_some() {entities_to_update_index += 1; Some((i, position_component.as_ref().unwrap().borrow(), damageable_component.as_ref().unwrap().borrow_mut()))}
+            else {None}
+        ){
+            let mut poison_tick = 0.0;
+            damageable_component.poisons.retain_mut(|poison| {
+                poison.time_alive += 1.0;
+                if poison.time_alive >= poison.lifetime {
+                    return false;
+                }
+                if poison.time_alive % poison.time_per_tick < 1.0 {
+                    poison_tick += poison.damage;
+                }
+                true
+            });
+            if poison_tick.abs() > 0.0 {
+                self.damage_entity_dot(&position_component, &mut damageable_component, poison_tick, camera, [0.6, 0.0, 0.8, 1.0]);
+            }
+            let mut remove_fire = false;
+            let fire_tick = if let Some(fire) = &mut damageable_component.fire {
+                fire.time_alive += 1.0;
+                if fire.time_alive >= fire.lifetime {
+                    remove_fire = true;
+                }
+                if fire.time_alive % fire.time_per_tick < 1.0 {
+                    fire.damage
+                }else{0.0}
+            }else{0.0};
+                
+            if fire_tick.abs() > 0.0 {
+                self.damage_entity_dot(&position_component, &mut damageable_component, fire_tick, camera, [1.0, 0.4, 0.0, 1.0]);
+            }
+            if remove_fire {
+                damageable_component.fire = None;
+            }
+        }
+        // anim frame updates
+        for mut anim_component in self.components.animation_components.iter().enumerate().filter_map(
+            |(i, anim_component)|
+            if entities_to_update_index == entities_to_update.len() {None}
+            else if i == entities_to_update[entities_to_update_index] && anim_component.is_some() {entities_to_update_index += 1; Some(anim_component.as_ref().unwrap().borrow_mut())}
+            else {None}
+        ){
+            anim_component.animation_frame += 1;
+            anim_component.animation_frame %= 120;
+        }
+        // attack cooldown updates
         entities_to_update_index = 0;
 
         for mut attack_component in self.components.attack_components.iter().enumerate().filter_map(
@@ -217,6 +271,8 @@ impl World {
                 attack_component.cur_attack_cooldown -= 1.0/60.0;
             }
         }
+
+
         Ok(())
     }
     pub fn is_line_of_sight(&self, x1: f32, y1: f32, x2: f32, y2: f32) -> Result<bool, PError>{

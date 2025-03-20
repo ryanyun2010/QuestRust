@@ -110,6 +110,10 @@ macro_rules! create_stat_lists {
     };
 }
 
+
+pub const BASE_POISON_TICK_DELAY: f32 = 40.0;
+pub const BASE_FIRE_TICK_DELAY: f32 = 65.0;
+
 create_stat_lists!(
     health => 100.0,
     defense => 0.0,
@@ -126,16 +130,22 @@ create_stat_lists!(
     mana_regen => 0.0,
     cooldown_regen => 0.0,
     charge_time_reduction => 0.0,
-    cooldown => 0.0,
+    attack_cooldown => 0.0,
     width => 0.0,
     load_speed => 0.0,
     range => 0.0,
-    lifetime => 0.0,
+    lifetime => 100.0,
     speed => 0.0,
     ability_damage => 0.0,
     size => 0.0,
     shots => 1.0,
-    focus => 1.0
+    focus => 1.0,
+    poison_damage => 0.0, 
+    poison_duration => 120.0,
+    poison_tick_speed => 1.0, 
+    fire_damage => 0.0,
+    fire_tick_speed => 1.0, 
+    fire_duration => 120.0
 );
 
 // cooldown is number of frames, 60 fps, the display is adjusted. so for a 1s cooldown, do a cooldown of 60.

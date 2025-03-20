@@ -141,7 +141,7 @@ impl<'a> Game<'a> {
             ptry!(self.camera.update_ui(&mut self.world));
             ptry!(self.world.generate_collision_cache_and_damage_cache());
             ptry!(self.process_input());
-            ptry!(self.world.update_entities());
+            ptry!(self.world.update_entities(&mut self.camera));
             ptry!(self.world.update_entity_attacks(&mut self.camera));
             ptry!(self.world.update_player_abilities(&self.input));
             ptry!(self.world.update_player_attacks(&mut self.camera));

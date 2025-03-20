@@ -121,7 +121,7 @@ impl World{
                     damage => StatC {flat: 150.0, percent: 0.0},
                     width => StatC {flat: 150.0, percent: 0.0},
                     reach => StatC {flat: 65.0, percent: 0.0},
-                    cooldown => StatC {flat: 10.0, percent: 0.0},
+                    attack_cooldown => StatC {flat: 10.0, percent: 0.0},
                 ),
                 time_til_usable: 10.0,
             }
@@ -866,9 +866,9 @@ impl World{
                                 let entity_position = self.components.position_components[*collision].as_ref().unwrap().borrow();
                                 let aggro_potentially = self.components.aggro_components[*collision].as_ref();
                                 if let Some(aggro) = aggro_potentially{
-                                    self.damage_entity( &entity_position, Some(&mut health_component), Some(&mut aggro.borrow_mut()),  attack.stats.damage.map(|x| x.get_value()).unwrap_or(0.0), camera, [0.0, 0.0, 0.0, 1.0]);
+                                    self.damage_entity( &entity_position, Some(&mut health_component), Some(&mut aggro.borrow_mut()),  &attack.stats, camera, [1.0, 1.0, 1.0, 1.0]);
                                 }else {
-                                    self.damage_entity( &entity_position, Some(&mut health_component), None,  attack.stats.damage.map(|x| x.get_value()).unwrap_or(0.0), camera, [0.0, 0.0, 0.0, 1.0]);
+                                    self.damage_entity( &entity_position, Some(&mut health_component), None,  &attack.stats, camera, [1.0, 1.0, 1.0, 1.0]);
                                 }
                                 attack.dealt_damage = true;
                             }
@@ -911,9 +911,9 @@ impl World{
                                 let entity_position = self.components.position_components[*collision].as_ref().unwrap().borrow();
                                 let aggro_potentially = self.components.aggro_components[*collision].as_ref();
                                 if let Some(aggro) = aggro_potentially{
-                                    self.damage_entity( &entity_position, Some(&mut health_component), Some(&mut aggro.borrow_mut()),  attack.stats.damage.map(|x| x.get_value()).unwrap_or(0.0), camera, [0.0, 0.0, 0.0, 1.0]);
+                                    self.damage_entity( &entity_position, Some(&mut health_component), Some(&mut aggro.borrow_mut()),  &attack.stats, camera, [1.0, 1.0, 1.0, 1.0]);
                                 }else {
-                                    self.damage_entity( &entity_position, Some(&mut health_component), None,  attack.stats.damage.map(|x| x.get_value()).unwrap_or(0.0), camera, [0.0, 0.0, 0.0, 1.0]);
+                                    self.damage_entity( &entity_position, Some(&mut health_component), None, &attack.stats, camera, [1.0, 1.0, 1.0, 1.0]);
                                 }
                             }
                         }
@@ -941,16 +941,52 @@ impl World{
     }
 
 
-    pub fn damage_entity(&self, entity_position_component: &PositionComponent, entity_damageable_component: Option<&mut DamageableComponent>, entity_aggro_component: Option<&mut AggroComponent>, damage: f32, camera: &mut Camera, color: [f32; 4]){
+    pub fn damage_entity(&self, entity_position_component: &PositionComponent, entity_damageable_component: Option<&mut DamageableComponent>, entity_aggro_component: Option<&mut AggroComponent>, stats: &StatList, camera: &mut Camera, color: [f32; 4]){
+        let damage = stats.damage.map(|x| x.get_value()).unwrap_or(0.0);
         if entity_damageable_component.is_some() {
             let ehc = entity_damageable_component.unwrap();
             ehc.health -= damage;
             if ehc.health >= ehc.max_health as f32 {
                 ehc.health = ehc.max_health as f32;
             }
+            if let Some(poison) = stats.poison_damage.map(|x| x.get_value()) {
+                if poison.abs() > 0.0 {
+                    ehc.poisons.push(
+                        Poison {
+                            damage: poison,
+                            lifetime: stats.poison_duration.map(|x| x.get_value()).unwrap_or(0.0),
+                            time_alive: 0.0,
+                            time_per_tick: super::stat::BASE_POISON_TICK_DELAY/stats.poison_tick_speed.map(|x| x.get_value()).unwrap_or(1.0)
+                        }
+                    );
+                }
+            }
+            if let Some(fire) = stats.fire_damage.map(|x| x.get_value()) {
+                if fire.abs() > 0.0 {
+                    if let Some(cur_fire) = ehc.fire {
+                        let cur_fire_dmg_remaining = (cur_fire.lifetime - cur_fire.time_alive)/cur_fire.time_per_tick * cur_fire.damage;
+                        let new_fire_damage = fire * stats.fire_duration.map(|x| x.get_value()).unwrap_or(0.0)/(90.0/stats.fire_tick_speed.map(|x| x.get_value()).unwrap_or(1.0));
+                        if new_fire_damage >= cur_fire_dmg_remaining {
+                            ehc.fire = Some(Fire {
+                                damage: fire,
+                                lifetime: stats.fire_duration.map(|x| x.get_value()).unwrap_or(0.0),
+                                time_alive: 0.0,
+                                time_per_tick: super::stat::BASE_FIRE_TICK_DELAY/stats.fire_tick_speed.map(|x| x.get_value()).unwrap_or(1.0)
+                            });
+                        }
+                    }else {
+                        ehc.fire = Some(Fire {
+                            damage: fire,
+                            lifetime: stats.fire_duration.map(|x| x.get_value()).unwrap_or(0.0),
+                            time_alive: 0.0,
+                            time_per_tick: super::stat::BASE_FIRE_TICK_DELAY/stats.fire_tick_speed.map(|x| x.get_value()).unwrap_or(1.0)
+                        });
+                    }
+                }
+            }
         }
-        let text_1 = camera.add_world_text(((damage * 10.0).round() / 10.0).to_string(), super::camera::Font::B, entity_position_component.x + 11.0, entity_position_component.y + 7.0, 150.0, 50.0, 50.0, color, wgpu_text::glyph_brush::HorizontalAlign::Center);
-        let text_2 = camera.add_world_text(((damage * 10.0).round() / 10.0).to_string(), super::camera::Font::B, entity_position_component.x + 9.0, entity_position_component.y + 5.0, 150.0, 50.0, 50.0, [1.0, 1.0, 1.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
+        let text_1 = camera.add_world_text(((damage * 10.0).round() / 10.0).to_string(), super::camera::Font::B, entity_position_component.x + 11.0, entity_position_component.y + 7.0, 150.0, 50.0, 50.0, [0.0, 0.0, 0.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
+        let text_2 = camera.add_world_text(((damage * 10.0).round() / 10.0).to_string(), super::camera::Font::B, entity_position_component.x + 9.0, entity_position_component.y + 5.0, 150.0, 50.0, 50.0, color, wgpu_text::glyph_brush::HorizontalAlign::Center);
         if entity_aggro_component.is_some() {
             let aggro = entity_aggro_component.unwrap();
             if !aggro.aggroed{
@@ -960,6 +996,19 @@ impl World{
         self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_1, lifespan: 0.0});
         self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_2, lifespan: 0.0});
     }
+
+    pub fn damage_entity_dot(&self, entity_position_component: &PositionComponent, entity_damageable_component: &mut DamageableComponent, damage: f32, camera: &mut Camera, color: [f32; 4]) {
+        entity_damageable_component.health -= damage;
+        if entity_damageable_component.health >= entity_damageable_component.max_health as f32 {
+            entity_damageable_component.health = entity_damageable_component.max_health as f32;
+        }
+        let text_1 = camera.add_world_text(((damage * 10.0).round() / 10.0).to_string(), super::camera::Font::B, entity_position_component.x + 11.0, entity_position_component.y + 7.0, 150.0, 50.0, 50.0, [0.0, 0.0, 0.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
+        let text_2 = camera.add_world_text(((damage * 10.0).round() / 10.0).to_string(), super::camera::Font::B, entity_position_component.x + 9.0, entity_position_component.y + 5.0, 150.0, 50.0, 50.0, color, wgpu_text::glyph_brush::HorizontalAlign::Center);
+        self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_1, lifespan: 0.0});
+        self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_2, lifespan: 0.0});
+    }
+
+    
 
     pub fn damage_player(&self, damage: f32, camera: &mut Camera, color: [f32; 4]) -> Result<(), PError> {
         let defense = ptry!(self.inventory.get_combined_stats()).defense.map(|x| x.get_value()).unwrap_or(0.0);
@@ -1127,7 +1176,7 @@ impl World{
                     if item.item_type == ItemType::MeleeWeapon {
                         player.player_state = PlayerState::AttackingMelee;
                     }
-                    item.time_til_usable = stats.cooldown.map(|x| x.get_value()).unwrap_or(0.0);
+                    item.time_til_usable = stats.attack_cooldown.map(|x| x.get_value()).unwrap_or(0.0);
                 }
             }
             else{
@@ -1186,7 +1235,7 @@ impl World{
                 }
                 if attacked {
                     let item = punwrap!(self.inventory.get_cur_held_item_mut(), Expected, "attacked with no item?");
-                    item.time_til_usable = stats.cooldown.map(|x| x.get_value()).unwrap_or(0.0);
+                    item.time_til_usable = stats.attack_cooldown.map(|x| x.get_value()).unwrap_or(0.0);
                 }else if ranged{
                     let item = punwrap!(self.inventory.get_cur_held_item_mut(), Expected, "attacked with no item?");
                     item.time_til_usable -= 1.0;
@@ -1257,7 +1306,7 @@ impl World{
             width_to_length_ratio: archetype_i.width_to_length_ratio,
             lore: archetype_i.lore.clone(),
             sprite: archetype_i.sprite.clone(),
-            time_til_usable: stat_variation.cooldown.map(|x| x.get_value()).unwrap_or(0.0),
+            time_til_usable: stat_variation.attack_cooldown.map(|x| x.get_value()).unwrap_or(0.0),
             stats: stat_variation
         })
     }

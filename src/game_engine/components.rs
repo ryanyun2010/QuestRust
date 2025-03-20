@@ -57,6 +57,10 @@ pub struct LootComponent {
     pub loot_tables: Vec<CompactString>
 }
 
+pub struct AnimationComponent {
+    pub animation_frame: usize // 0-119
+}
+
 setup_components!{
     aggro_components => AggroComponent,
     damageable_components => DamageableComponent,
@@ -65,7 +69,8 @@ setup_components!{
     position_components => PositionComponent,
     sprite_components => SpriteComponent,
     collision_components => CollisionComponent,
-    loot_components => LootComponent
+    loot_components => LootComponent,
+    animation_components => AnimationComponent
 }
 
 

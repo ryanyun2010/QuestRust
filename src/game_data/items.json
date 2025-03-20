@@ -10,7 +10,7 @@
             "damage": {"flat": {"average": 15.0, "variation": 2.5}},
             "width": {"flat": {"average": 50.0, "variation": 10.0}},
             "reach": {"flat": {"average": 65.0, "variation": 10.0}},
-            "cooldown": {"flat": {"average": 5.0, "variation": 3.0}}
+            "attack_cooldown": {"flat": {"average": 5.0, "variation": 3.0}}
         }
     },
     {
@@ -27,7 +27,7 @@
             "size": {"flat": {"average": 20.0, "variation": 2.5}},
             "shots": {"flat": {"average": 1.0, "variation": 0.0}},
             "focus": {"flat": {"average": 9.0, "variation": 0.0}},
-            "cooldown": {"flat": {"average": 3.0, "variation": 1.0}},
+            "attack_cooldown": {"flat": {"average": 3.0, "variation": 1.0}},
 			"pierce": {"flat": {"average": 50.0, "variation": 5.0}}
         }
     },
@@ -57,7 +57,7 @@
             "size": {"flat": {"average": 9.0, "variation": 0.0}},
             "shots": {"flat": {"average": 3.0, "variation": 0.0}},
             "focus": {"flat": {"average": 1.5, "variation": 0.0}},
-            "cooldown": {"flat": {"average": 20.0, "variation": 1.9}}
+            "attack_cooldown": {"flat": {"average": 20.0, "variation": 1.9}}
         }
     },
 	{
@@ -71,6 +71,40 @@
 			"shots": {"flat": {"average": 5.0, "variation": 5.0}},
 			"defense": {"flat": {"average": 500.0, "variation": 200.0}}
 		}
+	},
+	{
+		"name": "poison spear",
+		"sprite": "spear",
+        "item_type": "RangedWeapon",
+        "lore": "fun",
+        "attack_sprite": "spear",
+        "width_to_length_ratio": 0.6,
+        "stats": {
+            "speed": {"flat": {"average": 5.4, "variation": 0.0}},
+            "size": {"flat": {"average": 9.0, "variation": 0.0}},
+            "shots": {"flat": {"average": 1.0, "variation": 0.0}},
+            "focus": {"flat": {"average": 1.5, "variation": 0.0}},
+            "lifetime": {"flat": {"average": 200.0, "variation": 0.0}},
+            "attack_cooldown": {"flat": {"average": 20.0, "variation": 1.9}},
+            "poison_damage": {"flat": {"average": 3.0, "variation": 1.9}}
+        }
+	},
+	{
+		"name": "fire spear",
+		"sprite": "spear",
+        "item_type": "RangedWeapon",
+        "lore": "fun",
+        "attack_sprite": "spear",
+        "width_to_length_ratio": 0.6,
+        "stats": {
+            "speed": {"flat": {"average": 5.4, "variation": 0.0}},
+            "size": {"flat": {"average": 9.0, "variation": 0.0}},
+            "shots": {"flat": {"average": 1.0, "variation": 0.0}},
+            "focus": {"flat": {"average": 1.5, "variation": 0.0}},
+            "lifetime": {"flat": {"average": 200.0, "variation": 0.0}},
+            "attack_cooldown": {"flat": {"average": 20.0, "variation": 1.9}},
+            "fire_damage": {"flat": {"average": 10.0, "variation": 1.9}}
+        }
 	}
 		
 

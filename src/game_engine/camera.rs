@@ -236,6 +236,46 @@ impl Camera{
                 entity_data.index.extend(dd.index);
 
             }
+
+
+            // fire bars
+            entity_to_render_index = 0;
+
+            for (i, (position_component, damageable_component, anim_component)) in izip!(
+                world.components.position_components.iter(),
+                world.components.damageable_components.iter(),
+                world.components.animation_components.iter()
+            ).enumerate().filter_map(
+                |(i, (x, y, anim_component))| 
+                if entity_to_render_index == entities_to_render.len() {None} 
+                else if entities_to_render[entity_to_render_index] == i && x.is_some() && y.is_some() {entity_to_render_index += 1; Some((i,(x.as_ref().unwrap().borrow(), y.as_ref().unwrap().borrow(), anim_component))) }
+                else { None }
+            ) {
+                
+                if damageable_component.fire.is_some(){
+                    let anim_frame = anim_component.as_ref().map(|x| x.borrow().animation_frame).unwrap_or(0);
+                    let dd = if anim_frame < 60 {
+                        let sprite = punwrap!(world.sprites.get_sprite_by_name("fire1"), MissingExpectedGlobalSprite, "no fire1 sprite");
+
+                        let vertex_offset_x = (-1.0 * self.camera_x).floor() as i32;
+                        let vertex_offset_y = (-1.0 * self.camera_y).floor() as i32;
+
+                        sprite.draw_data(position_component.x, position_component.y, 32, 32, self.viewpoint_width, self.viewpoint_height, extra_data.vertex.len() as u32, vertex_offset_x, vertex_offset_y)
+                    }
+                    else {
+                        let sprite = punwrap!(world.sprites.get_sprite_by_name("fire2"), MissingExpectedGlobalSprite, "no fire2 sprite");
+
+                        let vertex_offset_x = (-1.0 * self.camera_x).floor() as i32;
+                        let vertex_offset_y = (-1.0 * self.camera_y).floor() as i32;
+
+                        sprite.draw_data(position_component.x, position_component.y, 32, 32, self.viewpoint_width, self.viewpoint_height, extra_data.vertex.len() as u32, vertex_offset_x, vertex_offset_y)
+                    };
+                    extra_data.vertex.extend(dd.vertex);
+                    extra_data.index.extend(dd.index);
+                }
+            }
+
+
             // health bars
             entity_to_render_index = 0;
 
@@ -253,6 +293,7 @@ impl Camera{
                 extra_data.vertex.extend(dd.vertex);
                 extra_data.index.extend(dd.index);
             }
+
 
 
             render_data.vertex.extend(terrain_data.vertex);

@@ -266,13 +266,49 @@ impl Inventory {
     pub fn get_stat_string(&self, list: &StatList) -> String {
         let mut t = String::new();
         for stat in list.into_iter() {
-            if stat.0 == "cooldown" {
+            if stat.0 == "attack_cooldown" {
                 let num = (stat.1.map(|x| x.flat).unwrap_or(0.0)/60.0 * 100.0).round() /100.0;
-                t.push_str(
-                    format!("{}: {}s \n", stat.0, num).as_str()
-                );
+                if num > 0.0 {
+                    t.push_str(
+                        format!("{}: +{}s \n", stat.0, num).as_str()
+                    );
+                } else if num < 0.0 {
+                    t.push_str(
+                        format!("{}: {}s \n", stat.0, num).as_str()
+                    );
+                }
                 if let Some(num2) = stat.1.map(|x| (x.percent * 100.0).round() /100.0){
-                    if num2.abs() > 0.0 {
+                    if num2 > 0.0 {
+                        t.push_str(
+                            format!("{}: +{}% \n", stat.0, num2).as_str()
+                        );
+                    }else if num2 < 0.0 {
+                        t.push_str(
+                            format!("{}: {}% \n", stat.0, num2).as_str()
+                        );
+                    }
+
+                }
+                continue;
+            }
+            if stat.0 == "fire_duration" || stat.0 == "poison_duration" || stat.0 == "lifetime" {
+                let num = (stat.1.map(|x| x.flat).unwrap_or(0.0)/60.0 * 100.0).round() /100.0;
+                if num > 0.0 {
+                    t.push_str(
+                        format!("{}: +{}s \n", stat.0, num).as_str()
+                    );
+                }else if num < 0.0{
+                    t.push_str(
+                        format!("{}: {}s \n", stat.0, num).as_str()
+                    );
+                }
+
+                if let Some(num2) = stat.1.map(|x| (x.percent * 100.0).round() /100.0){
+                    if num2 > 0.0 {
+                        t.push_str(
+                            format!("{}: +{}% \n", stat.0, num2).as_str()
+                        );
+                    }else if num2 < 0.0 {
                         t.push_str(
                             format!("{}: {}% \n", stat.0, num2).as_str()
                         );
@@ -280,6 +316,7 @@ impl Inventory {
                 }
                 continue;
             }
+            
             if let Some(s) = stat.1{
                 let num = (stat.1.map(|x| x.flat).unwrap_or(0.0) * 100.0).round() /100.0;
                 if s.flat > 0.0 {
@@ -308,11 +345,33 @@ impl Inventory {
         let list = ptry!(self.get_combined_stats());
         let mut t = String::new();
         for stat in list.into_iter() {
-            if stat.0 == "cooldown" {
+            if stat.0 == "attack_cooldown" || stat.0 == "fire_duration" || stat.0 == "poison_duration" || stat.0 == "lifetime" {
                 let num = (stat.1.map(|x| x.get_value()).unwrap_or(0.0)/60.0 * 100.0).round() /100.0;
                 t.push_str(
                     format!("{}: {}s \n", stat.0, num).as_str()
                 );
+                continue;
+            }
+            if stat.0 == "fire_tick_speed" {
+                if let Some(s) = stat.1.map(|x| x.get_value()) {
+                    let v = (s * 100.0).round()/100.0;
+                    let ts = 60.0/super::stat::BASE_FIRE_TICK_DELAY * v;
+
+                    t.push_str(
+                        format!("{}: {} — {} t/s \n", stat.0, v, ts).as_str()
+                    );
+                }
+                continue;
+            }
+            if stat.0 == "poison_tick_speed" {
+                if let Some(s) = stat.1.map(|x| x.get_value()) {
+                    let v = (s * 100.0).round()/100.0;
+                    let ts = 60.0/super::stat::BASE_POISON_TICK_DELAY * v;
+
+                    t.push_str(
+                        format!("{}: {} — {} t/s \n", stat.0, v, ts).as_str()
+                    );
+                }
                 continue;
             }
             if stat.1.is_some(){
