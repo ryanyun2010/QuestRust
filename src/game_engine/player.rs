@@ -32,6 +32,7 @@ pub const EXP_REQS: [f32; 3] = [
     200.0, // ...
 ];
 pub const MAX_LEVEL: usize = 2;
+pub const TICKS_PER_REGEN_TICK: usize = 60;
 
 #[derive(Clone, Debug)]
 pub struct Player {
@@ -49,7 +50,8 @@ pub struct Player {
     pub level: usize,
     pub fire: Vec<Fire>,
     pub poison: Vec<Poison>,
-    pub anim_frame: usize // 0-119
+    pub anim_frame: usize, // 0-119
+    pub time_since_regen_tick: usize,
 }
 impl Player {
     pub fn new(x: f32, y: f32, health: f32, max_health: i32, movement_speed: f32, sprite_id: usize) -> Self {
@@ -72,7 +74,8 @@ impl Player {
             level: 0,
             fire: vec![],
             poison: vec![],
-            anim_frame: 0
+            anim_frame: 0,
+            time_since_regen_tick: 0
         }
     }
     pub fn get_held_item_position(&self) -> (f32, f32) {

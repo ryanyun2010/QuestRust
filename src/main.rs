@@ -92,6 +92,24 @@ fn startup() -> Result<(), PError> {
         sprite: CompactString::from("health"),
         visible: true
     });
+    camera.add_ui_element(CompactString::from("health_bar_background"), UIElementDescriptor {
+        x: 832.0,
+        y: 32.0,
+        z: 5.0,
+        width: 256.0,
+        height: 32.0,
+        sprite: CompactString::from("health_bar_back"),
+        visible: true
+    });
+    camera.add_ui_element(CompactString::from("mana_bar_inside"), UIElementDescriptor {
+        x: 838.0,
+        y: 38.0,
+        z: 6.0,
+        width: 244.0,
+        height: 20.0,
+        sprite: CompactString::from("mana_bar_inner"),
+        visible: true
+    });
 
 
     camera.add_ui_element(CompactString::from("exp_bar_background"), UIElementDescriptor {

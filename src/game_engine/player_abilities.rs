@@ -2,6 +2,8 @@ use compact_str::CompactString;
 
 use crate::create_stat_list;
 use crate::game_engine::game::MousePosition;
+use crate::game_engine::player_attacks::PlayerAbilityAttackTag;
+use crate::game_engine::player_attacks::SplittingDescriptor;
 use crate::stat::StatC;
 use crate::world::World;
 use std::f32::consts::PI;
@@ -30,6 +32,8 @@ pub struct PlayerAbilityDescriptor {
     pub name: CompactString,
     pub description: String,
     pub base_stats: StatList, // NOTE: COOLDOWN STAT IN BASE_STATS SHOULD BE IGNORED 
+    pub mana_cost: f32,
+    pub mana_cost_while_charging: f32, // per tick
     pub flat_added_damage_effectiveness: f32, // 1.0 for flat is 100% effective
     pub cooldown: f32,
     pub time_to_charge: f32, 
@@ -115,7 +119,10 @@ pub struct AbilityStateInformation {
 
 pub enum PlayerAbilityDescriptorName {
     Cyclone,
-    Dash
+    Dash,
+    LightningTrap,
+    LightningBolts,
+    SlimeBall
 }
 
 
@@ -124,17 +131,13 @@ pub fn get_ability_descriptor(name: PlayerAbilityDescriptorName) -> PlayerAbilit
         PlayerAbilityDescriptorName::Cyclone => {
             PlayerAbilityDescriptor {
                 base_stats: create_stat_list!(
-                    damage => StatC {
-                        flat: 2.0,
-                        percent: 30.0,
-                    },  
                     damage => StatC { flat: 2.8, percent: 0.0},
                     width => StatC { flat: 40.0, percent: 0.0},
                     reach => StatC { flat: 40.0, percent: 0.0}
                 ),
                 flat_added_damage_effectiveness: 0.09,
                 name: CompactString::from("Cyclone"),
-                description: String::from("A cyclone of wind that knocks back enemies"),
+                description: String::from("Cyclone\n------------\nChannel to summon a cyclone of wind around you that damages enemies (Melee Weapons Only)\n\nBase Damage: 2.8\nWidth: 40.0\nReach: 40.0\n\nAdded Flat Damage Effectiveness: 9%\nCooldown: 16.6s\nMana Cost: 1.0\nMana Cost while Channeling: 12/s"),
                 cooldown: 1000.0,
                 time_to_charge: 100000.0,
                 end_time: 0.0,
@@ -144,7 +147,9 @@ pub fn get_ability_descriptor(name: PlayerAbilityDescriptorName) -> PlayerAbilit
                         ItemType::MeleeWeapon
                     ],
                     usable_with_nothing: false,
-                }
+                },
+                mana_cost: 1.0,
+                mana_cost_while_charging: 0.2
             }
         },
         PlayerAbilityDescriptorName::Dash => {
@@ -157,7 +162,7 @@ pub fn get_ability_descriptor(name: PlayerAbilityDescriptorName) -> PlayerAbilit
                             ),
                 flat_added_damage_effectiveness: 0.0,
                 name: CompactString::from("Dash"),
-                description: String::from("Dash in the direction you are moving"),
+                description: String::from("Dash\n------------\nDash in the direction you are moving\n\nCooldown: 0.83s\nMana Cost: 8.0"),
                 cooldown: 50.0,
                 time_to_charge: 2.0,
                 end_time: 9.0,
@@ -169,10 +174,107 @@ pub fn get_ability_descriptor(name: PlayerAbilityDescriptorName) -> PlayerAbilit
                         ItemType::MagicWeapon
                     ],
                     usable_with_nothing: true,
-                }
+                },
+                mana_cost: 8.0,
+                mana_cost_while_charging: 0.0
             }
         }
-    }
+        PlayerAbilityDescriptorName::LightningTrap => {
+            PlayerAbilityDescriptor {
+                base_stats: create_stat_list!(
+                                damage => StatC {
+                                    flat: 8.0,
+                                    percent: 0.0,
+                                },
+                                lifetime => StatC { flat: 200.0, percent: 0.0},
+                                speed => StatC {flat: 7.0, percent: 0.0},
+                                size => StatC {flat: 40.0, percent: 0.0},
+                                pierce => StatC {flat: 5.0, percent: 0.0}
+                            ),
+                flat_added_damage_effectiveness: 0.15,
+                name: CompactString::from("Lightning Trap"),
+                description: String::from("Lightning Trap\n------------\nPlaces down 5 lightning bolts that act as a trap, each deals damage and fragments into 7 smaller lightning bolts that each deal a quarter of the damage of the main lightning bolt\n\nBase Damage: 8.0\nShots: 5.0 (FIXED)\nLifetime: +200.0\nSize: 50.0 (FIXED)\nPierce: 1.0 (FIXED)\n\nAdded Flat Damage Effectiveness: 15%\nCooldown: 0.66s\nCharge Time: 0.03s\nMana Cost: 9.0"),
+                cooldown: 40.0,
+                time_to_charge: 2.0,
+                end_time: 9.0,
+                actions: super::player_abilities::TRAP,
+                usable_with: UsableWith {
+                    item_types: vec![
+                        ItemType::RangedWeapon,
+                        ItemType::MagicWeapon,
+                        ItemType::MeleeWeapon
+                    ],
+                    usable_with_nothing: true,
+                },
+                mana_cost: 9.0,
+                mana_cost_while_charging: 0.0
+            }
+        },
+        PlayerAbilityDescriptorName::LightningBolts => {
+            PlayerAbilityDescriptor {
+                base_stats: create_stat_list!(
+                                damage => StatC {
+                                    flat: 12.0,
+                                    percent: 0.0,
+                                },
+                                lifetime => StatC { flat: 200.0, percent: 0.0},
+                                size => StatC {flat: 40.0, percent: 0.0},
+                                pierce => StatC {flat: 5.0, percent: 0.0},
+                                shots => StatC {flat: 4.0, percent: 0.0},
+                                speed => StatC {flat: 8.0, percent: 0.0}
+                            ),
+                flat_added_damage_effectiveness: 0.3,
+                name: CompactString::from("Lightning Bolts"),
+                description: String::from("Lightning Bolts\n------------\nShoots lightning bolts in the direction of your mouse, each chains upon hitting enemies\n\nBase Damage: 12.0\nShots: +4.0\nLifetime: +200.0\nSize: +40.0\nPierce: +5.0\nSpeed: +8.0\n\nAdded Flat Damage Effectiveness: 30%\nCooldown: 0.66s\nCharge Time: 0.03s\nMana Cost: 10.0"),
+                cooldown: 40.0,
+                time_to_charge: 2.0,
+                end_time: 9.0,
+                actions: super::player_abilities::BOLTS,
+                usable_with: UsableWith {
+                    item_types: vec![
+                        ItemType::RangedWeapon,
+                        ItemType::MagicWeapon,
+                        ItemType::MeleeWeapon
+                    ],
+                    usable_with_nothing: true,
+                },
+                mana_cost: 10.0,
+                mana_cost_while_charging: 0.0
+            }
+        },
+        PlayerAbilityDescriptorName::SlimeBall => {
+            PlayerAbilityDescriptor {
+                base_stats: create_stat_list!(
+                                damage => StatC {
+                                    flat: 50.0,
+                                    percent: 0.0,
+                                },
+                                lifetime => StatC { flat: 900.0, percent: 0.0},
+                                size => StatC {flat: 60.0, percent: 0.0},
+                                pierce => StatC {flat: 20.0, percent: 0.0},
+                                speed => StatC {flat: 4.0, percent: 0.0}
+                            ),
+                flat_added_damage_effectiveness: 1.2,
+                name: CompactString::from("Slime Ball"),
+                description: String::from("Slime Ball\n------------\nShoots a Slime Ball in the direction of your mouse, it bounces upon hitting walls.\n\nBase Damage: 50.0\nShots: 1 (FIXED)\nLifetime: +900.0\nSize: +60.0\nPierce: +20.0\nSpeed: +4.0\n\nAdded Flat Damage Effectiveness: 120%\nCooldown: 6s\nCharge Time: 0.06s\nMana Cost: 19.0"),
+                cooldown: 360.0,
+                time_to_charge: 4.0,
+                end_time: 9.0,
+                actions: super::player_abilities::SLIMEBALL,
+                usable_with: UsableWith {
+                    item_types: vec![
+                        ItemType::RangedWeapon,
+                        ItemType::MagicWeapon,
+                        ItemType::MeleeWeapon
+                    ],
+                    usable_with_nothing: true,
+                },
+                mana_cost: 19.0,
+                mana_cost_while_charging: 0.0
+            }
+        }
+        
+}
 
 }
 
@@ -219,7 +321,7 @@ pub const CYCLONE_ACTIONS: PlayerAbilityActionDescriptor = PlayerAbilityActionDe
                                 crate::game_engine::player_attacks::PlayerAttackType::MeleeAbility,
                                 player.x + 16.0 + angle.cos() * 37.0,
                                 player.y + 22.0 + angle.sin() * 37.0,
-                                angle * 180.0/PI));
+                                angle * 180.0/PI, vec![]));
                     }
                 }
             }
@@ -248,7 +350,7 @@ pub const CYCLONE_ACTIONS: PlayerAbilityActionDescriptor = PlayerAbilityActionDe
 
 
 
-pub const RANDOM_BIG_SHOT: PlayerAbilityActionDescriptor = PlayerAbilityActionDescriptor {
+pub const TRAP: PlayerAbilityActionDescriptor = PlayerAbilityActionDescriptor {
     on_start: |world, ability, state| {
         world.player.borrow_mut().player_state = PlayerState::ChargingAbility;
         world.cur_ability_charging = Some(ability);
@@ -285,22 +387,141 @@ pub const RANDOM_BIG_SHOT: PlayerAbilityActionDescriptor = PlayerAbilityActionDe
             mouse_direction_unnormalized[1] / magnitude
         ];
         let main_angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]);
+        println!("{:?}", &ability_ref.stats.damage);
+        let mut new_stats = ability_ref.stats.clone();
+        new_stats.speed = Some(StatC{ flat: 0.0, percent: 0.0});
+        new_stats.size = Some(StatC{ flat: 50.0, percent: 0.0});
+        new_stats.pierce = Some(StatC{ flat: 1.0, percent: 0.0});
         for i in -2..=2 {
             let angle = PI/30.0 * i as f32 + main_angle;
             ptry!(world.add_player_attack_custom(
                     // TODO: FLAT DAMAGE EFFECTIVENESS STAT OR SMTH
-                    &ability_ref.stats,
-                    CompactString::from("spear"),
-                    0.6,
+                    &new_stats,
+                    CompactString::from("lightning_bolt"),
+                    0.25,
                     crate::game_engine::player_attacks::PlayerAttackType::RangedAbility,
                     player.x + 16.0 + angle.cos() * 37.0,
                     player.y + 22.0 + angle.sin() * 37.0,
-                    angle * 180.0/PI));
+                    angle * 180.0/PI, vec![PlayerAbilityAttackTag::Splitting(SplittingDescriptor {
+                        num: 7,
+                        damage: new_stats.damage.map(|x| x.flat).unwrap_or(0.0)/4.0,
+                        pierce: 1,
+                        speed: 7.0
+
+                    })]));
         }
         player.player_state = PlayerState::Idle;
         Ok(())
     }
 };
+pub const BOLTS: PlayerAbilityActionDescriptor = PlayerAbilityActionDescriptor {
+    on_start: |world, ability, state| {
+        world.player.borrow_mut().player_state = PlayerState::ChargingAbility;
+        world.cur_ability_charging = Some(ability);
+        println!("BIG_SHOT CHARGING BEGAN");
+        Ok(())
+    },
+    while_charging: |world, ability, state| {
+        let mut_ability_ref = punwrap!(world.inventory.get_ability_mut(ability), Invalid, "while_charging was called with ability id {}, however there is no current ability with ability id {}", ability, ability);
+        if !(state.ability_key_held) {
+            mut_ability_ref.time_to_charge_left = 0.0; 
+            mut_ability_ref.end_without_end_action = true;
+        }
+        Ok(())
+    },
+    on_ending_start: |world, ability, state| {
+        Ok(())
+    },
+    while_ending: |world, ability, state | {
+        Ok(())
+    },
+    on_end: |world, ability, state| {
+        let mut player = world.player.borrow_mut();
+        let ability_ref = punwrap!(world.inventory.get_ability(ability), Invalid, "while_charging was called with ability id {}, however there is no current ability with ability id {}", ability, ability);
+        println!("END");
+        if !(player.player_state == PlayerState::EndingAbility) {
+            return Err(perror!(Invalid, "Player State is {:?} at the end of ability charging, however it should be PlayerState::ChargingAbility", player.player_state));
+        }
+        world.cur_ability_charging = None;
+
+        let mouse_direction_unnormalized = [(state.mouse_position.x_world - player.x - 16.0), (state.mouse_position.y_world - player.y - 22.0)];
+        let magnitude = f32::sqrt(mouse_direction_unnormalized[0].powf(2.0) + mouse_direction_unnormalized[1].powf(2.0));
+        let mouse_direction_normalized = [
+            mouse_direction_unnormalized[0] / magnitude,
+            mouse_direction_unnormalized[1] / magnitude
+        ];
+        let main_angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]);
+        println!("{:?}", &ability_ref.stats.damage);
+        let shots = ability_ref.stats.shots.map(|x| x.get_value()).unwrap_or(0.0).floor();
+        
+        let half_shots = ((shots-1.0).floor()/2.0).floor() as isize;
+        let rest = (shots-1.0).floor() as isize-half_shots;
+        for i in -half_shots..=rest {
+            let angle = PI/4.0/shots * i as f32 + main_angle;
+            ptry!(world.add_player_attack_custom(
+                    &ability_ref.stats,
+                    CompactString::from("lightning_bolt"),
+                    0.25,
+                    crate::game_engine::player_attacks::PlayerAttackType::RangedAbility,
+                    player.x + 16.0 + angle.cos() * 37.0,
+                    player.y + 22.0 + angle.sin() * 37.0,
+                    angle * 180.0/PI, vec![PlayerAbilityAttackTag::Chaining(2000)]));
+        }
+        player.player_state = PlayerState::Idle;
+        Ok(())
+    }
+};
+pub const SLIMEBALL: PlayerAbilityActionDescriptor = PlayerAbilityActionDescriptor {
+    on_start: |world, ability, state| {
+        world.player.borrow_mut().player_state = PlayerState::ChargingAbility;
+        world.cur_ability_charging = Some(ability);
+        println!("BIG_SHOT CHARGING BEGAN");
+        Ok(())
+    },
+    while_charging: |world, ability, state| {
+        let mut_ability_ref = punwrap!(world.inventory.get_ability_mut(ability), Invalid, "while_charging was called with ability id {}, however there is no current ability with ability id {}", ability, ability);
+        if !(state.ability_key_held) {
+            mut_ability_ref.time_to_charge_left = 0.0; 
+            mut_ability_ref.end_without_end_action = true;
+        }
+        Ok(())
+    },
+    on_ending_start: |world, ability, state| {
+        Ok(())
+    },
+    while_ending: |world, ability, state | {
+        Ok(())
+    },
+    on_end: |world, ability, state| {
+        let mut player = world.player.borrow_mut();
+        let ability_ref = punwrap!(world.inventory.get_ability(ability), Invalid, "while_charging was called with ability id {}, however there is no current ability with ability id {}", ability, ability);
+        println!("END");
+        if !(player.player_state == PlayerState::EndingAbility) {
+            return Err(perror!(Invalid, "Player State is {:?} at the end of ability charging, however it should be PlayerState::ChargingAbility", player.player_state));
+        }
+        world.cur_ability_charging = None;
+
+        let mouse_direction_unnormalized = [(state.mouse_position.x_world - player.x - 16.0), (state.mouse_position.y_world - player.y - 22.0)];
+        let magnitude = f32::sqrt(mouse_direction_unnormalized[0].powf(2.0) + mouse_direction_unnormalized[1].powf(2.0));
+        let mouse_direction_normalized = [
+            mouse_direction_unnormalized[0] / magnitude,
+            mouse_direction_unnormalized[1] / magnitude
+        ];
+        let main_angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]);
+        let angle = main_angle; 
+        ptry!(world.add_player_attack_custom(
+                &ability_ref.stats,
+                CompactString::from("slime_ball"),
+                1.0,
+                crate::game_engine::player_attacks::PlayerAttackType::RangedAbility,
+                player.x + 16.0 + angle.cos() * 37.0,
+                player.y + 22.0 + angle.sin() * 37.0,
+                angle * 180.0/PI, vec![PlayerAbilityAttackTag::Bouncing(2000)]));
+        player.player_state = PlayerState::Idle;
+        Ok(())
+    }
+};
+
 
 
 pub const DASH: PlayerAbilityActionDescriptor = PlayerAbilityActionDescriptor {

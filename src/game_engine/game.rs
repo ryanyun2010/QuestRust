@@ -128,7 +128,7 @@ impl<'a> Game<'a> {
             }
             return Ok(());
         }
-        let uie = ptry!(self.world.inventory.render_ui(&self.world.player_ability_descriptors));
+        let uie = ptry!(self.world.inventory.render_ui(&self.world.player_ability_descriptors, self.world.mana));
         match self.renderer.render(ptry!(self.camera.render(&mut self.world, uie, self.renderer.config.width as f32, self.renderer.config.height as f32))){
             Ok(_) => {Ok(())}
             Err(e) => {
@@ -154,6 +154,9 @@ impl<'a> Game<'a> {
             ptry!(self.world.update_gen());
             ptry!(self.world.update_player_dots(&mut self.camera));
             self.world.update_player_anim();
+            ptry!(self.world.player_health_regen(&mut self.camera));
+            ptry!(self.world.player_mana_regen());
+            self.world.update_player_ability_cds();
             if self.world.player.borrow().health <= 0.0 {
                 panic!("\n\nplayer died\n\n");
             }

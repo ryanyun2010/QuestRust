@@ -41,12 +41,24 @@
 			"path": "src/rendering_engine/img/exp_bar_inner.png"
 		},
 		{
+			"name": "mana_bar_inner",
+			"path": "src/rendering_engine/img/mana_bar_inner.png"
+		},
+		{
 			"name": "fire1",
 			"path": "src/rendering_engine/img/fire.png"
 		},
 		{
 			"name": "fire2",
 			"path": "src/rendering_engine/img/fire2.png"
+		},
+		{
+			"name": "lightning_bolt",
+			"path": "src/rendering_engine/img/lightning.png"
+		},
+		{
+			"name": "slime_ball",
+			"path": "src/rendering_engine/img/slime_ball.png"
 		}
 
 	],

@@ -5,7 +5,7 @@ use rustc_hash::FxHashMap;
 
 use crate::{error::PError, error_prolif_allow, game_engine::item::Item, perror, ptry, punwrap, rendering_engine::abstractions::{TextSprite, UIEFull}};
 
-use super::{game::MousePosition, item::ItemType, player_abilities::PlayerAbilityDescriptor, ui::UIESprite};
+use super::{game::MousePosition, item::ItemType, player::TICKS_PER_REGEN_TICK, player_abilities::PlayerAbilityDescriptor, ui::UIESprite};
 
 #[derive(Debug, Clone)]
 pub struct ItemOnMouse{
@@ -267,15 +267,16 @@ impl Inventory {
         let mut t = String::new();
         for stat in list.into_iter() {
             if stat.0 == "attack_cooldown" {
-                let num = (stat.1.map(|x| x.flat).unwrap_or(0.0)/60.0 * 100.0).round() /100.0;
-                if num > 0.0 {
-                    t.push_str(
-                        format!("{}: +{}s \n", stat.0, num).as_str()
-                    );
-                } else if num < 0.0 {
-                    t.push_str(
-                        format!("{}: {}s \n", stat.0, num).as_str()
-                    );
+                if let Some(num) = stat.1.map(|x| (x.get_value() * 100.0).round()/100.0) {
+                    if num > 0.0 {
+                        t.push_str(
+                            format!("{}: +{} \n", stat.0, num).as_str()
+                        );
+                    }else if num < 0.0 {
+                        t.push_str(
+                            format!("{}: {} \n", stat.0, num).as_str()
+                        );
+                    }
                 }
                 if let Some(num2) = stat.1.map(|x| (x.percent * 100.0).round() /100.0){
                     if num2 > 0.0 {
@@ -290,6 +291,20 @@ impl Inventory {
 
                 }
                 continue;
+            }
+            if stat.0 == "health_regen" || stat.0 == "mana_regen" {
+                let num = (stat.1.map(|x| x.flat).unwrap_or(0.0) * 100.0).round() /100.0;
+                if let Some(num2) = stat.1.map(|x| (x.percent * 100.0).round() / 100.0){
+                    if num2 > 0.0 {
+                        t.push_str(
+                            format!("{}: +{}% \n", stat.0, num).as_str()
+                        );
+                    }else if num2 < 0.0 {
+                        t.push_str(
+                            format!("{}: {}% \n", stat.0, num).as_str()
+                        );
+                    }
+                }
             }
             if stat.0 == "fire_duration" || stat.0 == "poison_duration" || stat.0 == "lifetime" {
                 let num = (stat.1.map(|x| x.flat).unwrap_or(0.0)/60.0 * 100.0).round() /100.0;
@@ -355,7 +370,7 @@ impl Inventory {
             if stat.0 == "fire_tick_speed" {
                 if let Some(s) = stat.1.map(|x| x.get_value()) {
                     let v = (s * 100.0).round()/100.0;
-                    let ts = 60.0/super::stat::BASE_FIRE_TICK_DELAY * v;
+                    let ts = ((60.0/super::stat::BASE_FIRE_TICK_DELAY * s) * 100.0).round()/100.0;
 
                     t.push_str(
                         format!("{}: {} — {} t/s \n", stat.0, v, ts).as_str()
@@ -363,15 +378,56 @@ impl Inventory {
                 }
                 continue;
             }
+            if stat.0 == "health_regen" || stat.0 == "mana_regen" {
+                if let Some(num) = stat.1.map(|x| (x.get_value() * 100.0).round()/100.0) {
+                    if num > 0.0 {
+                        t.push_str(
+                            format!("{}: +{} every {}s \n", stat.0, num, TICKS_PER_REGEN_TICK as f32/60.0).as_str()
+                        );
+                    }else if num <= 0.0 {
+                        t.push_str(
+                            format!("{}: {} every {}s \n", stat.0, num, TICKS_PER_REGEN_TICK as f32/60.0).as_str()
+                        );
+                    }
+                }
+                continue;
+            }
             if stat.0 == "poison_tick_speed" {
                 if let Some(s) = stat.1.map(|x| x.get_value()) {
                     let v = (s * 100.0).round()/100.0;
-                    let ts = 60.0/super::stat::BASE_POISON_TICK_DELAY * v;
+                    let ts = ((60.0/super::stat::BASE_POISON_TICK_DELAY * s) * 100.0).round()/100.0;
 
                     t.push_str(
                         format!("{}: {} — {} t/s \n", stat.0, v, ts).as_str()
                     );
                 }
+                continue;
+            }
+            if stat.0 == "health" {
+                t.push_str("--- DEFENSIVE ---\n");
+            }
+            if stat.0 == "damage" {
+                t.push_str("\n--- GENERAL OFFENSIVE ---\n");
+            }
+            if stat.0 == "max_mana" {
+                t.push_str("\n--- MAGIC ---\n");
+            }
+            if stat.0 == "width" {
+                t.push_str("\n--- MELEE ---\n");
+            }
+            if stat.0 == "range" {
+                t.push_str("\n--- RANGED ---\n");
+            }
+            if stat.0 == "poison_damage" {
+                t.push_str("\n--- DOT ---\n");
+            }
+            if stat.0 == "loot" {
+                t.push_str("\n--- MISC ---\n");
+            }
+            if (stat.0 == "lifesteal" || stat.0 == "healing_effectiveness" || stat.0 == "crit_chance" || stat.0 == "crit_damage" || stat.0 == "loot") && stat.1.is_some(){
+                t.push_str(
+                    format!("{}: {}% \n", stat.0, (stat.1.unwrap().get_value() * 10.0).round() /10.0).as_str()
+                );
                 continue;
             }
             if stat.1.is_some(){
@@ -422,7 +478,7 @@ impl Inventory {
             .and_then(|x| self.ability_slots.get(*x))
             .and_then(|x| x.cur_ability)
     }
-    pub fn render_ui(&mut self, ability_descriptors: &[PlayerAbilityDescriptor]) -> Result<UIEFull, PError> {
+    pub fn render_ui(&mut self, player_ability_descriptors: &[PlayerAbilityDescriptor], mana: f32) -> Result<UIEFull, PError> {
         let mut ui = Vec::new();
         let mut text = Vec::new(); 
         if self.show_inventory {
@@ -496,9 +552,9 @@ impl Inventory {
                     text: ptry!(self.get_stats_combined_string()),
                     font_size: 25.0,
                     x: 80.0,
-                    y: 200.0,
+                    y: 100.0,
                     w: 500.0,
-                    h: 600.0,
+                    h: 700.0,
                     color: [1.0, 1.0, 1.0, 1.0],
                     align: wgpu_text::glyph_brush::HorizontalAlign::Left
                 });
@@ -537,7 +593,7 @@ impl Inventory {
                     align: wgpu_text::glyph_brush::HorizontalAlign::Center,
                 });
                 let ability = slot.cur_ability.and_then(|x| self.player_abilities.get(x)).and_then(
-                        |x| ability_descriptors.get(x.descriptor_id)
+                        |x| player_ability_descriptors.get(x.descriptor_id)
                     );
                 if let Some(ability) = ability {
                 text.push(TextSprite {
@@ -545,7 +601,7 @@ impl Inventory {
                     font_size: 20.0,
                     x: 350.0 + 58.0 * slot.id as f32 + 24.0,
                     y: 590.0 + 12.0,
-                    w: 30.0,
+                    w: 40.0,
                     h: 30.0,
                     color: [1.0,1.0,1.0,1.0],
                     align: wgpu_text::glyph_brush::HorizontalAlign::Center,
@@ -557,27 +613,101 @@ impl Inventory {
                 let slot = &self.ability_slots[aslot_h];
                 ui.push(UIESprite {
                     x: 330.0 + 58.0 * slot.id as f32,
-                    y: 450.0,
+                    y: 400.0,
                     z: 5.2,
                     width: 70.0,
-                    height: 120.0,
+                    height: 170.0,
                     sprite: CompactString::from("level_editor_menu_background")
                 });
+                text.push( TextSprite {
+                    x: 364.0 + 58.0 * slot.id as f32,
+                    y: 403.0,
+                    text: "Switch To".into(),
+                    font_size: 20.0,
+                    w: 62.0,
+                    h: 15.0,
+                    color: [1.0, 1.0, 1.0, 1.0],
+                    align: wgpu_text::glyph_brush::HorizontalAlign::Center
+                });
                 for (i, ability) in self.player_abilities.iter().enumerate() {
-                    let ability_descriptor = punwrap!(ability_descriptors.get(ability.descriptor_id), Invalid, "ability with id {} refers to non-existent ability descriptor with id {}", i, ability.descriptor_id);
+                    let ability_descriptor = punwrap!(player_ability_descriptors.get(ability.descriptor_id), Invalid, "ability with id {} refers to non-existent ability descriptor with id {}", i, ability.descriptor_id);
+                ui.push(UIESprite {
+                    x: 333.0 + 58.0 * slot.id as f32,
+                    y: 422.0 + i as f32 * 12.0,
+                    z: 5.4,
+                    width: 64.0,
+                    height: 10.0,
+                    sprite: CompactString::from("level_editor_button_background")
+                });
                     text.push( TextSprite {
-                        x: 335.0 + 58.0 * slot.id as f32,
-                        y: 460.0 + i as f32 * 15.0,
-                        text: format!("{}. {}", i, ability_descriptor.name.clone()),
+                        x: 364.0 + 58.0 * slot.id as f32,
+                        y: 423.0 + i as f32 * 12.0,
+                        text: format!("{}", ability_descriptor.name.clone()),
                         font_size: 15.0,
-                        w: 60.0,
+                        w: 62.0,
                         h: 15.0,
+                        color: [1.0, 1.0, 1.0, 1.0],
+                        align: wgpu_text::glyph_brush::HorizontalAlign::Center
+                    });
+                }
+            }
+
+            if let Some(cur) = self.ability_slot_clicked {
+                for i in 0..self.player_abilities.len() {
+                    if self.mouse_position.x_screen > 330.0 + 58.0 * cur as f32 && self.mouse_position.x_screen < 400.0 + 58.0 * cur as f32 && self.mouse_position.y_screen > 422.0 + i as f32 * 12.0 && self.mouse_position.y_screen < 432.0 + i as f32 * 12.0{
+                        let ability = &self.player_abilities[i];
+                        let descriptor = &player_ability_descriptors[ability.descriptor_id];
+                        
+                    ui.push(UIESprite {
+                        x: 385.0 + 58.0 * cur as f32,
+                        y: 419.0 + i as f32 * 12.0,
+                        z: 5.4,
+                        width: 160.0,
+                        height: 150.0,
+                        sprite: CompactString::from("level_editor_menu_background")
+                    });
+                    text.push( TextSprite {
+                        x: 390.0 + 58.0 * cur as f32,
+                        y: 423.0 + i as f32 * 12.0,
+                        text: descriptor.description.clone().to_string(),
+                        font_size: 15.0,
+                        w: 150.0,
+                        h: 145.0,
+                        color: [1.0, 1.0, 1.0, 1.0],
+                        align: wgpu_text::glyph_brush::HorizontalAlign::Left
+                    });
+                    } 
+                }
+            }
+            let mut ability_slot_hovered = None;
+            for slot in self.ability_slots.iter() {
+                if self.mouse_position.x_screen > 350.0 + 58.0 * slot.id as f32 && self.mouse_position.x_screen < 398.0 + 58.0 * slot.id as f32 && self.mouse_position.y_screen > 590.0 && self.mouse_position.y_screen < 638.0 {
+                    ability_slot_hovered = Some(slot.id);
+                }
+            }
+            if let Some (ability_slot_hovered) = ability_slot_hovered {
+                let ability_desc = self.ability_slots.get(ability_slot_hovered).and_then(|x| x.cur_ability).and_then(|x|self.player_abilities.get(x)).and_then(|x|player_ability_descriptors.get(x.descriptor_id));
+                if let Some(ability_desc) = ability_desc {
+                    ui.push(UIESprite {
+                        x: 385.0 + 58.0 * ability_slot_hovered as f32,
+                        y: 439.0,
+                        z: 5.4,
+                        width: 160.0,
+                        height: 150.0,
+                        sprite: CompactString::from("level_editor_menu_background")
+                    });
+                    text.push( TextSprite {
+                        x: 390.0 + 58.0 * ability_slot_hovered as f32,
+                        y: 443.0,
+                        text: ability_desc.description.clone().to_string(),
+                        font_size: 15.0,
+                        w: 150.0,
+                        h: 145.0,
                         color: [1.0, 1.0, 1.0, 1.0],
                         align: wgpu_text::glyph_brush::HorizontalAlign::Left
                     });
                 }
             }
-
 
         }
         else {
@@ -603,30 +733,62 @@ impl Inventory {
                     height: 48.0,
                     sprite: CompactString::from("hslot")
                 });
-                text.push(TextSprite {
-                    text: slot.key.clone().to_string(),
-                    font_size: 30.0,
-                    x: 350.0 + 58.0 * slot.id as f32 + 33.0,
-                    y: 590.0 + 25.0,
-                    w: 15.0,
-                    h: 15.0,
-                    color: [1.0,1.0,1.0,1.0],
-                    align: wgpu_text::glyph_brush::HorizontalAlign::Center,
-                });
-                let ability = slot.cur_ability.and_then(|x| self.player_abilities.get(x)).and_then(
-                        |x| ability_descriptors.get(x.descriptor_id)
+                let ability_desc = slot.cur_ability.and_then(|x| self.player_abilities.get(x)).and_then(
+                        |x| player_ability_descriptors.get(x.descriptor_id)
                     );
-                if let Some(ability) = ability {
-                text.push(TextSprite {
-                    text: ability.name.clone().to_string(),
-                    font_size: 20.0,
-                    x: 350.0 + 58.0 * slot.id as f32 + 24.0,
-                    y: 590.0 + 12.0,
-                    w: 30.0,
-                    h: 30.0,
-                    color: [1.0,1.0,1.0,1.0],
-                    align: wgpu_text::glyph_brush::HorizontalAlign::Center,
-                });
+                if let Some(ability_desc) = ability_desc {
+                    let ability = slot.cur_ability.and_then(|x|self.player_abilities.get(x)).unwrap();
+                    if ability.cooldown_time_left <= 0.0 {
+                        let mana_percent = ptry!(self.get_combined_stats()).mana_cost.map(|x| x.get_value()).unwrap_or(0.0);
+                        let mana_multi = if mana_percent < 0.0 {mana_percent.abs()/100.0 +1.0} else {1.0/(mana_percent/100.0 + 1.0)};
+                        let adjmc = ability_desc.mana_cost * mana_multi;
+                        if mana < adjmc {
+                            text.push(TextSprite {
+                            text: "NO MANA".into(),
+                            font_size: 23.0,
+                            x: 350.0 + 58.0 * slot.id as f32 + 24.0,
+                            y: 590.0 + 12.0,
+                            w: 30.0,
+                            h: 30.0,
+                            color: [1.0,0.0,0.0,1.0],
+                            align: wgpu_text::glyph_brush::HorizontalAlign::Center,
+                            });
+                        }else{
+
+                        text.push(TextSprite {
+                            text: slot.key.clone().to_string(),
+                            font_size: 30.0,
+                            x: 350.0 + 58.0 * slot.id as f32 + 33.0,
+                            y: 590.0 + 25.0,
+                            w: 15.0,
+                            h: 15.0,
+                            color: [1.0,1.0,1.0,1.0],
+                            align: wgpu_text::glyph_brush::HorizontalAlign::Center,
+                        });
+                        text.push(TextSprite {
+                            text: ability_desc.name.clone().to_string(),
+                            font_size: 20.0,
+                            x: 350.0 + 58.0 * slot.id as f32 + 24.0,
+                            y: 590.0 + 12.0,
+                            w: 40.0,
+                            h: 30.0,
+                            color: [1.0,1.0,1.0,1.0],
+                            align: wgpu_text::glyph_brush::HorizontalAlign::Center,
+                        });
+                        }
+                    }
+                    else {
+                        text.push(TextSprite {
+                        text: format!("{}s", (ability.cooldown_time_left/60.0 * 10.0).round()/10.0),
+                        font_size: 23.0,
+                        x: 350.0 + 58.0 * slot.id as f32 + 24.0,
+                        y: 590.0 + 12.0,
+                        w: 30.0,
+                        h: 30.0,
+                        color: [1.0,1.0,1.0,1.0],
+                        align: wgpu_text::glyph_brush::HorizontalAlign::Center,
+                        });
+                    }
                 }
             }
         }
@@ -711,16 +873,17 @@ impl Inventory {
             }
 
             if let Some(cur) = self.ability_slot_clicked {
-                if ability_slot_clicked.is_none() && !(position.x_screen > 350.0 && position.x_screen < 398.0 + 58.0 * cur as f32 && position.y_screen > 590.0 && position.y_screen < 638.0) {
+                if ability_slot_clicked.is_none() && !(position.x_screen > 330.0 + 58.0 * cur as f32 && position.x_screen < 400.00 + 58.0 * cur as f32 && position.y_screen > 400.0 && position.y_screen < 570.0) {
                     self.ability_slot_clicked = None;
                 }else if ability_slot_clicked.is_some() {
                     self.ability_slot_clicked = ability_slot_clicked;
                 }
 
                 for i in 0..self.player_abilities.len() {
-                    if position.x_screen > 330.0 + 58.0 * cur as f32 && position.x_screen < 400.0 + 58.0 * cur as f32 && position.y_screen > 460.0 + i as f32 * 15.0 && position.y_screen < 460.0 + (i+1) as f32 * 15.0 {
+                    if position.x_screen > 330.0 + 58.0 * cur as f32 && position.x_screen < 400.0 + 58.0 * cur as f32 && position.y_screen > 422.0 + i as f32 * 12.0 && position.y_screen < 432.0 + i as f32 * 12.0{
                         let slot = punwrap!(self.ability_slots.get_mut(cur), Invalid, "cur ability slot clicked refers to non existent ability slot");
                         slot.cur_ability = Some(i);
+                        self.ability_slot_clicked = None;
                     } 
                 }
             }else {

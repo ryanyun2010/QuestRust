@@ -16,10 +16,11 @@ pub struct PlayerAttack{
     pub dealt_damage: bool,
     pub last_damage: Option<f32>,
     pub enemies_pierced: usize,
+    pub ability_tags: Vec<PlayerAbilityAttackTag>
 
 }
 impl PlayerAttack{
-    pub fn new(stats: StatList, attack_type: PlayerAttackType,  sprite: CompactString, width_to_length_ratio: f32, x: f32, y: f32, angle: f32) -> Self{
+    pub fn new(stats: StatList, attack_type: PlayerAttackType,  sprite: CompactString, width_to_length_ratio: f32, x: f32, y: f32, angle: f32, ability_tags: Vec<PlayerAbilityAttackTag>) -> Self{
         Self{
             stats,
             sprite,
@@ -32,6 +33,7 @@ impl PlayerAttack{
             dealt_damage: false,
             last_damage: None,
             enemies_pierced: 0,
+            ability_tags
         }
     }
 }
@@ -45,3 +47,17 @@ pub enum PlayerAttackType {
     MagicAbility
 }
 
+#[derive(Clone, Debug)]
+pub enum PlayerAbilityAttackTag {
+    Chaining(usize),
+    Bouncing(usize),
+    Splitting(SplittingDescriptor)
+}
+
+#[derive(Clone, Debug)]
+pub struct SplittingDescriptor {
+    pub num: usize,
+    pub damage: f32,
+    pub speed: f32,
+    pub pierce: usize,
+}

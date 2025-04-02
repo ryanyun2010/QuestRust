@@ -73,6 +73,9 @@ impl Camera{
         let exp_bar = punwrap!(self.get_ui_element_mut_by_name("exp_bar_inside".into()), "Could not find exp bar inside ui element");
         let exp_bar_width = f32::max(0.0, f32::min(player.exp/EXP_REQS[player.level], 1.0) * 446.0);
         exp_bar.sprite.width = exp_bar_width;
+        let mana_bar = punwrap!(self.get_ui_element_mut_by_name(CompactString::from("mana_bar_inside")), "Could not find mana bar inside ui element");
+        let mana_bar_width = f32::max(0.0, f32::min(world.mana/ptry!(world.inventory.get_combined_stats()).max_mana.map(|x| x.get_value()).unwrap_or(1.0), 1.0) * 244.0);
+        mana_bar.sprite.width = mana_bar_width;
         let level_text_mut = self.level_text_id.and_then(|x| self.get_text_mut(x));
         if let Some(ltm) = level_text_mut {
             ltm.text = format!("Lv. {}", player.level);

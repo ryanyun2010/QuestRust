@@ -116,27 +116,27 @@ pub const BASE_FIRE_TICK_DELAY: f32 = 65.0;
 
 create_stat_lists!(
     health => 100.0,
-    defense => 0.0,
-    toughness => 0.0,
-    vitality => 0.0,
-    luck => 0.0,
+    defense => 0.0, // 100.0 defense should mean half damage, -100.0 defense should mean double
+                    // damage taken
+    health_regen => 1.0,
+    healing_effectiveness => 100.0, // 0% healing effectiveness = 0 healing
     damage => 0.0,
-    crit_luck => 0.0,
-    crit_damage => 0.0,
-    reach => 0.0,
-    accuracy => 0.0,
-    pierce => 1.0,
-    mana => 0.0,
-    mana_regen => 0.0,
-    cooldown_regen => 0.0,
-    charge_time_reduction => 0.0,
+    lifesteal => 0.0, // 100.0 = 100% of damage is lifestealed
     attack_cooldown => 0.0,
-    width => 0.0,
-    load_speed => 0.0,
-    range => 0.0,
-    lifetime => 100.0,
-    speed => 0.0,
+    crit_chance => 3.0,
+    crit_damage => 175.0,
+
+    max_mana => 100.0,
+    mana_regen => 6.0,
+    mana_cost => 0.0, // like defense 
+    cooldown_regen => 0.0,
     ability_damage => 0.0,
+    charge_time_reduction => 0.0,
+    width => 0.0,
+    reach => 0.0,
+    pierce => 1.0,
+    speed => 0.0,
+    lifetime => 100.0,
     size => 0.0,
     shots => 1.0,
     focus => 1.0,
@@ -145,7 +145,8 @@ create_stat_lists!(
     poison_tick_speed => 1.0, 
     fire_damage => 0.0,
     fire_tick_speed => 1.0, 
-    fire_duration => 120.0
+    fire_duration => 120.0,
+    loot => 100.0
 );
 
 // cooldown is number of frames, 60 fps, the display is adjusted. so for a 1s cooldown, do a cooldown of 60.

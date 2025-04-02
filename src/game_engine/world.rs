@@ -25,15 +25,16 @@ use super::item::{Item, ItemArchetype, ItemType};
 use super::items_on_floor::ItemOnFloor;
 use super::json_parsing::{entity_archetype_json, room_descriptor_json, spawn_archetype_json, terrain_archetype_json, terrain_json};
 use super::loot::LootTable;
-use super::player::{PlayerDir, PlayerState};
-use super::player_attacks::{PlayerAttack, PlayerAttackType};
+use super::player::{PlayerDir, PlayerState, TICKS_PER_REGEN_TICK};
+use super::player_attacks::{PlayerAbilityAttackTag, PlayerAttack, PlayerAttackType};
 use super::player_abilities::{AbilityStateInformation, PlayerAbilityDescriptorName, PlayerAbilityActionDescriptor, PlayerAbilityDescriptor};
 use super::stat::{StatC, StatList};
 use super::utils::{self, Rectangle};
 #[derive(Debug, Clone)]
 pub struct DamageTextDescriptor {
     pub world_text_id: usize, 
-    pub lifespan: f32
+    pub lifespan: f32,
+    pub crit: bool
 }
 
 #[derive(Debug, Clone)]
@@ -103,6 +104,8 @@ pub struct World{
     pub room_descriptors: FxHashMap<CompactString, room_descriptor_json>,
     pub spawn_archetype_descriptors: FxHashMap<CompactString, spawn_archetype_json>,
 
+    pub mana: f32,
+    pub time_since_mana_regen_tick: usize
 }
 
 impl World{ 
@@ -130,15 +133,27 @@ impl World{
         let test_ability_descriptors = vec![
             super::player_abilities::get_ability_descriptor(PlayerAbilityDescriptorName::Cyclone),
             super::player_abilities::get_ability_descriptor(PlayerAbilityDescriptorName::Dash),
+            super::player_abilities::get_ability_descriptor(PlayerAbilityDescriptorName::LightningTrap),
+            super::player_abilities::get_ability_descriptor(PlayerAbilityDescriptorName::LightningBolts),
+            super::player_abilities::get_ability_descriptor(PlayerAbilityDescriptorName::SlimeBall),
         ];
         let test_abilities = vec![
             test_ability_descriptors[0].create_player_ability(0),
             test_ability_descriptors[1].create_player_ability(1),
+            test_ability_descriptors[2].create_player_ability(2),
+            test_ability_descriptors[3].create_player_ability(3),
+            test_ability_descriptors[4].create_player_ability(4),
         ];
         ptry!(inventory_test.add_ability_slot_for_key("z".into()));
         ptry!(inventory_test.add_ability_slot_for_key("x".into()));
+        ptry!(inventory_test.add_ability_slot_for_key("c".into()));
+        ptry!(inventory_test.add_ability_slot_for_key("v".into()));
+        ptry!(inventory_test.add_ability_slot_for_key("b".into()));
         ptry!(inventory_test.set_ability_on_key("z".into(), Some(0)));
         ptry!(inventory_test.set_ability_on_key("x".into(), Some(1)));
+        ptry!(inventory_test.set_ability_on_key("c".into(), Some(2)));
+        ptry!(inventory_test.set_ability_on_key("v".into(), Some(3)));
+        ptry!(inventory_test.set_ability_on_key("b".into(), Some(4)));
         inventory_test.player_abilities = test_abilities;
 
         Ok(Self{
@@ -176,6 +191,8 @@ impl World{
             cur_exit: Some([68,21]),
             room_descriptors: FxHashMap::default(),
             spawn_archetype_descriptors: FxHashMap::default(),
+            mana: 100.0,
+            time_since_mana_regen_tick: 0
         })
     }
     pub fn new_chunk(&self, chunk_x: usize, chunk_y: usize, chunkref: Option<&mut std::cell::RefMut<'_, Vec<Chunk>>>) -> usize{
@@ -783,21 +800,21 @@ impl World{
         match attack_item.item_type {
             ItemType::MeleeWeapon => {
                 self.player_attacks.borrow_mut().push(
-                    PlayerAttack::new(stats.clone(), PlayerAttackType::Melee, punwrap!(attack_item.attack_sprite.clone(), Expected, "all melee weapons should have an attack sprite"), attack_item.width_to_length_ratio.unwrap_or(1.0), x, y, angle)
+                    PlayerAttack::new(stats.clone(), PlayerAttackType::Melee, punwrap!(attack_item.attack_sprite.clone(), Expected, "all melee weapons should have an attack sprite"), attack_item.width_to_length_ratio.unwrap_or(1.0), x, y, angle, vec![])
                 );
             }
             ItemType::RangedWeapon => {
                 self.player_attacks.borrow_mut().push(
-                    PlayerAttack::new(stats.clone(), PlayerAttackType::Ranged, punwrap!(attack_item.attack_sprite.clone(), Expected, "all ranged weapons should have an attack sprite"),attack_item.width_to_length_ratio.unwrap_or(1.0), x, y, angle)
+                    PlayerAttack::new(stats.clone(), PlayerAttackType::Ranged, punwrap!(attack_item.attack_sprite.clone(), Expected, "all ranged weapons should have an attack sprite"),attack_item.width_to_length_ratio.unwrap_or(1.0), x, y, angle, vec![])
                 );
             }
             _ => {}
         }
         Ok(())
     }
-    pub fn add_player_attack_custom(&self, stats: &StatList, attack_sprite: CompactString, width_to_length_ratio: f32, attack_type: PlayerAttackType, x: f32, y: f32, angle: f32) -> Result<(), PError>{    
+    pub fn add_player_attack_custom(&self, stats: &StatList, attack_sprite: CompactString, width_to_length_ratio: f32, attack_type: PlayerAttackType, x: f32, y: f32, angle: f32, tags: Vec<PlayerAbilityAttackTag>) -> Result<(), PError>{    
         self.player_attacks.borrow_mut().push(
-            PlayerAttack::new(stats.clone(), attack_type, attack_sprite,width_to_length_ratio, x, y, angle)
+            PlayerAttack::new(stats.clone(), attack_type, attack_sprite,width_to_length_ratio, x, y, angle, tags)
         );
         Ok(())
     }
@@ -841,6 +858,7 @@ impl World{
         let mut attacks = self.player_attacks.borrow_mut();
         let mut attacks_to_be_deleted = Vec::new();
         let mut i = 0;
+        let mut attacks_to_add = Vec::new();
         for attack in attacks.iter_mut(){
             match attack.attack_type{
                 PlayerAttackType::Melee | PlayerAttackType::MeleeAbility => {
@@ -866,16 +884,16 @@ impl World{
                                 let entity_position = self.components.position_components[*collision].as_ref().unwrap().borrow();
                                 let aggro_potentially = self.components.aggro_components[*collision].as_ref();
                                 if let Some(aggro) = aggro_potentially{
-                                    self.damage_entity( &entity_position, Some(&mut health_component), Some(&mut aggro.borrow_mut()),  &attack.stats, camera, [1.0, 1.0, 1.0, 1.0]);
+                                    ptry!(self.damage_entity(&entity_position, Some(&mut health_component), Some(&mut aggro.borrow_mut()),  &attack.stats, camera, [1.0, 1.0, 1.0, 1.0]));
                                 }else {
-                                    self.damage_entity( &entity_position, Some(&mut health_component), None,  &attack.stats, camera, [1.0, 1.0, 1.0, 1.0]);
+                                    ptry!(self.damage_entity(&entity_position, Some(&mut health_component), None,  &attack.stats, camera, [1.0, 1.0, 1.0, 1.0]));
                                 }
                                 attack.dealt_damage = true;
                             }
                         }
                     }
                 }
-                PlayerAttackType::Ranged | PlayerAttackType::RangedAbility  => {
+                PlayerAttackType::Ranged => {
                     let angle = attack.angle * PI/180.0;
                     attack.x += angle.cos() * attack.stats.speed.map(|x| x.get_value()).unwrap_or(0.0);
                     attack.y += angle.sin() * attack.stats.speed.map(|x| x.get_value()).unwrap_or(0.0);
@@ -911,9 +929,9 @@ impl World{
                                 let entity_position = self.components.position_components[*collision].as_ref().unwrap().borrow();
                                 let aggro_potentially = self.components.aggro_components[*collision].as_ref();
                                 if let Some(aggro) = aggro_potentially{
-                                    self.damage_entity( &entity_position, Some(&mut health_component), Some(&mut aggro.borrow_mut()),  &attack.stats, camera, [1.0, 1.0, 1.0, 1.0]);
+                                    ptry!(self.damage_entity( &entity_position, Some(&mut health_component), Some(&mut aggro.borrow_mut()),  &attack.stats, camera, [1.0, 1.0, 1.0, 1.0]));
                                 }else {
-                                    self.damage_entity( &entity_position, Some(&mut health_component), None, &attack.stats, camera, [1.0, 1.0, 1.0, 1.0]);
+                                    ptry!(self.damage_entity( &entity_position, Some(&mut health_component), None, &attack.stats, camera, [1.0, 1.0, 1.0, 1.0]));
                                 }
                             }
                         }
@@ -927,6 +945,127 @@ impl World{
                         }
                     }
                 }
+                PlayerAttackType::RangedAbility  => {
+                    let angle = attack.angle * PI/180.0;
+                    attack.x += angle.cos() * attack.stats.speed.map(|x| x.get_value()).unwrap_or(0.0);
+                    attack.y += angle.sin() * attack.stats.speed.map(|x| x.get_value()).unwrap_or(0.0);
+                    attack.time_alive += 1.0;
+                    if attack.time_alive > attack.stats.lifetime.map(|x| x.get_value()).unwrap_or(f32::MAX){
+                        attacks_to_be_deleted.push(i);
+                        i += 1;
+                        continue;
+                    }
+                    attack.last_damage = attack.last_damage.map(|x| x+1.0);
+                    let length = attack.stats.size.map(|x| x.get_value()).unwrap_or(0.0).floor() as usize;
+                    let width = (attack.width_to_length_ratio * length as f32) as usize;
+                    let mut collisions = ptry!(self.get_attacked_rotated_rect(true, None, (attack.x - length as f32/2.0) as usize, (attack.y - width as f32 /2.0) as usize, length, width,attack.angle, true));
+                    let mut hit = false;
+                    if attack.last_damage.unwrap_or(11.0) > 10.0 {
+                        for collision in collisions.iter(){
+                            if self.components.damageable_components[*collision].is_some(){
+                                attack.enemies_pierced += 1;
+                                hit = true;
+                                attack.dealt_damage = true;
+                                attack.last_damage = Some(0.0);
+                                if attack.enemies_pierced >= attack.stats.pierce.map(|x| x.get_value()).unwrap_or(0.0).floor() as usize {
+                                    attacks_to_be_deleted.push(i);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    let mut chaining = None;
+                    let mut splitting = None;
+                    for tag in attack.ability_tags.iter_mut() {
+                        match tag {
+                            PlayerAbilityAttackTag::Chaining(num) => {
+                                chaining = Some(num);
+                            }
+                            PlayerAbilityAttackTag::Splitting(desc) => {
+                                splitting = Some(desc);
+                            }
+                            _ => ()
+                        } 
+                    }
+                    if hit {
+                        if let Some(chains_left) = chaining {
+                            let mut close_entity_pos = None;
+                            for pos in izip!(self.components.position_components.iter(), self.components.damageable_components.iter()).filter_map(|(pos, damageable)| if pos.is_some() && damageable.is_some(){Some(pos.as_ref().unwrap().borrow())}else{None}){
+                                if (pos.x - attack.x).powi(2) + (pos.y - attack.y).powi(2) < 10000.0 {
+                                    close_entity_pos = Some(pos.clone());
+                                }
+                            }
+                            if let Some(pos) = close_entity_pos {
+                                attack.angle = f32::atan2(pos.y - attack.y, pos.x - attack.x) * 180.0/std::f32::consts::PI;
+                            }
+                        }
+                        if let Some(desc) = splitting {
+                            let mut new_stats = attack.stats.clone();
+                            new_stats.damage = Some(StatC{ flat: desc.damage, percent: attack.stats.damage.map(|x| x.percent).unwrap_or(0.0)});
+                            new_stats.speed = Some(StatC{ flat: desc.speed, percent: attack.stats.speed.map(|x| x.percent).unwrap_or(0.0)});
+                            new_stats.pierce = Some(StatC{ flat: desc.pierce as f32, percent: attack.stats.pierce.map(|x| x.percent).unwrap_or(0.0)});
+                            let ang_per = 360.0/desc.num as f32;
+                            for i in 0..desc.num {
+                                let angle = ang_per * i as f32;
+                                println!("RDH{:?}", angle);
+                                attacks_to_add.push(
+                                    PlayerAttack {
+                                        stats: new_stats.clone(),
+                                        attack_type: PlayerAttackType::RangedAbility,
+                                        sprite: attack.sprite.clone(),
+                                        width_to_length_ratio: attack.width_to_length_ratio,
+                                        time_alive: 0.0,
+                                        x: attack.x + (angle * PI/180.0).cos() * 12.0,
+                                        y: attack.y + (angle * PI/180.0).sin() * 12.0,
+                                        angle,
+                                        dealt_damage: false,
+                                        last_damage: None,
+                                        enemies_pierced: 0,
+                                        ability_tags: vec![]
+                                    });
+                                }
+                        }
+                        for collision in collisions.iter(){
+                            if self.components.damageable_components[*collision].is_some(){
+                                let mut health_component = self.components.damageable_components[*collision].as_ref().unwrap().borrow_mut();
+                                let entity_position = self.components.position_components[*collision].as_ref().unwrap().borrow();
+                                let aggro_potentially = self.components.aggro_components[*collision].as_ref();
+                                if let Some(aggro) = aggro_potentially{
+                                    ptry!(self.damage_entity( &entity_position, Some(&mut health_component), Some(&mut aggro.borrow_mut()),  &attack.stats, camera, [1.0, 1.0, 1.0, 1.0]));
+                                }else {
+                                    ptry!(self.damage_entity( &entity_position, Some(&mut health_component), None, &attack.stats, camera, [1.0, 1.0, 1.0, 1.0]));
+                                }
+                            }
+                        }
+                        
+                    }else {
+                        let length = attack.stats.size.map(|x| x.get_value()).unwrap_or(0.0).floor();
+                        let width = attack.width_to_length_ratio * length;
+                        let c = ptry!(self.check_collision_non_damageable(true, None, (attack.x - length/2.0) as usize, (attack.y-width/2.0) as usize, length as usize, width as usize, true));
+                        let mut bounce = None;
+                        for tag in attack.ability_tags.iter_mut() {
+                            match tag {
+                                PlayerAbilityAttackTag::Bouncing(num) => {
+                                    bounce = Some(tag);
+                                }
+                                _ => ()
+                            } 
+                        }
+                        if c{
+                            if let Some(PlayerAbilityAttackTag::Bouncing(bounces_left)) = bounce {
+                               if *bounces_left > 0 {
+                                   *bounces_left -= 1;
+                                   attack.angle += 180.0;
+                                   attack.angle %= 360.0;
+                               }else {
+                                   attacks_to_be_deleted.push(i);
+                               }
+                            }else {
+                                attacks_to_be_deleted.push(i);
+                            }
+                        }
+                    }
+                }
                 PlayerAttackType::Magic | PlayerAttackType::MagicAbility => {
                     todo!()
                 }
@@ -937,14 +1076,22 @@ impl World{
         for (offset, index) in attacks_to_be_deleted.iter().enumerate(){
             attacks.remove(*index - offset);
         }
+        for attack in attacks_to_add{
+            attacks.push(attack);
+        }
         Ok(())
     }
 
 
-    pub fn damage_entity(&self, entity_position_component: &PositionComponent, entity_damageable_component: Option<&mut DamageableComponent>, entity_aggro_component: Option<&mut AggroComponent>, stats: &StatList, camera: &mut Camera, color: [f32; 4]){
-        let damage = stats.damage.map(|x| x.get_value()).unwrap_or(0.0);
+    pub fn damage_entity(&self, entity_position_component: &PositionComponent, entity_damageable_component: Option<&mut DamageableComponent>, entity_aggro_component: Option<&mut AggroComponent>, stats: &StatList, camera: &mut Camera, color: [f32; 4]) -> Result<(), PError>{
+        let rand = rand::thread_rng().gen::<f32>();
+        let crit = rand < stats.crit_chance.map(|x| x.get_value()/100.0).unwrap_or(0.0);
+        let mut damage = stats.damage.map(|x| x.get_value()).unwrap_or(0.0);
+        if crit {damage *= stats.crit_damage.map(|x| x.get_value()).unwrap_or(100.0)/100.0;}
+        println!("GG {:?}", damage);
         if entity_damageable_component.is_some() {
             let ehc = entity_damageable_component.unwrap();
+            let real_damage = f32::min(f32::min(damage, ehc.health), 0.0);
             ehc.health -= damage;
             if ehc.health >= ehc.max_health as f32 {
                 ehc.health = ehc.max_health as f32;
@@ -984,17 +1131,28 @@ impl World{
                     }
                 }
             }
+            if let Some(lifesteal) = stats.lifesteal.map(|x| x.get_value()){
+                ptry!(self.heal_player(lifesteal/100.0 * real_damage, camera));
+            }
         }
-        let text_1 = camera.add_world_text(((damage * 10.0).round() / 10.0).to_string(), super::camera::Font::B, entity_position_component.x + 11.0, entity_position_component.y + 7.0, 150.0, 50.0, 50.0, [0.0, 0.0, 0.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
-        let text_2 = camera.add_world_text(((damage * 10.0).round() / 10.0).to_string(), super::camera::Font::B, entity_position_component.x + 9.0, entity_position_component.y + 5.0, 150.0, 50.0, 50.0, color, wgpu_text::glyph_brush::HorizontalAlign::Center);
         if entity_aggro_component.is_some() {
             let aggro = entity_aggro_component.unwrap();
             if !aggro.aggroed{
                 aggro.aggroed = true;
             }
         }
-        self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_1, lifespan: 0.0});
-        self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_2, lifespan: 0.0});
+        if crit {
+            let text_1 = camera.add_world_text(((damage * 10.0).round() / 10.0).to_string(), super::camera::Font::B, entity_position_component.x + 11.0, entity_position_component.y + 7.0, 150.0, 50.0, 50.0, [0.0, 0.0, 0.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
+            let text_2 = camera.add_world_text(((damage * 10.0).round() / 10.0).to_string(), super::camera::Font::B, entity_position_component.x + 9.0, entity_position_component.y + 5.0, 150.0, 50.0, 50.0, [0.0, 0.5, 0.8, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
+            self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_1, lifespan: 0.0, crit: true});
+            self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_2, lifespan: 0.0, crit: true});
+        }else {
+            let text_1 = camera.add_world_text(((damage * 10.0).round() / 10.0).to_string(), super::camera::Font::B, entity_position_component.x + 11.0, entity_position_component.y + 7.0, 150.0, 50.0, 55.0, [0.0, 0.0, 0.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
+            let text_2 = camera.add_world_text(((damage * 10.0).round() / 10.0).to_string(), super::camera::Font::B, entity_position_component.x + 9.0, entity_position_component.y + 5.0, 150.0, 50.0, 55.0, color, wgpu_text::glyph_brush::HorizontalAlign::Center);
+            self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_1, lifespan: 0.0, crit: false});
+            self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_2, lifespan: 0.0, crit: false});
+        }
+        Ok(())
     }
 
     pub fn damage_entity_dot(&self, entity_position_component: &PositionComponent, entity_damageable_component: &mut DamageableComponent, damage: f32, camera: &mut Camera, color: [f32; 4]) {
@@ -1004,21 +1162,43 @@ impl World{
         }
         let text_1 = camera.add_world_text(((damage * 10.0).round() / 10.0).to_string(), super::camera::Font::B, entity_position_component.x + 11.0, entity_position_component.y + 7.0, 150.0, 50.0, 50.0, [0.0, 0.0, 0.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
         let text_2 = camera.add_world_text(((damage * 10.0).round() / 10.0).to_string(), super::camera::Font::B, entity_position_component.x + 9.0, entity_position_component.y + 5.0, 150.0, 50.0, 50.0, color, wgpu_text::glyph_brush::HorizontalAlign::Center);
-        self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_1, lifespan: 0.0});
-        self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_2, lifespan: 0.0});
+        self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_1, lifespan: 0.0, crit: false});
+        self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_2, lifespan: 0.0, crit: false});
     }
 
     
 
     pub fn damage_player(&self, damage: f32, camera: &mut Camera, color: [f32; 4]) -> Result<(), PError> {
         let defense = ptry!(self.inventory.get_combined_stats()).defense.map(|x| x.get_value()).unwrap_or(0.0);
-        let dmg = damage * 100.0/(defense + 100.0);
+        let def_multi = if defense < 0.0 {defense.abs()/100.0 +1.0} else {1.0/(defense/100.0 + 1.0)};
+        let dmg = damage * def_multi;
         self.player.borrow_mut().health -= dmg;
         let player = self.player.borrow();
         let text_1 = camera.add_world_text(((dmg * 10.0).round() / 10.0).to_string(), super::camera::Font::B, player.x + 32.0, player.y + 7.0, 150.0, 50.0, 50.0, [0.0, 0.0, 0.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
         let text_2 = camera.add_world_text(((dmg * 10.0).round() / 10.0).to_string(), super::camera::Font::B, player.x + 30.0, player.y + 5.0, 150.0, 50.0, 50.0, color, wgpu_text::glyph_brush::HorizontalAlign::Center);
-        self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_1, lifespan: 0.0});
-        self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_2, lifespan: 0.0});
+        self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_1, lifespan: 0.0, crit: false});
+        self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_2, lifespan: 0.0, crit: false});
+        Ok(())
+    }
+
+    pub fn heal_player(&self, healing: f32, camera: &mut Camera) -> Result<(), PError>{
+        let heff = ptry!(self.inventory.get_combined_stats()).healing_effectiveness.map(|x| x.get_value()).unwrap_or(0.0);
+        let heal = healing * heff/100.0;
+        if heal == 0.0 {return Ok(());}
+        let player_hp = self.player.borrow().max_health;
+        let player_re = self.player.borrow().health + heal;
+        if player_re < player_hp as f32 {
+            self.player.borrow_mut().health = player_re;
+            let player = self.player.borrow();
+            let text_1 = camera.add_world_text(((heal * 10.0).round() / 10.0).to_string(), super::camera::Font::B, player.x + 32.0, player.y + 7.0, 150.0, 50.0, 50.0, [0.0, 0.0, 0.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center);
+            let text_2 = if heal > 0.0 {
+            camera.add_world_text(((heal * 10.0).round() / 10.0).to_string(), super::camera::Font::B, player.x + 30.0, player.y + 5.0, 150.0, 50.0, 50.0, [0.0, 1.0, 0.3, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center)
+            } else {
+            camera.add_world_text(((heal * 10.0).round() / 10.0).to_string(), super::camera::Font::B, player.x + 30.0, player.y + 5.0, 150.0, 50.0, 50.0, [1.0, 0.0, 0.0, 1.0], wgpu_text::glyph_brush::HorizontalAlign::Center)
+            };
+            self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_1, lifespan: 0.0, crit: false});
+            self.damage_text.borrow_mut().push(DamageTextDescriptor{world_text_id: text_2, lifespan: 0.0, crit: false});
+        }
         Ok(())
     }
     
@@ -1045,7 +1225,7 @@ impl World{
                     let tables = &lc.borrow().loot_tables;
                     for table in tables.iter() {
                         let table = punwrap!(self.loot_table_lookup.get(table), "entity with id {} has a loot table with id {} which doesn't exist", entity, table);
-                        let items = table.roll();
+                        let items = table.roll(ptry!(self.inventory.get_combined_stats()).loot.map(|x| x.get_value()).unwrap_or(100.0));
                         for item in items.iter() {
                             let it = ptry!(self.create_item_with_archetype(item.clone()), "while attempting to drop item {} from entity with id {}", item, entity);
                             self.items_on_floor.borrow_mut().push(ItemOnFloor{
@@ -1096,7 +1276,7 @@ impl World{
                     usable = false;
                 }
                     
-                if usable {
+                if usable && ability_object.cooldown_time_left <= 0.0{
                     let ability_on_start = ability_descriptor.actions.on_start;
 
                     ability_to_start = Some(ability_id);
@@ -1110,23 +1290,33 @@ impl World{
             if let Some(on_start_function) = ability_to_start_fn {
                 if let Some(ability_descriptor) = ability_descriptor_start{
                     let stats = ptry!(self.inventory.get_combined_stats());
+                    let mana_cost = ptry!(self.adjusted_mana_cost(ability_descriptor.mana_cost));
                     let player_ability = punwrap!(self.inventory.get_ability_mut(ability_id), Invalid, "attempting to start non-existent player ability with id {}", ability_id);
                     ability_descriptor.setup_player_ability(player_ability, &stats);
                     let player = self.player.borrow();
-                    let x = player.x;
-                    let y = player.y;
-                    let dir = player.direction;
-                    drop(player);
-                    ptry!(on_start_function(self, ability_id, &AbilityStateInformation {
-                        ability_key_held: true,
-                        mouse_position: input_state.mouse_position,
-                        player_position: (x, y),
-                        player_direction: dir,
-                    }), "while starting up ability with id {} that was invoked by the hotkey {}", ability_id, key);
+                    if self.mana >= mana_cost {
+                        let x = player.x;
+                        let y = player.y;
+                        let dir = player.direction;
+                        drop(player);
+                        self.mana -= mana_cost; 
+                        player_ability.cooldown_time_left = player_ability.adjusted_cooldown;
+                        ptry!(on_start_function(self, ability_id, &AbilityStateInformation {
+                            ability_key_held: true,
+                            mouse_position: input_state.mouse_position,
+                            player_position: (x, y),
+                            player_direction: dir,
+                        }), "while starting up ability with id {} that was invoked by the hotkey {}", ability_id, key);
+                    }
                 }
             }
         }
         Ok(())
+    }
+    pub fn adjusted_mana_cost(&self, mana_cost: f32) -> Result<f32, PError> {
+        let mana_percent = ptry!(self.inventory.get_combined_stats()).mana_cost.map(|x| x.get_value()).unwrap_or(0.0);
+        let mana_multi = if mana_percent < 0.0 {mana_percent.abs()/100.0 +1.0} else {1.0/(mana_percent/100.0 + 1.0)};
+        Ok(mana_cost * mana_multi)
     }
     pub fn on_mouse_click(&mut self, mouse_position: MousePosition, mouse_left: bool, mouse_right: bool, camera_width: f32, camera_height: f32) -> Result<(), PError>{
         let mut player = self.player.borrow_mut();
@@ -1296,6 +1486,10 @@ impl World{
         let cur_ability = punwrap!(self.inventory.get_ability(punwrap!(self.cur_ability_charging, None, "there is no ability charging currently")), Invalid, "current ability charging refers to a player ability with id {}, but there is no ability with id {}", self.cur_ability_charging.unwrap(), self.cur_ability_charging.unwrap());
         Ok(&punwrap!(self.player_ability_descriptors.get(cur_ability.descriptor_id), "current player ability charging refers to ability with id {}, which refers to ability descriptor with id {}, however there is no ability descriptor with id {}", self.cur_ability_charging.unwrap(), cur_ability.descriptor_id, cur_ability.descriptor_id).actions)
     }
+    pub fn get_cur_ability_descriptor(&self) -> Result<&PlayerAbilityDescriptor, PError> {
+        let cur_ability = punwrap!(self.inventory.get_ability(punwrap!(self.cur_ability_charging, None, "there is no ability charging currently")), Invalid, "current ability charging refers to a player ability with id {}, but there is no ability with id {}", self.cur_ability_charging.unwrap(), self.cur_ability_charging.unwrap());
+        Ok(punwrap!(self.player_ability_descriptors.get(cur_ability.descriptor_id), "current player ability charging refers to ability with id {}, which refers to ability descriptor with id {}, however there is no ability descriptor with id {}", self.cur_ability_charging.unwrap(), cur_ability.descriptor_id, cur_ability.descriptor_id))
+    }
     pub fn create_item_with_archetype(&self, archetype: CompactString) -> Result<Item, PError> {
         let archetype_i = punwrap!(self.get_item_archetype(&archetype), NotFound, "could not find item archetype {}", archetype);        
         let stat_variation = archetype_i.stats.get_variation();
@@ -1319,6 +1513,9 @@ impl World{
             let text_mut_ref = punwrap!(camera.get_world_text_mut(damage_text.world_text_id),Invalid, "damage text descriptor with index {} and value {:?} refers to non-existent world text with id {}", i, damage_text, damage_text.world_text_id);
             text_mut_ref.y -= 0.6;
             text_mut_ref.color[3] -= 0.016_666_668;
+            if damage_text.crit {
+                text_mut_ref.font_size += 0.4;
+            }
             damage_text.lifespan += 1.0;
             if damage_text.lifespan > 60.0 {
                 ptry!(camera.remove_world_text(damage_text.world_text_id), NotFound, "Trying to remove non-existent world text with id {} refered to be damage text descriptor with index {} and value {:?}", damage_text.world_text_id, i, damage_text);
@@ -1399,11 +1596,20 @@ impl World{
 
             match state {
                 PlayerState::ChargingAbility => {
+
+                    let descriptor = ptry!(self.get_cur_ability_descriptor());
+                    let mcwc = ptry!(self.adjusted_mana_cost(descriptor.mana_cost_while_charging));
                     let cur_ability_actions = ptry!(self.get_cur_ability_actions());
                     let while_charging_func = cur_ability_actions.while_charging;
                     ptry!(while_charging_func(self, *punwrap!(self.cur_ability_charging.as_ref()), &AbilityStateInformation {ability_key_held: correct_key, mouse_position: input_state.mouse_position, player_position: (px, py), player_direction: pdir}), "while calling charging func on current_ability with id {}", *punwrap!(self.cur_ability_charging.as_ref())); // unwrap should never fail as for cur_ability_actions to succeed, cur_ability_charging should be Some
                     let cur_ability = punwrap!(self.inventory.get_ability_mut(cur_ability_charging), Invalid, "cur ability charging refers to player ability with id {} but there is no player ability with id {}", cur_ability_charging, cur_ability_charging);
                     cur_ability.time_to_charge_left -= 1.0;
+                    if self.mana >= mcwc {
+                        self.mana -= mcwc;
+                    }else {
+                        cur_ability.time_to_charge_left = 0.0;
+                        cur_ability.end_without_end_action = true;
+                    }
                     if cur_ability.time_to_charge_left <= 0.0 {
                         if cur_ability.end_without_end_action {
                             let cur_ability = punwrap!(self.inventory.get_ability_mut(cur_ability_charging), Invalid, "cur ability charging refers to player ability with id {} but there is no player ability with id {}", cur_ability_charging, cur_ability_charging);
@@ -1552,5 +1758,32 @@ impl World{
     pub fn update_player_anim(&self) {
         self.player.borrow_mut().anim_frame += 1;
         self.player.borrow_mut().anim_frame %= 120;
+    }
+    pub fn player_health_regen(&self, camera: &mut Camera) -> Result<(), PError>{
+        let health_regen = ptry!(self.inventory.get_combined_stats()).health_regen.map(|x| x.get_value()).unwrap_or(0.0);
+        let player_ref = self.player.borrow();
+        if player_ref.time_since_regen_tick == TICKS_PER_REGEN_TICK {
+            drop(player_ref);
+            ptry!(self.heal_player(health_regen, camera));
+            self.player.borrow_mut().time_since_regen_tick = 0;
+        }else {
+            drop(player_ref);
+            self.player.borrow_mut().time_since_regen_tick += 1;
+        }
+        Ok(())
+    }
+    pub fn player_mana_regen(&mut self) -> Result<(), PError>{
+        let stats = ptry!(self.inventory.get_combined_stats());
+        let mana_regen = stats.mana_regen.map(|x| x.get_value()).unwrap_or(0.0)/TICKS_PER_REGEN_TICK as f32;
+        let max_mana = stats.max_mana.map(|x| x.get_value()).unwrap_or(0.0);
+        if self.mana + mana_regen <= max_mana {
+            self.mana += mana_regen;
+        }
+        Ok(())
+    }
+    pub fn update_player_ability_cds(&mut self) {
+        for ability in self.inventory.player_abilities.iter_mut() {
+            ability.cooldown_time_left -= 1.0;
+        }
     }
 }
