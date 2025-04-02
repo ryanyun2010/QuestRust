@@ -1,10 +1,10 @@
 [
     {
 
-        "name": "test_sword",
+        "name": "basic sword",
         "sprite": "sword",
         "item_type": "MeleeWeapon",
-        "lore": "Well... It appears that you've obtained this.\nI guess there's not much else that we can do, now that you've hacked the game.\n\nP.S. This sword isn't even good, why are you using it?", 
+        "lore": "just a basic sword", 
         "attack_sprite": "melee_attack",
         "stats": {
             "damage": {"flat": {"average": 15.0, "variation": 2.5}},
@@ -15,27 +15,26 @@
     },
     {
 
-        "name": "test_spear",
+        "name": "basic spear",
         "sprite": "spear",
         "item_type": "RangedWeapon",
         "attack_sprite": "spear",
-        "lore": "test", 
+        "lore": "just a basic spear", 
         "stats": {
-            "damage": {"flat": {"average": 6.0, "variation": 2.5}},
+            "damage": {"flat": {"average": 4.5, "variation": 2.0}},
             "speed": {"flat": {"average": 10.0, "variation": 2.5}},
             "lifetime": {"flat": {"average": 90.0, "variation": 10.0}},
             "size": {"flat": {"average": 20.0, "variation": 2.5}},
-            "shots": {"flat": {"average": 1.0, "variation": 0.0}},
             "focus": {"flat": {"average": 9.0, "variation": 0.0}},
             "attack_cooldown": {"flat": {"average": 3.0, "variation": 1.0}},
 			"pierce": {"flat": {"average": 50.0, "variation": 5.0}}
         }
     },
     {
-        "name": "god_sword",
+        "name": "God Sword?",
         "sprite": "sword",
         "item_type": "MeleeWeapon",
-        "lore": "good sword",
+        "lore": "umm. yes",
         "attack_sprite": "melee_attack",
         "stats": {
             "damage": {"flat": {"average": 100.0, "variation": 999999.0}},
@@ -44,10 +43,10 @@
         }
     },
     {
-        "name": "funny spear",
+        "name": "Fragmented Spear",
         "sprite": "spear",
         "item_type": "RangedWeapon",
-        "lore": "fun",
+        "lore": "shoots out a bunch of different fragments because its fragmented",
         "attack_sprite": "spear",
         "width_to_length_ratio": 0.6,
         "stats": {
@@ -55,28 +54,38 @@
             "speed": {"flat": {"average": 5.4, "variation": 0.0}},
             "lifetime": {"flat": {"average": 999.0, "variation": 0.0}},
             "size": {"flat": {"average": 9.0, "variation": 0.0}},
-            "shots": {"flat": {"average": 3.0, "variation": 0.0}},
+            "shots": {"flat": {"average": 7.0, "variation": 0.0}},
             "focus": {"flat": {"average": 1.5, "variation": 0.0}},
             "attack_cooldown": {"flat": {"average": 20.0, "variation": 1.9}}
         }
     },
 	{
-		"name": "test helm",
+		"name": "Helmet of Fortification",
 		"sprite": "helm",
 		"item_type": "HelmetArmor",
-		"lore": "test",
+		"lore": "so fortified you cant do damage",
 		"attack_sprite": "N/A",
 		"stats": {
-			"damage": {"flat": {"average": -5.0, "variation": 5.0}},
-			"shots": {"flat": {"average": 5.0, "variation": 5.0}},
-			"defense": {"flat": {"average": 500.0, "variation": 200.0}}
+			"damage": {"percent": {"average": -80.0, "variation": 5.0}},
+			"defense": {"flat": {"average": 600.0, "variation": 200.0}, "percent": {"average": 40.0, "variation": 10.0}}
 		}
 	},
 	{
-		"name": "poison spear",
+		"name": "Helmet of Berserking",
+		"sprite": "helm",
+		"item_type": "HelmetArmor",
+		"lore": "just dont get hit!",
+		"attack_sprite": "N/A",
+		"stats": {
+			"damage": {"percent": {"average": 200.0, "variation": 30.0}},
+			"defense": {"flat": {"average": -700.0, "variation": 200.0}}
+		}
+	},
+	{
+		"name": "Poison Spear",
 		"sprite": "spear",
         "item_type": "RangedWeapon",
-        "lore": "fun",
+        "lore": "poison your enemies!",
         "attack_sprite": "spear",
         "width_to_length_ratio": 0.6,
         "stats": {
@@ -86,14 +95,15 @@
             "focus": {"flat": {"average": 1.5, "variation": 0.0}},
             "lifetime": {"flat": {"average": 200.0, "variation": 0.0}},
             "attack_cooldown": {"flat": {"average": 20.0, "variation": 1.9}},
-            "poison_damage": {"flat": {"average": 3.0, "variation": 1.9}}
+            "poison_damage": {"flat": {"average": 7.0, "variation": 1.9}},
+            "poison_tick_speed": {"percent": {"average": 30.0, "variation": 10.0}}
         }
 	},
 	{
-		"name": "fire spear",
+		"name": "Fire Spear",
 		"sprite": "spear",
         "item_type": "RangedWeapon",
-        "lore": "fun",
+        "lore": "burn your enemies!",
         "attack_sprite": "spear",
         "width_to_length_ratio": 0.6,
         "stats": {
@@ -103,7 +113,8 @@
             "focus": {"flat": {"average": 1.5, "variation": 0.0}},
             "lifetime": {"flat": {"average": 200.0, "variation": 0.0}},
             "attack_cooldown": {"flat": {"average": 20.0, "variation": 1.9}},
-            "fire_damage": {"flat": {"average": 10.0, "variation": 1.9}}
+            "fire_damage": {"flat": {"average": 21.0, "variation": 1.9}},
+            "fire_tick_speed": {"percent": {"average": 40.0, "variation": 10.0}}
         }
 	}
 		

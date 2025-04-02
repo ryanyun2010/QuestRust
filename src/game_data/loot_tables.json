@@ -3,15 +3,27 @@
         "name": "wizard_loot_table",
         "loot": [
             {
-                "weight": 10000,
-                "item": "fire spear"
+                "weight": 5,
+                "item": "Fire Spear"
             },
             {
                 "weight": 5,
-                "item": "test_spear"
+                "item": "Poison Spear"
             },
             {
-                "weight": 6
+                "weight": 8,
+                "item": "basic spear"
+            },
+            {
+                "weight": 5,
+                "item": "Fragmented Spear"
+            },
+            {
+                "weight": 1,
+                "item": "God Sword?"
+            },
+            {
+                "weight": 12
             }
         ]
     },
@@ -19,23 +31,23 @@
         "name": "ghost_loot_table",
         "loot": [
             {
-                "weight": 15,
-                "item": "test_sword"
+                "weight": 9,
+                "item": "basic sword"
             },
             {
                 "weight": 1,
-                "item": "god_sword"
+                "item": "God Sword?"
             },
             {
-                "weight": 1,
-                "item": "funny spear"
+                "weight": 2,
+                "item": "Helmet of Fortification"
             },
             {
-                "weight": 3,
-                "item": "test_spear"
+                "weight": 2,
+                "item": "Helmet of Berserking"
             },
             {
-                "weight": 25
+                "weight": 9
             }
         ]
     }

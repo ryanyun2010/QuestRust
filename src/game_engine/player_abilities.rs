@@ -137,8 +137,8 @@ pub fn get_ability_descriptor(name: PlayerAbilityDescriptorName) -> PlayerAbilit
                 ),
                 flat_added_damage_effectiveness: 0.09,
                 name: CompactString::from("Cyclone"),
-                description: String::from("Cyclone\n------------\nChannel to summon a cyclone of wind around you that damages enemies (Melee Weapons Only)\n\nBase Damage: 2.8\nWidth: 40.0\nReach: 40.0\n\nAdded Flat Damage Effectiveness: 9%\nCooldown: 16.6s\nMana Cost: 1.0\nMana Cost while Channeling: 12/s"),
-                cooldown: 1000.0,
+                description: String::from("Cyclone\n------------\nChannel to summon a cyclone of wind around you that damages enemies (Melee Weapons Only)\n\nBase Damage: 2.8\nWidth: 40.0\nReach: 40.0\n\nAdded Flat Damage Effectiveness: 9%\nCooldown: 0.16s\nMana Cost: 1.0\nMana Cost while Channeling: 12/s"),
+                cooldown: 10.0,
                 time_to_charge: 100000.0,
                 end_time: 0.0,
                 actions: CYCLONE_ACTIONS,
@@ -256,7 +256,7 @@ pub fn get_ability_descriptor(name: PlayerAbilityDescriptorName) -> PlayerAbilit
                             ),
                 flat_added_damage_effectiveness: 1.2,
                 name: CompactString::from("Slime Ball"),
-                description: String::from("Slime Ball\n------------\nShoots a Slime Ball in the direction of your mouse, it bounces upon hitting walls.\n\nBase Damage: 50.0\nShots: 1 (FIXED)\nLifetime: +900.0\nSize: +60.0\nPierce: +20.0\nSpeed: +4.0\n\nAdded Flat Damage Effectiveness: 120%\nCooldown: 6s\nCharge Time: 0.06s\nMana Cost: 19.0"),
+                description: String::from("Slime Ball\n------------\nShoots a Slime Ball in the direction of your mouse, it bounces upon hitting walls.\n\nBase Damage: 50.0\nShots: 1 (FIXED)\nLifetime: +900.0\nSize: +60.0\nPierce: +20.0\nSpeed: +4.0\n\nAdded Flat Damage Effectiveness: 120%\nAdded Flat Speed Effectiveness: 20%\nCooldown: 6s\nCharge Time: 0.06s\nMana Cost: 19.0"),
                 cooldown: 360.0,
                 time_to_charge: 4.0,
                 end_time: 9.0,
@@ -283,7 +283,6 @@ pub const CYCLONE_ACTIONS: PlayerAbilityActionDescriptor = PlayerAbilityActionDe
     on_start: |world, ability, state| {
         world.player.borrow_mut().player_state = PlayerState::ChargingAbility;
         world.cur_ability_charging = Some(ability);
-        println!("CYCLONE CHARGING BEGAN");
         Ok(())
     },
     while_charging: |world, ability, state| {
@@ -327,7 +326,6 @@ pub const CYCLONE_ACTIONS: PlayerAbilityActionDescriptor = PlayerAbilityActionDe
             }
 
 
-        println!("Charging cyclone");
         Ok(())
     },
     on_ending_start: |world, ability, state| {
@@ -338,7 +336,6 @@ pub const CYCLONE_ACTIONS: PlayerAbilityActionDescriptor = PlayerAbilityActionDe
     },
     on_end: |world, ability, state| {
         let mut player_ref = world.player.borrow_mut();
-        println!("END");
         if !(player_ref.player_state == PlayerState::EndingAbility) {
             return Err(perror!(Invalid, "Player State is {:?} at the end of ability charging, however it should be PlayerState::ChargingAbility", player_ref.player_state));
         }
@@ -354,7 +351,6 @@ pub const TRAP: PlayerAbilityActionDescriptor = PlayerAbilityActionDescriptor {
     on_start: |world, ability, state| {
         world.player.borrow_mut().player_state = PlayerState::ChargingAbility;
         world.cur_ability_charging = Some(ability);
-        println!("BIG_SHOT CHARGING BEGAN");
         Ok(())
     },
     while_charging: |world, ability, state| {
@@ -374,7 +370,6 @@ pub const TRAP: PlayerAbilityActionDescriptor = PlayerAbilityActionDescriptor {
     on_end: |world, ability, state| {
         let mut player = world.player.borrow_mut();
         let ability_ref = punwrap!(world.inventory.get_ability(ability), Invalid, "while_charging was called with ability id {}, however there is no current ability with ability id {}", ability, ability);
-        println!("END");
         if !(player.player_state == PlayerState::EndingAbility) {
             return Err(perror!(Invalid, "Player State is {:?} at the end of ability charging, however it should be PlayerState::ChargingAbility", player.player_state));
         }
@@ -387,7 +382,6 @@ pub const TRAP: PlayerAbilityActionDescriptor = PlayerAbilityActionDescriptor {
             mouse_direction_unnormalized[1] / magnitude
         ];
         let main_angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]);
-        println!("{:?}", &ability_ref.stats.damage);
         let mut new_stats = ability_ref.stats.clone();
         new_stats.speed = Some(StatC{ flat: 0.0, percent: 0.0});
         new_stats.size = Some(StatC{ flat: 50.0, percent: 0.0});
@@ -418,7 +412,6 @@ pub const BOLTS: PlayerAbilityActionDescriptor = PlayerAbilityActionDescriptor {
     on_start: |world, ability, state| {
         world.player.borrow_mut().player_state = PlayerState::ChargingAbility;
         world.cur_ability_charging = Some(ability);
-        println!("BIG_SHOT CHARGING BEGAN");
         Ok(())
     },
     while_charging: |world, ability, state| {
@@ -438,7 +431,6 @@ pub const BOLTS: PlayerAbilityActionDescriptor = PlayerAbilityActionDescriptor {
     on_end: |world, ability, state| {
         let mut player = world.player.borrow_mut();
         let ability_ref = punwrap!(world.inventory.get_ability(ability), Invalid, "while_charging was called with ability id {}, however there is no current ability with ability id {}", ability, ability);
-        println!("END");
         if !(player.player_state == PlayerState::EndingAbility) {
             return Err(perror!(Invalid, "Player State is {:?} at the end of ability charging, however it should be PlayerState::ChargingAbility", player.player_state));
         }
@@ -451,7 +443,6 @@ pub const BOLTS: PlayerAbilityActionDescriptor = PlayerAbilityActionDescriptor {
             mouse_direction_unnormalized[1] / magnitude
         ];
         let main_angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]);
-        println!("{:?}", &ability_ref.stats.damage);
         let shots = ability_ref.stats.shots.map(|x| x.get_value()).unwrap_or(0.0).floor();
         
         let half_shots = ((shots-1.0).floor()/2.0).floor() as isize;
@@ -475,7 +466,6 @@ pub const SLIMEBALL: PlayerAbilityActionDescriptor = PlayerAbilityActionDescript
     on_start: |world, ability, state| {
         world.player.borrow_mut().player_state = PlayerState::ChargingAbility;
         world.cur_ability_charging = Some(ability);
-        println!("BIG_SHOT CHARGING BEGAN");
         Ok(())
     },
     while_charging: |world, ability, state| {
@@ -495,7 +485,6 @@ pub const SLIMEBALL: PlayerAbilityActionDescriptor = PlayerAbilityActionDescript
     on_end: |world, ability, state| {
         let mut player = world.player.borrow_mut();
         let ability_ref = punwrap!(world.inventory.get_ability(ability), Invalid, "while_charging was called with ability id {}, however there is no current ability with ability id {}", ability, ability);
-        println!("END");
         if !(player.player_state == PlayerState::EndingAbility) {
             return Err(perror!(Invalid, "Player State is {:?} at the end of ability charging, however it should be PlayerState::ChargingAbility", player.player_state));
         }
@@ -509,8 +498,12 @@ pub const SLIMEBALL: PlayerAbilityActionDescriptor = PlayerAbilityActionDescript
         ];
         let main_angle = mouse_direction_normalized[1].atan2(mouse_direction_normalized[0]);
         let angle = main_angle; 
+        let mut new_stats = ability_ref.stats.clone();
+        let spd = (new_stats.speed.map(|x| x.get_value()).unwrap_or(0.0) - 4.0)/5.0 + 4.0;
+        new_stats.speed = Some(StatC {flat: spd, percent: 0.0});
+
         ptry!(world.add_player_attack_custom(
-                &ability_ref.stats,
+                &new_stats,
                 CompactString::from("slime_ball"),
                 1.0,
                 crate::game_engine::player_attacks::PlayerAttackType::RangedAbility,
@@ -558,7 +551,6 @@ pub const DASH: PlayerAbilityActionDescriptor = PlayerAbilityActionDescriptor {
     on_end: |world, ability, state| {
         let mut player = world.player.borrow_mut();
         let ability_ref = punwrap!(world.inventory.get_ability(ability), Invalid, "while_charging was called with ability id {}, however there is no current ability with ability id {}", ability, ability);
-        println!("END");
         if !(player.player_state == PlayerState::EndingAbility) {
             return Err(perror!(Invalid, "Player State is {:?} at the end of ability charging, however it should be PlayerState::ChargingAbility", player.player_state));
         }

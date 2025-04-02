@@ -18,7 +18,6 @@ impl LootTable{
             total_weight += entry.weight;
         }
         while lpl >= 100.0 {
-            println!("ROLL {:?}", lpl);
             let num = rng.gen_range(0..total_weight);
             let mut current_weight = 0;
             for entry in &self.entries {
@@ -33,7 +32,6 @@ impl LootTable{
             lpl -= 100.0;
         }
         if rng.gen_range(0.0..100.0) < lpl {
-            println!("ROLL {:?}", lpl);
             let num = rng.gen_range(0..total_weight);
             let mut current_weight = 0;
             for entry in &self.entries {
@@ -47,7 +45,6 @@ impl LootTable{
             }
         }
 
-        println!("{:?}", items);
 
         items
     }

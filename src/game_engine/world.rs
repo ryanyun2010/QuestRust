@@ -110,25 +110,7 @@ pub struct World{
 
 impl World{ 
     pub fn new(player: Player, sprite_container: SpriteContainer) -> Result<Self, PError>{
-        let iof = vec![ItemOnFloor {
-            x: 700.0,
-            y: 500.0,
-            item: Item {
-                name: CompactString::from("test1"),
-                attack_sprite: Some(CompactString::from("melee_attack")),
-                item_type: ItemType::MeleeWeapon,
-                width_to_length_ratio: None,
-                lore: String::from("test"),
-                sprite: CompactString::from("sword"),
-                stats: crate::create_stat_list!(
-                    damage => StatC {flat: 150.0, percent: 0.0},
-                    width => StatC {flat: 150.0, percent: 0.0},
-                    reach => StatC {flat: 65.0, percent: 0.0},
-                    attack_cooldown => StatC {flat: 10.0, percent: 0.0},
-                ),
-                time_til_usable: 10.0,
-            }
-        }];
+        let iof = vec![];
         let mut inventory_test = Inventory::default();
         let test_ability_descriptors = vec![
             super::player_abilities::get_ability_descriptor(PlayerAbilityDescriptorName::Cyclone),
@@ -1007,7 +989,6 @@ impl World{
                             let ang_per = 360.0/desc.num as f32;
                             for i in 0..desc.num {
                                 let angle = ang_per * i as f32;
-                                println!("RDH{:?}", angle);
                                 attacks_to_add.push(
                                     PlayerAttack {
                                         stats: new_stats.clone(),
@@ -1088,7 +1069,6 @@ impl World{
         let crit = rand < stats.crit_chance.map(|x| x.get_value()/100.0).unwrap_or(0.0);
         let mut damage = stats.damage.map(|x| x.get_value()).unwrap_or(0.0);
         if crit {damage *= stats.crit_damage.map(|x| x.get_value()).unwrap_or(100.0)/100.0;}
-        println!("GG {:?}", damage);
         if entity_damageable_component.is_some() {
             let ehc = entity_damageable_component.unwrap();
             let real_damage = f32::min(f32::min(damage, ehc.health), 0.0);
@@ -1361,7 +1341,6 @@ impl World{
                     }
                 }
                 if attacked{
-                    println!("attacked");
                     let item = punwrap!(self.inventory.get_cur_held_item_mut(), Expected, "attacked with no item?");
                     if item.item_type == ItemType::MeleeWeapon {
                         player.player_state = PlayerState::AttackingMelee;

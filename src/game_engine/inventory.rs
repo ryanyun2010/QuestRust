@@ -889,7 +889,6 @@ impl Inventory {
             }else {
                 self.ability_slot_clicked = ability_slot_clicked;
             }
-            println!("{:?}", self.ability_slot_clicked);
         }
         Ok(())
     }
